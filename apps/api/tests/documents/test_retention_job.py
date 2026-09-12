@@ -29,7 +29,9 @@ ORG = uuid.uuid4()
 ADMIN = uuid.uuid4()
 
 
-def _candidate(*, blocking_link_count: int = 0, retention_until: date = date(2024, 1, 1)) -> ExpiredDocument:
+def _candidate(
+    *, blocking_link_count: int = 0, retention_until: date = date(2024, 1, 1)
+) -> ExpiredDocument:
     return ExpiredDocument(
         id=uuid.uuid4(),
         organization_id=ORG,
@@ -46,7 +48,9 @@ class FakeRetentionRepository:
     candidates: list[ExpiredDocument] = field(default_factory=list)
     deleted: list[uuid.UUID] = field(default_factory=list)
 
-    async def expired(self, *, administration_id: uuid.UUID | None = None) -> Sequence[ExpiredDocument]:
+    async def expired(
+        self, *, administration_id: uuid.UUID | None = None
+    ) -> Sequence[ExpiredDocument]:
         if administration_id is None:
             return list(self.candidates)
         return [c for c in self.candidates if c.administration_id == administration_id]
@@ -173,7 +177,9 @@ def test_summary_names_nothing_examined_distinctly_from_a_clean_sweep() -> None:
     "no exceptions" wording.
     """
     empty = RetentionSweepReport(checked_at=datetime.now(UTC), examined=0)
-    clean = RetentionSweepReport(checked_at=datetime.now(UTC), examined=3, deleted=(uuid.uuid4(),) * 3)
+    clean = RetentionSweepReport(
+        checked_at=datetime.now(UTC), examined=3, deleted=(uuid.uuid4(),) * 3
+    )
 
     assert "nothing past retention" in empty.summary()
     assert "no exceptions" in clean.summary()

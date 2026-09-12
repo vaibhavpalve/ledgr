@@ -264,7 +264,10 @@ class InMemoryCustomerRepository:
             name=f"Erased customer {customer_id}",
             trade_name=None,
             address=PostalAddress(
-                address_line1=None, address_line2=None, postal_code=None, city=None,
+                address_line1=None,
+                address_line2=None,
+                postal_code=None,
+                city=None,
                 country=existing.address.country,
             ),
             kvk_number=None,
@@ -296,7 +299,11 @@ class InMemoryCustomerRepository:
             for invoice_id, reference, invoice_date, fiscal_year_end in self.issued_invoices.get(
                 customer_id, []
             )
-            if (retained_until := _document_retention_until(fiscal_year_end, RetentionBasis.STANDARD))
+            if (
+                retained_until := _document_retention_until(
+                    fiscal_year_end, RetentionBasis.STANDARD
+                )
+            )
             >= today
         ]
 

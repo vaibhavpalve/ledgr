@@ -104,8 +104,7 @@ class RetentionSweepReport:
             return "document retention sweep: nothing past retention"
         if self.clean:
             return (
-                f"document retention sweep: {len(self.deleted)} document(s) removed, "
-                "no exceptions"
+                f"document retention sweep: {len(self.deleted)} document(s) removed, no exceptions"
             )
         return (
             f"document retention sweep: {len(self.deleted)} document(s) removed, "

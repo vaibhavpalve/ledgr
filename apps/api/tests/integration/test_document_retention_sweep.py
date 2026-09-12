@@ -100,9 +100,7 @@ async def test_an_unlinked_expired_document_is_removed_by_the_sweep(
     year = await _open_year(
         two_organizations.admin_a, two_organizations.org_a, end=_EXPIRED_YEAR_END
     )
-    document_id = await _insert_document(
-        two_organizations.admin_a, two_organizations.org_a, year
-    )
+    document_id = await _insert_document(two_organizations.admin_a, two_organizations.org_a, year)
 
     async with app_engine.connect() as conn:
         await conn.execute(

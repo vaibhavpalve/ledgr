@@ -275,6 +275,11 @@
       "nl": "Deze klant is gearchiveerd. Zet de klant terug om weer facturen te kunnen maken.",
       "en": "This customer is archived. Restore them to invoice them again."
     },
+    "errors.customer_erased": {
+      "note": "PRIV-022. Unlike errors.customer_archived, there is deliberately no way out named here: an erasure request has no restore path, so a message that offered one would describe a button that does not exist.",
+      "nl": "Deze klant is gewist op verzoek van de betrokkene en kan niet meer worden bewerkt of gefactureerd.",
+      "en": "This customer was erased at the data subject's request and can no longer be edited or invoiced."
+    },
     "errors.customer_field_invalid": {
       "note": "FR-UX-007. The field name travels beside the sentence in {field} as a machine-readable value, never inside it: 'payment_terms_days is invalid' is a developer-facing string in a user-facing message. The client puts the message against the input it names. Deliberately one key rather than one per field — the correction is always the same act, and fourteen near-identical sentences drift.",
       "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",

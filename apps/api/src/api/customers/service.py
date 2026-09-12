@@ -727,8 +727,7 @@ class CustomerService:
         # path for an erasure, so this must never be reached by re-archiving.
         if customer.is_erased:
             raise CustomerIsErased(
-                f"customer {customer_id} was erased (PRIV-022); it cannot be edited "
-                "or invoiced"
+                f"customer {customer_id} was erased (PRIV-022); it cannot be edited or invoiced"
             )
         if customer.is_archived:
             raise CustomerIsArchived(
