@@ -1,0 +1,116 @@
+/*
+ * The mobile shell's bottom tab bar — sized to the same MOB-013 touch-target
+ * minimum as the capture screen's shutter button (see capture/CaptureScreen.css
+ * for that one and ADR-047 for why both needed it: today's bare, unstyled
+ * `<button>`s render far under 44x44pt/48x48dp in most browsers' default
+ * button metrics).
+ */
+
+/*
+ * FR-FRM-000a's ClientHeader — rendered once by MobileShell, above every
+ * tab's content, and kept on screen (not just on mount) via `sticky`
+ * positioning: it sits in normal flow, so no manual height/padding
+ * compensation is needed on `.mobile-shell__content` below it the way the
+ * FIXED tab bar needs on the content above it, and it re-sticks correctly
+ * however tall its own content gets (e.g. the ambiguous-colour warning, or a
+ * long legal name wrapping to a second line) rather than assuming one fixed
+ * height. `z-index` is higher than the tab bar's, since a screen this task
+ * makes newly persistent must never end up underneath something else.
+ */
+.client-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+
+  background-color: #ffffff;
+  border-bottom: 1px solid #dddddd;
+}
+
+.client-header--empty,
+.client-header--loading {
+  color: #666666;
+}
+
+/*
+ * The marker's actual per-colour appearance (mapping each `ClientColour`
+ * token to a rendered colour) is not styled here: no CSS for
+ * `.client-marker`/`.client-switcher`'s identical marker exists anywhere in
+ * this app yet, on mobile or web — a pre-existing gap this task's explicit
+ * scope (sticky positioning only) does not extend to. This rule is layout
+ * only, so the marker is legible (via its initials) rather than invisible in
+ * the meantime.
+ */
+.client-marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 50%;
+  background-color: #dddddd;
+  color: #222222;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.client-header__name {
+  font-weight: 700;
+}
+
+.client-header__legal-name {
+  font-size: 0.75rem;
+  color: #666666;
+}
+
+.client-header__ambiguous {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  color: #a15c00;
+}
+
+.mobile-shell__content {
+  /* Room for the fixed-height tab bar below, so the last few pixels of
+     scrollable content are not hidden behind it. */
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-shell__tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+
+  display: flex;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  background-color: #ffffff;
+  border-top: 1px solid #dddddd;
+}
+
+.mobile-shell__tabs button {
+  flex: 1 1 0;
+  box-sizing: border-box;
+  min-height: 56px;
+  min-width: 48px;
+  padding: 0.4rem 0.25rem;
+
+  border: none;
+  background: none;
+  color: #444444;
+  font-size: 0.75rem;
+}
+
+.mobile-shell__tabs button[aria-current="page"] {
+  color: #0b57d0;
+  font-weight: 700;
+}

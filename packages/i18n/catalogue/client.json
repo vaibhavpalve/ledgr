@@ -1,0 +1,55 @@
+{
+  "namespace": "client",
+  "messages": {
+    "client.switcher.dialog_label": {
+      "note": "Accessible name of the client switcher dialog (FR-FRM-000).",
+      "nl": "Wissel van klant",
+      "en": "Switch client"
+    },
+    "client.switcher.search_label": {
+      "note": "Accessible name of the search input. Names all three things it searches, because the KvK number is the one people do not expect to work.",
+      "nl": "Zoek klanten op naam, handelsnaam of KvK-nummer",
+      "en": "Search clients by name, trade name or KvK number"
+    },
+    "client.switcher.search_placeholder": {
+      "nl": "Zoek klanten…",
+      "en": "Search clients…"
+    },
+    "client.switcher.list_label": {
+      "note": "Accessible name of the results listbox.",
+      "nl": "Klanten",
+      "en": "Clients"
+    },
+    "client.switcher.no_matches": {
+      "note": "Empty result set. {query} is what the person typed, quoted, so it is clear the search — not the account — is what came up empty.",
+      "nl": "Geen klanten gevonden voor “{query}”",
+      "en": "No clients match “{query}”"
+    },
+    "client.switcher.kvk": {
+      "note": "The KvK number beside a client's name. Identical in both because KvK is a statutory term that keeps its Dutch form in the English UI (FR-LOC-001c) — 'Chamber of Commerce number' would leave an English-speaking owner unable to match what is on screen to what is on the paper in front of them. See glossary.json.",
+      "identical": true,
+      "nl": "KvK {number}",
+      "en": "KvK {number}"
+    },
+    "client.switcher.current": {
+      "note": "Marks the client the session already has open, so switching to it is visibly a no-op.",
+      "nl": "Nu geopend",
+      "en": "Currently open"
+    },
+    "client.header.loading": {
+      "note": "FR-FRM-000a. Shown while GET /v1/switcher/active is still in flight — deliberately distinct from client.header.none_selected, which is only for a CONFIRMED absence of an active client. Showing 'no client selected' during this window would be a false negative at exactly the moment the requirement exists to prevent.",
+      "nl": "Klant wordt geladen…",
+      "en": "Loading client…"
+    },
+    "client.header.none_selected": {
+      "note": "FR-FRM-000a. Shown instead of an empty header when the session is inside no client — a blank space is indistinguishable from a header that failed to load.",
+      "nl": "Geen klant geselecteerd",
+      "en": "No client selected"
+    },
+    "client.header.colour_ambiguous": {
+      "note": "FR-FRM-000a. Another client in this user's switcher carries the same colour marker, so the colour is not distinguishing and the name is what to read.",
+      "nl": "Een andere klant heeft dezelfde kleur — controleer de naam",
+      "en": "Another client shares this colour — check the name"
+    }
+  }
+}

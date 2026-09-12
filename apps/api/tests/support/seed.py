@@ -1,0 +1,176 @@
+"""Seeds tenants for tenant-isolation tests, through the same paths
+production code uses — the SECURITY DEFINER bootstrap function for
+organization creation, then a normal tenant-scoped INSERT for everything
+else — rather than poking rows in directly. That way a seeding bug and a
+production bug would be the same bug, not two divergent code paths.
+"""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
+
+
+@dataclass(frozen=True, slots=True)
+class SeededTenants:
+    org_a: uuid.UUID
+    org_b: uuid.UUID
+    admin_a: uuid.UUID
+    admin_b: uuid.UUID
+    # One Owner per organization (IAM-030). Requests in these tests are made
+    # as a real, authorized user rather than as a bare organization id,
+    # because every gate in the middleware chain now needs one: MFA
+    # enforcement rejects a tenant context with no user (ADR-008), and the
+    # authorization library needs a subject to look grants up for.
+    owner_a: uuid.UUID
+    owner_b: uuid.UUID
+
+
+async def signup_organization(engine: AsyncEngine, *, name: str, kvk: str) -> uuid.UUID:
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text("SELECT (app.signup_self_managed_organization(:name, :kvk)).id"),
+            {"name": name, "kvk": kvk},
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
+async def seed_administration(
+    engine: AsyncEngine, *, org_id: uuid.UUID, legal_name: str, legal_form: str
+) -> uuid.UUID:
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org_id, true)"),
+            {"org_id": str(org_id)},
+        )
+        result = await conn.execute(
+            text(
+                "INSERT INTO administration (organization_id, legal_name, legal_form) "
+                "VALUES (:org_id, :legal_name, :legal_form) RETURNING id"
+            ),
+            {"org_id": str(org_id), "legal_name": legal_name, "legal_form": legal_form},
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
+async def seed_user(engine: AsyncEngine, *, email: str) -> uuid.UUID:
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text("INSERT INTO users (email) VALUES (:email) RETURNING id"), {"email": email}
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
+async def seed_session(engine: AsyncEngine, *, user_id: uuid.UUID) -> uuid.UUID:
+    """A live session row, so IAM-110's switcher has something to write its
+    active administration onto. Sessions carry no tenant column (users are
+    global - 0003), so this needs no tenant context.
+    """
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                "INSERT INTO sessions (user_id, token_hash, expires_at) "
+                "VALUES (:user_id, :token_hash, now() + interval '12 hours') RETURNING id"
+            ),
+            {"user_id": str(user_id), "token_hash": f"test-{uuid.uuid4().hex}"},
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
+async def grant_role(
+    engine: AsyncEngine,
+    *,
+    acting_org_id: uuid.UUID,
+    user_id: uuid.UUID,
+    role_name: str,
+    scope_type: str,
+    scope_id: uuid.UUID,
+    granted_by: uuid.UUID | None = None,
+    conditions: str = "{}",
+    expires_at: str | None = None,
+) -> uuid.UUID:
+    """Grants a standard role through the same tenant-scoped INSERT the
+    application uses — so RLS (role_assignment_insert) and every guard
+    trigger in 0009 apply here exactly as they would in production. A
+    seeding helper that bypassed them could set up state the app can never
+    reach.
+    """
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org_id, true)"),
+            {"org_id": str(acting_org_id)},
+        )
+        result = await conn.execute(
+            text(
+                "INSERT INTO role_assignment "
+                "(user_id, role_id, scope_type, scope_id, conditions, "
+                " granted_by_user_id, expires_at) "
+                "SELECT :user_id, r.id, :scope_type, :scope_id, cast(:conditions as jsonb), "
+                "       :granted_by, cast(:expires_at as timestamptz) "
+                'FROM "role" r WHERE r.is_system AND r.name = :role_name '
+                "RETURNING id"
+            ),
+            {
+                "user_id": str(user_id),
+                "role_name": role_name,
+                "scope_type": scope_type,
+                "scope_id": str(scope_id),
+                "conditions": conditions,
+                "granted_by": str(granted_by or user_id),
+                "expires_at": expires_at,
+            },
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
+async def seed_two_organizations_with_overlapping_data(engine: AsyncEngine) -> SeededTenants:
+    """Org A and org B get the *same* legal name and legal form, and only
+    different KVK numbers — deliberately look-alike, so an isolation check
+    that merely compares human-readable fields could pass by accident.
+    Only checking by record id (which the two orgs can never share) proves
+    isolation actually holds.
+    """
+    org_a = await signup_organization(engine, name="Bakker Consultancy B.V.", kvk="11111111")
+    org_b = await signup_organization(engine, name="Bakker Consultancy B.V.", kvk="22222222")
+
+    admin_a = await seed_administration(
+        engine, org_id=org_a, legal_name="Bakker Consultancy B.V.", legal_form="BV"
+    )
+    admin_b = await seed_administration(
+        engine, org_id=org_b, legal_name="Bakker Consultancy B.V.", legal_form="BV"
+    )
+
+    # Look-alike users too, for the same reason the administrations are
+    # look-alikes: only the ids differ.
+    suffix = uuid.uuid4().hex[:8]
+    owner_a = await seed_user(engine, email=f"owner+a{suffix}@example.com")
+    owner_b = await seed_user(engine, email=f"owner+b{suffix}@example.com")
+
+    await grant_role(
+        engine,
+        acting_org_id=org_a,
+        user_id=owner_a,
+        role_name="Owner",
+        scope_type="organization",
+        scope_id=org_a,
+    )
+    await grant_role(
+        engine,
+        acting_org_id=org_b,
+        user_id=owner_b,
+        role_name="Owner",
+        scope_type="organization",
+        scope_id=org_b,
+    )
+
+    return SeededTenants(
+        org_a=org_a,
+        org_b=org_b,
+        admin_a=admin_a,
+        admin_b=admin_b,
+        owner_a=owner_a,
+        owner_b=owner_b,
+    )

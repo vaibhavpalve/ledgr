@@ -1,0 +1,439 @@
+{
+  "namespace": "capture",
+  "messages": {
+    "capture.screen.title": {
+      "note": "Heading of the capture screen (FR-EXP-001).",
+      "nl": "Bonnen vastleggen",
+      "en": "Capture receipts"
+    },
+    "capture.screen.start": {
+      "note": "FR-EXP-001a's sitting. 'Reeks' rather than 'batch' — a Dutch bookkeeper says reeks, and batch is an English loan that means something narrower here.",
+      "nl": "Nieuwe reeks starten",
+      "en": "Start a new batch"
+    },
+    "capture.screen.starting": {
+      "nl": "Bezig met starten…",
+      "en": "Starting…"
+    },
+    "capture.screen.take_photo": {
+      "note": "FR-EXP-001's camera path. 'Single tap from the home screen' is what this is.",
+      "nl": "Foto maken",
+      "en": "Take a photograph"
+    },
+    "capture.screen.choose_files": {
+      "note": "FR-EXP-001's upload path — file picker. Drag-and-drop lands in the same place.",
+      "nl": "Bestanden kiezen",
+      "en": "Choose files"
+    },
+    "capture.screen.drop_hint": {
+      "note": "The drop zone. Names the formats FR-EXP-001 accepts, because 'unsupported file' after the fact is a worse way to learn them.",
+      "nl": "Sleep bonnen hierheen — JPEG, PNG, HEIC of PDF",
+      "en": "Drop receipts here — JPEG, PNG, HEIC or PDF"
+    },
+    "capture.screen.add_page": {
+      "note": "FR-EXP-001's multi-page. Deliberately worded as belonging to THIS receipt: pressing it must not feel like starting another one, because the difference is one expense or two.",
+      "nl": "Nog een pagina van deze bon",
+      "en": "Another page of this receipt"
+    },
+    "capture.screen.new_receipt": {
+      "note": "FR-EXP-001a's batch. The counterpart to add_page, and the pair is why neither is inferred.",
+      "nl": "Volgende bon",
+      "en": "Next receipt"
+    },
+    "capture.screen.finalise": {
+      "note": "Accepts the review list and closes the sitting. Posts nothing (ADR-031 §5).",
+      "nl": "Reeks afronden",
+      "en": "Finish this batch"
+    },
+    "capture.screen.finalised": {
+      "note": "Shown after finalisation. Says what happens next, because 'done' alone leaves the person wondering whether the money has moved. It has not — the forms still have to be filled in.",
+      "nl": "Reeks afgerond. Vul de bonnen aan wanneer het uitkomt; er is nog niets geboekt.",
+      "en": "Batch finished. Fill the receipts in whenever it suits; nothing has been posted yet."
+    },
+    "capture.screen.expenses_to_create": {
+      "note": "FR-EXP-001a: what finalising would produce, stated before the person commits. One per RECEIPT — pages do not count, and that is the whole distinction.",
+      "nl": {
+        "one": "Dit levert {count} uitgave op",
+        "other": "Dit levert {count} uitgaven op"
+      },
+      "en": {
+        "one": "This makes {count} expense",
+        "other": "This makes {count} expenses"
+      }
+    },
+    "capture.screen.nothing_captured": {
+      "nl": "Nog geen bonnen in deze reeks.",
+      "en": "No receipts in this batch yet."
+    },
+    "capture.problem.offline_cannot_start": {
+      "note": "The one thing a sitting genuinely cannot do offline: the session id is allocated by the server. Everything after it works without a connection. See ADR-036's known gaps.",
+      "nl": "Een nieuwe reeks starten kan alleen met verbinding. Bonnen die al in de wachtrij staan worden gewoon geüpload.",
+      "en": "Starting a new batch needs a connection. Receipts already in the queue still upload on their own."
+    },
+    "capture.problem.offline_cannot_finalise": {
+      "nl": "Afronden kan alleen met verbinding. De bonnen zijn veilig opgeslagen op dit apparaat.",
+      "en": "Finishing needs a connection. The receipts are stored safely on this device."
+    },
+    "capture.problem.pages_not_uploaded": {
+      "note": "The server refuses a session holding a receipt with no stored original (ADR-031 §5). From a client with a queue that always means the pages have not landed yet, which is a different sentence from a generic refusal and by far the common one.",
+      "nl": "Nog niet alle bonnen zijn geüpload. Wacht tot de wachtrij leeg is en probeer het opnieuw.",
+      "en": "Not every receipt has uploaded yet. Wait until the queue is empty and try again."
+    },
+    "capture.problem.refused": {
+      "note": "{detail} is the sentence the API already translated into the reader's language (FR-UX-007) — the one place a screen shows text that did not come from this catalogue.",
+      "nl": "Dat is niet gelukt: {detail}",
+      "en": "That did not work: {detail}"
+    },
+    "capture.quality.title": {
+      "note": "FR-EXP-001's glare and blur warning. A question, not a verdict — the checks are heuristics and they warn rather than refuse.",
+      "nl": "Deze foto is misschien niet goed genoeg",
+      "en": "This photograph may not be good enough"
+    },
+    "capture.quality.blurred": {
+      "nl": "De foto lijkt onscherp.",
+      "en": "The photograph looks blurred."
+    },
+    "capture.quality.glare": {
+      "note": "Blown-out areas have lost their information entirely — no later processing recovers text from them.",
+      "nl": "Er valt licht op de bon; een deel is overbelicht.",
+      "en": "There is glare on the receipt; part of it is washed out."
+    },
+    "capture.quality.retake": {
+      "note": "FR-EXP-001's 'retake prompt'. First and default, because a retake is one tap while the receipt is still in the person's hand.",
+      "nl": "Opnieuw maken",
+      "en": "Take it again"
+    },
+    "capture.quality.use_anyway": {
+      "note": "Always offered. A blurred photograph of a receipt is worth more than no photograph of it, and FR-EXP-001c is explicit that the product never blocks.",
+      "nl": "Toch gebruiken",
+      "en": "Use it anyway"
+    },
+    "capture.review.title": {
+      "note": "FR-EXP-001a's 'review list before posting'.",
+      "nl": "Bonnen in deze reeks",
+      "en": "Receipts in this batch"
+    },
+    "capture.review.list_label": {
+      "nl": "Vastgelegde bonnen",
+      "en": "Captured receipts"
+    },
+    "capture.review.receipt": {
+      "note": "One row. {position} is its place in the sitting, which is the order the pile of paper is in.",
+      "nl": "Bon {position}",
+      "en": "Receipt {position}"
+    },
+    "capture.review.pages": {
+      "note": "Stored ORIGINALS, not sheets: a four-page PDF is one (ADR-031). Worth showing, because it is what tells somebody a three-page invoice was captured as one receipt rather than three.",
+      "nl": { "one": "{count} pagina", "other": "{count} pagina's" },
+      "en": { "one": "{count} page", "other": "{count} pages" }
+    },
+    "capture.review.duplicate": {
+      "note": "A byte-identical capture earlier in the same sitting — the same receipt photographed twice, which a batch makes common. Flags rather than refuses: two identical receipts can be legitimate.",
+      "nl": "Deze foto is identiek aan een eerdere bon in deze reeks.",
+      "en": "This photograph is identical to an earlier receipt in this batch."
+    },
+    "capture.form.title": {
+      "nl": "Uitgave aanvullen",
+      "en": "Complete this expense"
+    },
+    "capture.form.date": {
+      "nl": "Datum",
+      "en": "Date"
+    },
+    "capture.form.supplier": {
+      "nl": "Leverancier",
+      "en": "Supplier"
+    },
+    "capture.form.gross_amount": {
+      "note": "FR-EXP-001b asks for the GROSS amount — the figure printed on the receipt — because that is the one a person can read off without doing arithmetic. VAT and net are derived.",
+      "nl": "Bedrag inclusief BTW",
+      "en": "Amount including BTW"
+    },
+    "capture.form.vat_treatment": {
+      "note": "FR-EXP-001b calls this 'VAT rate'. The form shows a rate; what is stored is the treatment, because a rate is a fact about a treatment on a date (CMP-014). Identical because BTW is a statutory term that keeps its Dutch form in the English UI (FR-LOC-001c).",
+      "identical": true,
+      "nl": "BTW",
+      "en": "BTW"
+    },
+    "capture.form.category": {
+      "nl": "Categorie",
+      "en": "Category"
+    },
+    "capture.form.payment_method": {
+      "note": "FR-EXP-001e. Captured at entry because it decides the posting and cannot be inferred later.",
+      "nl": "Betaald met",
+      "en": "Paid with"
+    },
+    "capture.form.derived": {
+      "note": "The computed figures, shown and never typed. Accepting them would let a client assert a number the database is about to disagree with.",
+      "nl": "BTW {vat} · exclusief BTW {net} · tarief {rate}",
+      "en": "BTW {vat} · excluding BTW {net} · rate {rate}"
+    },
+    "capture.form.suggested_category": {
+      "note": "FR-EXP-001b's 'defaulting from the user's history'. Offered, not applied — a default that overwrote a choice would be a correction.",
+      "nl": "Vorige keer koos je {category}",
+      "en": "Last time you chose {category}"
+    },
+    "capture.form.use_suggestion": {
+      "nl": "Gebruiken",
+      "en": "Use it"
+    },
+    "capture.form.save": {
+      "nl": "Opslaan",
+      "en": "Save"
+    },
+    "capture.form.saving": {
+      "nl": "Bezig met opslaan…",
+      "en": "Saving…"
+    },
+    "capture.form.saved": {
+      "nl": "Opgeslagen",
+      "en": "Saved"
+    },
+    "capture.form.mark_ready": {
+      "note": "Releases the claim to FR-EXP-002's approval. Not 'submit', which would suggest the money is moving.",
+      "nl": "Indienen",
+      "en": "Submit"
+    },
+    "capture.form.still_needed": {
+      "note": "FR-EXP-001b: what is still outstanding, all at once, rather than discovered one field at a time. FR-EXP-001c means a partly-filled form is the normal state, so this is information rather than an error.",
+      "nl": "Nog nodig om in te dienen: {fields}",
+      "en": "Still needed before submitting: {fields}"
+    },
+    "capture.form.field.expense_date": { "nl": "datum", "en": "date" },
+    "capture.form.field.supplier": { "nl": "leverancier", "en": "supplier" },
+    "capture.form.field.gross_amount": { "nl": "bedrag", "en": "amount" },
+    "capture.form.field.vat_treatment": {
+      "note": "Identical because BTW is a statutory term that keeps its Dutch form in the English UI (FR-LOC-001c). See glossary.json.",
+      "identical": true,
+      "nl": "BTW",
+      "en": "BTW"
+    },
+    "capture.form.field.vat_rate": {
+      "identical": true,
+      "nl": "BTW-tarief",
+      "en": "BTW-tarief"
+    },
+    "capture.form.field.vat_amount": {
+      "identical": true,
+      "nl": "BTW-bedrag",
+      "en": "BTW-bedrag"
+    },
+    "capture.form.field.category": { "nl": "categorie", "en": "category" },
+    "capture.form.field.payment_method": { "nl": "betaalmethode", "en": "payment method" },
+    "capture.vat.btw_21": { "identical": true, "nl": "BTW 21%", "en": "BTW 21%" },
+    "capture.vat.btw_9": { "identical": true, "nl": "BTW 9%", "en": "BTW 9%" },
+    "capture.vat.btw_0": { "identical": true, "nl": "BTW 0%", "en": "BTW 0%" },
+    "capture.vat.btw_vrijgesteld": {
+      "note": "Vrijgesteld — exempt from BTW. Kept Dutch in both, like BTW itself: it names a specific statutory position on a Dutch return, and 'exempt' invites an English reader to reason with their own country's rules (FR-LOC-001c).",
+      "identical": true,
+      "nl": "Vrijgesteld van BTW",
+      "en": "Vrijgesteld van BTW"
+    },
+    "capture.vat.btw_verlegd": {
+      "note": "Verlegd — the reverse charge. Kept Dutch for the same reason; it is what the invoice itself says.",
+      "identical": true,
+      "nl": "BTW verlegd",
+      "en": "BTW verlegd"
+    },
+    "capture.vat.btw_icp": {
+      "note": "Intra-community supply, filed under the Dutch acronym ICP. See glossary.json.",
+      "identical": true,
+      "nl": "ICP — intracommunautair",
+      "en": "ICP — intracommunautair"
+    },
+    "capture.vat.btw_export": {
+      "identical": true,
+      "nl": "Export buiten de EU",
+      "en": "Export buiten de EU"
+    },
+    "capture.payment.business_account": {
+      "nl": "Zakelijke rekening",
+      "en": "Business account"
+    },
+    "capture.payment.business_card": {
+      "nl": "Zakelijke pas",
+      "en": "Business card"
+    },
+    "capture.payment.personal_reimbursable": {
+      "note": "FR-EXP-001e's reimbursable case — the one that means the business owes this person money, which FR-EXP-003's run pays. Worth naming as such rather than as 'personal', so the consequence is visible at the moment of choosing.",
+      "nl": "Zelf voorgeschoten — terug te betalen",
+      "en": "Paid personally — to be reimbursed"
+    },
+    "capture.duplicate.title": {
+      "note": "FR-EXP-001g. Warns and never blocks: two identical receipts can be legitimate, so a client must not gate its submit button on this being empty.",
+      "nl": "Lijkt op een bestaande uitgave",
+      "en": "Looks like an existing expense"
+    },
+    "capture.duplicate.entry": {
+      "note": "Identical because it is entirely placeholders — a supplier's name, a date and an amount, each already rendered in the administration's locale (FR-LOC-002). There is no prose here to translate.",
+      "identical": true,
+      "nl": "{supplier} · {date} · {amount}",
+      "en": "{supplier} · {date} · {amount}"
+    },
+    "capture.duplicate.same_submitter": {
+      "note": "Their own double entry is a mistake to fix.",
+      "nl": "Deze heb je zelf al ingediend.",
+      "en": "You submitted this one yourself."
+    },
+    "capture.duplicate.other_submitter": {
+      "note": "A colleague's is a conversation to have, and WHO stays out of it — a duplicate check is a poor place to learn what one's colleagues spend.",
+      "nl": "Iemand anders heeft een vrijwel gelijke uitgave ingediend.",
+      "en": "Someone else submitted an almost identical expense."
+    },
+    "capture.queue.title": {
+      "note": "Heading of the offline capture queue panel (FR-EXP-001f, MOB-003).",
+      "nl": "Bonnen in de wachtrij",
+      "en": "Receipts waiting to upload"
+    },
+    "capture.queue.list_label": {
+      "note": "Accessible name of the list of queued captures.",
+      "nl": "Bonnen die nog geüpload moeten worden",
+      "en": "Receipts still to be uploaded"
+    },
+    "capture.queue.empty": {
+      "note": "Nothing is waiting. Says the positive thing rather than showing an empty box, which is indistinguishable from a panel that failed to load.",
+      "nl": "Alle bonnen zijn geüpload.",
+      "en": "Every receipt has been uploaded."
+    },
+    "capture.queue.offline": {
+      "note": "MOB-003's visible queue state while there is no connection. Says what will happen without asking the person to do anything, because there is nothing they can do.",
+      "nl": "Geen verbinding. Bonnen worden vanzelf geüpload zodra er weer verbinding is.",
+      "en": "No connection. Receipts upload on their own as soon as there is one again."
+    },
+    "capture.queue.waiting": {
+      "note": "How many captures are queued.",
+      "nl": {
+        "one": "{count} bon wacht op uploaden",
+        "other": "{count} bonnen wachten op uploaden"
+      },
+      "en": {
+        "one": "{count} receipt waiting to upload",
+        "other": "{count} receipts waiting to upload"
+      }
+    },
+    "capture.queue.uploading_now": {
+      "note": "How many captures are in flight.",
+      "nl": { "one": "{count} bon wordt geüpload", "other": "{count} bonnen worden geüpload" },
+      "en": { "one": "Uploading {count} receipt", "other": "Uploading {count} receipts" }
+    },
+    "capture.queue.blocked_count": {
+      "note": "How many captures the server refused in a way retrying cannot fix.",
+      "nl": {
+        "one": "{count} bon heeft aandacht nodig",
+        "other": "{count} bonnen hebben aandacht nodig"
+      },
+      "en": { "one": "{count} receipt needs attention", "other": "{count} receipts need attention" }
+    },
+    "capture.queue.delivered_count": {
+      "note": "Progress during a drain, so a queue that is emptying visibly is emptying.",
+      "nl": { "one": "{count} bon geüpload", "other": "{count} bonnen geüpload" },
+      "en": { "one": "{count} receipt uploaded", "other": "{count} receipts uploaded" }
+    },
+    "capture.queue.storage": {
+      "note": "MOB-009's size cap, shown so a queue approaching it is not a surprise. MB is a unit symbol and is written the same in both languages.",
+      "nl": "{used} van {total} MB gebruikt",
+      "en": "{used} of {total} MB used"
+    },
+    "capture.queue.item_label": {
+      "note": "Accessible name of one queued capture. A queued receipt has not been read yet — there is no supplier and no amount — so its position in the queue and the day it was photographed are the only things that distinguish it. Position is what carries the distinction when several were photographed on one day.",
+      "nl": "Bon {position}, vastgelegd op {captured}",
+      "en": "Receipt {position}, captured on {captured}"
+    },
+    "capture.queue.state.queued": {
+      "nl": "In de wachtrij",
+      "en": "Waiting"
+    },
+    "capture.queue.state.uploading": {
+      "nl": "Bezig met uploaden",
+      "en": "Uploading"
+    },
+    "capture.queue.state.blocked": {
+      "note": "Not 'failed'. The capture is still on the device and the next line says what to do about it.",
+      "nl": "Vraagt om aandacht",
+      "en": "Needs attention"
+    },
+    "capture.queue.attempts": {
+      "note": "Shown once a capture has failed at least once, so a queue that is stuck looks stuck rather than idle.",
+      "nl": { "one": "{count} poging", "other": "{count} pogingen" },
+      "en": { "one": "{count} attempt", "other": "{count} attempts" }
+    },
+    "capture.queue.retry": {
+      "nl": "Opnieuw proberen",
+      "en": "Try again"
+    },
+    "capture.queue.retry_label": {
+      "note": "Accessible name of the retry button, which needs to name WHICH receipt — a list of identical 'Try again' buttons is unusable with a screen reader.",
+      "nl": "Bon {position} opnieuw proberen",
+      "en": "Try receipt {position} again"
+    },
+    "capture.queue.discard": {
+      "nl": "Weggooien",
+      "en": "Discard"
+    },
+    "capture.queue.discard_label": {
+      "note": "Accessible name of the discard button. Names the receipt, and says the photograph goes with it — on a phone with no connectivity this queue holds the only copy.",
+      "nl": "Bon {position} weggooien; de foto wordt van dit apparaat verwijderd",
+      "en": "Discard receipt {position}; the photograph is removed from this device"
+    },
+    "capture.queue.reason.unsupported_type": {
+      "note": "FR-EXP-001 accepts JPEG, PNG, HEIC and PDF; the archive verifies it from the bytes (SEC-005). Names the formats, because 'unsupported' alone leaves the person with no next step.",
+      "nl": "Dit bestandstype wordt niet geaccepteerd. Gebruik JPEG, PNG, HEIC of PDF.",
+      "en": "This file type is not accepted. Use JPEG, PNG, HEIC or PDF."
+    },
+    "capture.queue.reason.infected": {
+      "note": "SEC-005's malware scan rejected the file.",
+      "nl": "Dit bestand is geweigerd door de virusscan.",
+      "en": "This file was rejected by the malware scan."
+    },
+    "capture.queue.reason.too_large_for_server": {
+      "nl": "Dit bestand is te groot om te bewaren. Maak een nieuwe foto of gebruik een kleiner bestand.",
+      "en": "This file is too large to store. Take a new photograph or use a smaller file."
+    },
+    "capture.queue.reason.session_closed": {
+      "note": "FR-EXP-001a: the review list was accepted, so nothing further can join that sitting. The receipt is still on the device and belongs in a new one.",
+      "nl": "Deze reeks is al afgerond. Leg de bon vast in een nieuwe reeks.",
+      "en": "This batch has already been completed. Capture the receipt in a new batch."
+    },
+    "capture.queue.reason.not_permitted": {
+      "note": "IAM-030: authorization is evaluated against current state, so a grant may have gone since the photograph was taken.",
+      "nl": "Je mag geen bonnen meer indienen voor deze klant.",
+      "en": "You are no longer allowed to submit receipts for this client."
+    },
+    "capture.queue.reason.not_found": {
+      "nl": "De reeks waar deze bon bij hoort bestaat niet meer.",
+      "en": "The batch this receipt belongs to no longer exists."
+    },
+    "capture.queue.reason.first_page_blocked": {
+      "note": "Not a refusal of this page. The first page of its receipt was refused, so there is no receipt for this one to join — and sending it alone would open a second receipt for half an invoice (ADR-031 §3).",
+      "nl": "De eerste pagina van deze bon is geweigerd, dus deze pagina kan er niet bij.",
+      "en": "The first page of this receipt was refused, so this page cannot join it."
+    },
+    "capture.queue.reason.rejected": {
+      "note": "The catch-all. Says plainly that the queue does not know, rather than inventing a cause — and keeps the file, so nothing is lost while somebody finds out.",
+      "nl": "Deze bon is geweigerd. De foto staat nog op dit apparaat.",
+      "en": "This receipt was refused. The photograph is still on this device."
+    },
+    "capture.queue.full": {
+      "note": "MOB-009's cap reached. The advice is the action that actually frees space — the queue never evicts a queued receipt to make room, because that would destroy the only copy of a photograph.",
+      "nl": "De wachtrij is vol. Ga online zodat de wachtende bonnen geüpload worden, of gooi er een weg.",
+      "en": "The queue is full. Get online so the waiting receipts upload, or discard one."
+    },
+    "capture.queue.too_large": {
+      "note": "Distinct from 'full': clearing the queue would not help, because this one file is larger than the whole budget.",
+      "nl": "Dit bestand is groter dan de hele wachtrij. Maak een nieuwe foto of upload het als er verbinding is.",
+      "en": "This file is larger than the whole queue. Take a new photograph, or upload it while there is a connection."
+    },
+    "capture.queue.purge_warning": {
+      "note": "MOB-009 purges the queue on logout, role change and remote wipe, which destroys captures that never uploaded. Shown BEFORE the person signs out — the requirement is not negotiable, so the least this can do is not be a surprise.",
+      "nl": {
+        "one": "{count} bon is nog niet geüpload en gaat verloren als je uitlogt.",
+        "other": "{count} bonnen zijn nog niet geüpload en gaan verloren als je uitlogt."
+      },
+      "en": {
+        "one": "{count} receipt has not uploaded yet and will be lost when you sign out.",
+        "other": "{count} receipts have not uploaded yet and will be lost when you sign out."
+      }
+    }
+  }
+}

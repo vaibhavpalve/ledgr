@@ -1,0 +1,279 @@
+{
+  "namespace": "mobile",
+  "messages": {
+    "mobile.shell.nav_label": {
+      "note": "Accessible name of the bottom tab bar - the mobile shell's four-section navigation (§5.2, §7.4, MOB-002/004/005).",
+      "nl": "Mobiele navigatie",
+      "en": "Mobile navigation"
+    },
+    "mobile.shell.tab.capture": {
+      "nl": "Vastleggen",
+      "en": "Capture"
+    },
+    "mobile.shell.tab.approve": {
+      "nl": "Beoordelen",
+      "en": "Approve"
+    },
+    "mobile.shell.tab.view": {
+      "nl": "Overzicht",
+      "en": "View"
+    },
+    "mobile.shell.tab.send_invoice": {
+      "nl": "Factuur versturen",
+      "en": "Send invoice"
+    },
+    "mobile.common.loading": {
+      "nl": "Bezig met laden…",
+      "en": "Loading…"
+    },
+    "mobile.common.error": {
+      "note": "Generic fallback when a list could not be loaded at all - a network failure, not a per-field refusal.",
+      "nl": "Kon niet worden geladen.",
+      "en": "Could not be loaded."
+    },
+    "mobile.approve.title": {
+      "note": "MOB-004's Approve tab: draft expenses captured but not yet reviewed/completed.",
+      "nl": "Concept declaraties",
+      "en": "Draft expenses"
+    },
+    "mobile.approve.list_label": {
+      "nl": "Lijst met conceptdeclaraties",
+      "en": "List of draft expenses"
+    },
+    "mobile.approve.empty": {
+      "nl": "Geen conceptdeclaraties om te beoordelen.",
+      "en": "No draft expenses to review."
+    },
+    "mobile.approve.untitled": {
+      "note": "Placeholder for a barely-started capture with no supplier filled in yet.",
+      "nl": "Naamloze declaratie",
+      "en": "Untitled expense"
+    },
+    "mobile.approve.back": {
+      "nl": "Terug naar lijst",
+      "en": "Back to list"
+    },
+    "mobile.view.title": {
+      "nl": "Overzicht",
+      "en": "View"
+    },
+    "mobile.view.expenses_heading": {
+      "nl": "Declaraties",
+      "en": "Expenses"
+    },
+    "mobile.view.invoices_heading": {
+      "nl": "Verkoopfacturen",
+      "en": "Sales invoices"
+    },
+    "mobile.view.empty_expenses": {
+      "nl": "Geen declaraties.",
+      "en": "No expenses."
+    },
+    "mobile.view.empty_invoices": {
+      "nl": "Geen verkoopfacturen.",
+      "en": "No sales invoices."
+    },
+    "mobile.view.back": {
+      "nl": "Terug",
+      "en": "Back"
+    },
+    "mobile.view.document_heading": {
+      "note": "MOB-004's 'the document viewable at full resolution'. Identical: 'document' is the same word in Dutch and English.",
+      "identical": true,
+      "nl": "Document",
+      "en": "Document"
+    },
+    "mobile.view.document_loading": {
+      "nl": "Document laden…",
+      "en": "Loading document…"
+    },
+    "mobile.view.document_none": {
+      "nl": "Geen document beschikbaar.",
+      "en": "No document available."
+    },
+    "mobile.view.expense_status.draft": {
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "mobile.view.expense_status.ready": {
+      "nl": "Gereed",
+      "en": "Ready"
+    },
+    "mobile.view.expense_status.posted": {
+      "nl": "Geboekt",
+      "en": "Posted"
+    },
+    "mobile.view.invoice_status.draft": {
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "mobile.view.invoice_status.issued": {
+      "nl": "Verstuurd",
+      "en": "Issued"
+    },
+    "mobile.invoice.title": {
+      "note": "MOB-005: create and send a sales invoice from the phone.",
+      "nl": "Nieuwe verkoopfactuur",
+      "en": "New sales invoice"
+    },
+    "mobile.invoice.customer_heading": {
+      "nl": "Klant",
+      "en": "Customer"
+    },
+    "mobile.invoice.customer_name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "mobile.invoice.customer_address": {
+      "nl": "Adres",
+      "en": "Address"
+    },
+    "mobile.invoice.customer_country": {
+      "nl": "Land",
+      "en": "Country"
+    },
+    "mobile.invoice.customer_vat_number": {
+      "note": "Identical BTW term kept in English per FR-LOC-001c - see glossary.json.",
+      "nl": "BTW-nummer",
+      "en": "BTW number"
+    },
+    "mobile.invoice.invoice_date": {
+      "nl": "Factuurdatum",
+      "en": "Invoice date"
+    },
+    "mobile.invoice.lines_heading": {
+      "nl": "Regels",
+      "en": "Lines"
+    },
+    "mobile.invoice.line_description": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "mobile.invoice.line_quantity": {
+      "nl": "Aantal",
+      "en": "Quantity"
+    },
+    "mobile.invoice.line_unit_price": {
+      "nl": "Prijs per stuk",
+      "en": "Unit price"
+    },
+    "mobile.invoice.line_discount": {
+      "nl": "Korting (%)",
+      "en": "Discount (%)"
+    },
+    "mobile.invoice.line_vat_treatment": {
+      "note": "Identical because BTW is a statutory term that keeps its Dutch form in the English UI (FR-LOC-001c). See glossary.json.",
+      "identical": true,
+      "nl": "BTW",
+      "en": "BTW"
+    },
+    "mobile.invoice.add_line": {
+      "nl": "Regel toevoegen",
+      "en": "Add line"
+    },
+    "mobile.invoice.remove_line": {
+      "nl": "Regel verwijderen",
+      "en": "Remove line"
+    },
+    "mobile.invoice.submit": {
+      "nl": "Versturen",
+      "en": "Send"
+    },
+    "mobile.invoice.sending": {
+      "nl": "Bezig met versturen…",
+      "en": "Sending…"
+    },
+    "mobile.invoice.sent": {
+      "nl": "Factuur verstuurd.",
+      "en": "Invoice sent."
+    },
+    "mobile.invoice.back_to_view": {
+      "nl": "Naar overzicht",
+      "en": "Go to overview"
+    },
+    "mobile.invoice.other_problems": {
+      "note": "Fallback heading for a statutory failure this form has no specific control for - mirrors TemplateDesigner's 'other problems' section.",
+      "nl": "Overige problemen",
+      "en": "Other problems"
+    },
+    "mobile.invoice.customer_problem_heading": {
+      "note": "Where a create-step refusal (missing/conflicting customer details) is shown - at the customer section, not a generic top-of-form banner.",
+      "nl": "Probleem met klantgegevens",
+      "en": "Problem with customer details"
+    },
+    "mobile.shell.tab.home": {
+      "note": "FR-UX-005/MOB-006: the fifth tab and new default landing screen - a prioritised summary, not a sixth task.",
+      "nl": "Start",
+      "en": "Home"
+    },
+    "mobile.home.title": {
+      "nl": "Overzicht",
+      "en": "Home"
+    },
+    "mobile.home.cash_position_label": {
+      "nl": "Liquide middelen",
+      "en": "Cash position"
+    },
+    "mobile.home.cash_position_caption": {
+      "note": "MOB-006's honesty requirement: this is the GL balance of cash/bank accounts (RGS 'Liquide middelen'), built from what has been POSTED - not a live bank feed (FR-BNK is not built). Said explicitly so nobody reads it as real-time bank data.",
+      "nl": "Gebaseerd op wat in de boekhouding is geboekt - geen live banksaldo.",
+      "en": "Based on what has been posted to the books - not a live bank balance."
+    },
+    "mobile.home.receivables_label": {
+      "nl": "Te ontvangen van klanten",
+      "en": "Receivables"
+    },
+    "mobile.home.receivables_caption": {
+      "nl": "Openstaand saldo debiteuren, ongeacht vervaldatum.",
+      "en": "Outstanding customer balance, regardless of due date."
+    },
+    "mobile.home.vat_estimate_label": {
+      "note": "Identical BTW term kept in English per FR-LOC-001c - see glossary.json's 'btw' entry ('not VAT').",
+      "nl": "BTW-schatting",
+      "en": "BTW estimate"
+    },
+    "mobile.home.vat_estimate_caption": {
+      "note": "MOB-006's honesty requirement: FR-VAT-001's full return engine (rubrieken mapping, pre-filing validation) is not built. This is output VAT on issued invoices minus input VAT on posted expenses - a rough estimate, not a filing-ready figure, and it excludes anything not yet posted.",
+      "nl": "Ruwe schatting op basis van geboekte facturen en uitgaven - geen aangifteklaar cijfer.",
+      "en": "A rough estimate from posted invoices and expenses - not a filing-ready figure."
+    },
+    "mobile.home.vat_estimate_period": {
+      "note": "The date range the VAT estimate covers, e.g. '1 Jan – today'. {start} and {end} are already formatted dates.",
+      "nl": "{start} t/m {end}",
+      "en": "{start} to {end}"
+    },
+    "mobile.home.items_heading": {
+      "nl": "Vraagt uw aandacht",
+      "en": "Needs your attention"
+    },
+    "mobile.home.items_empty": {
+      "note": "FR-UX-004: an empty state teaches rather than just showing nothing. Said positively - nothing is overdue or incomplete right now.",
+      "nl": "Niets vraagt op dit moment uw aandacht. Openstaande facturen en onvolledige declaraties verschijnen hier.",
+      "en": "Nothing needs your attention right now. Overdue invoices and incomplete expenses will show up here."
+    },
+    "mobile.home.item.overdue_invoice": {
+      "note": "FR-UX-005's D5-specific description for the most urgent item kind. {reference} and {customer} are the invoice's own fields; {count} is days overdue and drives the nl/en plural.",
+      "nl": {
+        "one": "Factuur {reference} aan {customer}, {count} dag te laat",
+        "other": "Factuur {reference} aan {customer}, {count} dagen te laat"
+      },
+      "en": {
+        "one": "Invoice {reference} to {customer}, {count} day overdue",
+        "other": "Invoice {reference} to {customer}, {count} days overdue"
+      }
+    },
+    "mobile.home.item.draft_expense": {
+      "nl": "Bon van {supplier} mist nog gegevens",
+      "en": "Receipt from {supplier} is missing details"
+    },
+    "mobile.home.item.draft_expense_untitled": {
+      "note": "Same as mobile.home.item.draft_expense, for a capture with no supplier filled in yet - mirrors mobile.approve.untitled's wording.",
+      "nl": "Naamloze bon mist nog gegevens",
+      "en": "An untitled receipt is missing details"
+    },
+    "mobile.home.item.draft_invoice": {
+      "nl": "Conceptfactuur aan {customer} is nog niet verstuurd",
+      "en": "Draft invoice to {customer} has not been sent yet"
+    }
+  }
+}

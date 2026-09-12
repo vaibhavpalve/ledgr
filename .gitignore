@@ -1,0 +1,27 @@
+# Env
+.env
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+# Hypothesis's example database: failing cases it found, cached to replay
+# first on the next run. Machine-local and regenerated; the reproducibility
+# that matters across machines comes from derandomize=True in
+# tests/ledger/test_properties.py.
+.hypothesis/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

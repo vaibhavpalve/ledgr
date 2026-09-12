@@ -1,0 +1,198 @@
+{
+  "note": [
+    "FR-LOC-002: 'Formatting follows the administration's locale, not the user's UI language, so",
+    "amounts read identically to every user.' Every user includes a user reading a PDF the API",
+    "rendered, so there are TWO implementations of this formatting - packages/i18n/src/format.ts",
+    "and apps/api/src/api/i18n/formatting.py - and 'identically' is a claim about both.",
+    "",
+    "This table is what makes the claim checkable. packages/i18n/src/format.test.ts and",
+    "apps/api/tests/i18n/test_formatting.py each run every case here against their own",
+    "implementation, so a divergence is a failure in both suites rather than a difference nobody",
+    "notices until a Dutch invoice shows 1,234.56. The same device migration 0029 uses for the",
+    "fiscal period derivation, which also exists twice (SQL and Python) and is compared against a",
+    "shared table rather than trusted.",
+    "",
+    "The space after the currency symbol is U+00A0, a NON-BREAKING space, which is what CLDR",
+    "nl-NL specifies and what stops '€' and '1.234,56' landing on two lines of an invoice. It is",
+    "a literal character in this file and therefore invisible in a diff, so neither implementation",
+    "types it: both take it from a named field on the locale spec, and the cases here are what",
+    "would catch one of them reverting to U+0020."
+  ],
+
+  "money": [
+    { "locale": "nl-NL", "amount": "0.00", "expected": "€ 0,00" },
+    { "locale": "nl-NL", "amount": "0.01", "expected": "€ 0,01" },
+    { "locale": "nl-NL", "amount": "999.99", "expected": "€ 999,99" },
+    {
+      "note": "The first grouping boundary. Off-by-one grouping bugs live here.",
+      "locale": "nl-NL",
+      "amount": "1000.00",
+      "expected": "€ 1.000,00"
+    },
+    { "locale": "nl-NL", "amount": "1234.56", "expected": "€ 1.234,56" },
+    { "locale": "nl-NL", "amount": "1000000.00", "expected": "€ 1.000.000,00" },
+    {
+      "note": "CLDR nl-NL's currency pattern is '¤ #,##0.00;¤ -#,##0.00' - the sign sits after the symbol, not before it. Getting this backwards produces '-€ 1.234,56', which reads as English.",
+      "locale": "nl-NL",
+      "amount": "-1234.56",
+      "expected": "€ -1.234,56"
+    },
+    { "locale": "nl-NL", "amount": "-0.01", "expected": "€ -0,01" },
+    {
+      "note": "A scale-1 input is padded, not rejected: '10.5' is an exact decimal that happens to have been written short. It is losing digits that is forbidden, not having fewer.",
+      "locale": "nl-NL",
+      "amount": "10.5",
+      "expected": "€ 10,50"
+    },
+    { "locale": "nl-NL", "amount": "7", "expected": "€ 7,00" },
+    {
+      "note": "numeric(19,2)'s ceiling: 17 integer digits. Formatting must not route through a float on the way - 2^53 is exhausted around 9.0e15, four digits below this.",
+      "locale": "nl-NL",
+      "amount": "12345678901234567.89",
+      "expected": "€ 12.345.678.901.234.567,89"
+    },
+    {
+      "note": "The float trap made explicit: 4335.09 + 2964.61 is 7299.700000000001 in binary floating point (api.ledger.model's docstring names this exact sum). The formatter is handed the decimal sum and must print it.",
+      "locale": "nl-NL",
+      "amount": "7299.70",
+      "expected": "€ 7.299,70"
+    },
+    {
+      "note": "Negative zero is not a thing a ledger produces, and an implementation that formats the sign from a numeric comparison could still emit it.",
+      "locale": "nl-NL",
+      "amount": "-0.00",
+      "expected": "€ 0,00"
+    }
+  ],
+
+  "number": [
+    { "locale": "nl-NL", "value": "1234.5", "scale": 2, "expected": "1.234,50" },
+    { "locale": "nl-NL", "value": "1234", "scale": 0, "expected": "1.234" },
+    { "locale": "nl-NL", "value": "999", "scale": 0, "expected": "999" },
+    { "locale": "nl-NL", "value": "0.5", "scale": 1, "expected": "0,5" },
+    {
+      "note": "A bare number takes the sign directly before its digits - unlike the currency pattern above, where the symbol comes first.",
+      "locale": "nl-NL",
+      "value": "-1234.5",
+      "scale": 2,
+      "expected": "-1.234,50"
+    },
+    {
+      "note": "A BTW rate. Scale 0, so no decimal separator at all: '21%' not '21,00%'.",
+      "locale": "nl-NL",
+      "value": "21",
+      "scale": 0,
+      "expected": "21"
+    },
+    { "locale": "nl-NL", "value": "0", "scale": 2, "expected": "0,00" },
+    {
+      "note": "Four-digit years and quantities are grouped in nl-NL. That is correct for a quantity and wrong for a year, which is why a year is a DATE and never goes through this function.",
+      "locale": "nl-NL",
+      "value": "2026",
+      "scale": 0,
+      "expected": "2.026"
+    }
+  ],
+
+  "date": [
+    { "locale": "nl-NL", "date": "2026-09-02", "style": "short", "expected": "02-09-2026" },
+    { "locale": "nl-NL", "date": "2026-09-02", "style": "long", "expected": "2 september 2026" },
+    {
+      "note": "The machine-readable style. Locale-independent by construction - the same argument ledger.money_text (migration 0023) makes for using '.' rather than the locale's decimal separator in a report a consumer parses.",
+      "locale": "nl-NL",
+      "date": "2026-09-02",
+      "style": "iso",
+      "expected": "2026-09-02"
+    },
+    {
+      "note": "Long style drops the leading zero on the day; short style keeps it, because a fixed-width date is what makes a column of them scannable.",
+      "locale": "nl-NL",
+      "date": "2026-01-01",
+      "style": "long",
+      "expected": "1 januari 2026"
+    },
+    { "locale": "nl-NL", "date": "2026-01-01", "style": "short", "expected": "01-01-2026" },
+    { "locale": "nl-NL", "date": "2026-12-31", "style": "short", "expected": "31-12-2026" },
+    { "locale": "nl-NL", "date": "2026-12-31", "style": "long", "expected": "31 december 2026" },
+    {
+      "note": "Dutch month names are lower case mid-sentence and standalone. Capitalising them is an English habit.",
+      "locale": "nl-NL",
+      "date": "2026-03-15",
+      "style": "long",
+      "expected": "15 maart 2026"
+    },
+    { "locale": "nl-NL", "date": "2026-05-04", "style": "long", "expected": "4 mei 2026" },
+    { "locale": "nl-NL", "date": "2024-02-29", "style": "short", "expected": "29-02-2024" }
+  ],
+
+  "plural": [
+    { "language": "nl", "count": 0, "expected": "other" },
+    { "language": "nl", "count": 1, "expected": "one" },
+    { "language": "nl", "count": 2, "expected": "other" },
+    { "language": "nl", "count": 21, "expected": "other" },
+    { "language": "en", "count": 0, "expected": "other" },
+    { "language": "en", "count": 1, "expected": "one" },
+    { "language": "en", "count": 2, "expected": "other" }
+  ],
+
+  "rejected": {
+    "note": [
+      "Inputs both implementations must REFUSE rather than render. Every one of them is a way a",
+      "wrong number reaches a screen looking right, so a formatter that silently coped would be",
+      "hiding the bug rather than the bug being visible (CLAUDE.md rule four)."
+    ],
+    "money": [
+      {
+        "value": "1234.567",
+        "why": "more precision than a posted amount has. Rounding it here would print a number that is not the number in the ledger."
+      },
+      {
+        "value": "1,234.56",
+        "why": "already formatted, in some other locale. Reformatting it would parse the comma as a decimal point or drop it."
+      },
+      {
+        "value": "1.234,56",
+        "why": "already formatted, in this locale. Same trap, arriving from a round trip through the UI."
+      },
+      {
+        "value": "1e3",
+        "why": "exponent notation. Accepting it means accepting whatever produced it, which was floating point."
+      },
+      { "value": "1234.", "why": "not a decimal literal." },
+      {
+        "value": ".56",
+        "why": "not a decimal literal - and the leading zero is what keeps a small amount readable."
+      },
+      { "value": "", "why": "empty. A missing amount must render as absent, never as zero." },
+      { "value": "abc", "why": "not a number at all." },
+      {
+        "value": "  1234.56  ",
+        "why": "whitespace. Trimming silently would let a padded field through unnoticed."
+      },
+      {
+        "value": "+1234.56",
+        "why": "an explicit plus sign is not something this system produces; accepting it means accepting a foreign format."
+      }
+    ],
+    "date": [
+      {
+        "value": "2026-9-2",
+        "why": "not ISO 8601 - unpadded, so a string sort over these would be wrong."
+      },
+      {
+        "value": "02-09-2026",
+        "why": "already formatted for nl-NL. Re-parsing it as ISO would silently read year 2."
+      },
+      { "value": "2026-13-01", "why": "month 13." },
+      {
+        "value": "2026-02-30",
+        "why": "a day that does not exist in that month. Rolling it forward to 1 March is what a lenient parser does, and it is how a period boundary moves by a day."
+      },
+      {
+        "value": "2026-09-02T10:30:00Z",
+        "why": "a timestamp. A posting date is a date; carrying a time invites a timezone to change it."
+      },
+      { "value": "", "why": "empty." }
+    ]
+  }
+}

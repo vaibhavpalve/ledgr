@@ -1,0 +1,27 @@
+{
+  "namespace": "common",
+  "messages": {
+    "common.language.label": {
+      "note": "Label on the language control, in the user menu and on the pre-login screens.",
+      "nl": "Taal",
+      "en": "Language"
+    },
+    "common.language.choose": {
+      "note": "Accessible name of the language control (FR-LOC-001a, IAM-010g). Reachable before login, so it must make sense with no account context around it.",
+      "nl": "Kies een taal",
+      "en": "Choose a language"
+    },
+    "common.language.name.nl": {
+      "note": "The endonym. A language is named in its own language in a language picker, so that someone who cannot read the current UI language can still find their own.",
+      "identical": true,
+      "nl": "Nederlands",
+      "en": "Nederlands"
+    },
+    "common.language.name.en": {
+      "note": "The endonym — see common.language.name.nl.",
+      "identical": true,
+      "nl": "English",
+      "en": "English"
+    }
+  }
+}

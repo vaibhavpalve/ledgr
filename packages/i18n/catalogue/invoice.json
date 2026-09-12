@@ -1,0 +1,651 @@
+{
+  "namespace": "invoice",
+  "messages": {
+    "invoice.required.supplier_name": {
+      "note": "FR-AR-003 / D5. Every message in this block states WHAT is missing, WHY the law wants it, and WHERE to go and fix it — the three things D5 requires. The citation is part of the 'why': a person who does not believe the product will believe the statute.",
+      "nl": "De naam van je onderneming ontbreekt. Een factuur moet de volledige naam van de verkoper vermelden (art. 35a Wet OB). Vul de bedrijfsnaam in bij de gegevens van deze administratie.",
+      "en": "Your business name is missing. An invoice must show the seller's full name (art. 35a Wet OB). Add it in this administration's details."
+    },
+    "invoice.required.supplier_address": {
+      "note": "FR-AR-003 / D5. Names the three parts, because the gate checks all three and 'address' alone leaves somebody guessing which is absent.",
+      "nl": "Het adres van je onderneming ontbreekt. Een factuur moet het adres van de verkoper vermelden (art. 35a Wet OB). Vul straat, postcode en plaats in bij de gegevens van deze administratie.",
+      "en": "Your business address is missing. An invoice must show the seller's address (art. 35a Wet OB). Add the street, postcode and city in this administration's details."
+    },
+    "invoice.required.supplier_vat_number": {
+      "nl": "Het BTW-nummer van je onderneming ontbreekt. Dat is verplicht op elke factuur (art. 35a Wet OB). Vul het in bij de gegevens van deze administratie.",
+      "en": "Your business BTW number is missing. Every invoice must carry it (art. 35a Wet OB). Add it in this administration's details."
+    },
+    "invoice.required.supplier_kvk_number": {
+      "note": "Not art. 35a: the KvK number is required on Dutch commercial documents by the Handelsregisterwet. The 'why' cites the right statute rather than the convenient one.",
+      "nl": "Het KvK-nummer van je onderneming ontbreekt. Dat hoort op elk handelsdocument te staan (Handelsregisterwet). Vul het in bij de gegevens van deze administratie.",
+      "en": "Your KvK number is missing. Dutch commercial documents must carry it (Handelsregisterwet). Add it in this administration's details."
+    },
+    "invoice.required.customer_name": {
+      "nl": "De naam van de klant ontbreekt. Een factuur moet de afnemer volledig benoemen (art. 35a Wet OB). Vul de naam in bij de klantgegevens van deze factuur.",
+      "en": "The customer's name is missing. An invoice must name the recipient in full (art. 35a Wet OB). Add it to this invoice's customer details."
+    },
+    "invoice.required.customer_address": {
+      "nl": "Het adres van de klant ontbreekt. Een factuur moet het adres van de afnemer vermelden (art. 35a Wet OB). Vul het in bij de klantgegevens van deze factuur.",
+      "en": "The customer's address is missing. An invoice must show the recipient's address (art. 35a Wet OB). Add it to this invoice's customer details."
+    },
+    "invoice.required.customer_vat_number": {
+      "note": "FR-AR-003 / D5, and the one message here with TWO next actions — because there genuinely are two. Art. 226(11a): without the number the BTW cannot be reverse-charged, so either the number arrives or the treatment was the wrong choice. Offering only 'add the number' would dead-end somebody invoicing a private individual who has none.",
+      "nl": "Het BTW-nummer van de klant ontbreekt. Bij BTW verlegd en bij een intracommunautaire levering is dat verplicht: zonder dat nummer mag de BTW niet worden verlegd. Vul het nummer in bij de klantgegevens, of kies op die regels een andere BTW-behandeling.",
+      "en": "The customer's BTW number is missing. It is mandatory for BTW verlegd and for an intra-Community supply: without it the BTW cannot be reverse-charged. Add the number to the customer details, or choose a different BTW treatment on those lines."
+    },
+    "invoice.required.invoice_date": {
+      "nl": "De factuurdatum ontbreekt. Elke factuur moet gedateerd zijn (art. 35a Wet OB). Kies een datum bovenaan de factuur.",
+      "en": "The invoice date is missing. Every invoice must be dated (art. 35a Wet OB). Choose a date at the top of the invoice."
+    },
+    "invoice.required.lines": {
+      "note": "The 'why' here is not a citation but a consequence, and it is the more useful one: an invoice with no lines describes no supply, and issuing it would spend a number from a gapless series on a document that says nothing.",
+      "nl": "Deze factuur heeft geen regels en beschrijft dus geen levering. Voeg minstens één regel toe voordat je hem verstuurt.",
+      "en": "This invoice has no lines, so it describes no supply. Add at least one line before sending it."
+    },
+    "invoice.required.line_description": {
+      "note": "{line} is the line's position on the invoice. Every line-level message carries it, because 'a description is missing' against a twelve-line invoice is a dead end of exactly the kind D5 names.",
+      "nl": "Regel {line} heeft geen omschrijving. Een factuur moet vermelden wat er geleverd is (art. 35a Wet OB). Beschrijf de goederen of de dienst op die regel.",
+      "en": "Line {line} has no description. An invoice must state what was supplied (art. 35a Wet OB). Describe the goods or service on that line."
+    },
+    "invoice.required.line_quantity": {
+      "nl": "Regel {line} heeft geen aantal. Een factuur moet de omvang van de levering vermelden (art. 35a Wet OB). Vul een aantal in op die regel.",
+      "en": "Line {line} has no quantity. An invoice must state the extent of the supply (art. 35a Wet OB). Enter a quantity on that line."
+    },
+    "invoice.required.line_unit_price": {
+      "nl": "Regel {line} heeft geen stukprijs. Een factuur moet de prijs exclusief BTW vermelden (art. 35a Wet OB). Vul een stukprijs in op die regel.",
+      "en": "Line {line} has no unit price. An invoice must show the price excluding BTW (art. 35a Wet OB). Enter a unit price on that line."
+    },
+    "invoice.required.vat_treatment": {
+      "nl": "Regel {line} heeft geen BTW-behandeling. Zonder die keuze kan de BTW niet worden berekend en ziet de klant niet welk tarief geldt. Kies een BTW-behandeling op die regel.",
+      "en": "Line {line} has no BTW treatment. Without it the BTW cannot be calculated and the customer cannot see which rate applies. Choose a BTW treatment on that line."
+    },
+    "invoice.required.vat_rate": {
+      "note": "CMP-014. The only failure here that is not the user's omission — the ruleset has no rate covering the invoice date — so the next actions include one that is somebody else's: an administrator loading the rates. Saying so is the difference between a dead end and a handover.",
+      "nl": "Voor de BTW-behandeling op regel {line} is geen tarief bekend op de factuurdatum, dus er valt niets te berekenen. Kies een andere factuurdatum of een andere BTW-behandeling, of laat een beheerder de actuele BTW-tarieven laden.",
+      "en": "No rate is known for the BTW treatment on line {line} on the invoice date, so there is nothing to calculate with. Choose a different invoice date or BTW treatment, or ask an administrator to load the current BTW rates."
+    },
+    "invoice.template.locked.quantity_column": {
+      "note": "FR-TPL-009 / D5. api.templates.compliance's counterpart to invoice.required.* above: a template, not a document, is refused. The quantity column cannot be hidden because art. 35a(1)(h)-(i) requires the extent of the supply on every line.",
+      "nl": "De kolom Aantal kan niet worden verborgen. Een factuur moet de omvang van de levering per regel vermelden (art. 35a lid 1 Wet OB). Zet de kolom weer aan, of verberg in plaats daarvan een niet-verplichte kolom.",
+      "en": "The Quantity column cannot be hidden. An invoice must state the extent of the supply on every line (art. 35a(1) Wet OB). Turn the column back on, or hide a different, non-mandatory column instead."
+    },
+    "invoice.template.locked.unit_price_column": {
+      "note": "FR-TPL-009 / D5. Art. 35a(1)(i): the price excluding VAT.",
+      "nl": "De kolom Stukprijs kan niet worden verborgen. Een factuur moet de prijs exclusief btw per regel vermelden (art. 35a lid 1 Wet OB). Zet de kolom weer aan.",
+      "en": "The Unit price column cannot be hidden. An invoice must state the price excluding VAT on every line (art. 35a(1) Wet OB). Turn the column back on."
+    },
+    "invoice.template.locked.vat_rate_column": {
+      "note": "FR-TPL-009 / D5. Art. 35a(1)(j): the rate applied.",
+      "nl": "De kolom Btw-tarief kan niet worden verborgen. Een factuur moet het toegepaste btw-tarief per regel vermelden (art. 35a lid 1 Wet OB). Zet de kolom weer aan.",
+      "en": "The VAT rate column cannot be hidden. An invoice must state the rate applied on every line (art. 35a(1) Wet OB). Turn the column back on."
+    },
+    "invoice.template.locked.legal_identity_vat_tag": {
+      "note": "FR-TPL-009 / D5, applied to free text rather than a column. {language} is the endonym of the text that lost the tag (common.language.name.nl / .en), and {tag} is the exact merge tag to retype - a paraphrase would not tell an author what to type back.",
+      "nl": "Het verplichte inhoudsblok mist de placeholder {tag} in de {language} tekst. Een factuur moet het btw-identificatienummer van de verkoper vermelden (art. 35a lid 1 onder c Wet OB). Voeg {tag} terug toe aan die tekst.",
+      "en": "The compulsory content block is missing the {tag} placeholder in its {language} text. An invoice must show the seller's VAT identification number (art. 35a(1)(c) Wet OB). Add {tag} back into that text."
+    },
+    "invoice.template.locked.legal_identity_kvk_tag": {
+      "note": "FR-TPL-009 / D5. Not art. 35a - the KvK number is required on Dutch commercial documents by the Handelsregisterwet, same citation invoice.required.supplier_kvk_number uses.",
+      "nl": "Het verplichte inhoudsblok mist de placeholder {tag} in de {language} tekst. Nederlandse handelsdocumenten moeten het KvK-nummer vermelden (Handelsregisterwet). Voeg {tag} terug toe aan die tekst.",
+      "en": "The compulsory content block is missing the {tag} placeholder in its {language} text. Dutch commercial documents must carry the KvK number (Handelsregisterwet). Add {tag} back into that text."
+    },
+    "invoice.template.designer.title": {
+      "note": "FR-TPL-001..009. The designer form's accessible name — `apps/web/src/templates/TemplateDesigner.tsx`.",
+      "nl": "Factuursjabloon-ontwerp",
+      "en": "Invoice template designer"
+    },
+    "invoice.template.designer.columns_heading": {
+      "note": "FR-TPL-006. Heading over the six line-item column rows.",
+      "nl": "Regelkolommen",
+      "en": "Line columns"
+    },
+    "invoice.template.designer.blocks_heading": {
+      "note": "FR-TPL-007. Heading over the five content blocks.",
+      "nl": "Inhoudsblokken",
+      "en": "Content blocks"
+    },
+    "invoice.template.designer.locked_column_icon": {
+      "note": "FR-TPL-009. Accessible name for the lock glyph beside a statutory column — the SHORT label on the icon itself, distinct from the full sentence in invoice.template.locked.*_column beside it.",
+      "nl": "Vergrendeld",
+      "en": "Locked"
+    },
+    "invoice.template.designer.column_visible": {
+      "note": "FR-TPL-006. Checkbox label for a non-statutory column's show/hide toggle.",
+      "nl": "Zichtbaar",
+      "en": "Visible"
+    },
+    "invoice.template.designer.move_up": {
+      "note": "FR-TPL-006. Accessible name for a non-statutory column's reorder-up control.",
+      "nl": "Naar boven verplaatsen",
+      "en": "Move up"
+    },
+    "invoice.template.designer.move_down": {
+      "note": "FR-TPL-006. Accessible name for a non-statutory column's reorder-down control.",
+      "nl": "Naar beneden verplaatsen",
+      "en": "Move down"
+    },
+    "invoice.template.designer.block.header": {
+      "nl": "Koptekst",
+      "en": "Header"
+    },
+    "invoice.template.designer.block.intro": {
+      "nl": "Inleiding",
+      "en": "Introduction"
+    },
+    "invoice.template.designer.block.payment_terms": {
+      "nl": "Betalingsvoorwaarden",
+      "en": "Payment terms"
+    },
+    "invoice.template.designer.block.footer": {
+      "nl": "Voettekst",
+      "en": "Footer"
+    },
+    "invoice.template.designer.block.legal_identity": {
+      "note": "FR-TPL-007's free block for KvK number, VAT number, IBAN and general terms.",
+      "nl": "Bedrijfsgegevens",
+      "en": "Legal identity"
+    },
+    "invoice.template.designer.field_nl": {
+      "note": "FR-TPL-013. Label for a content block's Dutch-text field. {block} is one of invoice.template.designer.block.*.",
+      "nl": "{block} — Nederlandse tekst",
+      "en": "{block} — Dutch text"
+    },
+    "invoice.template.designer.field_en": {
+      "note": "FR-TPL-013. Label for a content block's English-text field.",
+      "nl": "{block} — Engelse tekst",
+      "en": "{block} — English text"
+    },
+    "invoice.template.designer.kvk_pill": {
+      "note": "FR-TPL-009. Visible label on the fixed, non-removable KvK-number pill in the legal_identity block.",
+      "nl": "KvK-nummer",
+      "en": "KvK number"
+    },
+    "invoice.template.designer.vat_pill": {
+      "note": "FR-TPL-009. Visible label on the fixed, non-removable VAT-number pill in the legal_identity block.",
+      "nl": "Btw-nummer",
+      "en": "VAT number"
+    },
+    "invoice.template.designer.save": {
+      "nl": "Opslaan",
+      "en": "Save"
+    },
+    "invoice.template.designer.saving": {
+      "nl": "Bezig met opslaan…",
+      "en": "Saving…"
+    },
+    "invoice.template.designer.saved": {
+      "nl": "Opgeslagen",
+      "en": "Saved"
+    },
+    "invoice.template.designer.other_problems": {
+      "note": "Fallback heading for a violation whose field the designer's own UI has no specific row for — defensive only; the designer's controls are built so this should not be reachable, but the server is the authority and this must not swallow it silently.",
+      "nl": "Overige problemen",
+      "en": "Other problems"
+    },
+    "invoice.template.designer.logo_heading": {
+      "note": "FR-TPL-001. Heading over the logo upload/position/size controls.",
+      "identical": true,
+      "nl": "Logo",
+      "en": "Logo"
+    },
+    "invoice.template.designer.logo_upload": {
+      "note": "FR-TPL-001. Label for the logo file input (accept=\"image/png,image/jpeg,image/svg+xml\").",
+      "nl": "Logo uploaden",
+      "en": "Upload logo"
+    },
+    "invoice.template.designer.logo_uploading": {
+      "nl": "Bezig met uploaden…",
+      "en": "Uploading…"
+    },
+    "invoice.template.designer.logo_position": {
+      "note": "FR-TPL-001. Label for the closed-set position select.",
+      "nl": "Positie",
+      "en": "Position"
+    },
+    "invoice.template.designer.logo_position.left": {
+      "nl": "Links",
+      "en": "Left"
+    },
+    "invoice.template.designer.logo_position.centre": {
+      "nl": "Midden",
+      "en": "Centre"
+    },
+    "invoice.template.designer.logo_position.right": {
+      "nl": "Rechts",
+      "en": "Right"
+    },
+    "invoice.template.designer.logo_size": {
+      "note": "FR-TPL-001. Label for the closed-set size select.",
+      "nl": "Grootte",
+      "en": "Size"
+    },
+    "invoice.template.designer.logo_size.small": {
+      "nl": "Klein",
+      "en": "Small"
+    },
+    "invoice.template.designer.logo_size.medium": {
+      "nl": "Middel",
+      "en": "Medium"
+    },
+    "invoice.template.designer.logo_size.large": {
+      "nl": "Groot",
+      "en": "Large"
+    },
+    "invoice.template.designer.logo_preview": {
+      "note": "FR-TPL-001's \"transparent-background preview against the paper colour\" — accessible name for the preview container, whose background colour is set from template.colors.background.",
+      "nl": "Voorbeeld van het logo op de papierkleur",
+      "en": "Preview of the logo against the paper colour"
+    },
+    "invoice.template.designer.logo_preview_alt": {
+      "nl": "Voorbeeld van het geüploade logo",
+      "en": "Preview of the uploaded logo"
+    },
+    "invoice.template.designer.logo_none": {
+      "note": "Shown in place of the preview when no logo has been uploaded yet — the designer's starting state (FR-TPL-001's Logo.asset_id is null).",
+      "nl": "Nog geen logo geüpload.",
+      "en": "No logo uploaded yet."
+    },
+    "invoice.template.designer.typography_heading": {
+      "note": "FR-TPL-002/003. Heading over the seven typography selects.",
+      "nl": "Typografie",
+      "en": "Typography"
+    },
+    "invoice.template.designer.heading_font": {
+      "note": "FR-TPL-002. Label for the heading-font select, populated from FONT_CATALOGUE.",
+      "nl": "Lettertype koppen",
+      "en": "Heading font"
+    },
+    "invoice.template.designer.body_font": {
+      "note": "FR-TPL-002. Label for the body-font select.",
+      "nl": "Lettertype platte tekst",
+      "en": "Body font"
+    },
+    "invoice.template.designer.figures_font": {
+      "note": "FR-TPL-002. Label for the figures-font select — the typeface used for numbers, chosen separately for numeric legibility (tabular figures).",
+      "nl": "Lettertype cijfers",
+      "en": "Figures font"
+    },
+    "invoice.template.designer.type_scale": {
+      "note": "FR-TPL-003. Label for the type-scale select.",
+      "nl": "Tekstgrootte",
+      "en": "Type size"
+    },
+    "invoice.template.designer.type_scale.small": {
+      "nl": "Klein",
+      "en": "Small"
+    },
+    "invoice.template.designer.type_scale.medium": {
+      "nl": "Middel",
+      "en": "Medium"
+    },
+    "invoice.template.designer.type_scale.large": {
+      "nl": "Groot",
+      "en": "Large"
+    },
+    "invoice.template.designer.type_scale.extra_large": {
+      "nl": "Extra groot",
+      "en": "Extra large"
+    },
+    "invoice.template.designer.font_weight": {
+      "note": "FR-TPL-003. Label for the font-weight select.",
+      "nl": "Gewicht",
+      "en": "Weight"
+    },
+    "invoice.template.designer.font_weight.regular": {
+      "nl": "Normaal",
+      "en": "Regular"
+    },
+    "invoice.template.designer.font_weight.medium": {
+      "nl": "Middel",
+      "en": "Medium"
+    },
+    "invoice.template.designer.font_weight.bold": {
+      "nl": "Vet",
+      "en": "Bold"
+    },
+    "invoice.template.designer.line_height": {
+      "note": "FR-TPL-003. Label for the line-height select.",
+      "nl": "Regelafstand",
+      "en": "Line height"
+    },
+    "invoice.template.designer.line_height.tight": {
+      "nl": "Smal",
+      "en": "Tight"
+    },
+    "invoice.template.designer.line_height.normal": {
+      "nl": "Normaal",
+      "en": "Normal"
+    },
+    "invoice.template.designer.line_height.relaxed": {
+      "nl": "Ruim",
+      "en": "Relaxed"
+    },
+    "invoice.template.designer.letter_spacing": {
+      "note": "FR-TPL-003. Label for the letter-spacing select.",
+      "nl": "Letterspatiëring",
+      "en": "Letter spacing"
+    },
+    "invoice.template.designer.letter_spacing.tight": {
+      "nl": "Smal",
+      "en": "Tight"
+    },
+    "invoice.template.designer.letter_spacing.normal": {
+      "nl": "Normaal",
+      "en": "Normal"
+    },
+    "invoice.template.designer.letter_spacing.wide": {
+      "nl": "Breed",
+      "en": "Wide"
+    },
+    "invoice.template.designer.layout_heading": {
+      "note": "FR-TPL-005/FR-TPL-010. Heading over the layout/page-setup selects.",
+      "nl": "Lay-out en pagina-instellingen",
+      "en": "Layout and page setup"
+    },
+    "invoice.template.designer.layout": {
+      "note": "FR-TPL-005. Label for the starting-layout select.",
+      "nl": "Lay-out",
+      "en": "Layout"
+    },
+    "invoice.template.designer.layout.classic": {
+      "nl": "Klassiek",
+      "en": "Classic"
+    },
+    "invoice.template.designer.layout.modern": {
+      "identical": true,
+      "nl": "Modern",
+      "en": "Modern"
+    },
+    "invoice.template.designer.layout.compact": {
+      "identical": true,
+      "nl": "Compact",
+      "en": "Compact"
+    },
+    "invoice.template.designer.layout.minimal": {
+      "nl": "Minimalistisch",
+      "en": "Minimal"
+    },
+    "invoice.template.designer.header_arrangement": {
+      "note": "FR-TPL-005. Label for the header-arrangement select - independent of layout.",
+      "nl": "Indeling van de koptekst",
+      "en": "Header arrangement"
+    },
+    "invoice.template.designer.header_arrangement.split": {
+      "note": "Today's only pre-existing geometry - logo/adres links, titel/referentie/gegevens rechts.",
+      "nl": "Gesplitst",
+      "en": "Split"
+    },
+    "invoice.template.designer.header_arrangement.stacked": {
+      "nl": "Gestapeld",
+      "en": "Stacked"
+    },
+    "invoice.template.designer.header_arrangement.centered": {
+      "nl": "Gecentreerd",
+      "en": "Centered"
+    },
+    "invoice.template.designer.totals_position": {
+      "note": "FR-TPL-005. Label for the totals-block-position select.",
+      "nl": "Positie van het totaalblok",
+      "en": "Totals block position"
+    },
+    "invoice.template.designer.totals_position.right": {
+      "nl": "Rechts",
+      "en": "Right"
+    },
+    "invoice.template.designer.totals_position.left": {
+      "nl": "Links",
+      "en": "Left"
+    },
+    "invoice.template.designer.totals_position.full_width": {
+      "nl": "Volledige breedte",
+      "en": "Full width"
+    },
+    "invoice.template.designer.page_size": {
+      "note": "FR-TPL-010. Label for the page-size select.",
+      "nl": "Paginaformaat",
+      "en": "Page size"
+    },
+    "invoice.template.designer.page_size.a4": {
+      "identical": true,
+      "nl": "A4",
+      "en": "A4"
+    },
+    "invoice.template.designer.page_size.letter": {
+      "note": "FR-LOC-001c keeps 'Letter' untranslated in Dutch - it names a US paper format with no Dutch equivalent name.",
+      "nl": "Letter (VS)",
+      "en": "Letter"
+    },
+    "invoice.template.designer.margins": {
+      "note": "FR-TPL-010. Label for the margins select.",
+      "nl": "Marges",
+      "en": "Margins"
+    },
+    "invoice.template.designer.margins.narrow": {
+      "nl": "Smal",
+      "en": "Narrow"
+    },
+    "invoice.template.designer.margins.normal": {
+      "nl": "Normaal",
+      "en": "Normal"
+    },
+    "invoice.template.designer.margins.wide": {
+      "nl": "Breed",
+      "en": "Wide"
+    },
+    "invoice.template.designer.preview_heading": {
+      "note": "FR-TPL-008. Heading over the live preview panel.",
+      "nl": "Voorbeeld",
+      "en": "Preview"
+    },
+    "invoice.template.designer.preview_loading": {
+      "nl": "Voorbeeld wordt geladen…",
+      "en": "Loading preview…"
+    },
+    "invoice.template.designer.duplicate": {
+      "note": "FR-TPL-019. One-click duplicate button.",
+      "nl": "Dupliceren",
+      "en": "Duplicate"
+    },
+    "invoice.template.designer.duplicating": {
+      "nl": "Bezig met dupliceren…",
+      "en": "Duplicating…"
+    },
+    "invoice.template.designer.reset": {
+      "note": "FR-TPL-019. One-click reset-to-default button.",
+      "nl": "Terugzetten naar standaard",
+      "en": "Reset to default"
+    },
+    "invoice.template.designer.resetting": {
+      "nl": "Bezig met terugzetten…",
+      "en": "Resetting…"
+    },
+    "invoice.vat.standard": {
+      "note": "FR-AR-002. The descriptor beside the standard-rate block. The rate itself comes from the effective-dated ruleset (CMP-014) and is not written here — btw_21 was 19% before 2012-10-01.",
+      "nl": "Algemeen BTW-tarief",
+      "en": "Standard BTW rate"
+    },
+    "invoice.vat.reduced": {
+      "note": "FR-AR-002. btw_9 was 6% until 2019, which is why no rate appears in the words.",
+      "nl": "Verlaagd BTW-tarief",
+      "en": "Reduced BTW rate"
+    },
+    "invoice.vat.zero": {
+      "note": "FR-AR-002. A rate of 0% — taxable, at nothing. Deliberately different wording from 'exempt', which is outside the system entirely and puts a different figure in a different rubriek.",
+      "nl": "BTW-nultarief",
+      "en": "Zero BTW rate"
+    },
+    "invoice.vat.exempt": {
+      "note": "FR-AR-002 (vrijgesteld). Art. 226(11) requires the invoice to state the reason no VAT is charged; an amount of 0.00 with no statement is not a compliant invoice.",
+      "nl": "Vrijgesteld van BTW",
+      "en": "Exempt from BTW"
+    },
+    "invoice.vat.reverse_charge": {
+      "note": "FR-AR-002 (verlegd), Art. 226(11a). 'BTW verlegd' is the statutory Dutch phrase and is what obliges the BUYER to account for the tax — so it is carried verbatim in the English version too, with a gloss, rather than translated away. The customer's VAT number is mandatory alongside it (see statutory.py).",
+      "nl": "BTW verlegd",
+      "en": "BTW verlegd — VAT reverse-charged to the customer"
+    },
+    "invoice.vat.intra_community": {
+      "note": "FR-AR-002. An intra-Community supply is zero-rated only if the customer's VAT number is on the invoice, which is why statutory.py makes it mandatory for this treatment. Article reference included because Art. 226(11) accepts a reference to the provision as the required statement.",
+      "nl": "Intracommunautaire levering — BTW verlegd naar de afnemer (art. 138 BTW-richtlijn)",
+      "en": "Intra-Community supply — BTW verlegd, reverse-charged to the customer (Art. 138 VAT Directive)"
+    },
+    "invoice.vat.export": {
+      "note": "FR-AR-002. Export outside the EU, zero-rated under Art. 146.",
+      "nl": "Uitvoer buiten de EU — BTW-nultarief (art. 146 BTW-richtlijn)",
+      "en": "Export outside the EU — zero BTW rate (Art. 146 VAT Directive)"
+    },
+    "invoice.vat.margin": {
+      "note": "FR-AR-002 (margeregeling). Under the margin scheme VAT is due on the margin, not the sale price, and stating it separately on the invoice is not permitted — which is why the VAT total for this treatment is zero and its rate is null rather than 0. The buyer cannot deduct it, and the invoice has to say so.",
+      "nl": "Margeregeling — BTW is niet aftrekbaar",
+      "en": "Margin scheme (margeregeling) — BTW is not deductible"
+    },
+    "invoice.pdf.invoice_title": {
+      "note": "FR-TPL-017 / FR-TPL-013. The heading on the rendered document, in the RECIPIENT language snapshotted onto the invoice at issue - not the language of whoever pressed issue.",
+      "nl": "FACTUUR",
+      "en": "INVOICE"
+    },
+    "invoice.pdf.credit_note_title": {
+      "note": "FR-AR-001. A credit note is its own document with its own number from the same series; the heading has to say so, because a customer filing it beside the invoice it corrects must be able to tell them apart at a glance.",
+      "nl": "CREDITFACTUUR",
+      "en": "CREDIT NOTE"
+    },
+    "invoice.pdf.bill_to": {
+      "nl": "Factuuradres",
+      "en": "Bill to"
+    },
+    "invoice.pdf.invoice_date": {
+      "note": "Art. 226(1). The date of issue, statutory on every invoice.",
+      "nl": "Factuurdatum",
+      "en": "Invoice date"
+    },
+    "invoice.pdf.supply_date": {
+      "note": "Art. 226(7). Shown only where it differs from the invoice date, which is when the statute requires it.",
+      "nl": "Leveringsdatum",
+      "en": "Date of supply"
+    },
+    "invoice.pdf.due_date": {
+      "note": "FR-AR-006 turns the customer payment terms into this date. Not statutory; it is what gets the invoice paid.",
+      "nl": "Vervaldatum",
+      "en": "Due date"
+    },
+    "invoice.pdf.customer_vat_number": {
+      "note": "Art. 226(4). Mandatory on a reverse-charge or intra-Community invoice, where the customer VAT number is what makes the treatment lawful.",
+      "nl": "Btw-nummer klant",
+      "en": "Customer VAT number"
+    },
+    "invoice.pdf.column_description": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "invoice.pdf.column_quantity": {
+      "nl": "Aantal",
+      "en": "Quantity"
+    },
+    "invoice.pdf.column_unit_price": {
+      "nl": "Prijs",
+      "en": "Unit price"
+    },
+    "invoice.pdf.column_discount": {
+      "nl": "Korting",
+      "en": "Discount"
+    },
+    "invoice.pdf.column_unit": {
+      "note": "FR-TPL-006. New with the invoice template designer (api.templates.rendering) - MinimalPdfRenderer never printed a per-line unit, so no header existed for it before.",
+      "nl": "Eenheid",
+      "en": "Unit"
+    },
+    "invoice.pdf.column_vat_rate": {
+      "note": "FR-TPL-006. New with the invoice template designer. MinimalPdfRenderer never shows VAT per line (ADR-037: VAT is grouped by treatment, never per line), so no header existed for this column before either - it appears only in a template preview/future templated renderer, describing the RATE, not an amount.",
+      "nl": "Btw-tarief",
+      "en": "VAT rate"
+    },
+    "invoice.pdf.column_amount": {
+      "nl": "Bedrag",
+      "en": "Amount"
+    },
+    "invoice.pdf.vat_group": {
+      "note": "Art. 226(8) and 226(10): the taxable amount and the VAT PER RATE. One row per VAT treatment on the invoice, never a single combined VAT line - the rate breakdown is what the statute asks for and what the aangifte reads. {rate} is a formatted percentage or a dash for the margin scheme, where stating a rate on the sale price is not permitted.",
+      "nl": "Btw {rate} over {base}",
+      "en": "VAT {rate} on {base}"
+    },
+    "invoice.pdf.subtotal": {
+      "note": "The total excluding VAT.",
+      "nl": "Subtotaal",
+      "en": "Subtotal"
+    },
+    "invoice.pdf.vat_total": {
+      "nl": "Btw",
+      "en": "VAT"
+    },
+    "invoice.pdf.total": {
+      "note": "The amount the customer owes. Deliberately the plain word rather than *including VAT*: the VAT is broken out on the lines above and the reader is looking for what to pay.",
+      "nl": "Totaal",
+      "en": "Total"
+    },
+    "invoice.pdf.kvk_number": {
+      "note": "FR-LOC-001c keeps KvK in its Dutch form in the English UI - it names a Dutch register and has no accurate English equivalent.",
+      "identical": true,
+      "nl": "KvK",
+      "en": "KvK"
+    },
+    "invoice.pdf.vat_number": {
+      "note": "Art. 226(3). The SUPPLIER own VAT identification number, repeated on every page so a page separated from the rest still identifies who issued it.",
+      "nl": "Btw-nr.",
+      "en": "VAT no."
+    },
+    "invoice.pdf.page": {
+      "note": "FR-TPL-010 page numbering. Written after layout, because *page 1 of 3* cannot be drawn until the third page exists.",
+      "nl": "Pagina {page} van {pages}",
+      "en": "Page {page} of {pages}"
+    },
+    "invoice.pdf.carried_forward": {
+      "note": "FR-TPL-010's carried-forward subtotal, printed at the bottom of a page that a page break interrupts mid-table - the running net total of every line drawn so far (this page and every prior one). Pairs with invoice.pdf.brought_forward on the next page, which repeats the identical figure. Never printed on a single-page invoice.",
+      "nl": "Subtotaal overgebracht: {amount}",
+      "en": "Subtotal carried forward: {amount}"
+    },
+    "invoice.pdf.brought_forward": {
+      "note": "FR-TPL-010's counterpart to invoice.pdf.carried_forward - printed immediately after the repeated table header on the new page, before the first line item resumes. The SAME running total the previous page's carried_forward line just showed.",
+      "nl": "Saldo overgebracht: {amount}",
+      "en": "Balance brought forward: {amount}"
+    },
+    "invoice.email.subject": {
+      "note": "FR-AR-005 / FR-LOC-003. The covering e-mail subject, in the RECIPIENT language frozen onto the invoice at issue - not the sender UI language. Leads with the supplier name because that is what the customer recognises in an inbox; an invoice from a name they do not know reads as spam.",
+      "nl": "Factuur {reference} van {supplier}",
+      "en": "Invoice {reference} from {supplier}"
+    },
+    "invoice.email.credit_note_subject": {
+      "note": "A credit note is money going back, and a customer filing it beside the invoice it corrects has to tell them apart before opening either.",
+      "nl": "Creditfactuur {reference} van {supplier}",
+      "en": "Credit note {reference} from {supplier}"
+    },
+    "invoice.email.greeting": {
+      "note": "Deliberately impersonal. The customer master holds an organisation and an invoice address, not a named contact person (FR-AR-006), so a greeting using a name would have no name to use.",
+      "nl": "Beste klant,",
+      "en": "Dear customer,"
+    },
+    "invoice.email.intro": {
+      "note": "Says what is attached and for how much. Short on purpose: the authoritative document is the PDF beside it, and a body restating the invoice is a second document to keep in step with the first.",
+      "nl": "In de bijlage vindt u factuur {reference} van {supplier} voor {amount}.",
+      "en": "Attached is invoice {reference} from {supplier} for {amount}."
+    },
+    "invoice.email.credit_note_intro": {
+      "note": "No payment is being asked for, so this deliberately does not mention a due date.",
+      "nl": "In de bijlage vindt u creditfactuur {reference} van {supplier} voor {amount}.",
+      "en": "Attached is credit note {reference} from {supplier} for {amount}."
+    },
+    "invoice.email.due": {
+      "note": "FR-AR-006 payment terms, as the date on the document. Omitted entirely for a credit note and where the invoice carries no due date - an invented one would be a payment demand nobody agreed.",
+      "nl": "Wij verzoeken u het bedrag van {amount} uiterlijk {due_date} te voldoen.",
+      "en": "Please pay {amount} by {due_date}."
+    },
+    "invoice.email.questions": {
+      "note": "Points at the supplier rather than at LEDGR. The business issued the invoice; a question about it is theirs to answer, and directing the customer to the software vendor would be both wrong and unhelpful.",
+      "nl": "Heeft u vragen over deze factuur? Neem dan contact op met {supplier}.",
+      "en": "Any questions about this invoice? Please contact {supplier}."
+    },
+    "invoice.email.signoff": {
+      "nl": "Met vriendelijke groet,",
+      "en": "Kind regards,"
+    }
+  }
+}

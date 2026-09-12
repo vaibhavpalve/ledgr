@@ -1,0 +1,128 @@
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str = "postgresql+asyncpg://ledgr_app@localhost:5432/ledgr"
+    jwt_signing_key: str = "insecure-dev-key-change-me"
+
+    # --- Envelope encryption (SEC-022, IAM-004, SEC-023) ---
+    # "local" is dev/test only: a KEK held in an env var rather than a real
+    # KMS. Production must run with "azure-key-vault" — see
+    # apps/api/src/api/crypto/kms.py and
+    # docs/decisions/ADR-004-envelope-encryption.md.
+    kms_provider: Literal["local", "azure-key-vault"] = "local"
+    local_dev_kek: str = "insecure-dev-kek-32-bytes-only!!"  # dev/test only, never production
+    azure_key_vault_url: str | None = None
+    azure_kek_name: str = "ledgr-tenant-dek-kek"
+
+    # Connects as ledgr_ops (BYPASSRLS, narrowly scoped - see ADR-003 and
+    # migrations/0002_encryption_keys.sql). Only used by the scheduled
+    # rotation/re-wrap scripts in apps/api/scripts, never by the API itself.
+    ops_database_url: str | None = None
+
+    # --- Authentication (IAM-013, IAM-016) ---
+    # "local" is dev/test only (no network breach screening) - production
+    # must set "hibp". See api.auth.breach_check.build_breach_checker.
+    breach_checker_provider: Literal["local", "hibp"] = "local"
+    # IAM-017: "local" is dev/test only (no network, no location ever
+    # returned) - see api.auth.geolocation.build_geolocation_resolver.
+    geolocation_provider: Literal["local", "ip-api"] = "local"
+    session_max_lifetime_hours: int = 12
+    session_idle_timeout_minutes_privileged: int = 30
+
+    # --- Google sign-in (IAM-010a, IAM-010b) ---
+    # No default: unset means Google sign-in is unavailable rather than
+    # silently pointed at a placeholder client. See
+    # api.auth.google_oidc.build_google_oidc_client.
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    google_redirect_uri: str | None = None
+
+    # --- WebAuthn passkeys (IAM-010) ---
+    # rp_id is the relying party identifier (typically the bare domain,
+    # e.g. "ledgr.nl") - it must be a registrable domain suffix of every
+    # origin passkeys are used from. webauthn_origin is the full origin
+    # (scheme + host [+ port]) checked against clientDataJSON.
+    webauthn_rp_id: str = "localhost"
+    webauthn_rp_name: str = "LEDGR"
+    webauthn_origin: str = "http://localhost:5173"
+
+    # --- Document archive (FR-DOC, SEC-005) ---
+    # SEC-005: "served from a separate origin". Two origins, and they must
+    # differ - api.documents.routes.verify_separate_origin_configured refuses
+    # to serve otherwise. The defaults differ so `make dev-up` works; a
+    # deployment that points both at one host is refused rather than silently
+    # serving untrusted bytes from where the session cookie lives.
+    api_origin: str = "http://localhost:8000"
+    document_origin: str = "http://localhost:8001"
+
+    # SEC-005: "malware-scanned". "local" is dev/test only - it detects the
+    # EICAR test file and nothing else. Production must wire a real scanner;
+    # see api.documents.scanning.build_scanner, which deliberately offers no
+    # "off" setting.
+    malware_scanner_provider: Literal["local"] = "local"
+
+    # --- Invoice delivery (FR-AR-005) ---
+    # "collecting" is dev/test only: it assembles the message, keeps it, and
+    # sends nothing. Production must set "smtp" - see
+    # api.mail.sender.build_email_sender.
+    #
+    # PRIV-010/PRIV-011 put all customer data and every sub-processor inside
+    # the EU, and an invoice e-mail carries a customer's name, address and what
+    # they owe. Choosing the host below is therefore a compliance decision, not
+    # an operational one, and there is deliberately no default worth having.
+    email_provider: Literal["collecting", "smtp"] = "collecting"
+    email_smtp_host: str | None = None
+    email_smtp_port: int = 587
+    email_smtp_username: str | None = None
+    email_smtp_password: str | None = None
+    #: Implicit TLS (port 465). False means STARTTLS, which is still upgraded
+    #: before authentication - there is no plaintext option (SEC-020).
+    email_smtp_use_tls: bool = False
+
+    # The envelope sender. A customer sees the SUPPLIER's name in the From
+    # line (the display name comes from the administration), but the address
+    # has to be one this deployment is authorised to send from - SPF and DKIM
+    # are published for our domain, not for every client's.
+    email_from_address: str = "noreply@ledgr.example"
+
+    # --- Invoice rendering (FR-TPL-017) ---
+    # "minimal-pdf" is the only renderer built: one A4 layout, no templates,
+    # not PDF/A-3 (FR-TPL-015) and not tagged (FR-TPL-016). The template
+    # designer (FR-TPL-001..014) plugs in here behind the same Protocol, and
+    # FR-TPL-017 keeps holding across that change because immutability lives in
+    # the storage rather than in the renderer - see api.invoicing.rendering.
+    #
+    # There is deliberately no "off": an invoice issued with nothing stored is
+    # one whose appearance can never afterwards be established.
+    invoice_renderer_provider: Literal["minimal-pdf"] = "minimal-pdf"
+
+    # --- Customer master (FR-AR-006, FR-ONB-003) ---
+    # FR-ONB-003's "validate EU VAT numbers via VIES". "syntax-only" is
+    # dev/test only: it checks the format and returns `unavailable` for
+    # anything well-formed, so it can never claim a number is registered when
+    # nothing consulted a register. Production must set "vies-rest" - see
+    # api.customers.vies.build_vies_validator, which deliberately offers no
+    # "off" setting.
+    vies_provider: Literal["syntax-only", "vies-rest"] = "syntax-only"
+
+    # FR-AR-006's "Peppol participant ID discovery". P2 (FR-AR-005), so "none"
+    # is the only provider that exists and it returns `not_configured` rather
+    # than pretending a customer is absent from the network. See
+    # api.customers.peppol for why that distinction is load-bearing.
+    peppol_directory_provider: Literal["none"] = "none"
+
+    # --- Localisation (FR-LOC-001) ---
+    # Where packages/i18n/catalogue lives. Unset resolves it automatically:
+    # the copy packaged into the wheel first, then the checkout five
+    # directories up - see api.i18n.catalogue._candidate_directories. This
+    # exists for a deployment that mounts the catalogue somewhere else, not as
+    # something a normal run needs to set.
+    message_catalogue_dir: str | None = None
+
+
+settings = Settings()

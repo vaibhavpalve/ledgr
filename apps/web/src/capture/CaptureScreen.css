@@ -1,0 +1,93 @@
+/*
+ * The capture screen's styling — FR-EXP-001's "single tap from the home
+ * screen", for someone standing in a car park with a receipt in one hand
+ * (ADR-047).
+ *
+ * This is the first stylesheet in this codebase (confirmed: no .css file
+ * existed anywhere in apps/web/src before this task) and it stays narrowly
+ * scoped to what that scenario needs — one prominent primary action, reachable
+ * one-handed, and everything else visually out of its way. It is not a design
+ * system: no palette, no tokens, no framework (this app has none as a
+ * dependency — see package.json).
+ */
+
+.capture {
+  position: relative;
+  box-sizing: border-box;
+  /* Room at the bottom for the fixed shutter button so it never overlaps the
+     review list or the finalise button beneath it. */
+  padding: 1rem 1rem calc(7rem + env(safe-area-inset-bottom, 0px));
+}
+
+.capture__drop {
+  box-sizing: border-box;
+  border: 2px dashed #9aa0a6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.75rem 0;
+  color: #444444;
+  text-align: center;
+}
+
+/*
+ * The shutter — the ONE tap this screen exists to make possible. Fixed near
+ * the bottom of the viewport, centered, and generously larger than MOB-013's
+ * 44x44pt/48x48dp minimum: cold hands, possibly gloved, not looking closely.
+ */
+.capture__shutter {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+
+  background-color: #0b57d0;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.capture__shutter:active {
+  background-color: #08409e;
+}
+
+.capture__shutter:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: 3px;
+}
+
+/*
+ * Every secondary action — choose files, add a page, next receipt, finalise.
+ * Still a full 48px touch target (MOB-013), but visibly not the one thing a
+ * person standing in a car park is here to do.
+ */
+.capture__secondary {
+  box-sizing: border-box;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0.5rem 0.9rem;
+  margin: 0.35rem 0.4rem 0 0;
+
+  border: 1px solid #c7c7c7;
+  border-radius: 8px;
+  background-color: #f1f3f4;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+}
+
+.capture__secondary:disabled {
+  color: #8a8a8a;
+  background-color: #f7f7f7;
+}

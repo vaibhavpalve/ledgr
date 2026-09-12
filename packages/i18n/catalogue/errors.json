@@ -1,0 +1,344 @@
+{
+  "namespace": "errors",
+  "messages": {
+    "errors.tenant_context_required": {
+      "note": "The 401 from TenantContextMiddleware: no token, an expired one, or one that does not verify. A person meets this when their session has run out mid-task, so it says what to do rather than naming a claim or a signature — the machine-readable half travels in `reason`, which is where a client looking to redirect to the login screen reads it.",
+      "nl": "Uw sessie is verlopen of niet geldig. Meld u opnieuw aan.",
+      "en": "Your session has expired or is not valid. Sign in again."
+    },
+    "errors.csrf_token_invalid": {
+      "note": "SEC-004's anti-CSRF check (api.security.csrf), only ever reached for a request carrying the session cookie — a bearer-token request never hits this. Says nothing about which of 'no cookie', 'no header' or 'mismatch' occurred; that distinction is in `reason` for a log, not in the sentence.",
+      "nl": "Deze aanvraag kon niet worden geverifieerd. Laad de pagina opnieuw en probeer het nogmaals.",
+      "en": "This request could not be verified. Reload the page and try again."
+    },
+    "errors.not_authenticated": {
+      "note": "FR-UX-007. The request carried no identified user. Deliberately says what to do rather than naming a claim or a token.",
+      "nl": "U bent niet aangemeld. Meld u opnieuw aan en probeer het nogmaals.",
+      "en": "You are not signed in. Sign in again and retry."
+    },
+    "errors.not_permitted": {
+      "note": "IAM-030's default deny, as a person reads it. The action and resource type stay OUT of this sentence and travel beside it as machine-readable fields: 'Not permitted to post journal_entry' is a developer-facing string, which FR-UX-007 forbids reaching a user.",
+      "nl": "U heeft geen rechten voor deze actie.",
+      "en": "You are not permitted to do this."
+    },
+    "errors.mfa_required": {
+      "note": "IAM-011. Mandatory, no opt-out, so the message points at enrolment rather than suggesting the requirement can be waived.",
+      "nl": "Tweestapsverificatie is vereist. Stel een tweede factor in om verder te gaan.",
+      "en": "Multi-factor authentication is required. Set up a second factor to continue."
+    },
+    "errors.administration_not_found": {
+      "note": "Answers both 'no such administration' and 'not yours' identically — the handler cannot tell them apart under RLS and must not appear to.",
+      "nl": "Deze administratie bestaat niet of is niet toegankelijk.",
+      "en": "This administration does not exist, or is not available to you."
+    },
+    "errors.fiscal_year_not_found": {
+      "note": "MOB-006's dashboard (and any other report keyed on a fiscal year): answers 'no such fiscal year' and 'not this administration's' identically — the same RLS posture errors.administration_not_found takes.",
+      "nl": "Dit boekjaar bestaat niet voor deze administratie.",
+      "en": "That fiscal year does not exist for this administration."
+    },
+    "errors.active_client_mismatch": {
+      "note": "FR-FRM-000a's wrong-client guard, and the one error here a person is most likely to meet mid-task. Names the fix, because the request itself was legitimate — it was aimed at the wrong books.",
+      "nl": "Deze actie hoort bij een andere klant dan de klant die u open heeft. Wissel eerst van klant.",
+      "en": "This request targets a different client from the one you have open. Switch client first."
+    },
+    "errors.no_session": {
+      "note": "The caller is authenticated but the request needs a session row to write to (IAM-110) and there is none — a token issued outside an interactive session.",
+      "nl": "Deze actie vereist een actieve sessie in de app.",
+      "en": "This action requires an active session in the app."
+    },
+    "errors.engagement_not_found": {
+      "note": "The administration is not one this user can switch into — never granted, expired, or revoked. One message for all three: which it is, is not the caller's to learn.",
+      "nl": "U heeft geen toegang tot deze administratie.",
+      "en": "You do not have access to this administration."
+    },
+    "errors.rate_limited": {
+      "note": "IAM-019's throttle. Deliberately says nothing about which limit was hit, how many attempts remain, or whether the account exists — that is an enumeration oracle. `retry_after_seconds` travels beside the sentence as a machine field, so a client can show a countdown without the message having to name a number that would then need pluralising.",
+      "nl": "Te veel pogingen. Probeer het later opnieuw.",
+      "en": "Too many attempts. Try again later."
+    },
+    "errors.google_only_account": {
+      "note": "IAM-010f. Not a generic access denial — the requirement asks for a PROMPT, so the sentence names the action that clears it. Met by someone who signed up with Google and is now trying to post to the ledger, which makes it one of the few refusals in the product that is really an instruction.",
+      "nl": "Voeg een passkey of wachtwoord toe voordat u boekingen doet — uw account heeft op dit moment geen andere aanmeldmethode dan Google.",
+      "en": "Add a passkey or password before posting to the ledger — your account currently has no sign-in method other than Google."
+    },
+    "errors.document_too_large": {
+      "note": "SEC-005's size cap. {limit_bytes} travels beside the sentence as a machine field rather than inside it, so a client can render a human size ('25 MB') in its own units without the message having to guess which.",
+      "nl": "Dit bestand is te groot om te bewaren. Probeer een kleinere scan of foto.",
+      "en": "This file is too large to store. Try a smaller scan or photo."
+    },
+    "errors.document_type_rejected": {
+      "note": "SEC-005: the type is decided from the bytes, so the message says what IS accepted rather than what was sent — naming the rejected type would invite the reader to rename the file, which changes nothing.",
+      "nl": "Dit bestandstype kan niet worden bewaard. Gebruik een foto (JPEG, PNG, HEIC) of een PDF.",
+      "en": "This file type cannot be stored. Use a photo (JPEG, PNG, HEIC) or a PDF."
+    },
+    "errors.document_infected": {
+      "note": "SEC-005's malware scan reported a detection. Deliberately does not name the threat: the detail is in the audit entry for whoever investigates, and a threat name on screen tells an attacker which scanner they tripped.",
+      "nl": "Dit bestand is geweigerd door de virusscan en is niet opgeslagen.",
+      "en": "This file was rejected by the malware scan and has not been stored."
+    },
+    "errors.document_scan_unavailable": {
+      "note": "The scanner could not answer, so the upload was refused rather than stored unscanned. Says to try again, because this one really is temporary — unlike the refusals above.",
+      "nl": "De virusscan is tijdelijk niet beschikbaar, dus dit bestand is niet opgeslagen. Probeer het straks opnieuw.",
+      "en": "The malware scan is temporarily unavailable, so this file was not stored. Try again shortly."
+    },
+    "errors.document_not_found": {
+      "note": "Answers 'no such document' and 'not yours' identically — under RLS the query cannot tell them apart and the API must not appear to. Also the answer when a stored original no longer matches the hash taken at upload (FR-DOC-001): a document that is not what it was is not evidence of anything.",
+      "nl": "Dit document bestaat niet of is niet toegankelijk.",
+      "en": "This document does not exist, or is not available to you."
+    },
+    "errors.document_not_releasable": {
+      "note": "SEC-005. The caller is permitted; the file is not ready. Covers scan states pending, failed and infected with one sentence, because an unscanned file and an infected one are the same risk to whoever opens them — `scan_status` travels beside it for a client that wants to distinguish 'wait' from 'never'.",
+      "nl": "Dit document kan nog niet worden gedownload; de virusscan is nog niet afgerond of niet geslaagd.",
+      "en": "This document cannot be downloaded yet; its malware scan has not completed or did not pass."
+    },
+    "errors.expense_not_found": {
+      "note": "Answers 'no such expense' and 'not yours' identically — under RLS the query cannot tell them apart and the API must not appear to.",
+      "nl": "Deze uitgave bestaat niet of is niet toegankelijk.",
+      "en": "This expense does not exist, or is not available to you."
+    },
+    "errors.expense_incomplete": {
+      "note": "FR-EXP-001b's minimum plus FR-EXP-001e's payment method. {missing_fields} travels beside the sentence as a machine field so the form can highlight the empty inputs rather than the message having to name them in prose — which would need every field name translated too.",
+      "nl": "Vul eerst de ontbrekende gegevens in voordat u deze uitgave indient.",
+      "en": "Fill in the missing details before submitting this expense."
+    },
+    "errors.expense_already_posted": {
+      "note": "FR-GL-003: a posting is corrected by a reversing entry, never unmade. The message names the entry rather than offering to undo it, because undoing is not an operation this system has.",
+      "nl": "Deze uitgave is al geboekt. Een correctie gebeurt met een tegenboeking.",
+      "en": "This expense has already been posted. A correction is made with a reversing entry."
+    },
+    "errors.expense_posting_unconfigured": {
+      "note": "The claim is fine; the administration has no ledger account mapped for something the posting needs. {purpose} travels beside the sentence as a machine field so a client can name the specific mapping — 'vat_input', a category, or one of FR-EXP-001e's payment methods. Deliberately does not guess an account: a wrong one is found by an accountant months later.",
+      "nl": "Deze administratie heeft nog geen grootboekrekening gekoppeld voor deze boeking. Vraag de beheerder dit in te stellen.",
+      "en": "This administration has no ledger account mapped for this posting yet. Ask an administrator to configure it."
+    },
+    "errors.no_purchase_journal": {
+      "note": "FR-GL-002. No single active purchase journal, or several — and which one a claim lands in shows up in its entry number forever (FR-GL-013), so an ambiguous answer is refused rather than resolved by row order.",
+      "nl": "Deze administratie heeft geen enkel actief inkoopdagboek om deze uitgave in te boeken.",
+      "en": "This administration has no single active purchase journal to post this expense into."
+    },
+    "errors.no_open_period": {
+      "note": "FR-GL-007. The expense's date falls in no open period. Says to check the date rather than offering another period: an expense belongs in the period it happened in, and moving it to an open one would put the cost in the wrong month. Where the period is VAT-filed the route is a suppletie (FR-VAT-005).",
+      "nl": "De datum van deze uitgave valt niet in een open periode. Controleer de datum.",
+      "en": "This expense's date falls in no open period. Check the date."
+    },
+    "errors.expense_already_ready": {
+      "note": "The claim has been submitted and is in front of an approver. Returning it for correction is FR-EXP-002's step, which is not built — so the message says what happened rather than offering an action that does not exist yet.",
+      "nl": "Deze uitgave is al ingediend en kan niet meer worden gewijzigd.",
+      "en": "This expense has already been submitted and can no longer be changed."
+    },
+    "errors.vat_rate_unavailable": {
+      "note": "No rate is in force for that treatment on that date — reachable for a date before the ruleset's floor row. Refused rather than defaulted to zero: a claim with no VAT because nobody knew the rate looks exactly like a genuinely zero-rated one.",
+      "nl": "Voor deze BTW-behandeling is op deze datum geen tarief bekend. Controleer de datum.",
+      "en": "No BTW rate is known for this treatment on this date. Check the date."
+    },
+    "errors.expense_amount_invalid": {
+      "note": "A gross amount that is negative, or has more than two decimals. A refund is a credit note rather than an expense with a minus sign, and a third decimal would be rounded away on storage with the difference landing silently in net.",
+      "nl": "Dit bedrag kan niet worden gebruikt. Voer een bedrag in met maximaal twee decimalen; een creditnota is geen negatieve uitgave.",
+      "en": "That amount cannot be used. Enter an amount with at most two decimals; a credit note is not a negative expense."
+    },
+    "errors.capture_session_not_found": {
+      "note": "FR-EXP-001a. Answers 'no such session' and 'not yours' identically — under RLS the query cannot tell them apart and the API must not appear to.",
+      "nl": "Deze vastleggingssessie bestaat niet of is niet toegankelijk.",
+      "en": "This capture session does not exist, or is not available to you."
+    },
+    "errors.capture_session_closed": {
+      "note": "FR-EXP-001a's review list is a boundary: a receipt added after the list was accepted would not have been in it. Says to start a new session, because that is the fix rather than a retry.",
+      "nl": "Deze sessie is al afgerond. Start een nieuwe sessie voor de volgende bonnen.",
+      "en": "This session has already been completed. Start a new session for further receipts."
+    },
+    "errors.capture_item_not_found": {
+      "note": "The `item` parameter names a receipt that is not in this session — so the page would be added to something the person is not reviewing.",
+      "nl": "Deze bon hoort niet bij deze sessie.",
+      "en": "That receipt is not part of this session."
+    },
+    "errors.capture_session_empty": {
+      "note": "Refused rather than silently completing with nothing: somebody who has just photographed six receipts and is told 'done' has no way to tell that from six uploads that failed.",
+      "nl": "Er is nog niets vastgelegd in deze sessie. Leg eerst een bon vast.",
+      "en": "Nothing has been captured in this session yet. Capture a receipt first."
+    },
+    "errors.capture_item_without_evidence": {
+      "note": "An item that would become an expense resting on no stored original. {item_ids} travels beside the sentence as a machine field so a client can highlight the rows rather than the message having to list them.",
+      "nl": "Een of meer bonnen in deze sessie hebben geen afbeelding. Leg ze alsnog vast of verwijder ze uit de lijst.",
+      "en": "One or more receipts in this session have no image. Capture them, or remove them from the list."
+    },
+    "errors.sales_invoice_not_found": {
+      "nl": "Deze factuur bestaat niet.",
+      "en": "That invoice does not exist."
+    },
+    "errors.sales_invoice_issued": {
+      "note": "FR-AR-001, FR-AR-004. An issued invoice is a statutory record: its number cannot be reused and its content cannot change. The correction path is a credit note, and the message names it rather than leaving the person stuck.",
+      "nl": "Deze factuur is al verstuurd en kan niet meer worden gewijzigd. Maak een creditfactuur om te corrigeren.",
+      "en": "This invoice has been issued and can no longer be changed. Raise a credit note to correct it."
+    },
+    "errors.sales_invoice_not_issued": {
+      "nl": "Deze factuur is nog een concept; er is niets te crediteren. Pas hem aan of gooi hem weg.",
+      "en": "This invoice is still a draft; there is nothing to credit. Edit it or discard it."
+    },
+    "errors.sales_invoice_already_credited": {
+      "note": "A second credit note would double the correction - the argument migration 0020 makes about reversing a journal entry twice.",
+      "nl": "Voor deze factuur bestaat al een creditfactuur.",
+      "en": "This invoice has already been credited."
+    },
+    "errors.sales_invoice_is_credit_note": {
+      "nl": "Dit is zelf een creditfactuur en kan niet worden gecrediteerd.",
+      "en": "This is itself a credit note and cannot be credited."
+    },
+    "errors.sales_invoice_incomplete": {
+      "note": "FR-AR-003 / D5. The SUMMARY only — it counts and says the invoice was not sent. It deliberately does not try to be the whole message: each entry in {missing_fields} carries its own sentence saying what is missing, why the law wants it and what to do, from the invoice.required.* block. A summary that tried to list fourteen fields in one sentence would be unreadable, and one that said only 'validation failed' is the string D5 rules out.",
+      "nl": {
+        "one": "Deze factuur mist {count} verplicht gegeven en is niet verstuurd. Hieronder staat wat er nog nodig is.",
+        "other": "Deze factuur mist {count} verplichte gegevens en is niet verstuurd. Hieronder staat wat er nog nodig is."
+      },
+      "en": {
+        "one": "This invoice is missing {count} required detail and has not been sent. What is still needed is listed below.",
+        "other": "This invoice is missing {count} required details and has not been sent. What is still needed is listed below."
+      }
+    },
+    "errors.invoice_template_incomplete": {
+      "note": "FR-TPL-009 / D5. api.templates.compliance's counterpart to errors.sales_invoice_incomplete — the SUMMARY only. Each entry in {violations} carries its own sentence from the invoice.template.locked.* block, saying what is locked, why the law wants it and what to do.",
+      "nl": {
+        "one": "Deze sjabloon verbergt {count} verplicht gegeven en is niet opgeslagen. Hieronder staat wat er nog nodig is.",
+        "other": "Deze sjabloon verbergt {count} verplichte gegevens en is niet opgeslagen. Hieronder staat wat er nog nodig is."
+      },
+      "en": {
+        "one": "This template hides {count} required detail and has not been saved. What is still needed is listed below.",
+        "other": "This template hides {count} required details and has not been saved. What is still needed is listed below."
+      }
+    },
+    "errors.invoice_template_not_found": {
+      "note": "FR-TPL-001..007. Answers 'no such template' and 'not yours' identically — the same posture errors.sales_invoice_not_found takes, for the same RLS reason.",
+      "nl": "Deze factuursjabloon bestaat niet.",
+      "en": "That invoice template does not exist."
+    },
+    "errors.invoice_template_conflict": {
+      "note": "FR-TPL-011. Migration 0042's partial unique index allows at most one default template per administration.",
+      "nl": "Er is al een standaardsjabloon voor deze administratie. Zet eerst de bestaande standaard uit voordat u een andere instelt.",
+      "en": "There is already a default template for this administration. Unset the existing default before making another one the default."
+    },
+    "errors.invoice_template_name_conflict": {
+      "note": "FR-TPL-019. Migration 0043's invoice_template_name_unique — two templates in one administration cannot share a name. duplicate_template retries with a disambiguated name itself; this is what a plain create/update hits when the caller chose a name that already exists.",
+      "nl": "Er bestaat al een sjabloon met deze naam in deze administratie. Kies een andere naam.",
+      "en": "A template with this name already exists for this administration. Choose a different name."
+    },
+    "errors.invoice_template_stale_version": {
+      "note": "Optimistic concurrency on invoice_template.version (0042) — somebody else saved this template after the version this request was based on was read.",
+      "nl": "Deze sjabloon is inmiddels door iemand anders opgeslagen. Laad hem opnieuw en voer uw wijzigingen opnieuw door.",
+      "en": "This template was saved by somebody else in the meantime. Reload it and reapply your changes."
+    },
+    "errors.template_asset_too_large": {
+      "note": "FR-TPL-001, SEC-005. api.templates.assets.MAX_UPLOAD_BYTES. {limit_bytes} travels beside the sentence as a machine field, the same convention errors.document_too_large uses.",
+      "nl": "Dit logo is te groot om te bewaren. Probeer een kleiner bestand.",
+      "en": "This logo is too large to store. Try a smaller file."
+    },
+    "errors.template_asset_type_rejected": {
+      "note": "FR-TPL-001, SEC-005. api.templates.asset_content_type.sniff refused the bytes — not PNG, JPEG or SVG by content.",
+      "nl": "Dit bestandstype kan niet als logo worden gebruikt. Gebruik een PNG, JPEG of SVG.",
+      "en": "This file type cannot be used as a logo. Use a PNG, JPEG or SVG."
+    },
+    "errors.template_asset_svg_rejected": {
+      "note": "FR-TPL-018. api.templates.svg_sanitizer refused the file. The response also carries svg_reason, the sanitiser's own already-specific English reason, as a machine field beside this translated sentence — not interpolated into it, the same 'message for people, machine detail beside it' split api.i18n.http.problem's own docstring describes.",
+      "nl": "Dit SVG-bestand is geweigerd omdat het onveilige inhoud bevat (bijvoorbeeld een script, een externe verwijzing of een te complexe structuur). Exporteer het logo opnieuw vanuit uw ontwerpprogramma, of gebruik in plaats daarvan een PNG of JPEG.",
+      "en": "This SVG file was rejected because it contains unsafe content (such as a script, an external reference, or an overly complex structure). Re-export the logo from your design tool, or use a PNG or JPEG instead."
+    },
+    "errors.template_asset_infected": {
+      "note": "SEC-005's malware scan reported a detection, the same posture errors.document_infected takes.",
+      "nl": "Dit bestand is geweigerd door de virusscan en is niet opgeslagen.",
+      "en": "This file was rejected by the malware scan and has not been stored."
+    },
+    "errors.template_asset_scan_unavailable": {
+      "note": "The scanner could not answer, so the upload was refused rather than stored unscanned — errors.document_scan_unavailable's counterpart for a logo.",
+      "nl": "De virusscan is tijdelijk niet beschikbaar, dus dit bestand is niet opgeslagen. Probeer het straks opnieuw.",
+      "en": "The malware scan is temporarily unavailable, so this file was not stored. Try again shortly."
+    },
+    "errors.template_asset_not_found": {
+      "note": "Answers 'no such asset' and 'not yours' identically, the same RLS posture errors.invoice_template_not_found takes.",
+      "nl": "Dit logo bestaat niet of is niet toegankelijk.",
+      "en": "This logo does not exist, or is not available to you."
+    },
+    "errors.invoice_logo_not_renderable": {
+      "note": "FR-TPL-001/018. api.templates.assets.LogoNotRenderable — today this is reached only for an SVG logo, since api.invoicing.pdf has no vector-drawing capability. Raised both at invoice issue (api.invoicing.routes.issue_invoice) and at FR-TPL-008 preview (api.templates.routes.preview_template), with the identical sentence either way.",
+      "nl": "Het logo van dit sjabloon is een SVG-bestand, dat nog niet in een gegenereerde PDF kan worden opgenomen. Upload een PNG- of JPEG-versie om een logo op verstuurde facturen te tonen.",
+      "en": "This template's logo is an SVG, which cannot yet be embedded in a rendered PDF. Upload a PNG or JPEG version to include a logo on issued invoices."
+    },
+    "errors.language_unsupported": {
+      "note": "FR-LOC-001b. {supported} is the list of language codes, comma-separated. The codes are not translated — they are identifiers.",
+      "nl": "Deze taal wordt niet ondersteund. Beschikbaar: {supported}.",
+      "en": "That language is not supported. Available: {supported}."
+    },
+    "errors.customer_not_found": {
+      "note": "FR-AR-006. Answers 'no such customer' and 'not yours' identically — under RLS the query cannot tell them apart and the API must not appear to. The same posture errors.sales_invoice_not_found takes.",
+      "nl": "Deze klant bestaat niet.",
+      "en": "That customer does not exist."
+    },
+    "errors.customer_archived": {
+      "note": "FR-AR-006. An archived customer is still readable — every invoice ever raised for them points at the record — but cannot be edited or invoiced. Names the way out (restore) rather than leaving the person stuck, and does not offer to do it for them: resuming trade with a counterparty somebody deliberately archived is a decision, not a side effect of starting an invoice.",
+      "nl": "Deze klant is gearchiveerd. Zet de klant terug om weer facturen te kunnen maken.",
+      "en": "This customer is archived. Restore them to invoice them again."
+    },
+    "errors.customer_field_invalid": {
+      "note": "FR-UX-007. The field name travels beside the sentence in {field} as a machine-readable value, never inside it: 'payment_terms_days is invalid' is a developer-facing string in a user-facing message. The client puts the message against the input it names. Deliberately one key rather than one per field — the correction is always the same act, and fourteen near-identical sentences drift.",
+      "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",
+      "en": "That value is not valid. Check the highlighted field."
+    },
+    "errors.customer_address_incomplete": {
+      "note": "FR-AR-003 / Wet OB art. 35a(1)(e). Raised when a customer is put ON an invoice, not when they are saved: a half-known customer is a legitimate record to keep, a statutory document without an address is not. {missing_fields} names the parts so a screen can mark them.",
+      "nl": "Het adres van deze klant is niet compleet genoeg voor een factuur. Vul straat, postcode en plaats aan.",
+      "en": "This customer's address is not complete enough for an invoice. Add the street, postcode and city."
+    },
+    "errors.invoice_customer_conflict": {
+      "note": "FR-AR-006. The request named a customer AND typed the customer's details out. Refused rather than resolved: either resolution would be silently wrong for somebody on a document that outlives the request. {fields} names what was sent alongside the customer.",
+      "nl": "Kies één bron voor de klantgegevens: een klant uit het klantenbestand, óf de gegevens die u zelf invult.",
+      "en": "Choose one source for the customer details: a customer from your customer list, or the details you type in yourself."
+    },
+    "errors.invoice_customer_missing": {
+      "note": "FR-AR-003 / FR-AR-006. The opposite fault to errors.invoice_customer_conflict, and it needs its own sentence: too little, not too much. A document that cannot say who it is addressed to is not an invoice (Wet OB art. 35a). Names both ways out, because picking an existing customer is usually the faster one. {missing_fields} names the fields so a screen can mark them.",
+      "nl": "Deze factuur heeft nog geen klant. Kies een klant uit het klantenbestand of vul naam en adres in.",
+      "en": "This invoice has no customer yet. Pick one from your customer list, or fill in a name and address."
+    },
+    "errors.vies_unavailable": {
+      "note": "FR-ONB-003 / NFR-026. VIES is a federating layer over 27 national registers and fails per member state without notice. This is NOT an error response — the customer saves, and the verdict is recorded as `unavailable` on the record. The sentence exists so a screen can explain a status that is neither valid nor invalid, and it deliberately does not blame the number.",
+      "nl": "De EU-controledienst (VIES) kon dit btw-nummer nu niet controleren. Het nummer is bewaard; probeer de controle later opnieuw.",
+      "en": "The EU checking service (VIES) could not verify this VAT number right now. The number has been saved; try the check again later."
+    },
+    "errors.vies_vat_number_invalid": {
+      "note": "FR-ONB-003. VIES actively denied the number — distinct from errors.vies_unavailable, which says nothing about it. Matters most for an intra-Community supply (btw_icp), where zero-rating depends on the customer's number being valid, so the message says what is at stake rather than only that a check failed.",
+      "nl": "De EU-controledienst (VIES) kent dit btw-nummer niet. Controleer het bij uw klant: zonder geldig nummer mag een intracommunautaire levering niet met 0% btw worden gefactureerd.",
+      "en": "The EU checking service (VIES) does not recognise this VAT number. Check it with your customer: without a valid number an intra-Community supply cannot be invoiced at 0% VAT."
+    },
+    "errors.peppol_discovery_unavailable": {
+      "note": "FR-AR-006 / FR-AR-005. Peppol participant discovery is P2 and no directory is configured. The sentence is careful NOT to say the customer is absent from the Peppol network — nobody looked, and conflating the two is the failure api.customers.peppol is shaped to prevent.",
+      "nl": "Opzoeken op het Peppol-netwerk is nog niet beschikbaar. Dit zegt niets over of deze klant op Peppol bereikbaar is; u kunt het Peppol-ID zelf invullen als u het weet.",
+      "en": "Looking a customer up on the Peppol network is not available yet. This says nothing about whether they can be reached over Peppol; you can enter their Peppol ID yourself if you know it."
+    },
+    "errors.sales_invoice_posting_unconfigured": {
+      "note": "FR-GL-006 / FR-VAT-001. Issuing an invoice posts it, and this administration chart has no revenue or output-VAT account mapped for one of the VAT treatments on it. A 409 rather than a 422: nothing in the request is wrong and no change to it would help. {purpose} names what to map. The message points at the person who can fix it rather than at the person who hit it, because on a firm-managed client those are different people.",
+      "nl": "Deze administratie kan nog geen verkoopfacturen boeken: er is nog geen grootboekrekening gekoppeld. Laat uw boekhouder de omzet- en btw-rekeningen instellen.",
+      "en": "This administration cannot post sales invoices yet: no ledger account is mapped. Ask your bookkeeper to set up the revenue and VAT accounts."
+    },
+    "errors.sales_invoice_no_journal": {
+      "note": "FR-GL-002. No single active sales journal, which covers none and several alike - both mean there is no journal this invoice obviously belongs in, and FR-GL-013 numbers entries per journal, so guessing shows up in the entry numbers forever.",
+      "nl": "Deze administratie heeft geen (of meer dan een) actief verkoopdagboek. Stel er precies een in voordat u factureert.",
+      "en": "This administration has no single active sales journal. Set up exactly one before invoicing."
+    },
+    "errors.sales_invoice_no_open_period": {
+      "note": "FR-GL-007. The invoice date falls in no open period. Says to check the date rather than offering another period: turnover belongs in the period it was earned in, and moving it would put it in the wrong VAT return. Where the period is already filed the route is a suppletie (FR-VAT-005).",
+      "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
+      "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
+    },
+    "errors.sales_invoice_unreachable": {
+      "note": "FR-AR-005 / FR-AR-006. The customer has no address on the requested channel. {channel} travels beside the sentence as a machine field so a screen can point at the right input - an e-mail address and a Peppol id are different fields with different fixes. Names both ways out because sending a one-off copy is as legitimate as correcting the customer record.",
+      "nl": "Deze klant heeft geen adres voor dit verzendkanaal. Vul het adres aan bij de klant, of geef eenmalig een adres op bij het versturen.",
+      "en": "This customer has no address for this delivery channel. Add one to the customer record, or supply one just for this send."
+    },
+    "errors.sales_invoice_channel_unavailable": {
+      "note": "FR-AR-005. Peppol is P2, so a P0 deployment has no adapter for it. Deliberately distinct from errors.sales_invoice_unreachable: telling somebody their customer cannot be reached, when in fact the product cannot send yet, sends them to correct data that is already correct.",
+      "nl": "Dit verzendkanaal is nog niet beschikbaar. Verstuur de factuur per e-mail.",
+      "en": "This delivery channel is not available yet. Send the invoice by email instead."
+    },
+    "errors.sales_invoice_not_rendered": {
+      "note": "FR-TPL-017. The invoice has no stored PDF, which only happens for invoices issued before rendering was stored at issue. Rendering one now would be a different document under the same number, so the refusal names a credit note as the way to reissue rather than offering to re-render.",
+      "nl": "Van deze factuur is geen opgeslagen PDF beschikbaar; hij kan niet worden verstuurd. Crediteer de factuur en maak een nieuwe aan.",
+      "en": "No stored PDF is available for this invoice, so it cannot be sent. Credit it and raise a new one."
+    }
+  }
+}

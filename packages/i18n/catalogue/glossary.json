@@ -1,0 +1,119 @@
+{
+  "namespace": "glossary",
+  "note": "FR-LOC-001c: statutory terms keep their Dutch form in the English UI where no accurate equivalent exists, with a hover or tap definition. A term with keepDutch:true is enforced, not merely documented: if it appears in a message's Dutch text, scripts/check_translations.py requires it in the English too, which turns 'do not translate BTW to VAT' from a style note into a build failure. THE REVIEW FR-LOC-001c REQUIRES HAS NOT HAPPENED: every `review.reviewedBy` below is null. The Dutch is drawn from established bookkeeping vocabulary with the reasoning recorded per term, and `review.questions` lists what each term actually needs decided. Run `make review-glossary` for a readable sheet. Meanings follow the PRD's own appendix glossary where it has an entry; `review.prdAppendix` records whether it does, and the two terms it does NOT cover are the two flagged below.",
+  "terms": {
+    "btw": {
+      "term": "BTW",
+      "keepDutch": true,
+      "definition": {
+        "note": "Not 'VAT'. Dutch BTW is a specific statutory regime — its rates, its rubrieken (FR-VAT-001 maps 1a–5b), its return, its suppletie procedure — and an English reader who sees 'VAT' will reason about it using their own country's rules. The English definition names value added tax once, to anchor the concept, and then keeps the Dutch term. Filing frequency follows FR-VAT-001's 'monthly, quarterly and annual filers'.",
+        "nl": "Belasting over de toegevoegde waarde: de Nederlandse omzetbelasting, aangegeven per maand, per kwartaal of per jaar bij de Belastingdienst.",
+        "en": "Belasting over de toegevoegde waarde — Dutch value added tax, declared monthly, quarterly or annually to the Belastingdienst."
+      },
+      "review": {
+        "status": "proposed",
+        "confidence": "high",
+        "prdAppendix": "BTW / OB — Dutch VAT / turnover tax",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Should the English UI ever write 'BTW (Dutch VAT)' on first use in a screen, or always the bare term with the hover definition carrying the gloss?",
+          "The PRD appendix pairs 'BTW / OB'. Does the UI need OB as a separate entry, or is it enough that an administration's ob_number field is labelled?"
+        ]
+      }
+    },
+    "kvk": {
+      "term": "KvK",
+      "keepDutch": true,
+      "definition": {
+        "note": "The number is printed as 'KvK' on Dutch statutory documents. Rendering it as 'Chamber of Commerce number' in the English UI would leave an English-speaking owner unable to match what is on screen to what is on the paper in front of them — which is the whole point of the client switcher searching on it (FR-FRM-000).",
+        "nl": "Kamer van Koophandel. Het KvK-nummer identificeert een onderneming in het Handelsregister.",
+        "en": "Kamer van Koophandel — the Dutch chamber of commerce. A KvK number identifies a business in the Handelsregister."
+      },
+      "review": {
+        "status": "proposed",
+        "confidence": "high",
+        "prdAppendix": "KvK — Kamer van Koophandel, the Dutch chamber of commerce and business register",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "In the English UI, is it 'KvK number' (as client.switcher.kvk currently renders) or 'KvK-nummer'? The hyphenated compound is correct Dutch; the spaced form reads better in an English sentence."
+        ]
+      }
+    },
+    "suppletie": {
+      "term": "suppletie",
+      "keepDutch": true,
+      "definition": {
+        "note": "'Correction return' is close but not accurate: a suppletie is a distinct statutory filing with its own form, threshold and timing, and it is what the Belastingdienst's own correspondence calls it. The second sentence is the ledger's append-only rule (FR-GL-003, CMP-009) stated in the user's own terms.",
+        "nl": "Een aanvullende aangifte waarmee een eerder ingediende BTW-aangifte wordt gecorrigeerd. Een geboekte periode wordt niet gewijzigd; de correctie is zelf een nieuwe aangifte.",
+        "en": "A supplementary filing that corrects a BTW return already submitted. A filed period is never edited — the correction is a new filing of its own."
+      },
+      "review": {
+        "status": "proposed",
+        "confidence": "high",
+        "prdAppendix": "Suppletie — A correction to a previously filed Dutch VAT return",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Does the UI say 'suppletie' or 'suppletieaangifte'? The Belastingdienst form is titled 'Suppletie omzetbelasting', which suggests the short form as the noun.",
+          "Is the threshold worth stating in the definition, or does it date the text? A suppletie is required above a set amount and may otherwise be carried into the next return."
+        ]
+      }
+    },
+    "grootboek": {
+      "term": "grootboek",
+      "keepDutch": true,
+      "definition": {
+        "note": "FLAGGED — see review.questions. Kept Dutch because FR-LOC-001c names it as an example, and because RGS numbers grootboekrekeningen so a bookkeeper and an owner reading one screen should be naming the same thing. But 'general ledger' IS an accurate equivalent, which is the criterion FR-LOC-001c itself gives for keeping a term Dutch, and FR-RPT-001 already names its report 'general ledger detail' in English. Those two requirements point opposite ways and the product has to choose.",
+        "nl": "Het geheel van rekeningen waarop alle boekingen worden vastgelegd; de basis voor de balans en de winst-en-verliesrekening.",
+        "en": "The general ledger — every account that postings are recorded against, and the basis of the balance sheet and the profit and loss account."
+      },
+      "review": {
+        "status": "flagged",
+        "confidence": "medium",
+        "prdAppendix": null,
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "FR-LOC-001c keeps a Dutch term 'where no accurate equivalent exists'. 'General ledger' is an accurate equivalent — so should the English UI say grootboek at all, or is this term the exception the requirement's own criterion excludes?",
+          "FR-RPT-001 names the report 'general ledger detail' in English. If grootboek is kept in the UI, should that report be renamed to match, or do the report name and the concept legitimately differ?",
+          "Does the answer differ for the compound? 'Grootboekrekening' may need to stay Dutch (it is what RGS numbers) even if 'grootboek' alone becomes 'general ledger'."
+        ]
+      }
+    },
+    "kolommenbalans": {
+      "term": "kolommenbalans",
+      "keepDutch": true,
+      "definition": {
+        "note": "FLAGGED, and the least settled entry here — see review.questions. The PRD does not mention a kolommenbalans anywhere, so this definition is written from ordinary Dutch bookkeeping practice rather than from a requirement, and the column set below may not match what LEDGR builds. It is also not a statutory document the way BTW and suppletie are: it is a working paper, and FR-LOC-001c's rule is written about statutory terms. Distinct from a trial balance (saldibalans), which is the two-column figure FR-RPT-001 names.",
+        "nl": "Een werkoverzicht dat per grootboekrekening de saldibalans, de correcties en de verdeling over de balans en de winst-en-verliesrekening in kolommen naast elkaar toont.",
+        "en": "A working schedule showing, for each ledger account, the trial balance, the adjustments, and their split across the balance sheet and the profit and loss account, side by side in columns."
+      },
+      "review": {
+        "status": "flagged",
+        "confidence": "low",
+        "prdAppendix": null,
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Is a kolommenbalans in scope at all? It appears nowhere in the PRD, and FR-RPT-001's report list names 'trial balance' but nothing matching this. If it is not a report LEDGR produces, this entry should be deleted rather than reviewed.",
+          "Is 'extended trial balance' (UK) or 'worksheet' (US) an accurate enough equivalent to translate it? If so, FR-LOC-001c's criterion says translate rather than keep.",
+          "How many columns does LEDGR's version have — 8, 10 or 12? The definition names four groups and should match what is actually built.",
+          "It is a working paper rather than a statutory filing. Does FR-LOC-001c's rule reach it, or is it in this glossary for a different reason — that a Dutch bookkeeper expects the word?"
+        ]
+      }
+    }
+  },
+  "candidates": {
+    "note": "Dutch terms the product already uses that have NOT been given a treatment decision. Listed rather than decided, so an accountant reviewing this file sees the whole surface in one sitting instead of meeting these one release at a time. No definitions are written here on purpose: writing one would be the guess this file exists to avoid. Every entry is in the PRD's own appendix glossary, which is where its meaning currently lives.",
+    "terms": {
+      "rgs": "Referentie Grootboekschema. Twelve mentions in the PRD and the whole of FR-GL-005/CMP-003; certainly user-facing. Keep the acronym, presumably — but is the expansion shown, and in which language?",
+      "rubriek": "The numbered boxes of a BTW return (FR-VAT-001 maps 1a–5b). 'Box' is the usual English word for the same thing on a tax form; does that make it translatable?",
+      "icp": "Declaration of intra-Community supplies. An EU-level concept with an English name, filed under a Dutch acronym.",
+      "kor": "Kleineondernemersregeling, the Dutch small business VAT scheme. No English equivalent exists; likely keeps its Dutch form like BTW.",
+      "xaf": "XML Auditfile Financieel. A file format name, so probably never translated — but the expansion in a tooltip has to be in some language.",
+      "zzp": "Zelfstandige zonder personeel. 'Sole trader' is close and not identical; the Dutch term carries a specific tax status."
+    }
+  }
+}

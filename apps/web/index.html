@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  IAM-010g: the product's default language, and what the very first paint is
+  in before React resolves this device's own choice. `en` here was wrong in
+  both directions — it is not the default (PRD §20 falls back to Dutch), and a
+  screen reader would announce a Dutch login screen in an English voice for as
+  long as it stood.
+
+  Corrected at runtime by useDocumentLanguage the moment the tree mounts, and
+  kept correct on every switch (WCAG 2.2 SC 3.1.1, FR-LOC-004). Both are
+  needed: this covers the gap before the app runs, that covers every moment
+  after it.
+-->
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LEDGR</title>
+    <!--
+      §5.2/MOB-002: "the cheapest route is an installable PWA with camera
+      access". The manifest and icons are placeholders pending real design
+      assets - see docs/decisions/ADR-046-mobile-pwa.md.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#4f46e5" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

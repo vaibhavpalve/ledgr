@@ -1,0 +1,270 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9.12.0"
+  # Must be able to read apps/api/uv.lock, which is written at lockfile
+  # revision 3. uv 0.5.4 predates that revision and refuses the file, which is
+  # how `uv sync --frozen` fails before it installs anything.
+  UV_VERSION: "0.12.8"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  translation-completeness:
+    name: Translation completeness (FR-LOC-001d)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      # No `uv sync`, no `pnpm install`: the check is stdlib-only and reads
+      # the catalogue and the source as files. That is deliberate rather than
+      # incidental - it means "is every user-facing string present in both
+      # languages" is answerable on every push, in seconds, without a
+      # dependency tree or a database, the same design as the four
+      # route-coverage checks in apps/api/tests.
+      #
+      # A missing translation is a release blocker (FR-LOC-001), and both
+      # runtimes raise rather than falling back to English, so this job
+      # failing is the thing that stops a raw message key reaching a user.
+      - name: Check every user-facing string exists in Dutch and English
+        run: python scripts/check_translations.py
+
+  lint-web:
+    name: Lint (web/shared-types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run format:check
+
+  typecheck-web:
+    name: Type-check (web/shared-types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+
+  test-web:
+    name: Unit tests (web/shared-types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test
+
+  build-web:
+    name: Build (web/shared-types)
+    runs-on: ubuntu-latest
+    needs: [lint-web, typecheck-web, test-web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+  dependency-scan-web:
+    name: Dependency vulnerability scan (web/shared-types)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # SEC-051: fail the build on new critical/high severity findings.
+      - run: pnpm audit --audit-level=high
+
+  lint-api:
+    name: Lint (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - working-directory: apps/api
+        run: uv sync --frozen
+      - working-directory: apps/api
+        run: uv run ruff check .
+      - working-directory: apps/api
+        run: uv run ruff format --check .
+
+  typecheck-api:
+    name: Type-check (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - working-directory: apps/api
+        run: uv sync --frozen
+      - working-directory: apps/api
+        run: uv run mypy src
+
+  test-api:
+    name: Unit + tenant-isolation tests (api)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ledgr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ledgr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # IAM-005: this job applies migrations and runs the tenant-isolation
+      # suite for real on every push, not just the structural coverage
+      # check (which needs no database and always runs regardless).
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/ledgr_test
+      TEST_LEDGR_APP_PASSWORD: ci-test-password
+      DATABASE_URL: postgresql+asyncpg://ledgr_app:ci-test-password@localhost:5432/ledgr_test
+      TENANT_ISOLATION_TESTS_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - working-directory: apps/api
+        run: uv sync --frozen
+      # Fails fast, before migrations run, if migrations/0010_role_catalogue.sql
+      # is stale relative to api/authz/matrix.py — otherwise the database
+      # below would be seeded from an out-of-date Appendix A and the failure
+      # would surface as a confusing conformance mismatch instead.
+      # tests/authz/test_role_catalogue_generation.py asserts the same thing;
+      # this runs first so the error message is the actionable one.
+      - name: Check the generated role catalogue is current
+        working-directory: apps/api
+        run: uv run python scripts/generate_role_catalogue.py --check
+      - name: Apply tenancy migrations and set ledgr_app's test password
+        working-directory: apps/api
+        run: uv run python scripts/bootstrap_test_db.py
+      - working-directory: apps/api
+        run: uv run pytest
+
+  build-api:
+    name: Build (api)
+    runs-on: ubuntu-latest
+    needs: [lint-api, typecheck-api, test-api]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - working-directory: apps/api
+        run: uv sync --frozen
+      - working-directory: apps/api
+        run: uv build
+
+  dependency-scan-api:
+    name: Dependency vulnerability scan (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - working-directory: apps/api
+        run: uv sync --frozen
+      # SEC-051: fail the build on new critical/high severity findings.
+      - working-directory: apps/api
+        run: uv run pip-audit --strict
+
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - secret-scan
+      - translation-completeness
+      - lint-web
+      - typecheck-web
+      - test-web
+      - build-web
+      - dependency-scan-web
+      - lint-api
+      - typecheck-api
+      - test-api
+      - build-api
+      - dependency-scan-api
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ] || \
+             [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi

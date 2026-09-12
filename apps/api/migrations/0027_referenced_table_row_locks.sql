@@ -1,0 +1,96 @@
+-- 0027_referenced_table_row_locks.sql
+-- Restores the UPDATE privilege that foreign-key enforcement needs on
+-- journal_entry (0020) and rgs_element (0024), without weakening the
+-- append-only guarantee either of them exists to provide.
+--
+-- Touches FR-GL-001..004 (nothing could be posted at all), FR-ONB-005 and
+-- CMP-003 (no RGS version could be loaded), and leaves FR-GL-003 / CMP-009
+-- exactly where they were.
+--
+-- ===========================================================================
+-- A foreign key takes a row lock, and a row lock is not a read
+-- ===========================================================================
+--
+-- 0020 and 0024 both withhold UPDATE from the role that owns the append-only
+-- tables, described in 0020 as:
+--
+--   "Belt and braces on top of journal_posting_immutable(). Postgres does not
+--    privilege-check a table's owner, so this revoke is not what stops
+--    ledgr_ledger - the triggers are."
+--
+-- That reasoning is right about immutability and wrong about one consequence
+-- nobody would predict from reading it. Inserting a row into a table with a
+-- foreign key makes Postgres verify the parent still exists, and it does so by
+-- locking the parent row:
+--
+--   SELECT 1 FROM ONLY "public"."journal_entry" x
+--    WHERE "id" OPERATOR(pg_catalog.=) $1 FOR KEY SHARE OF x
+--
+-- FOR KEY SHARE is a row-locking clause, and a row-locking clause requires
+-- UPDATE or DELETE privilege on the table - SELECT alone is not enough. The
+-- referential-integrity check runs as the referencing table's owner, which is
+-- ledgr_ledger, which had just had UPDATE revoked.
+--
+-- So every insert into a table pointing at one of these failed with
+-- `permission denied for table journal_entry`, from inside the SECURITY
+-- DEFINER function that is the only supported way to write one. In practice:
+--
+--   ledger.post_entry          journal_line -> journal_entry, and the
+--                              reverses_entry_id self-reference
+--   ledger.load_rgs_version    rgs_profile_account -> rgs_element
+--   ledger.create_account      ledger_account -> rgs_element
+--   ledger.seed_chart_of_accounts   same
+--
+-- None of which had ever been executed against a real database, which is why a
+-- revoke written as belt and braces had been quietly holding the belt.
+--
+-- ===========================================================================
+-- Why this gives nothing away
+-- ===========================================================================
+--
+-- The append-only guarantee was never the revoke. It is:
+--
+--   journal_posting_immutable()   0020 - RAISE on update/delete/truncate
+--   rgs_reference_immutable()     0024 - the same, for the RGS tables
+--
+-- Both are unconditional BEFORE triggers with no branch and no exemption, and
+-- Postgres runs BEFORE triggers for every writer: ledgr_app, ledgr_ops,
+-- ledgr_ledger itself, and a superuser at a psql prompt. Granting UPDATE back
+-- to the owner does not make an UPDATE possible; it makes the row lock a
+-- foreign key already needed possible. A lock is not a write, and fires no
+-- trigger.
+--
+-- Granted narrowly, for that reason:
+--
+--   * UPDATE only. DELETE and TRUNCATE stay revoked - the lock needs one of
+--     the two and UPDATE is the one that is already impossible by trigger.
+--   * Only on tables something references. journal_line is referenced by
+--     nothing and keeps all three revoked, so the belt-and-braces intent
+--     survives everywhere it costs nothing.
+--
+-- What is genuinely lost is a line of self-documentation: \dp no longer shows
+-- journal_entry as unwritable by its owner. tests/integration/
+-- test_referenced_table_privileges.py replaces it, by asserting both halves -
+-- that the privilege is present, and that an UPDATE is still refused.
+
+begin;
+
+-- FR-GL-001..004: journal_line references journal_entry, and journal_entry
+-- references itself through reverses_entry_id (FR-GL-003). Without this,
+-- ledger.post_entry cannot insert a single line.
+grant update on journal_entry to ledgr_ledger;
+
+-- FR-ONB-005 / CMP-003: rgs_profile_account and ledger_account both reference
+-- rgs_element by (rgs_version_id, code). Without this, no RGS version can be
+-- loaded and no account can be mapped.
+grant update on rgs_element to ledgr_ledger;
+
+-- Deliberately NOT granted back:
+--
+--   delete, truncate on either table   the lock needs neither
+--   anything on journal_line           nothing references it
+--   anything to ledgr_app or ledgr_ops they hold SELECT and write nothing;
+--                                      the definer functions are the only
+--                                      writers and they run as ledgr_ledger
+
+commit;

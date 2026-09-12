@@ -1,0 +1,161 @@
+{
+  "_readme": [
+    "FR-AR-002's legal wording, and where its review stands.",
+    "",
+    "This file is DATA, and it is the review record rather than the text. The",
+    "TEXT lives in packages/i18n/catalogue/invoice.json, because it is",
+    "user-facing and FR-LOC-001 says every such string lives in one catalogue.",
+    "What lives here is the thing a catalogue cannot express: whether a",
+    "qualified person has checked that each statement is the one the statute",
+    "requires, and what they still need to decide.",
+    "",
+    "The shape mirrors the `review` blocks in packages/i18n/catalogue/",
+    "glossary.json deliberately. FR-LOC-001c already requires Dutch accounting",
+    "terminology to be reviewed by a practising accountant, and that review is",
+    "recorded exactly this way - status, confidence, who, when, and the open",
+    "questions. This is the same obligation applied to the text a CUSTOMER",
+    "receives, so it gets the same machinery rather than a second one.",
+    "",
+    "WHY THIS MATTERS MORE THAN THE GLOSSARY'S.",
+    "A wrong glossary definition confuses somebody using the product. A wrong",
+    "statement here produces an invoice that looks entirely normal, passes",
+    "every check in this system, and is not compliant - and the person who",
+    "finds out is the customer's tax inspector, years later. Art. 226(11) makes",
+    "the statement itself the legal content of a zero-VAT invoice; it is not a",
+    "label on the amount.",
+    "",
+    "HOW TO SIGN ONE OFF.",
+    "  make review-invoice-wording      renders this as a sheet to review",
+    "  then, per treatment: set status to 'reviewed', fill reviewedBy and",
+    "  reviewedOn, and clear the questions that were answered.",
+    "",
+    "`api.invoicing.wording.REVIEWED` is derived from this file, so a treatment",
+    "stops being reported as provisional the moment its block says a named",
+    "person reviewed it on a date. No code change, no deploy - the same",
+    "property scripts/load_vat_rules.py gives a rate change.",
+    "",
+    "NOTHING HERE BLOCKS A BUILD OR AN ISSUE, and that is deliberate. The",
+    "glossary check makes the argument: a CI gate that blocks on a human",
+    "process nobody has scheduled gets disabled, and the valuable checks go",
+    "with it. What is enforced is that the state is RECORDED - a treatment with",
+    "no block, or a flagged one with no question, fails the build, because both",
+    "mean the uncertainty was written down nowhere."
+  ],
+
+  "jurisdiction": "NL",
+  "statute": "Wet op de omzetbelasting 1968, art. 35a; Richtlijn 2006/112/EG, art. 226",
+
+  "treatments": {
+    "standard": {
+      "messageKey": "invoice.vat.standard",
+      "basis": "art. 226(9) - the VAT rate applied. The rate itself is resolved from the effective-dated ruleset (CMP-014), so the wording carries no number.",
+      "review": {
+        "status": "proposed",
+        "confidence": "high",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Does a Dutch invoice conventionally label the standard-rate block at all, or is the rate column enough on its own?"
+        ]
+      }
+    },
+    "reduced": {
+      "messageKey": "invoice.vat.reduced",
+      "basis": "art. 226(9), as for the standard rate.",
+      "review": {
+        "status": "proposed",
+        "confidence": "high",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Same question as the standard rate: is a label wanted beside the figure?"
+        ]
+      }
+    },
+    "zero": {
+      "messageKey": "invoice.vat.zero",
+      "basis": "art. 226(9) plus (11) - a zero rate is a rate, but the invoice should still make clear it is not an omission.",
+      "review": {
+        "status": "flagged",
+        "confidence": "medium",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Dutch practice writes both 'nultarief' and '0%'. Which does an inspector expect, and does the answer differ between a domestic 0% supply and an export?",
+          "Does a 0% line need a reference to the provision that makes it 0%, the way an exemption does?"
+        ]
+      }
+    },
+    "exempt": {
+      "messageKey": "invoice.vat.exempt",
+      "basis": "art. 226(11) - the invoice must state the exemption. Wet OB art. 11 lists the Dutch exemptions.",
+      "review": {
+        "status": "flagged",
+        "confidence": "low",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Art. 226(11) accepts a reference to the applicable provision OR any indication that the supply is exempt. The current text gives the indication and cites nothing. Is the bare statement sufficient, or should it name the Wet OB art. 11 sub-paragraph?",
+          "If it must name the sub-paragraph, that is per-supply data and not a per-treatment string - which changes the model, not just the words. THIS IS THE MOST LIKELY REASON THIS FILE CHANGES SHAPE."
+        ]
+      }
+    },
+    "reverse_charge": {
+      "messageKey": "invoice.vat.reverse_charge",
+      "basis": "art. 226(11a) - the invoice must carry the words 'reverse charge'. Dutch practice is 'btw verlegd'. Wet OB art. 12(5) and the Uitvoeringsbesluit govern the domestic cases.",
+      "review": {
+        "status": "flagged",
+        "confidence": "medium",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "The English rendering keeps 'BTW verlegd' and glosses it. Confirm that is right for a foreign recipient whose own authority reads the Dutch phrase - the alternative is 'VAT reverse-charged' alone, which loses it.",
+          "Does the domestic reverse charge require the customer's VAT number on the invoice in all cases, or only where the supply is one of the listed categories? The system currently makes it mandatory for every reverse-charged line (see statutory.py)."
+        ]
+      }
+    },
+    "intra_community": {
+      "messageKey": "invoice.vat.intra_community",
+      "basis": "art. 138 (the exemption), art. 226(11) (state it) and art. 226(4) (the customer's VAT identification number).",
+      "review": {
+        "status": "proposed",
+        "confidence": "medium",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "The text cites art. 138 of the Directive. Should it cite the Dutch implementing provision (Wet OB art. 9(2)(b) jo. Tabel II) instead, or as well, for a Dutch-language invoice?",
+          "Confirm that 'BTW verlegd' is the right phrase for an intra-Community supply as opposed to a domestic reverse charge - they are different mechanisms and may want different words."
+        ]
+      }
+    },
+    "export": {
+      "messageKey": "invoice.vat.export",
+      "basis": "art. 146 (the exemption for exports) and art. 226(11).",
+      "review": {
+        "status": "proposed",
+        "confidence": "medium",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Same citation question as the intra-Community case: Directive article, or Wet OB Tabel II post a.2?",
+          "Export zero-rating depends on evidence of despatch that the invoice itself does not carry. Should the wording say anything about that, or is it purely a records obligation on the seller?"
+        ]
+      }
+    },
+    "margin": {
+      "messageKey": "invoice.vat.margin",
+      "basis": "art. 226(14) - an invoice under the margin scheme must state which scheme applies. Wet OB art. 28b et seq.",
+      "review": {
+        "status": "flagged",
+        "confidence": "low",
+        "reviewedBy": null,
+        "reviewedOn": null,
+        "questions": [
+          "Art. 226(14) distinguishes THREE margin schemes - second-hand goods, works of art, and collectors' items and antiques - and requires the invoice to name the applicable one. The system has a single 'margeregeling' treatment and a single string, so it cannot name which. IS ONE TREATMENT ENOUGH, OR DOES btw_marge NEED SPLITTING? That is a ruleset change (migration 0028's vat_treatment), not a wording change.",
+          "Confirm that stating 'BTW is niet aftrekbaar' is wanted. It is true and useful to the buyer, and it is not what art. 226(14) requires - so it may be an addition rather than the statement itself.",
+          "The travel-agent margin scheme (art. 306 et seq.) is a fourth case with its own wording. Out of scope, or a gap?"
+        ]
+      }
+    }
+  }
+}

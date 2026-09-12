@@ -1,0 +1,143 @@
+{
+  "_readme": [
+    "Dutch VAT rules for LEDGR (CMP-014, CMP-013, FR-VAT-001, FR-AR-002).",
+    "",
+    "This file is DATA. scripts/load_vat_rules.py loads it into vat_treatment /",
+    "vat_rate / vat_rubriek / vat_treatment_rubriek, and a rate change is another",
+    "file loaded the same way - no migration, no deploy, no code change. See",
+    "docs/decisions/ADR-027-effective-dated-tax-rules.md.",
+    "",
+    "EVERY RULE ROW CARRIES valid_from AND NOTHING ELSE.",
+    "The rule in force on a date is the row with the greatest valid_from on or",
+    "before it. There is deliberately no valid_to: an end date would have to be",
+    "written onto an existing row when the next rule arrives, and a reference",
+    "table you have to go back and edit is one where history can be rewritten by",
+    "accident. Superseding is an insert.",
+    "",
+    "A CONSEQUENCE WORTH KNOWING: inserting a row with a valid_from in the past",
+    "silently changes what applied then. That is what CMP-014 forbids near a",
+    "filed period, and the database refuses it - see vat_rule_not_behind_a_filing()",
+    "in migration 0028.",
+    "",
+    "PROVENANCE - READ THIS BEFORE A RETURN IS FILED.",
+    "source is 'provisional-subset'. The RATES are the well-known ones and the",
+    "rubriek codes are the official 1a-5b set. What is NOT verified against the",
+    "Belastingdienst's own publication is the treatment-to-rubriek MAPPING: which",
+    "rubriek a given treatment's turnover and VAT belong in is the substance of",
+    "FR-VAT-001, which is not built. Getting a mapping wrong misstates a return",
+    "without misstating the ledger, so it is exactly the kind of error that",
+    "survives every other check in this system.",
+    "",
+    "CMP-014 is about the machinery - effective dating, and history that cannot",
+    "be rewritten under a filed period. That machinery is complete and tested.",
+    "The dataset it carries is a starting point."
+  ],
+
+  "jurisdiction": "NL",
+  "ruleset_version": "nl-2019-01",
+  "source": "provisional-subset",
+  "source_note": "Rates are the published Dutch ones; the rubriek mapping is provisional and belongs to FR-VAT-001.",
+
+  "_treatments_note": [
+    "FR-AR-002's eight treatments. `code` is what ledger_account.default_vat_code",
+    "holds and what 0024 constrains, so the strings are fixed by what already",
+    "ships.",
+    "",
+    "Two of them - btw_21 and btw_9 - name a RATE in an identifier that has to",
+    "outlive it. btw_9 was 6% until 2019 and btw_21 was 19% until 2012, so the",
+    "code already lies about part of its own history. `role` is the stable",
+    "semantics and is what any rule should be written against; the code is an",
+    "identifier and nothing more. ADR-027 records the rename as owed work."
+  ],
+  "treatments": [
+    {"code": "btw_21", "role": "standard", "description_nl": "Algemeen tarief", "description_en": "Standard rate"},
+    {"code": "btw_9", "role": "reduced", "description_nl": "Verlaagd tarief", "description_en": "Reduced rate"},
+    {"code": "btw_0", "role": "zero", "description_nl": "Nultarief", "description_en": "Zero rate"},
+    {"code": "btw_vrijgesteld", "role": "exempt", "description_nl": "Vrijgesteld van omzetbelasting", "description_en": "Exempt"},
+    {"code": "btw_verlegd", "role": "reverse_charge", "description_nl": "Omzetbelasting verlegd", "description_en": "Domestic reverse charge"},
+    {"code": "btw_icp", "role": "intra_community", "description_nl": "Intracommunautaire levering", "description_en": "Intra-Community supply"},
+    {"code": "btw_export", "role": "export", "description_nl": "Uitvoer buiten de EU", "description_en": "Export outside the EU"},
+    {"code": "btw_marge", "role": "margin", "description_nl": "Margeregeling", "description_en": "Margin scheme"}
+  ],
+
+  "_rates_note": [
+    "rate is a percentage as a decimal STRING - 21.00, not 0.21 and never a JSON",
+    "number. NFR-031 prohibits floating point anywhere in the calculation path,",
+    "and a rate is the first multiplier in it: json.dumps of a Python float",
+    "produces a number here and the loader rejects it, exactly as",
+    "ledger.post_entry rejects a JSON number for an amount.",
+    "",
+    "The two rate changes below are the reason CMP-014 exists. An invoice dated",
+    "2012-09-30 is 19% and one dated 2012-10-01 is 21%, forever, whatever the",
+    "current rate becomes.",
+    "",
+    "The 2001-01-01 rows are a floor, not a claim that the rate began then. They",
+    "exist so every date this system can hold resolves to something rather than",
+    "to NULL - a lookup that returns nothing is far more dangerous than one that",
+    "returns a rate somebody has to check."
+  ],
+  "rates": [
+    {"treatment": "btw_21", "valid_from": "2001-01-01", "rate": "19.00", "note": "floor row; the 19% era"},
+    {"treatment": "btw_21", "valid_from": "2012-10-01", "rate": "21.00"},
+
+    {"treatment": "btw_9", "valid_from": "2001-01-01", "rate": "6.00", "note": "floor row; the 6% era"},
+    {"treatment": "btw_9", "valid_from": "2019-01-01", "rate": "9.00"},
+
+    {"treatment": "btw_0", "valid_from": "2001-01-01", "rate": "0.00"},
+    {"treatment": "btw_vrijgesteld", "valid_from": "2001-01-01", "rate": "0.00"},
+    {"treatment": "btw_verlegd", "valid_from": "2001-01-01", "rate": "0.00", "note": "the buyer accounts for the VAT, so the seller charges none"},
+    {"treatment": "btw_icp", "valid_from": "2001-01-01", "rate": "0.00"},
+    {"treatment": "btw_export", "valid_from": "2001-01-01", "rate": "0.00"},
+    {"treatment": "btw_marge", "valid_from": "2001-01-01", "rate": "19.00", "note": "applied to the margin, not the sale price"},
+    {"treatment": "btw_marge", "valid_from": "2012-10-01", "rate": "21.00", "note": "applied to the margin, not the sale price"}
+  ],
+
+  "_rubrieken_note": [
+    "The official OB-aangifte boxes (FR-VAT-001). Effective-dated for the same",
+    "reason rates are: the form changes, and a return filed under the old one has",
+    "to keep meaning what it meant.",
+    "",
+    "kind says what a box holds, because that is what a return builder needs to",
+    "know and what makes 5a and 5b different from the rest:",
+    "  turnover  a taxable base",
+    "  vat       output VAT due",
+    "  input     input VAT deductible",
+    "  subtotal  computed from other boxes, never posted to directly"
+  ],
+  "rubrieken": [
+    {"code": "1a", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten belast met hoog tarief", "description_en": "Supplies at the standard rate"},
+    {"code": "1b", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten belast met laag tarief", "description_en": "Supplies at the reduced rate"},
+    {"code": "1c", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten belast met overige tarieven behalve 0%", "description_en": "Supplies at other rates except 0%"},
+    {"code": "1d", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Privégebruik", "description_en": "Private use"},
+    {"code": "1e", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten belast met 0% of niet bij u belast", "description_en": "Supplies at 0% or not taxed with you"},
+    {"code": "2a", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten waarbij de omzetbelasting naar u is verlegd", "description_en": "Supplies where VAT is reverse-charged to you"},
+    {"code": "3a", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen naar landen buiten de EU (uitvoer)", "description_en": "Supplies to countries outside the EU"},
+    {"code": "3b", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen naar of diensten in landen binnen de EU", "description_en": "Supplies to or services in EU countries"},
+    {"code": "3c", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Installatie/afstandsverkopen binnen de EU", "description_en": "Installation/distance sales within the EU"},
+    {"code": "4a", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten uit landen buiten de EU", "description_en": "Supplies from countries outside the EU"},
+    {"code": "4b", "valid_from": "2001-01-01", "kind": "turnover", "description_nl": "Leveringen/diensten uit landen binnen de EU", "description_en": "Supplies from EU countries"},
+    {"code": "5a", "valid_from": "2001-01-01", "kind": "subtotal", "description_nl": "Verschuldigde omzetbelasting", "description_en": "VAT due"},
+    {"code": "5b", "valid_from": "2001-01-01", "kind": "input", "description_nl": "Voorbelasting", "description_en": "Input VAT"}
+  ],
+
+  "_mapping_note": [
+    "Which box a treatment's turnover and its VAT land in. PROVISIONAL - this is",
+    "the part FR-VAT-001 owns and the part most likely to be wrong.",
+    "",
+    "vat_rubriek is null where the treatment produces no output VAT for the",
+    "seller, which is not the same as producing zero: a reverse-charged supply",
+    "has no VAT to report in a 1x box at all, whereas a 0% supply has an amount",
+    "that happens to be zero. Collapsing the two would put figures in boxes the",
+    "Belastingdienst does not expect them in."
+  ],
+  "treatment_rubriek": [
+    {"treatment": "btw_21", "valid_from": "2001-01-01", "turnover_rubriek": "1a", "vat_rubriek": "1a"},
+    {"treatment": "btw_9", "valid_from": "2001-01-01", "turnover_rubriek": "1b", "vat_rubriek": "1b"},
+    {"treatment": "btw_0", "valid_from": "2001-01-01", "turnover_rubriek": "1e", "vat_rubriek": null},
+    {"treatment": "btw_vrijgesteld", "valid_from": "2001-01-01", "turnover_rubriek": "1e", "vat_rubriek": null},
+    {"treatment": "btw_verlegd", "valid_from": "2001-01-01", "turnover_rubriek": "1e", "vat_rubriek": null},
+    {"treatment": "btw_icp", "valid_from": "2001-01-01", "turnover_rubriek": "3b", "vat_rubriek": null},
+    {"treatment": "btw_export", "valid_from": "2001-01-01", "turnover_rubriek": "3a", "vat_rubriek": null},
+    {"treatment": "btw_marge", "valid_from": "2001-01-01", "turnover_rubriek": "1a", "vat_rubriek": "1a"}
+  ]
+}

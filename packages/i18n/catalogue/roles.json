@@ -1,0 +1,67 @@
+{
+  "namespace": "roles",
+  "note": "The twelve system roles of PRD §8.4, as a person reads them. The role NAME stays the identifier everywhere else — authorization matches on it (matrix.py, migration 0010), so it is never translated in a grant, a policy or an audit entry; only in what is shown. CUSTOM roles (ADR-013) are absent on purpose: their names are chosen by an organization, are tenant data like a client's name, and are rendered verbatim. apps/api/tests/i18n/test_role_names.py fails the build if a system role here is missing, misspelled or left over. FR-LOC-001c REVIEW REQUIRED: these Dutch terms are chosen from established Dutch bookkeeping and business vocabulary, with the reasoning on each, and have NOT yet been reviewed by a practising Dutch accountant.",
+  "messages": {
+    "roles.owner": {
+      "note": "§8.4's Owner: the person who owns the organization and its books.",
+      "nl": "Eigenaar",
+      "en": "Owner"
+    },
+    "roles.organization_admin": {
+      "note": "Administers the organization itself — users, settings — without necessarily touching the books.",
+      "nl": "Organisatiebeheerder",
+      "en": "Organization Admin"
+    },
+    "roles.security_admin": {
+      "note": "MFA, session and IP policy (IAM-030's 'Manage security policy').",
+      "nl": "Beveiligingsbeheerder",
+      "en": "Security Admin"
+    },
+    "roles.billing_admin": {
+      "note": "LEDGR's OWN subscription and billing, not the customer's sales invoicing. 'Facturatiebeheerder' would be read as the latter and collide with Invoicer below, which is exactly the confusion this role must not cause; 'Abonnementbeheerder' names the subscription unambiguously.",
+      "nl": "Abonnementbeheerder",
+      "en": "Billing Admin"
+    },
+    "roles.firm_manager": {
+      "note": "Runs the accounting firm's client portfolio. 'Kantoor' is the ordinary Dutch word for an accountancy or administration practice (administratiekantoor, accountantskantoor), so 'Kantoorbeheerder' reads to a Dutch bookkeeper as the person who runs the office.",
+      "nl": "Kantoorbeheerder",
+      "en": "Firm Manager"
+    },
+    "roles.accountant": {
+      "note": "Identical in both, and not by accident: 'accountant' is the Dutch word, and in the Netherlands it is a protected title (RA/AA). Translating the English into something else would be inventing a term; leaving the Dutch as 'Accountant' is what a Dutch practice already calls it.",
+      "identical": true,
+      "nl": "Accountant",
+      "en": "Accountant"
+    },
+    "roles.bookkeeper": {
+      "note": "'Boekhouder' is the standard Dutch term, and is distinct from 'accountant' in Dutch practice in the same way bookkeeper is from accountant in English — which is why §8.4 has both roles.",
+      "nl": "Boekhouder",
+      "en": "Bookkeeper"
+    },
+    "roles.approver": {
+      "note": "'Fiatteren' is the established Dutch verb for approving a payment or an invoice for release, and 'fiatteur' is the person who does it. A literal 'Goedkeurder' is understandable but generic; this is the word the workflow actually uses.",
+      "nl": "Fiatteur",
+      "en": "Approver"
+    },
+    "roles.invoicer": {
+      "note": "Creates and sends sales invoices (§8.4). 'Facturatiemedewerker' is how the job is titled in Dutch practice.",
+      "nl": "Facturatiemedewerker",
+      "en": "Invoicer"
+    },
+    "roles.expense_submitter": {
+      "note": "Submits their own expenses and mileage. A Dutch expense claim is a 'declaratie' and the person filing one is the 'declarant' — the term already on the form, rather than a description of it.",
+      "nl": "Declarant",
+      "en": "Expense Submitter"
+    },
+    "roles.viewer": {
+      "note": "§8.4 spells this 'Viewer / Auditor'; the catalogue uses Appendix A's shorter column header, as SECTION_8_4_NAMES in matrix.py records. Plain language over jargon, per PRD D2 — 'Lezer' says read-only without requiring the reader to know what an auditor is.",
+      "nl": "Lezer",
+      "en": "Viewer"
+    },
+    "roles.service_account": {
+      "note": "Scoped API access, no interactive login (§8.4). Dutch writes it as one word; not marked identical, because the two forms differ in spacing and case.",
+      "nl": "Serviceaccount",
+      "en": "Service Account"
+    }
+  }
+}

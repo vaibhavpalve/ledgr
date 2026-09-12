@@ -1,0 +1,247 @@
+{
+  "_readme": [
+    "RGS reference data for LEDGR (CMP-003, FR-ONB-005, FR-GL-005).",
+    "",
+    "This file is DATA, not a seed script. scripts/load_rgs_version.py loads it into",
+    "rgs_version / rgs_element / rgs_profile / rgs_profile_element, and a future RGS",
+    "release is another file loaded the same way - no migration, no deploy, no code",
+    "change. See docs/decisions/ADR-026-chart-of-accounts.md.",
+    "",
+    "PROVENANCE - READ THIS BEFORE A FILING SHIPS.",
+    "source is 'provisional-subset'. The STRUCTURE here is real: RGS reference codes",
+    "are hierarchical, prefixed B for balans and W for winst-en-verliesrekening, and",
+    "the level-1 and level-2 codes below are the published ones. The deeper codes are",
+    "in RGS's shape but have NOT been verified against the official publication, and",
+    "the set is a starter chart rather than the ~4000-element MKB profile.",
+    "",
+    "Consequences, stated plainly: this dataset is enough to build and test the chart",
+    "of accounts, the profile seeding and the version upgrade path against. It is NOT",
+    "enough for CMP-002 (XAF 3.2 export carries RGS codes an inspector reads) or",
+    "CMP-004 (SBR filings map through RGS). Loading it requires --allow-provisional,",
+    "ledger.rgs_readiness() reports every administration pinned to it, and replacing",
+    "it with the official publication from referentiegrootboekschema.nl is a GA",
+    "blocker tracked in the ADR.",
+    "",
+    "Replacing it is a data change: load the official file as version 3.8, and every",
+    "administration pinned to this one upgrades through the same path a real RGS",
+    "release would use."
+  ],
+
+  "rgs_version": "3.8-provisional",
+  "status": "current",
+  "published_at": null,
+  "effective_from": null,
+  "source": "provisional-subset",
+  "source_note": "Starter subset in RGS shape; replace with the official 3.8 publication.",
+
+  "_elements_note": [
+    "account_type is LEDGR's FR-GL-005 classification (asset/liability/equity/",
+    "revenue/expense), which is a mapping decision and therefore data. Only postable",
+    "elements need one: a heading exists to hold a subtree, not to carry postings.",
+    "debit_credit is RGS's own D/C indicator."
+  ],
+  "elements": [
+    {"code": "B", "description_nl": "Balans", "description_en": "Balance sheet", "level": 1, "parent_code": null, "postable": false, "account_type": null, "debit_credit": "D"},
+    {"code": "W", "description_nl": "Winst-en-verliesrekening", "description_en": "Profit and loss", "level": 1, "parent_code": null, "postable": false, "account_type": null, "debit_credit": "D"},
+
+    {"code": "BIva", "description_nl": "Immateriële vaste activa", "description_en": "Intangible fixed assets", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BMva", "description_nl": "Materiële vaste activa", "description_en": "Tangible fixed assets", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BFva", "description_nl": "Financiële vaste activa", "description_en": "Financial fixed assets", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BVrd", "description_nl": "Voorraden", "description_en": "Inventories", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BVor", "description_nl": "Vorderingen", "description_en": "Receivables", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BLim", "description_nl": "Liquide middelen", "description_en": "Cash and cash equivalents", "level": 2, "parent_code": "B", "postable": false, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BEiv", "description_nl": "Eigen vermogen", "description_en": "Equity", "level": 2, "parent_code": "B", "postable": false, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BVrz", "description_nl": "Voorzieningen", "description_en": "Provisions", "level": 2, "parent_code": "B", "postable": false, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BLas", "description_nl": "Langlopende schulden", "description_en": "Long-term liabilities", "level": 2, "parent_code": "B", "postable": false, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BSch", "description_nl": "Kortlopende schulden", "description_en": "Current liabilities", "level": 2, "parent_code": "B", "postable": false, "account_type": "liability", "debit_credit": "C"},
+
+    {"code": "WOmz", "description_nl": "Netto-omzet", "description_en": "Net revenue", "level": 2, "parent_code": "W", "postable": false, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WKpr", "description_nl": "Kostprijs van de omzet", "description_en": "Cost of sales", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WPer", "description_nl": "Personeelskosten", "description_en": "Personnel expenses", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WAfs", "description_nl": "Afschrijvingen", "description_en": "Depreciation and amortisation", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBed", "description_nl": "Overige bedrijfskosten", "description_en": "Other operating expenses", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WFbe", "description_nl": "Financiële baten en lasten", "description_en": "Financial income and expenses", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBel", "description_nl": "Belastingen", "description_en": "Taxes", "level": 2, "parent_code": "W", "postable": false, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "BMvaMei", "description_nl": "Machines en installaties", "description_en": "Machinery and installations", "level": 3, "parent_code": "BMva", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BMvaMeiAfs", "description_nl": "Cumulatieve afschrijving machines en installaties", "description_en": "Accumulated depreciation, machinery and installations", "level": 4, "parent_code": "BMvaMei", "postable": true, "account_type": "asset", "debit_credit": "C"},
+    {"code": "BMvaAnd", "description_nl": "Andere vaste bedrijfsmiddelen", "description_en": "Other tangible fixed assets", "level": 3, "parent_code": "BMva", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BMvaAndAfs", "description_nl": "Cumulatieve afschrijving andere vaste bedrijfsmiddelen", "description_en": "Accumulated depreciation, other tangible fixed assets", "level": 4, "parent_code": "BMvaAnd", "postable": true, "account_type": "asset", "debit_credit": "C"},
+
+    {"code": "BVorDeb", "description_nl": "Vorderingen op handelsdebiteuren", "description_en": "Trade receivables", "level": 3, "parent_code": "BVor", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BVorObe", "description_nl": "Te vorderen omzetbelasting", "description_en": "VAT receivable", "level": 3, "parent_code": "BVor", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BVorOva", "description_nl": "Overige vorderingen", "description_en": "Other receivables", "level": 3, "parent_code": "BVor", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BVorRca", "description_nl": "Rekening-courant aandeelhouders", "description_en": "Current account, shareholders", "level": 3, "parent_code": "BVor", "postable": true, "account_type": "asset", "debit_credit": "D"},
+
+    {"code": "BLimKas", "description_nl": "Kas", "description_en": "Cash on hand", "level": 3, "parent_code": "BLim", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BLimBan", "description_nl": "Bankrekeningen", "description_en": "Bank accounts", "level": 3, "parent_code": "BLim", "postable": true, "account_type": "asset", "debit_credit": "D"},
+    {"code": "BLimKrp", "description_nl": "Kruisposten", "description_en": "Transfers in transit", "level": 3, "parent_code": "BLim", "postable": true, "account_type": "asset", "debit_credit": "D"},
+
+    {"code": "BEivKap", "description_nl": "Kapitaal", "description_en": "Owner's capital", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BEivPri", "description_nl": "Privé-opnamen en -stortingen", "description_en": "Owner's drawings and contributions", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "D"},
+    {"code": "BEivAka", "description_nl": "Geplaatst aandelenkapitaal", "description_en": "Issued share capital", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BEivAgi", "description_nl": "Agioreserve", "description_en": "Share premium reserve", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BEivOvr", "description_nl": "Overige reserves", "description_en": "Other reserves", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BEivOnv", "description_nl": "Onverdeeld resultaat", "description_en": "Undistributed result", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+    {"code": "BEivBes", "description_nl": "Bestemmingsreserves", "description_en": "Designated reserves", "level": 3, "parent_code": "BEiv", "postable": true, "account_type": "equity", "debit_credit": "C"},
+
+    {"code": "BSchCre", "description_nl": "Schulden aan leveranciers en handelskredieten", "description_en": "Trade payables", "level": 3, "parent_code": "BSch", "postable": true, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BSchObe", "description_nl": "Te betalen omzetbelasting", "description_en": "VAT payable", "level": 3, "parent_code": "BSch", "postable": true, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BSchLbe", "description_nl": "Te betalen loonheffing", "description_en": "Payroll tax payable", "level": 3, "parent_code": "BSch", "postable": true, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BSchVpb", "description_nl": "Te betalen vennootschapsbelasting", "description_en": "Corporate income tax payable", "level": 3, "parent_code": "BSch", "postable": true, "account_type": "liability", "debit_credit": "C"},
+    {"code": "BSchOvs", "description_nl": "Overige schulden", "description_en": "Other payables", "level": 3, "parent_code": "BSch", "postable": true, "account_type": "liability", "debit_credit": "C"},
+
+    {"code": "WOmzNeo", "description_nl": "Netto-omzet uit leveringen en diensten", "description_en": "Revenue from goods and services", "level": 3, "parent_code": "WOmz", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzNeoBin", "description_nl": "Omzet binnenland", "description_en": "Domestic revenue", "level": 4, "parent_code": "WOmzNeo", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzNeoVer", "description_nl": "Omzet verlegd binnenland", "description_en": "Domestic revenue, reverse charge", "level": 4, "parent_code": "WOmzNeo", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzNeoEeu", "description_nl": "Omzet binnen de EU", "description_en": "Intra-Community revenue", "level": 4, "parent_code": "WOmzNeo", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzNeoBeu", "description_nl": "Omzet buiten de EU", "description_en": "Revenue outside the EU", "level": 4, "parent_code": "WOmzNeo", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzNeoVrl", "description_nl": "Vrijgestelde omzet", "description_en": "Exempt revenue", "level": 4, "parent_code": "WOmzNeo", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzCon", "description_nl": "Contributies en donaties", "description_en": "Membership fees and donations", "level": 3, "parent_code": "WOmz", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+    {"code": "WOmzSub", "description_nl": "Subsidiebaten", "description_en": "Grant income", "level": 3, "parent_code": "WOmz", "postable": true, "account_type": "revenue", "debit_credit": "C"},
+
+    {"code": "WKprInk", "description_nl": "Inkoopwaarde van de omzet", "description_en": "Cost of goods sold", "level": 3, "parent_code": "WKpr", "postable": true, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "WPerLes", "description_nl": "Lonen en salarissen", "description_en": "Wages and salaries", "level": 3, "parent_code": "WPer", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WPerSol", "description_nl": "Sociale lasten", "description_en": "Social security charges", "level": 3, "parent_code": "WPer", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WPerPen", "description_nl": "Pensioenlasten", "description_en": "Pension charges", "level": 3, "parent_code": "WPer", "postable": true, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "WAfsMva", "description_nl": "Afschrijvingen materiële vaste activa", "description_en": "Depreciation of tangible fixed assets", "level": 3, "parent_code": "WAfs", "postable": true, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "WBedHui", "description_nl": "Huisvestingskosten", "description_en": "Premises expenses", "level": 3, "parent_code": "WBed", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBedKan", "description_nl": "Kantoorkosten", "description_en": "Office expenses", "level": 3, "parent_code": "WBed", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBedVkk", "description_nl": "Verkoopkosten", "description_en": "Selling expenses", "level": 3, "parent_code": "WBed", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBedAut", "description_nl": "Autokosten", "description_en": "Vehicle expenses", "level": 3, "parent_code": "WBed", "postable": true, "account_type": "expense", "debit_credit": "D"},
+    {"code": "WBedAlg", "description_nl": "Algemene kosten", "description_en": "General expenses", "level": 3, "parent_code": "WBed", "postable": true, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "WFbeRel", "description_nl": "Rentelasten", "description_en": "Interest expense", "level": 3, "parent_code": "WFbe", "postable": true, "account_type": "expense", "debit_credit": "D"},
+
+    {"code": "WBelVpb", "description_nl": "Vennootschapsbelasting", "description_en": "Corporate income tax", "level": 3, "parent_code": "WBel", "postable": true, "account_type": "expense", "debit_credit": "D"}
+  ],
+
+  "_profiles_note": [
+    "FR-ONB-004: the legal form drives the default chart. FR-ONB-005: that chart is",
+    "the MKB profile for the form. `common` is merged into every profile by the",
+    "loader - written once so the DIFFERENCES between legal forms are what a reader",
+    "sees, which is the part FR-ONB-004 is actually about.",
+    "",
+    "account_code follows Dutch practice (0 fixed assets and equity, 1 current",
+    "assets and liabilities, 2 suspense, 4 operating expenses, 7 cost of sales,",
+    "8 revenue). It is a convention, not RGS - RGS is the rgs_code beside it.",
+    "",
+    "control_kind marks the two accounts FR-GL-006 reserves: postings reach them",
+    "only through a sub-ledger party, never directly."
+  ],
+  "profile_code": "mkb",
+  "common": [
+    {"account_code": "0200", "rgs_code": "BMvaMei", "name_nl": "Machines en installaties", "name_en": "Machinery and installations", "default_vat_code": null, "control_kind": null, "sort_order": 200},
+    {"account_code": "0210", "rgs_code": "BMvaMeiAfs", "name_nl": "Afschrijving machines en installaties", "name_en": "Accumulated depreciation, machinery", "default_vat_code": null, "control_kind": null, "sort_order": 210},
+    {"account_code": "0250", "rgs_code": "BMvaAnd", "name_nl": "Inventaris", "name_en": "Fixtures and fittings", "default_vat_code": null, "control_kind": null, "sort_order": 250},
+    {"account_code": "0260", "rgs_code": "BMvaAndAfs", "name_nl": "Afschrijving inventaris", "name_en": "Accumulated depreciation, fixtures and fittings", "default_vat_code": null, "control_kind": null, "sort_order": 260},
+
+    {"account_code": "1000", "rgs_code": "BLimKas", "name_nl": "Kas", "name_en": "Cash on hand", "default_vat_code": null, "control_kind": null, "sort_order": 1000},
+    {"account_code": "1100", "rgs_code": "BLimBan", "name_nl": "Bank", "name_en": "Bank", "default_vat_code": null, "control_kind": null, "sort_order": 1100},
+    {"account_code": "1300", "rgs_code": "BVorDeb", "name_nl": "Debiteuren", "name_en": "Trade receivables", "default_vat_code": null, "control_kind": "accounts_receivable", "sort_order": 1300},
+    {"account_code": "1400", "rgs_code": "BVorOva", "name_nl": "Overige vorderingen", "name_en": "Other receivables", "default_vat_code": null, "control_kind": null, "sort_order": 1400},
+    {"account_code": "1600", "rgs_code": "BSchCre", "name_nl": "Crediteuren", "name_en": "Trade payables", "default_vat_code": null, "control_kind": "accounts_payable", "sort_order": 1600},
+    {"account_code": "1700", "rgs_code": "BSchObe", "name_nl": "Te betalen omzetbelasting", "name_en": "VAT payable", "default_vat_code": null, "control_kind": null, "sort_order": 1700},
+    {"account_code": "1720", "rgs_code": "BVorObe", "name_nl": "Te vorderen omzetbelasting (voorbelasting)", "name_en": "VAT receivable (input VAT)", "default_vat_code": null, "control_kind": null, "sort_order": 1720},
+    {"account_code": "1790", "rgs_code": "BSchOvs", "name_nl": "Overige schulden", "name_en": "Other payables", "default_vat_code": null, "control_kind": null, "sort_order": 1790},
+    {"account_code": "2000", "rgs_code": "BLimKrp", "name_nl": "Kruisposten", "name_en": "Transfers in transit", "default_vat_code": null, "control_kind": null, "sort_order": 2000},
+
+    {"account_code": "4000", "rgs_code": "WBedHui", "name_nl": "Huisvestingskosten", "name_en": "Premises expenses", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 4000},
+    {"account_code": "4100", "rgs_code": "WBedKan", "name_nl": "Kantoorkosten", "name_en": "Office expenses", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 4100},
+    {"account_code": "4200", "rgs_code": "WBedVkk", "name_nl": "Verkoopkosten", "name_en": "Selling expenses", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 4200},
+    {"account_code": "4300", "rgs_code": "WBedAut", "name_nl": "Autokosten", "name_en": "Vehicle expenses", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 4300},
+    {"account_code": "4400", "rgs_code": "WBedAlg", "name_nl": "Algemene kosten", "name_en": "General expenses", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 4400},
+    {"account_code": "4500", "rgs_code": "WAfsMva", "name_nl": "Afschrijvingskosten", "name_en": "Depreciation expense", "default_vat_code": null, "control_kind": null, "sort_order": 4500},
+    {"account_code": "4900", "rgs_code": "WFbeRel", "name_nl": "Rentelasten", "name_en": "Interest expense", "default_vat_code": null, "control_kind": null, "sort_order": 4900},
+
+    {"account_code": "7000", "rgs_code": "WKprInk", "name_nl": "Inkoopwaarde van de omzet", "name_en": "Cost of goods sold", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 7000},
+
+    {"account_code": "8000", "rgs_code": "WOmzNeoBin", "name_nl": "Omzet hoog tarief", "name_en": "Revenue, standard rate", "default_vat_code": "btw_21", "control_kind": null, "sort_order": 8000},
+    {"account_code": "8010", "rgs_code": "WOmzNeoBin", "name_nl": "Omzet laag tarief", "name_en": "Revenue, reduced rate", "default_vat_code": "btw_9", "control_kind": null, "sort_order": 8010},
+    {"account_code": "8020", "rgs_code": "WOmzNeoVer", "name_nl": "Omzet verlegd", "name_en": "Revenue, reverse charge", "default_vat_code": "btw_verlegd", "control_kind": null, "sort_order": 8020},
+    {"account_code": "8030", "rgs_code": "WOmzNeoEeu", "name_nl": "Omzet EU", "name_en": "Revenue, intra-Community", "default_vat_code": "btw_icp", "control_kind": null, "sort_order": 8030},
+    {"account_code": "8040", "rgs_code": "WOmzNeoBeu", "name_nl": "Omzet buiten EU", "name_en": "Revenue, export", "default_vat_code": "btw_export", "control_kind": null, "sort_order": 8040},
+    {"account_code": "8100", "rgs_code": "WOmzNeoVrl", "name_nl": "Vrijgestelde omzet", "name_en": "Exempt revenue", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8100}
+  ],
+
+  "profiles": [
+    {
+      "legal_form": "eenmanszaak",
+      "_note": "One owner, no payroll by default, and equity is capital plus drawings. Staff accounts are an extension the user adds when they hire (FR-ONB-005).",
+      "accounts": [
+        {"account_code": "0500", "rgs_code": "BEivKap", "name_nl": "Kapitaal", "name_en": "Owner's capital", "default_vat_code": null, "control_kind": null, "sort_order": 500},
+        {"account_code": "0550", "rgs_code": "BEivPri", "name_nl": "Privé-opnamen", "name_en": "Owner's drawings", "default_vat_code": null, "control_kind": null, "sort_order": 550},
+        {"account_code": "0560", "rgs_code": "BEivPri", "name_nl": "Privé-stortingen", "name_en": "Owner's contributions", "default_vat_code": null, "control_kind": null, "sort_order": 560}
+      ]
+    },
+    {
+      "legal_form": "vof",
+      "_note": "Capital and drawings per partner. Two are seeded because a VOF has at least two; a third partner is an extension.",
+      "accounts": [
+        {"account_code": "0500", "rgs_code": "BEivKap", "name_nl": "Kapitaal vennoot A", "name_en": "Partner A capital", "default_vat_code": null, "control_kind": null, "sort_order": 500},
+        {"account_code": "0510", "rgs_code": "BEivKap", "name_nl": "Kapitaal vennoot B", "name_en": "Partner B capital", "default_vat_code": null, "control_kind": null, "sort_order": 510},
+        {"account_code": "0550", "rgs_code": "BEivPri", "name_nl": "Privé vennoot A", "name_en": "Partner A drawings", "default_vat_code": null, "control_kind": null, "sort_order": 550},
+        {"account_code": "0560", "rgs_code": "BEivPri", "name_nl": "Privé vennoot B", "name_en": "Partner B drawings", "default_vat_code": null, "control_kind": null, "sort_order": 560},
+        {"account_code": "4600", "rgs_code": "WPerLes", "name_nl": "Lonen en salarissen", "name_en": "Wages and salaries", "default_vat_code": null, "control_kind": null, "sort_order": 4600},
+        {"account_code": "4610", "rgs_code": "WPerSol", "name_nl": "Sociale lasten", "name_en": "Social security charges", "default_vat_code": null, "control_kind": null, "sort_order": 4610},
+        {"account_code": "1750", "rgs_code": "BSchLbe", "name_nl": "Te betalen loonheffing", "name_en": "Payroll tax payable", "default_vat_code": null, "control_kind": null, "sort_order": 1750}
+      ]
+    },
+    {
+      "legal_form": "bv",
+      "_note": "Share capital rather than owner's capital, corporate income tax, a shareholder current account, and payroll - a BV's director is an employee.",
+      "accounts": [
+        {"account_code": "0500", "rgs_code": "BEivAka", "name_nl": "Geplaatst aandelenkapitaal", "name_en": "Issued share capital", "default_vat_code": null, "control_kind": null, "sort_order": 500},
+        {"account_code": "0510", "rgs_code": "BEivAgi", "name_nl": "Agioreserve", "name_en": "Share premium reserve", "default_vat_code": null, "control_kind": null, "sort_order": 510},
+        {"account_code": "0520", "rgs_code": "BEivOvr", "name_nl": "Overige reserves", "name_en": "Other reserves", "default_vat_code": null, "control_kind": null, "sort_order": 520},
+        {"account_code": "0530", "rgs_code": "BEivOnv", "name_nl": "Onverdeeld resultaat", "name_en": "Undistributed result", "default_vat_code": null, "control_kind": null, "sort_order": 530},
+        {"account_code": "1500", "rgs_code": "BVorRca", "name_nl": "Rekening-courant directie", "name_en": "Current account, director", "default_vat_code": null, "control_kind": null, "sort_order": 1500},
+        {"account_code": "1750", "rgs_code": "BSchLbe", "name_nl": "Te betalen loonheffing", "name_en": "Payroll tax payable", "default_vat_code": null, "control_kind": null, "sort_order": 1750},
+        {"account_code": "1760", "rgs_code": "BSchVpb", "name_nl": "Te betalen vennootschapsbelasting", "name_en": "Corporate income tax payable", "default_vat_code": null, "control_kind": null, "sort_order": 1760},
+        {"account_code": "4600", "rgs_code": "WPerLes", "name_nl": "Lonen en salarissen", "name_en": "Wages and salaries", "default_vat_code": null, "control_kind": null, "sort_order": 4600},
+        {"account_code": "4610", "rgs_code": "WPerSol", "name_nl": "Sociale lasten", "name_en": "Social security charges", "default_vat_code": null, "control_kind": null, "sort_order": 4610},
+        {"account_code": "4620", "rgs_code": "WPerPen", "name_nl": "Pensioenlasten", "name_en": "Pension charges", "default_vat_code": null, "control_kind": null, "sort_order": 4620},
+        {"account_code": "4950", "rgs_code": "WBelVpb", "name_nl": "Vennootschapsbelasting", "name_en": "Corporate income tax", "default_vat_code": null, "control_kind": null, "sort_order": 4950}
+      ]
+    },
+    {
+      "legal_form": "stichting",
+      "_note": "No owner's capital: equity is undesignated plus designated reserves, and income is grants and donations rather than trading revenue alone.",
+      "accounts": [
+        {"account_code": "0500", "rgs_code": "BEivOvr", "name_nl": "Eigen vermogen", "name_en": "Equity", "default_vat_code": null, "control_kind": null, "sort_order": 500},
+        {"account_code": "0520", "rgs_code": "BEivBes", "name_nl": "Bestemmingsreserves", "name_en": "Designated reserves", "default_vat_code": null, "control_kind": null, "sort_order": 520},
+        {"account_code": "1750", "rgs_code": "BSchLbe", "name_nl": "Te betalen loonheffing", "name_en": "Payroll tax payable", "default_vat_code": null, "control_kind": null, "sort_order": 1750},
+        {"account_code": "4600", "rgs_code": "WPerLes", "name_nl": "Lonen en salarissen", "name_en": "Wages and salaries", "default_vat_code": null, "control_kind": null, "sort_order": 4600},
+        {"account_code": "4610", "rgs_code": "WPerSol", "name_nl": "Sociale lasten", "name_en": "Social security charges", "default_vat_code": null, "control_kind": null, "sort_order": 4610},
+        {"account_code": "8200", "rgs_code": "WOmzSub", "name_nl": "Subsidiebaten", "name_en": "Grant income", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8200},
+        {"account_code": "8210", "rgs_code": "WOmzCon", "name_nl": "Donaties en giften", "name_en": "Donations and gifts", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8210}
+      ]
+    },
+    {
+      "legal_form": "vereniging",
+      "_note": "As stichting, plus membership fees - the account a vereniging posts to most often.",
+      "accounts": [
+        {"account_code": "0500", "rgs_code": "BEivOvr", "name_nl": "Eigen vermogen", "name_en": "Equity", "default_vat_code": null, "control_kind": null, "sort_order": 500},
+        {"account_code": "0520", "rgs_code": "BEivBes", "name_nl": "Bestemmingsreserves", "name_en": "Designated reserves", "default_vat_code": null, "control_kind": null, "sort_order": 520},
+        {"account_code": "1750", "rgs_code": "BSchLbe", "name_nl": "Te betalen loonheffing", "name_en": "Payroll tax payable", "default_vat_code": null, "control_kind": null, "sort_order": 1750},
+        {"account_code": "4600", "rgs_code": "WPerLes", "name_nl": "Lonen en salarissen", "name_en": "Wages and salaries", "default_vat_code": null, "control_kind": null, "sort_order": 4600},
+        {"account_code": "8200", "rgs_code": "WOmzCon", "name_nl": "Contributies", "name_en": "Membership fees", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8200},
+        {"account_code": "8210", "rgs_code": "WOmzCon", "name_nl": "Donaties en giften", "name_en": "Donations and gifts", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8210},
+        {"account_code": "8220", "rgs_code": "WOmzSub", "name_nl": "Subsidiebaten", "name_en": "Grant income", "default_vat_code": "btw_vrijgesteld", "control_kind": null, "sort_order": 8220}
+      ]
+    }
+  ],
+
+  "_mappings_note": [
+    "CMP-003's upgrade path, as data. Empty for the first version loaded - there is",
+    "nothing to map from. A later file declares, for every code in the version it",
+    "supersedes, what became of it: unchanged, renamed, split, merged or withdrawn.",
+    "ledger.plan_rgs_upgrade() reads exactly this and tells an administration what",
+    "its chart would look like afterwards, before anything is written."
+  ],
+  "supersedes": null,
+  "mappings": []
+}
