@@ -1,0 +1,25 @@
+/*
+ * Cross-cutting accessibility utilities — CMP-012/FR-LOC-004 (WCAG 2.2 AA).
+ * Loaded once, globally, from main.tsx, because `.visually-hidden` is a
+ * utility class every screen needs (TemplateDesigner already used it before
+ * this file existed — see the audit this fixes), not something scoped to one
+ * feature's own stylesheet the way CaptureScreen.css/MobileShell.css are.
+ */
+
+/*
+ * The standard "sr-only" pattern: present in the accessibility tree, absent
+ * from the visual one. `display: none`/`visibility: hidden` would remove it
+ * from BOTH — this clips it to nothing and moves it off-screen instead, which
+ * is what keeps a screen reader announcing it.
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

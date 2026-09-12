@@ -6,6 +6,7 @@ import type { InvoiceTemplateView, TemplateAssetUploadView } from "@ledgr/shared
 
 import { ApiError, TemplateNotCompliantError, type TemplateApi } from "./api";
 import { TemplateDesigner } from "./TemplateDesigner";
+import { assertNoAxeViolations, axeViolations } from "../testing/axe";
 
 function render(ui: ReactElement, language: Language = "nl") {
   return renderBare(<I18nProvider initialLanguage={language}>{ui}</I18nProvider>);
@@ -968,5 +969,38 @@ describe("saving disables the button while in flight", () => {
     await waitFor(() =>
       expect(screen.getByTestId("template-save").hasAttribute("disabled")).toBe(false),
     );
+  });
+});
+
+describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
+  it("the designer as opened for an existing, fully-configured template", async () => {
+    const { container } = render(
+      <TemplateDesigner administrationId="adm-A" template={template} api={api()} />,
+    );
+    assertNoAxeViolations(await axeViolations(container));
+  });
+
+  it("with a 422 rendering a violation inline", async () => {
+    const violations = [
+      { field: "quantity_column", language: null, message: "QUANTITY_VIOLATION_TEXT" },
+    ];
+    const calls = api({
+      updateTemplate: vi.fn(async () => {
+        throw new TemplateNotCompliantError(
+          422,
+          "Dit sjabloon kan niet worden opgeslagen.",
+          violations,
+        );
+      }),
+    });
+    const { container } = render(
+      <TemplateDesigner administrationId="adm-A" template={template} api={calls} />,
+    );
+    fireEvent.click(screen.getByTestId("template-save"));
+    await waitFor(() =>
+      expect(screen.getByTestId("template-column-violation-quantity")).toBeDefined(),
+    );
+
+    assertNoAxeViolations(await axeViolations(container));
   });
 });

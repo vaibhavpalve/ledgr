@@ -1,16 +1,24 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default tseslint.config(
   { ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // CMP-012/FR-LOC-004 (WCAG 2.2 AA). Static analysis, not a substitute for
+    // the axe-core render tests (src/testing/axe.ts) — this catches what is
+    // visible in the JSX itself (a missing alt, a click handler with no key
+    // handler, an interactive element built from a non-interactive one)
+    // before anything ever renders; axe catches what only exists once real
+    // DOM and ARIA relationships are computed.
     files: ["apps/web/**/*.{ts,tsx}"],
-    plugins: { "react-hooks": reactHooks },
+    plugins: { "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      ...jsxA11y.flatConfigs.recommended.rules,
     },
   },
   {

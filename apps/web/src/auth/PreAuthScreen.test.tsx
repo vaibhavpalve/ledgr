@@ -22,6 +22,7 @@ import { App } from "../App";
 import { PreAuthScreen } from "./PreAuthScreen";
 import { SignInPending } from "./SignInPending";
 import { initialLanguage } from "../i18n";
+import { assertNoAxeViolations, axeViolations } from "../testing/axe";
 
 const REAL_LANGUAGES = navigator.languages;
 
@@ -200,5 +201,21 @@ describe("FR-LOC-004: the page declares the language it is actually in", () => {
 
     fireEvent.click(screen.getByTestId("language-option-nl"));
     expect(document.documentElement.lang).toBe("nl");
+  });
+});
+
+describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
+  it.each(["login", "signup"] as const)("the %s screen, in each shipped language", async (kind) => {
+    for (const language of ["nl", "en"] as const) {
+      const { container, unmount } = render(
+        <I18nProvider initialLanguage={language}>
+          <PreAuthScreen screen={kind}>
+            <SignInPending />
+          </PreAuthScreen>
+        </I18nProvider>,
+      );
+      assertNoAxeViolations(await axeViolations(container));
+      unmount();
+    }
   });
 });

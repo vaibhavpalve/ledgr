@@ -91,3 +91,10 @@
   color: #8a8a8a;
   background-color: #f7f7f7;
 }
+
+/* WCAG 2.2 SC 2.4.7 — matches .capture__shutter:focus-visible above rather
+   than leaving every secondary button relying on the browser default. */
+.capture__secondary:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: 2px;
+}

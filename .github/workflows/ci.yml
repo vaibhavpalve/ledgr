@@ -93,6 +93,36 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test
 
+  a11y-web:
+    name: Accessibility (CMP-012/FR-LOC-004, WCAG 2.2 AA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Static analysis (eslint-plugin-jsx-a11y) already runs inside lint-web
+      # via the shared eslint.config.js — a separate job for it here would
+      # duplicate that gate rather than add one. What this job runs is what
+      # static analysis cannot: axe-core (src/testing/axe.ts) against
+      # actually-rendered component output. This audit's two real findings —
+      # a `<dl>` with a stray non-dt/dd child, a `role="listbox"` empty-state
+      # row missing `role="option"` — were both invisible in JSX source and
+      # only surfaced once axe walked the rendered DOM/ARIA tree.
+      #
+      # `test:a11y` (package.json) filters `vitest run` by test NAME to just
+      # the "CMP-012/FR-LOC-004" describe blocks — the same suite test-web
+      # already runs in full, but broken out as its own job so a WCAG
+      # regression is its own failing check rather than one red line lost
+      # inside "Unit tests" - the reason dependency-scan-web is its own job
+      # too rather than a step folded into lint-web.
+      - run: pnpm --filter @ledgr/web run test:a11y
+
   build-web:
     name: Build (web/shared-types)
     runs-on: ubuntu-latest
@@ -253,6 +283,7 @@ jobs:
       - lint-web
       - typecheck-web
       - test-web
+      - a11y-web
       - build-web
       - dependency-scan-web
       - lint-api

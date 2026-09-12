@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { I18nProvider, type Language } from "@ledgr/i18n";
 import type { SwitcherEntry } from "@ledgr/shared-types";
 import { ClientSwitcher, useSwitcherShortcut } from "./ClientSwitcher";
+import { assertNoAxeViolations, axeViolations } from "../testing/axe";
 
 /**
  * Every string in these components comes from the catalogue (FR-LOC-001), so
@@ -274,6 +275,92 @@ describe("FR-FRM-000: the switcher is reachable by keyboard alone", () => {
     );
 
     expect(screen.queryByTestId("client-switcher-input")).toBeNull();
+  });
+});
+
+describe("WCAG 2.2 SC 2.4.3 (Focus Order): the dialog traps and restores focus", () => {
+  it("moves focus back to the trigger when it closes", () => {
+    function Harness() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button data-testid="trigger" onClick={() => setOpen(true)}>
+            open
+          </button>
+          {open ? (
+            <ClientSwitcher
+              open
+              entries={THREE}
+              onSearch={() => {}}
+              onSelect={() => {}}
+              onClose={() => setOpen(false)}
+            />
+          ) : null}
+        </>
+      );
+    }
+    render(<Harness />);
+
+    const trigger = screen.getByTestId("trigger");
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(screen.getByTestId("client-switcher-input")).toBeTruthy();
+
+    fireEvent.keyDown(screen.getByTestId("client-switcher-input"), { key: "Escape" });
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("swallows Tab rather than letting the browser move focus on its own", () => {
+    // jsdom, unlike a real browser, never implements native Tab-key focus
+    // movement at all — a test asserting "focus did not leave" would pass
+    // whether or not this fix existed, proving nothing. What IS observable
+    // in jsdom is whether the fix's own handler ran and called
+    // `preventDefault` — the mechanism a real browser needs to actually stay
+    // put, which useModalFocus.test.ts (below) exercises directly against
+    // multiple focusable elements, where wrapping is something jsdom's
+    // `.focus()` calls genuinely move.
+    render(
+      <ClientSwitcher
+        open
+        entries={THREE}
+        onSearch={() => {}}
+        onSelect={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const input = screen.getByTestId("client-switcher-input");
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    const prevented = vi.spyOn(event, "preventDefault");
+
+    input.dispatchEvent(event);
+
+    expect(prevented).toHaveBeenCalled();
+  });
+
+  it("declares itself modal", () => {
+    open();
+    expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+  });
+});
+
+describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
+  it("open, with results", async () => {
+    open();
+    assertNoAxeViolations(await axeViolations(document.body));
+  });
+
+  it("open, with no matches", async () => {
+    render(
+      <ClientSwitcher
+        open
+        entries={[]}
+        onSearch={() => {}}
+        onSelect={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    assertNoAxeViolations(await axeViolations(document.body));
   });
 });
 

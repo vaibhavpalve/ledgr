@@ -73,31 +73,45 @@ export function HomeScreen({
 
       {summary !== null ? (
         <>
+          {/*
+            WCAG 2.2 / SC 1.3.1 (Info and Relationships): a `<dl>` may only
+            directly contain <dt>/<dd> groups (each optionally wrapped in a
+            <div>, which is what groups one term with its value here) — axe
+            (this file's own CMP-012/FR-LOC-004 coverage in HomeScreen.test.tsx,
+            via MobileShell.test.tsx's Home-tab check) flagged the caption
+            below as a stray <p> inside that div, which breaks the group. A
+            <dt> may have more than one <dd>, so the caption is a second
+            description of the same term rather than an unrelated paragraph —
+            not a workaround, the correct reading of what a caption under a
+            figure actually is.
+          */}
           <dl data-testid="home-figures">
             <div>
               <dt>{t("mobile.home.cash_position_label")}</dt>
               <dd data-testid="home-cash-position">{money(summary.cash_position)}</dd>
-              <p data-testid="home-cash-position-caption">
+              <dd data-testid="home-cash-position-caption">
                 {t("mobile.home.cash_position_caption")}
-              </p>
+              </dd>
             </div>
 
             <div>
               <dt>{t("mobile.home.receivables_label")}</dt>
               <dd data-testid="home-receivables">{money(summary.receivables)}</dd>
-              <p data-testid="home-receivables-caption">{t("mobile.home.receivables_caption")}</p>
+              <dd data-testid="home-receivables-caption">{t("mobile.home.receivables_caption")}</dd>
             </div>
 
             <div>
               <dt>{t("mobile.home.vat_estimate_label")}</dt>
               <dd data-testid="home-vat-estimate">{money(summary.vat_estimate)}</dd>
-              <p data-testid="home-vat-estimate-period">
+              <dd data-testid="home-vat-estimate-period">
                 {t("mobile.home.vat_estimate_period", {
                   start: date(summary.vat_period_start),
                   end: date(summary.vat_period_end),
                 })}
-              </p>
-              <p data-testid="home-vat-estimate-caption">{t("mobile.home.vat_estimate_caption")}</p>
+              </dd>
+              <dd data-testid="home-vat-estimate-caption">
+                {t("mobile.home.vat_estimate_caption")}
+              </dd>
             </div>
           </dl>
 

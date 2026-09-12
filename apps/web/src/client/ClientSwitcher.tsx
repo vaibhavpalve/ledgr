@@ -2,6 +2,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { roleLabel, useI18n } from "@ledgr/i18n";
 import type { SwitcherEntry } from "@ledgr/shared-types";
 
+import { useModalFocus } from "../useModalFocus";
+
 /**
  * FR-FRM-000: "Client switcher: searchable by client name, KvK number or
  * trade name, keyboard-reachable, showing only granted administrations."
@@ -71,15 +73,22 @@ export function ClientSwitcher({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
 
-  // Focus the input when opened, so Ctrl+K lands the caret where typing
-  // goes rather than requiring a further Tab.
-  useEffect(() => {
-    if (open) {
-      inputRef.current?.focus();
-    }
-  }, [open]);
+  // WCAG 2.2 SC 2.4.3: focuses the input when opened (so Ctrl+K lands the
+  // caret where typing goes, the input being the first — and only —
+  // focusable element inside), traps Tab inside the dialog while it is open,
+  // and returns focus to whatever had it (the trigger that opened the
+  // switcher) once it closes — none of which `role="dialog"` does by itself.
+  //
+  // This SUBSUMES a plain `if (open) inputRef.current?.focus()` effect that
+  // used to live here on its own: running both was a race, not a belt and
+  // braces — whichever ran second would capture the OTHER one's just-applied
+  // focus as "what had focus before the dialog opened", so closing would
+  // restore focus to the dialog's own input instead of the real trigger. See
+  // useModalFocus's own docstring.
+  useModalFocus(open, dialogRef);
 
   // A shrinking result set must not leave the active index past the end —
   // Enter would then select nothing and look like a broken key.
@@ -133,7 +142,13 @@ export function ClientSwitcher({
   };
 
   return (
-    <div className="client-switcher" role="dialog" aria-label={t("client.switcher.dialog_label")}>
+    <div
+      ref={dialogRef}
+      className="client-switcher"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("client.switcher.dialog_label")}
+    >
       <input
         ref={inputRef}
         type="text"
@@ -163,11 +178,34 @@ export function ClientSwitcher({
         data-testid="client-switcher-list"
       >
         {entries.length === 0 ? (
-          <li className="client-switcher__empty" data-testid="client-switcher-empty">
+          // A role="listbox" ARIA-requires its children to be options (or
+          // option groups) — found by the axe-core tests in this file's
+          // CMP-012/FR-LOC-004 describe block, which this repo's own manual
+          // audit missed. `aria-disabled` rather than omitting the role
+          // entirely: this row is still the listbox's one and only child and
+          // has to identify as one of its permitted children, but it names
+          // nothing selectable — the same shape a disabled `<option>` takes.
+          <li
+            role="option"
+            aria-disabled="true"
+            aria-selected="false"
+            className="client-switcher__empty"
+            data-testid="client-switcher-empty"
+          >
             {t("client.switcher.no_matches", { query })}
           </li>
         ) : (
           entries.map((entry, index) => (
+            // This option's keyboard path is Enter on the INPUT above (see
+            // handleKeyDown), which selects `activeEntry` via
+            // `aria-activedescendant` — the ARIA combobox pattern's whole
+            // point is that the option itself never receives DOM focus or a
+            // keydown event. `onClick` here is the mouse-only convenience
+            // this component's own docstring describes; it is not a second,
+            // unreachable-by-keyboard path, and adding a keydown handler
+            // directly on a `role="option"` element that is never focused
+            // would do nothing.
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events
             <li
               key={entry.administrationId}
               id={`${listboxId}-${entry.administrationId}`}

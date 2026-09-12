@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import "./accessibility.css";
 import { App } from "./App";
 import { registerServiceWorker } from "./registerServiceWorker";
 

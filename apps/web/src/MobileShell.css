@@ -114,3 +114,22 @@
   color: #0b57d0;
   font-weight: 700;
 }
+
+/*
+ * WCAG 2.2 SC 2.4.7 (Focus Visible). The browser default outline would
+ * satisfy the letter of it here (nothing suppresses `outline`), but it is
+ * inconsistent across browsers and absent from every other interactive
+ * element in this file — an explicit, consistently-coloured ring matches
+ * `.capture__shutter:focus-visible` (CaptureScreen.css) rather than leaving
+ * this the one place in the app that looks unstyled specifically when
+ * focused.
+ */
+.mobile-shell__tabs button:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: -3px;
+}
+
+.mobile-shell__content:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: -3px;
+}

@@ -17,6 +17,7 @@ import { CaptureScreen } from "./CaptureScreen";
 import type { DecodeFile } from "./decode";
 import { useSitting, type Sitting, type SittingContext } from "./useSitting";
 import { MemoryKeyVault, WebCryptoCipher } from "./webCryptoCipher";
+import { assertNoAxeViolations, axeViolations } from "../testing/axe";
 
 function render(ui: ReactElement, language: Language = "nl") {
   return renderBare(<I18nProvider initialLanguage={language}>{ui}</I18nProvider>);
@@ -502,6 +503,27 @@ describe("glare and blur warnings — FR-EXP-001", () => {
     expect(built.store.records.size).toBe(0);
   });
 
+  it("moves focus into the prompt and restores it to the shutter on retake (WCAG 2.2 SC 2.4.3)", async () => {
+    const built = build({ decode: decoder(["blurred"]) });
+    render(<built.Harness />);
+    await waitFor(() => screen.getByTestId("capture-drop"));
+    const shutter = screen.getByTestId("capture-take-photo");
+    shutter.focus();
+
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await waitFor(() => screen.getByTestId("capture-quality"));
+
+    // `role="alertdialog"` promises an interruption; before this fix, focus
+    // never actually moved and stayed wherever it already was.
+    expect(screen.getByTestId("capture-quality").getAttribute("aria-modal")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByTestId("capture-quality-retake"));
+
+    fireEvent.click(screen.getByTestId("capture-quality-retake"));
+    await waitFor(() => expect(screen.queryByTestId("capture-quality")).toBeNull());
+
+    expect(document.activeElement).toBe(shutter);
+  });
+
   it("always lets the person keep the photograph anyway", async () => {
     // These warn and never refuse. A blurred photograph of a receipt is worth
     // more than no photograph of it, and the checks are heuristics.
@@ -646,5 +668,22 @@ describe("tenant context — CLAUDE.md rule 1, client side", () => {
     expect(payload.administrationId).toBe("adm-A");
     expect(payload.sessionId).toBe("sess-1");
     expect(payload.fiscalYearId).toBe("fy-2026");
+  });
+});
+
+describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
+  it("the base screen", async () => {
+    await startSitting();
+    assertNoAxeViolations(await axeViolations(document.body));
+  });
+
+  it("the quality prompt, open", async () => {
+    const built = build({ decode: decoder(["blurred"]) });
+    render(<built.Harness />);
+    await waitFor(() => screen.getByTestId("capture-drop"));
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await waitFor(() => screen.getByTestId("capture-quality"));
+
+    assertNoAxeViolations(await axeViolations(document.body));
   });
 });

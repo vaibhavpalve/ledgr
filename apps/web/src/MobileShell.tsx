@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@ledgr/i18n";
 import type { CaptureQueue } from "@ledgr/offline-queue";
 import type { ClientBadge } from "@ledgr/shared-types";
@@ -104,11 +104,35 @@ export function MobileShell({
   // straight into a task - "home", not "capture", is the initial tab.
   const [tab, setTab] = useState<MobileTab>("home");
 
+  // WCAG 2.2 SC 2.4.3 (Focus Order) / SC 4.1.2, applied to a shell that has no
+  // router: switching tabs replaces the whole screen the way a page navigation
+  // would, so it needs the same focus behaviour one gets for free — moving
+  // focus onto the new content, rather than leaving it sitting on the tab
+  // button a sighted user can see was already activated but a screen reader
+  // user has no signal actually changed anything past its own announcement.
+  // `tabIndex={-1}` makes `<main>` a valid, non-Tab-order focus target for
+  // exactly this; the ref skips the initial mount so landing on "home" does
+  // not steal focus from whatever the page already had (e.g. a skip link).
+  const mainRef = useRef<HTMLElement>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    mainRef.current?.focus();
+  }, [tab]);
+
   return (
     <div className="mobile-shell">
       <ClientHeader badge={badge} />
 
-      <div className="mobile-shell__content" data-testid="mobile-shell-content">
+      <main
+        ref={mainRef}
+        className="mobile-shell__content"
+        tabIndex={-1}
+        data-testid="mobile-shell-content"
+      >
         {tab === "home" ? (
           <HomeScreen
             administrationId={administrationId}
@@ -138,7 +162,7 @@ export function MobileShell({
             onSent={() => setTab("view")}
           />
         ) : null}
-      </div>
+      </main>
 
       {/*
         A bottom tab bar — the mobile convention — with exactly five tabs,

@@ -7,6 +7,7 @@ import { CaptureQueueStatus } from "./CaptureQueueStatus";
 import type { DecodeFile } from "./decode";
 import type { QualityReport } from "./quality";
 import { expensesThisSittingWouldCreate, type CaptureInput, type Sitting } from "./useSitting";
+import { useModalFocus } from "../useModalFocus";
 import type { CaptureQueue } from "@ledgr/offline-queue";
 
 /**
@@ -341,8 +342,26 @@ function QualityPrompt({
   onUseAnyway: () => void;
 }) {
   const { t } = useI18n();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // WCAG 2.2 SC 2.4.3. `role="alertdialog"` promises an interruption that
+  // requires a decision (FR-EXP-001's retake/use-anyway) before continuing;
+  // without this, focus never actually MOVED here and Tab could still reach
+  // the shutter and choose-files buttons behind it while the decision this
+  // prompt exists to force was still open. `open` is always `true` here —
+  // the parent unmounts this component entirely rather than hiding it, which
+  // is what makes useModalFocus's unmount-time cleanup the moment focus is
+  // restored to whatever was focused before the prompt appeared.
+  useModalFocus(true, dialogRef);
+
   return (
-    <div role="alertdialog" aria-label={t("capture.quality.title")} data-testid="capture-quality">
+    <div
+      ref={dialogRef}
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={t("capture.quality.title")}
+      data-testid="capture-quality"
+    >
       <p>{t("capture.quality.title")}</p>
       <ul>
         {report.findings.map((finding) => (

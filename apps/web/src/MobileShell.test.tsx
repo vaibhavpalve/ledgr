@@ -13,6 +13,7 @@ import { MemoryKeyVault, WebCryptoCipher } from "./capture/webCryptoCipher";
 import type { DashboardApi } from "./home/api";
 import type { SalesInvoiceApi } from "./invoicing/api";
 import { MobileShell } from "./MobileShell";
+import { assertNoAxeViolations, axeViolations } from "./testing/axe";
 
 function render(ui: ReactElement, language: Language = "nl") {
   return renderBare(<I18nProvider initialLanguage={language}>{ui}</I18nProvider>);
@@ -259,5 +260,58 @@ describe("FR-FRM-000a: the client header is persistent, not per-tab", () => {
 
     expect(screen.getByTestId("client-header").dataset.state).toBe("active");
     expect(screen.getByTestId("client-name").textContent).toBe("Bakker IT");
+  });
+});
+
+/**
+ * CMP-012/FR-LOC-004: "WCAG 2.2 AA across web and mobile, verified by
+ * automated testing in CI." This is that automated testing, for the shell a
+ * person actually uses today — every one of the five tabs, in its settled
+ * (not merely initial) state, since a tab that mounts clean and then renders
+ * a violation once its own data arrives is exactly the case a check against
+ * only the first render would miss.
+ *
+ * `baseElement` rather than `container`: axe needs to see the whole
+ * document, because an accessible-name computation or a landmark check can
+ * depend on ancestors the render container itself does not include.
+ */
+describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
+  it("Home tab", async () => {
+    const { baseElement } = await renderHarness();
+    await waitFor(() => expect(screen.getByTestId("home-figures")).toBeDefined());
+
+    assertNoAxeViolations(await axeViolations(baseElement));
+  });
+
+  it("Capture tab", async () => {
+    const { baseElement } = await renderHarness();
+    fireEvent.click(screen.getByTestId("mobile-tab-capture"));
+    expect(screen.getByTestId("capture-take-photo")).toBeDefined();
+
+    assertNoAxeViolations(await axeViolations(baseElement));
+  });
+
+  it("Approve tab", async () => {
+    const { baseElement } = await renderHarness();
+    fireEvent.click(screen.getByTestId("mobile-tab-approve"));
+    await waitFor(() => expect(screen.getByTestId("approve-empty")).toBeDefined());
+
+    assertNoAxeViolations(await axeViolations(baseElement));
+  });
+
+  it("View tab", async () => {
+    const { baseElement } = await renderHarness();
+    fireEvent.click(screen.getByTestId("mobile-tab-view"));
+    await waitFor(() => expect(screen.getByTestId("view-expenses-empty")).toBeDefined());
+
+    assertNoAxeViolations(await axeViolations(baseElement));
+  });
+
+  it("Send-invoice tab", async () => {
+    const { baseElement } = await renderHarness();
+    fireEvent.click(screen.getByTestId("mobile-tab-invoice"));
+    expect(screen.getByTestId("invoice-submit")).toBeDefined();
+
+    assertNoAxeViolations(await axeViolations(baseElement));
   });
 });
