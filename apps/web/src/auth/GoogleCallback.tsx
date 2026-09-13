@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@ledgr/i18n";
 
-import type { AuthApi, AuthResult } from "./api";
+import type { AccountModel, AuthApi, AuthResult } from "./api";
 import { errorMessage } from "./LoginForm";
 
 /**
@@ -33,8 +33,11 @@ export function GoogleCallback({
   onBackToLogin: () => void;
 }) {
   const { t } = useI18n();
-  const [outcome, setOutcome] = useState<"pending" | "link_required" | "failed">("pending");
-  const [linkMessage, setLinkMessage] = useState("");
+  const [outcome, setOutcome] = useState<
+    "pending" | "link_required" | "failed" | "signup_required"
+  >("pending");
+  const [message, setMessage] = useState("");
+  const [signup, setSignup] = useState<{ ticket: string; email: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,14 +47,17 @@ export function GoogleCallback({
         if (cancelled) return;
         if (result.kind === "signed_in") {
           onSignedIn(result.result);
+        } else if (result.kind === "signup_required") {
+          setSignup({ ticket: result.ticket, email: result.email });
+          setOutcome("signup_required");
         } else {
-          setLinkMessage(result.message);
+          setMessage(result.message);
           setOutcome("link_required");
         }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setLinkMessage(errorMessage(error));
+        setMessage(errorMessage(error));
         setOutcome("failed");
       });
     return () => {
@@ -71,14 +77,137 @@ export function GoogleCallback({
     );
   }
 
+  if (outcome === "signup_required" && signup !== null) {
+    return (
+      <GoogleSignupForm
+        api={api}
+        ticket={signup.ticket}
+        email={signup.email}
+        onSignedUp={onSignedIn}
+      />
+    );
+  }
+
   return (
     <div data-testid="google-callback-problem">
-      <p role="alert">
-        {outcome === "link_required" ? linkMessage : t("auth.google.callback.failed")}
-      </p>
+      <p role="alert">{outcome === "link_required" ? message : t("auth.google.callback.failed")}</p>
       <button type="button" data-testid="google-callback-back" onClick={onBackToLogin}>
         {t("auth.google.callback.back_to_login")}
       </button>
     </div>
+  );
+}
+
+/**
+ * FR-MDL-001's one question, for a Google identity
+ * `GoogleSignInService.sign_in` already created a bare account for (see
+ * `api.auth.routes`' module docstring) - this form never asks for email or
+ * password, both already settled by the Google sign-in that got here.
+ * `ticket` is single-use: a second submission (a retry after a network
+ * blip, a double click) would fail with `errors.ceremony_not_found`, shown
+ * like any other refusal rather than specially handled - there is nothing
+ * this screen can offer beyond "try again from the sign-in screen" once
+ * that ticket is gone.
+ */
+function GoogleSignupForm({
+  api,
+  ticket,
+  email,
+  onSignedUp,
+}: {
+  api: AuthApi;
+  ticket: string;
+  email: string;
+  onSignedUp: (result: AuthResult) => void;
+}) {
+  const { t } = useI18n();
+  const [accountModel, setAccountModel] = useState<AccountModel>("self_managed");
+  const [organizationName, setOrganizationName] = useState("");
+  const [kvkNumber, setKvkNumber] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  return (
+    <form
+      className="auth-form"
+      data-testid="google-signup-form"
+      aria-label={t("auth.google.signup.heading")}
+      onSubmit={(event) => {
+        event.preventDefault();
+        setSubmitting(true);
+        setProblem(null);
+        void api
+          .signupGoogle({
+            ticket,
+            accountModel,
+            organizationName,
+            kvkNumber: accountModel === "firm" ? kvkNumber : null,
+          })
+          .then(onSignedUp)
+          .catch((error: unknown) => setProblem(errorMessage(error)))
+          .finally(() => setSubmitting(false));
+      }}
+    >
+      <h2>{t("auth.google.signup.heading")}</h2>
+      <p data-testid="google-signup-email">{t("auth.google.signup.intro", { email })}</p>
+
+      <fieldset>
+        <legend>{t("auth.sign_up.account_model.label")}</legend>
+        <label>
+          <input
+            type="radio"
+            name="google-signup-account-model"
+            data-testid="google-signup-account-model-self-managed"
+            checked={accountModel === "self_managed"}
+            onChange={() => setAccountModel("self_managed")}
+          />
+          {t("auth.sign_up.account_model.self_managed")}
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="google-signup-account-model"
+            data-testid="google-signup-account-model-firm"
+            checked={accountModel === "firm"}
+            onChange={() => setAccountModel("firm")}
+          />
+          {t("auth.sign_up.account_model.firm")}
+        </label>
+      </fieldset>
+
+      <label>
+        {t("auth.sign_up.organization_name")}
+        <input
+          type="text"
+          required
+          data-testid="google-signup-organization-name"
+          value={organizationName}
+          onChange={(event) => setOrganizationName(event.target.value)}
+        />
+      </label>
+
+      {accountModel === "firm" ? (
+        <label>
+          {t("auth.sign_up.kvk_number")}
+          <input
+            type="text"
+            required
+            data-testid="google-signup-kvk-number"
+            value={kvkNumber}
+            onChange={(event) => setKvkNumber(event.target.value)}
+          />
+        </label>
+      ) : null}
+
+      {problem ? (
+        <p role="alert" data-testid="google-signup-error">
+          {problem}
+        </p>
+      ) : null}
+
+      <button type="submit" data-testid="google-signup-submit" disabled={submitting}>
+        {t("auth.sign_up.submit")}
+      </button>
+    </form>
   );
 }

@@ -136,11 +136,6 @@
       "nl": "Er bestaat al een account met dit e-mailadres via een andere aanmeldmethode. Bevestig met uw bestaande wachtwoord om Google te koppelen.",
       "en": "An account with this email already exists via another sign-in method. Confirm with your existing password to link Google."
     },
-    "errors.google_signin_needs_signup_first": {
-      "note": "This Google identity has no LEDGR account linked at all - a genuinely new signup, which this module deliberately does not carry through Google's own redirect (see api.auth.routes' module docstring). Names the actual next step rather than a generic failure.",
-      "nl": "Er is nog geen account voor dit Google-account. Maak eerst een account aan met e-mailadres en wachtwoord, en koppel Google daarna in de instellingen.",
-      "en": "There is no account for this Google identity yet. Create an account with email and password first, then connect Google from settings."
-    },
     "errors.document_too_large": {
       "note": "SEC-005's size cap. {limit_bytes} travels beside the sentence as a machine field rather than inside it, so a client can render a human size ('25 MB') in its own units without the message having to guess which.",
       "nl": "Dit bestand is te groot om te bewaren. Probeer een kleinere scan of foto.",

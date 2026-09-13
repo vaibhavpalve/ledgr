@@ -11,6 +11,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
   window.history.replaceState(null, "", "/");
+  capturesAtRiskMock.mockClear();
+  capturesAtRiskMock.mockResolvedValue(0);
+  purgeCaptureQueueMock.mockClear();
 });
 
 class MemoryStore implements QueueStore {
@@ -37,6 +40,17 @@ class MemoryStore implements QueueStore {
 // here so App.test.tsx can exercise the real composition root's WIRING
 // (does authenticated + a mobile context reach MobileShell) without needing a
 // real IndexedDB.
+//
+// `capturesAtRiskMock`/`purgeCaptureQueueMock` cover MOB-009's sign-out
+// wiring the same way — `vi.hoisted` because `vi.mock`'s factory runs before
+// this file's own top-level code, so a plain `const` here would not exist yet
+// when the factory closes over it. Default resolves to 0 (nothing at risk);
+// individual tests override with `mockResolvedValueOnce`.
+const { capturesAtRiskMock, purgeCaptureQueueMock } = vi.hoisted(() => ({
+  capturesAtRiskMock: vi.fn(async () => 0),
+  purgeCaptureQueueMock: vi.fn(async (reason: string) => ({ reason, discarded: 0 })),
+}));
+
 vi.mock("./capture/queue", () => ({
   captureQueue: () =>
     new CaptureQueue({
@@ -45,6 +59,8 @@ vi.mock("./capture/queue", () => ({
       clock: { now: () => Date.now() },
       newId: () => crypto.randomUUID(),
     }),
+  capturesAtRisk: capturesAtRiskMock,
+  purgeCaptureQueue: purgeCaptureQueueMock,
 }));
 
 const mobileContext: SittingContext = {
@@ -292,6 +308,72 @@ describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
     fireEvent.click(screen.getByTestId("sign-out"));
 
     await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
+  });
+
+  it("MOB-009: warns before signing out when captures are queued, and cancelling keeps the session", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () =>
+          new Response(
+            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      }),
+    );
+    capturesAtRiskMock.mockResolvedValueOnce(3);
+
+    render(<App language="nl" />);
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+
+    fireEvent.click(screen.getByTestId("sign-out"));
+
+    await waitFor(() => expect(screen.getByTestId("sign-out-confirm")).toBeDefined());
+    expect(screen.getByTestId("sign-out-confirm").textContent).toContain("3");
+    expect(purgeCaptureQueueMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("sign-out-confirm-cancel"));
+
+    expect(screen.queryByTestId("sign-out-confirm")).toBeNull();
+    // Still signed in - the dialog was dismissed, not confirmed.
+    expect(screen.getByTestId("sign-out")).toBeDefined();
+    expect(purgeCaptureQueueMock).not.toHaveBeenCalled();
+  });
+
+  it("MOB-009: confirming purges the queue with reason 'logout' before completing sign-out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () =>
+          new Response(
+            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        "POST /v1/auth/logout": () =>
+          new Response(JSON.stringify({ status: "logged_out" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      }),
+    );
+    capturesAtRiskMock.mockResolvedValueOnce(2);
+
+    render(<App language="nl" />);
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+
+    fireEvent.click(screen.getByTestId("sign-out"));
+    await waitFor(() => expect(screen.getByTestId("sign-out-confirm")).toBeDefined());
+
+    fireEvent.click(screen.getByTestId("sign-out-confirm-anyway"));
+
+    await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
+    expect(purgeCaptureQueueMock).toHaveBeenCalledWith("logout");
   });
 
   it("a Google OAuth redirect landing (?code&state in the URL) shows the callback screen, not the login form", async () => {

@@ -30,13 +30,24 @@ step, not merely as identifying the user (see login_passkey_finish).
     change exists to close, and adding it later needs no rework here (a
     `users.email_verified_at` column and a gate on it, nothing this module
     would have to unwind).
-  * Google sign-in creating a BRAND NEW account with no prior signup.
-    GoogleSignInService.sign_in can do this, but doing it well means
-    carrying the one-question account-model choice through a full-page
-    redirect, which is its own piece of work. Here, a Google identity with
-    no existing account is told plainly to sign up with a password first
-    and connect Google afterwards - honest and small, rather than a half
-    carried-through flow.
+
+--- Google sign-in creating a brand-new account ---
+
+`GoogleSignInService.sign_in` creates a bare `User` row and links the
+identity the moment a Google sign-in matches neither an existing linked
+subject nor an existing email - see that module's own docstring. What this
+module adds is the rest of FR-MDL-001: `login_google_callback` responds
+`{"status": "signup_required", "ticket": ..., "email": ...}` for that bare
+user rather than 403-refusing it, and `signup_google` (below) is the
+follow-up screen's endpoint - it asks the same one question `signup()`
+asks, consumes the ticket to resolve the already-created user, and calls
+`SignupService.provision_organization` (the part of `signup()` that runs
+after a user exists) to create the organization and grant founding Owner.
+The ticket is a `google_signup` `auth_ceremony` row (migration 0047),
+because Google's own OAuth redirect has no room to carry
+account_model/organization_name/kvk_number through it - collecting them
+happens in a genuinely separate request, after the identity is already
+resolved and linked.
 """
 
 from __future__ import annotations
@@ -199,6 +210,12 @@ def register(app: FastAPI) -> None:
         login_google_callback,
         methods=["POST"],
         name="login_google_callback",
+    )
+    app.add_api_route(
+        f"{_BASE}/signup/google",
+        signup_google,
+        methods=["POST"],
+        name="signup_google",
     )
 
 
@@ -884,13 +901,16 @@ async def login_google_callback(
 
     organization_id = await _home_organization_id(session, outcome.id)
     if organization_id is None:
-        # A brand new Google identity with no prior account - see this
-        # module's own docstring for why signup-via-Google is out of scope
-        # here.
-        await session.commit()
-        raise problem(
-            request, 403, "errors.google_signin_needs_signup_first", reason="no_organization"
+        # A brand new Google identity - GoogleSignInService.sign_in already
+        # created outcome's bare user row and linked the identity (see its
+        # own docstring). What is missing is FR-MDL-001's one question,
+        # which this response hands to a follow-up screen via a one-time
+        # ticket - see this module's own docstring and signup_google below.
+        ticket = await SqlCeremonyRepository(session).create_google_signup_ceremony(
+            user_id=outcome.id
         )
+        await session.commit()
+        return {"status": "signup_required", "ticket": str(ticket), "email": outcome.email}
 
     source_ip = request.client.host if request.client else None
     mfa_verified = google_asserts_second_factor(identity)
@@ -913,3 +933,78 @@ async def login_google_callback(
     await session.commit()
     enrollment = await _enrollment_status(session, outcome.id) if not effective_mfa else None
     return _auth_response(token=token, mfa_verified=effective_mfa, enrollment=enrollment)
+
+
+class GoogleSignupBody(BaseModel):
+    ticket: uuid.UUID
+    account_model: Literal["self_managed", "firm"]
+    organization_name: str
+    kvk_number: str | None = None
+
+
+async def signup_google(
+    request: Request,
+    body: GoogleSignupBody,
+    session: AsyncSession = Depends(get_bootstrap_db_session),
+) -> dict[str, Any]:
+    """FR-MDL-001's one question, for the Google identity
+    `login_google_callback` could not carry through Google's own redirect.
+    The ticket resolves back to the bare `User` row
+    `GoogleSignInService.sign_in` already created and linked - this handler
+    never creates a user itself, only the organization and founding grant,
+    via `SignupService.provision_organization` (the same code `signup()`
+    runs after `register_user`, factored out for this exact reuse).
+    """
+    try:
+        user_id = await SqlCeremonyRepository(session).consume_google_signup_ceremony(body.ticket)
+    except CeremonyNotFoundError as exc:
+        raise problem(
+            request, 410, "errors.ceremony_not_found", reason="ceremony_not_found"
+        ) from exc
+
+    user = await SqlUserRepository(session).get_by_id(user_id)
+    if user is None:
+        # Structurally unreachable: the ticket's user_id came from a row
+        # GoogleSignInService.sign_in just inserted in the same table this
+        # reads, and users are never deleted (status is set instead) - see
+        # migration 0003. Fails closed rather than assuming, the same
+        # posture api.tenancy.get_tenant_context takes for the same reason.
+        raise problem(
+            request, 410, "errors.ceremony_not_found", reason="ceremony_not_found"
+        )
+
+    breach_checker = build_breach_checker(settings.breach_checker_provider)
+    service = SignupService(session, breach_checker)
+    try:
+        result = await service.provision_organization(
+            user,
+            account_model=body.account_model,
+            organization_name=body.organization_name,
+            kvk_number=body.kvk_number,
+        )
+    except OwnerRoleMissingError as exc:
+        raise problem(
+            request, 500, "errors.signup_unavailable", reason="owner_role_missing"
+        ) from exc
+
+    session_service = _session_service_for(session)
+    new_session, _raw_token = await session_service.issue_session(
+        user.id, privileged=True, mfa_verified=False
+    )
+    token = issue_access_token(
+        user_id=user.id,
+        organization_id=result.organization_id,
+        session_id=new_session.id,
+        mfa_verified=False,
+        expires_at=new_session.expires_at,
+    )
+    await _record_authentication_event(
+        session,
+        organization_id=result.organization_id,
+        actor_user_id=user.id,
+        action="signup_google",
+        source_ip=request.client.host if request.client else None,
+        request=request,
+    )
+    await session.commit()
+    return _auth_response(token=token, mfa_verified=False)

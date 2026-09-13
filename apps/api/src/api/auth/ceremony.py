@@ -1,8 +1,11 @@
-"""Short-lived, single-use storage for the two sign-in methods whose
-protocol needs a server-held round trip before the caller is known or
-before a second request can be trusted to belong to the first: WebAuthn
-challenges and Google OIDC state/nonce/PKCE verifier. See migration 0046's
-own comment for why these share one table.
+"""Short-lived, single-use storage for the sign-in methods whose protocol
+needs a server-held round trip before the caller is known or before a
+second request can be trusted to belong to the first: WebAuthn challenges,
+Google OIDC state/nonce/PKCE verifier, and (added for Google-initiated
+signup) a ticket handing a just-created bare user back to a follow-up
+"finish your account" request. See migration 0046's own comment for why
+the first two share one table; `google_signup` reuses the same table and
+TTL discipline for the same reason - one shape, one cleanup policy.
 
 Neither api.auth.passkeys nor api.auth.google_oidc persists this state
 themselves - both modules say so in their own docstrings, deliberately
@@ -20,7 +23,9 @@ from typing import Literal, Protocol
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-CeremonyKind = Literal["passkey_registration", "passkey_authentication", "google_oidc"]
+CeremonyKind = Literal[
+    "passkey_registration", "passkey_authentication", "google_oidc", "google_signup"
+]
 
 _TTL = timedelta(minutes=5)
 
@@ -75,6 +80,10 @@ class CeremonyRepository(Protocol):
     ) -> uuid.UUID: ...
 
     async def consume_google_ceremony(self, *, state: str) -> GoogleCeremony: ...
+
+    async def create_google_signup_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID: ...
+
+    async def consume_google_signup_ceremony(self, ticket_id: uuid.UUID) -> uuid.UUID: ...
 
 
 def _utcnow() -> datetime:
@@ -170,3 +179,41 @@ class SqlCeremonyRepository:
         return GoogleCeremony(
             id=row.id, state=state, nonce=row.google_nonce, code_verifier=row.google_code_verifier
         )
+
+    async def create_google_signup_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID:
+        """A one-time ticket handed to the frontend when
+        `api.auth.google_signin.GoogleSignInService.sign_in` resolves a
+        Google identity with no existing account: that call already
+        created a bare `User` row and linked the identity (see its own
+        docstring), so what remains is FR-MDL-001's one question -
+        account_model/organization_name/kvk_number - which Google's own
+        redirect has no room to carry. `user_id` is the only field this
+        kind needs; `api.auth.routes.signup_google` resolves it back via
+        `consume_google_signup_ceremony` rather than trusting a client-
+        supplied id.
+        """
+        result = await self._session.execute(
+            text(
+                "INSERT INTO auth_ceremony (kind, user_id, expires_at) "
+                "VALUES ('google_signup', :user_id, :expires_at) RETURNING id"
+            ),
+            {"user_id": str(user_id), "expires_at": _utcnow() + _TTL},
+        )
+        ceremony_id: uuid.UUID = result.scalar_one()
+        return ceremony_id
+
+    async def consume_google_signup_ceremony(self, ticket_id: uuid.UUID) -> uuid.UUID:
+        result = await self._session.execute(
+            text(
+                "UPDATE auth_ceremony SET consumed_at = :now "
+                "WHERE id = :id AND kind = 'google_signup' "
+                "AND consumed_at IS NULL AND expires_at > :now "
+                "RETURNING user_id"
+            ),
+            {"id": str(ticket_id), "now": _utcnow()},
+        )
+        row = result.first()
+        if row is None or row.user_id is None:
+            raise CeremonyNotFoundError
+        user_id: uuid.UUID = row.user_id
+        return user_id

@@ -64,7 +64,13 @@ export interface PasskeyChallenge {
 }
 
 export type GoogleCallbackResult =
-  { kind: "signed_in"; result: AuthResult } | { kind: "link_required"; message: string };
+  | { kind: "signed_in"; result: AuthResult }
+  | { kind: "link_required"; message: string }
+  /** FR-MDL-001: this Google identity matched no existing account.
+   * GoogleSignInService.sign_in already created a bare user and linked the
+   * identity server-side (see api.auth.routes' module docstring) - `ticket`
+   * is the one-time reference `signupGoogle` needs to finish the rest. */
+  | { kind: "signup_required"; ticket: string; email: string };
 
 interface AuthResponseJson {
   access_token: string;
@@ -133,15 +139,36 @@ export class AuthApi {
   }
 
   async loginGoogleCallback(code: string, state: string): Promise<GoogleCallbackResult> {
-    const raw = await this.call<AuthResponseJson | { status: string; message: string }>(
-      "POST",
-      "/v1/auth/login/google/callback",
-      { code, state },
-    );
+    const raw = await this.call<
+      | AuthResponseJson
+      | { status: "link_required"; message: string }
+      | { status: "signup_required"; ticket: string; email: string }
+    >("POST", "/v1/auth/login/google/callback", { code, state });
     if ("status" in raw && raw.status === "link_required") {
       return { kind: "link_required", message: raw.message };
     }
+    if ("status" in raw && raw.status === "signup_required") {
+      return { kind: "signup_required", ticket: raw.ticket, email: raw.email };
+    }
     return { kind: "signed_in", result: toAuthResult(raw as AuthResponseJson) };
+  }
+
+  /** FR-MDL-001's one question, for the Google identity `ticket` names -
+   * see GoogleCallbackResult's `signup_required` variant. Never creates a
+   * user itself (that already happened server-side); only the organization
+   * and founding grant. */
+  signupGoogle(params: {
+    ticket: string;
+    accountModel: AccountModel;
+    organizationName: string;
+    kvkNumber: string | null;
+  }): Promise<AuthResult> {
+    return this.call<AuthResponseJson>("POST", "/v1/auth/signup/google", {
+      ticket: params.ticket,
+      account_model: params.accountModel,
+      organization_name: params.organizationName,
+      kvk_number: params.kvkNumber,
+    }).then(toAuthResult);
   }
 
   mfaTotpEnrollBegin(): Promise<{ secret: string; provisioningUri: string }> {

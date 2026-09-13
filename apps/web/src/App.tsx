@@ -4,6 +4,7 @@ import type { ClientBadge } from "@ledgr/shared-types";
 
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileShell } from "./MobileShell";
+import { SignOutConfirm } from "./SignOutConfirm";
 import { Wordmark } from "./Wordmark";
 import { AuthApi, type AuthResult, type MfaEnrollmentStatus } from "./auth/api";
 import { GoogleCallback } from "./auth/GoogleCallback";
@@ -14,7 +15,7 @@ import { clearSession, hasVerifiedStoredSession, storeSession } from "./auth/ses
 import { SignupForm } from "./auth/SignupForm";
 import { CaptureApi } from "./capture/api";
 import { browserDecode } from "./capture/decode";
-import { captureQueue } from "./capture/queue";
+import { capturesAtRisk, captureQueue, purgeCaptureQueue } from "./capture/queue";
 import { useSitting, type SittingContext } from "./capture/useSitting";
 import { ClientApi } from "./client/api";
 import { DashboardApi } from "./home/api";
@@ -182,7 +183,11 @@ function Shell({
     }
   }, []);
 
-  const handleSignOut = useCallback(() => {
+  // `null` = no prompt showing; a number = capturesAtRisk()'s answer, shown
+  // in SignOutConfirm before the purge runs (MOB-009's warning).
+  const [captureRisk, setCaptureRisk] = useState<number | null>(null);
+
+  const performSignOut = useCallback(() => {
     // The client-side state is what actually controls what this browser
     // shows next; a failed logout call leaves nothing worse than a
     // session that later expires on its own (ADR-054's own named
@@ -193,12 +198,29 @@ function Shell({
     clearSession();
     setPendingMfa(null);
     setAuthenticated(false);
-    // MOB-009's "logout" purge trigger is NOT wired here yet - see
-    // capture/queue.ts's own comment on `purgeCaptureQueue`. Signing out
-    // today leaves any queued-but-undelivered captures in IndexedDB rather
-    // than warning about and purging them; a named, bounded gap, not
-    // something this change silently broke.
+    setCaptureRisk(null);
   }, [authApi]);
+
+  // MOB-009's "logout" purge trigger. Checks capturesAtRisk() BEFORE
+  // signing out rather than after, because the warning has to be seen
+  // while there is still a choice to make - by the time performSignOut has
+  // run there is no session left to warn from. Nothing at risk (the
+  // ordinary case for a desktop-only session, or a mobile one with nothing
+  // queued) skips SignOutConfirm entirely and signs out immediately, same
+  // as before this existed.
+  const handleSignOutClick = useCallback(() => {
+    void capturesAtRisk().then((count) => {
+      if (count > 0) {
+        setCaptureRisk(count);
+      } else {
+        performSignOut();
+      }
+    });
+  }, [performSignOut]);
+
+  const handleConfirmSignOut = useCallback(() => {
+    void purgeCaptureQueue("logout").then(performSignOut);
+  }, [performSignOut]);
 
   if (google !== null) {
     return (
@@ -256,11 +278,18 @@ function Shell({
       <header className="app__bar">
         <Wordmark />
         <LanguageSwitcher />
-        <button type="button" data-testid="sign-out" onClick={handleSignOut}>
+        <button type="button" data-testid="sign-out" onClick={handleSignOutClick}>
           {t("auth.sign_out")}
         </button>
       </header>
       {mobileContext !== undefined ? <AuthenticatedMobileShell context={mobileContext} /> : null}
+      {captureRisk !== null ? (
+        <SignOutConfirm
+          count={captureRisk}
+          onCancel={() => setCaptureRisk(null)}
+          onConfirm={handleConfirmSignOut}
+        />
+      ) : null}
     </div>
   );
 }

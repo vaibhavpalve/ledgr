@@ -162,6 +162,7 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/switcher/active",
         "/v1/me/language",
         "/v1/auth/signup",
+        "/v1/auth/signup/google",
         "/v1/auth/login",
         "/v1/auth/logout",
         "/v1/auth/login/passkey/begin",

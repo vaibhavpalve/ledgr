@@ -77,7 +77,34 @@ class SignupService:
         is known to be creatable.
         """
         user = await self._authentication.register_user(email, password)
+        return await self.provision_organization(
+            user,
+            account_model=account_model,
+            organization_name=organization_name,
+            kvk_number=kvk_number,
+        )
 
+    async def provision_organization(
+        self,
+        user: User,
+        *,
+        account_model: AccountModel,
+        organization_name: str,
+        kvk_number: str | None,
+    ) -> SignupResult:
+        """The part of signup that happens after a `User` row already
+        exists - split out of `signup()` (which still calls this
+        immediately after `register_user`) so a caller that already has a
+        user can reach it directly. Its one caller today is
+        `api.auth.routes.signup_google`: `GoogleSignInService.sign_in`
+        already creates a bare user for a first-seen Google identity (see
+        that module's docstring), and FR-MDL-001's one question - which
+        this method still asks, exactly as `signup()` does - cannot be
+        collected through Google's own OAuth redirect, so it is asked in a
+        follow-up screen instead. See ADR-054's addendum on Google-initiated
+        signup for why a bare user is created before the organization
+        rather than the other way around.
+        """
         organization_id = await self._create_organization(
             account_model, name=organization_name, kvk_number=kvk_number
         )

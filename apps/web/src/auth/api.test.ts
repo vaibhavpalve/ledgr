@@ -200,4 +200,72 @@ describe("AuthApi.loginGoogleCallback — IAM-010c's link-required branch", () =
       message: "Dit Google-account is nog niet gekoppeld.",
     });
   });
+
+  it("resolves signup_required for a brand-new Google identity (FR-MDL-001)", async () => {
+    const fetchImpl = respond(200, {
+      status: "signup_required",
+      ticket: "ticket-abc",
+      email: "brand.new@example.com",
+    });
+
+    const outcome = await api(fetchImpl).loginGoogleCallback("code", "state");
+
+    expect(outcome).toEqual({
+      kind: "signup_required",
+      ticket: "ticket-abc",
+      email: "brand.new@example.com",
+    });
+  });
+});
+
+describe("AuthApi.signupGoogle — FR-MDL-001's one question, post-Google", () => {
+  it("posts the ticket and snake_case fields, and maps the response back", async () => {
+    const fetchImpl = respond(200, {
+      access_token: "tok",
+      token_type: "bearer",
+      mfa_verified: false,
+      mfa: { has_passkey: false, has_totp: false },
+    });
+
+    const result = await api(fetchImpl).signupGoogle({
+      ticket: "ticket-abc",
+      accountModel: "firm",
+      organizationName: "Bakker Accountants",
+      kvkNumber: "87654321",
+    });
+
+    expect(result).toEqual({
+      accessToken: "tok",
+      mfaVerified: false,
+      enrollment: { hasPasskey: false, hasTotp: false },
+    });
+    const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe("/v1/auth/signup/google");
+    expect(JSON.parse(String(init.body))).toEqual({
+      ticket: "ticket-abc",
+      account_model: "firm",
+      organization_name: "Bakker Accountants",
+      kvk_number: "87654321",
+    });
+  });
+
+  it("carries no Authorization header - the ticket is the credential", async () => {
+    const fetchImpl = respond(200, {
+      access_token: "tok",
+      token_type: "bearer",
+      mfa_verified: false,
+    });
+    await api(fetchImpl).signupGoogle({
+      ticket: "ticket-abc",
+      accountModel: "self_managed",
+      organizationName: "Bakker",
+      kvkNumber: null,
+    });
+    expect(
+      headersOf(fetchImpl as unknown as ReturnType<typeof vi.fn>).Authorization,
+    ).toBeUndefined();
+  });
 });

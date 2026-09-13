@@ -55,8 +55,8 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       api.auth.routes._record_authentication_event and its call sites in
 #       signup(), login(), logout(), mfa_totp_enroll_confirm(),
 #       mfa_totp_verify(), mfa_passkey_enroll_finish(),
-#       mfa_passkey_verify_finish(), login_passkey_finish() and
-#       login_google_callback().
+#       mfa_passkey_verify_finish(), login_passkey_finish(),
+#       login_google_callback() and signup_google().
 #
 #       The "begin" half of each ceremony (mfa_totp_enroll_begin,
 #       mfa_passkey_enroll_begin, mfa_passkey_verify_begin,
@@ -73,6 +73,7 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
     {
         "/v1/me/language",
         "/v1/auth/signup",
+        "/v1/auth/signup/google",
         "/v1/auth/login",
         "/v1/auth/logout",
         "/v1/auth/mfa/totp/enroll/begin",

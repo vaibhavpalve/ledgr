@@ -121,18 +121,16 @@ of each WebAuthn/OIDC ceremony (which only writes a short-lived, single-use cere
 for the ordinary reason instead — nothing IAM-090 asks about happens until the matching
 finish/confirm/callback either succeeds or is abandoned.
 
-### Two things this change deliberately does not build
+### One thing this change deliberately does not build
 
 - **Email verification before password/passkey signup.** IAM-010b's exemption is real for Google
   specifically — the identity provider already verified the address. For password and passkey
   signup, this change marks the account active immediately. A named, bounded gap: adding
   verification later needs a `users.email_verified_at` column and a gate on it, nothing this change
   would have to unwind.
-- **Google sign-in creating a brand-new account with no prior signup.** `GoogleSignInService.sign_in`
-  (ADR-006) can already do this mechanically. Doing it *well* means carrying the one-question
-  account-model choice (self-managed vs. firm) through a full-page OAuth redirect, which is its own
-  piece of design work, not a natural extension of this change. A Google identity with no existing
-  account is told plainly to sign up with a password first and connect Google afterwards.
+
+Google sign-in creating a brand-new account with no prior signup was also named here as a deferred
+gap in the original version of this ADR; it is now built — see the Addendum below.
 
 Full implementation: [migrations/0046_signup_and_ceremonies.sql](../../apps/api/migrations/0046_signup_and_ceremonies.sql),
 [src/api/auth/routes.py](../../apps/api/src/api/auth/routes.py),
@@ -164,10 +162,67 @@ Full implementation: [migrations/0046_signup_and_ceremonies.sql](../../apps/api/
   but before an explicit `session.commit()` rolls the claim back along with everything else in that
   transaction — a rejected hijack attempt against someone else's ceremony does not burn it for the
   legitimate owner, but this also means "claimed" is not durable until the whole request succeeds.
-- No frontend exists yet for any of this — signup/login forms, a Google sign-in button, passkey
-  buttons calling the browser WebAuthn API, and an MFA enrolment screen are all still to be built.
-  This ADR is the API surface such a frontend calls; wiring it into `apps/web` is separate,
-  unstarted work.
-- Two known, named gaps remain open by design: no email verification for password/passkey signup,
-  and no Google-initiated brand-new account creation. Both are scoped out explicitly above, not
-  silently missing.
+- ~~No frontend exists yet for any of this~~ — built the same day as this ADR: `apps/web/src/auth/`
+  (`LoginForm`, `SignupForm`, `MfaEnrollment`, `GoogleCallback`), `AuthApi`, a hand-written
+  `navigator.credentials` adapter (`auth/webauthn.ts`, no WebAuthn browser package existed in this
+  repo), and `App.tsx`'s `Shell` wiring the whole flow together.
+- One known, named gap remains open by design: no email verification for password/passkey signup.
+  Scoped out explicitly above, not silently missing.
+
+## Addendum: Google-initiated signup and MOB-009 sign-out purge (2026-09-13, same day)
+
+Two of the gaps this ADR originally named as deliberately deferred are now closed.
+
+### Google sign-in creating a brand-new account
+
+`GoogleSignInService.sign_in` (ADR-006) already created a bare `users` row and linked the identity
+the moment a Google sign-in matched neither an existing linked subject nor an existing email —
+`login_google_callback` simply refused to proceed past that point, telling the person to sign up
+with a password first. What was missing was FR-MDL-001's one question (account model, organization
+name, KvK number) and the organization itself, and Google's own OAuth redirect has no room to carry
+those three fields through it — the callback request is exactly `code` and `state`.
+
+The fix is a second, smaller ceremony kind rather than a new table: `google_signup` (migration
+0047 widens `auth_ceremony`'s `kind` CHECK constraint) stores only `user_id`, handed to the frontend
+as a one-time `ticket` in `login_google_callback`'s new `{"status": "signup_required", "ticket":
+..., "email": ...}` response. A follow-up screen collects the one question and posts it to
+`POST /v1/auth/signup/google`, which consumes the ticket, resolves the already-created bare user,
+and calls `SignupService.provision_organization` — the part of `signup()` that runs after a `User`
+row already exists, factored out of `signup()` for this exact reuse (`signup()` itself is
+unchanged in behavior, just restructured to call the same shared method). No new migration was
+needed for the ticket's own fields, because `auth_ceremony.user_id` already existed for a different
+purpose (WebAuthn's `passkey_registration`/`passkey_authentication` kinds) and the existing
+`auth_ceremony_kind_has_matching_fields` constraint already permits a kind that sets neither the
+WebAuthn nor the Google-OIDC column group.
+
+The finished account always mints `mfa_verified=False`, same as password signup — `amr` (which
+would let a step-up-free Google sign-in skip MFA per IAM-010e) is only available at the moment the
+ID token is first verified, and is deliberately not carried into the ticket alongside `user_id`;
+persisting it would mean the ticket also has to guard against a stale, unused `amr` claim
+outliving the token that produced it. Requiring MFA enrolment unconditionally here is the same
+conservative default `login()`'s password path already takes, not a new decision.
+
+Frontend: `GoogleCallback.tsx` gained a third outcome (`signup_required`) alongside `signed_in`/
+`link_required`, rendering a small `GoogleSignupForm` that asks only the account-model question —
+never email or password, both already settled by the Google sign-in that got here.
+
+### MOB-009's sign-out purge trigger
+
+`capture/queue.ts`'s `purgeCaptureQueue`/`capturesAtRisk` existed, unwired, from the mobile capture
+work that predates ADR-054. `App.tsx`'s `Shell` now calls `capturesAtRisk()` when the sign-out
+button is clicked; a count of zero (the common case — nothing was ever captured, or everything
+already uploaded) signs out immediately as before. A positive count renders `SignOutConfirm`
+(`apps/web/src/SignOutConfirm.tsx`), mirroring `capture/CaptureScreen.tsx`'s `QualityPrompt`
+exactly — an `alertdialog`, `useModalFocus`, the safe option (cancel) before the destructive one
+(sign out anyway) — rather than inventing a second confirmation pattern. Confirming calls
+`purgeCaptureQueue("logout")` before completing sign-out; cancelling leaves the session untouched.
+
+Full implementation: [migrations/0047_google_initiated_signup.sql](../../apps/api/migrations/0047_google_initiated_signup.sql),
+the `signup_google` handler and the edited `login_google_callback` branch in
+[src/api/auth/routes.py](../../apps/api/src/api/auth/routes.py),
+`SignupService.provision_organization` in
+[src/api/auth/signup.py](../../apps/api/src/api/auth/signup.py),
+the `google_signup` ceremony methods in
+[src/api/auth/ceremony.py](../../apps/api/src/api/auth/ceremony.py),
+[apps/web/src/auth/GoogleCallback.tsx](../../apps/web/src/auth/GoogleCallback.tsx),
+[apps/web/src/SignOutConfirm.tsx](../../apps/web/src/SignOutConfirm.tsx).
