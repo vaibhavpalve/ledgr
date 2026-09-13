@@ -9,6 +9,8 @@ import type { SittingContext } from "./capture/useSitting";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  localStorage.clear();
+  window.history.replaceState(null, "", "/");
 });
 
 class MemoryStore implements QueueStore {
@@ -170,4 +172,154 @@ describe("AuthenticatedMobileShell: fetches the active-client badge on mount (FR
       expect(screen.getByText("Geen klant geselecteerd")).toBeDefined();
     },
   );
+});
+
+/** Routes a stubbed `fetch` by method + path, for the ADR-054 wiring tests
+ * below - `Shell` calls several real endpoints across one flow (login, MFA
+ * enrolment, the account-language read on first login), and each needs its
+ * own answer rather than one blanket stub. */
+function routedFetch(handlers: Record<string, () => Response>): typeof fetch {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const key = `${init?.method ?? "GET"} ${String(input)}`;
+    const handler = handlers[key];
+    if (handler) return handler();
+    // GET /v1/me/language fires once `authenticated` becomes true
+    // (useAccountLanguageOnFirstLogin) - answered here with "never chosen"
+    // so it never needs its own entry in every test below.
+    if (key === "GET /v1/me/language") {
+      return new Response(JSON.stringify({ language: null, supported: ["en", "nl"] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(null, { status: 500 });
+  }) as unknown as typeof fetch;
+}
+
+describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
+  it("a password login that has not cleared MFA lands on the enrolment gate, never the app", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () =>
+          new Response(
+            JSON.stringify({
+              access_token: "tok",
+              token_type: "bearer",
+              mfa_verified: false,
+              mfa: { has_passkey: false, has_totp: false },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      }),
+    );
+
+    render(<App language="nl" />);
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+
+    await waitFor(() => expect(screen.getByTestId("mfa-enrollment")).toBeDefined());
+    expect(screen.queryByTestId("sign-out")).toBeNull();
+  });
+
+  it("completing TOTP enrolment on the gate moves into the authenticated shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () =>
+          new Response(
+            JSON.stringify({
+              access_token: "tok",
+              token_type: "bearer",
+              mfa_verified: false,
+              mfa: { has_passkey: false, has_totp: false },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        "POST /v1/auth/mfa/totp/enroll/begin": () =>
+          new Response(
+            JSON.stringify({ secret: "JBSWY3DPEHPK3PXP", provisioning_uri: "otpauth://x" }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        "POST /v1/auth/mfa/totp/enroll/confirm": () =>
+          new Response(
+            JSON.stringify({ access_token: "tok2", token_type: "bearer", mfa_verified: true }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+      }),
+    );
+
+    render(<App language="nl" />);
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+
+    await waitFor(() => expect(screen.getByTestId("mfa-totp-begin")).toBeDefined());
+    fireEvent.click(screen.getByTestId("mfa-totp-begin"));
+    await waitFor(() => expect(screen.getByTestId("mfa-totp-code")).toBeDefined());
+    fireEvent.change(screen.getByTestId("mfa-totp-code"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByTestId("mfa-totp-confirm"));
+
+    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+    expect(screen.queryByTestId("mfa-enrollment")).toBeNull();
+  });
+
+  it("signing out returns to the login screen, and a second login starts unauthenticated again", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () =>
+          new Response(
+            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        "POST /v1/auth/logout": () =>
+          new Response(JSON.stringify({ status: "logged_out" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      }),
+    );
+
+    render(<App language="nl" />);
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+
+    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+
+    fireEvent.click(screen.getByTestId("sign-out"));
+
+    await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
+  });
+
+  it("a Google OAuth redirect landing (?code&state in the URL) shows the callback screen, not the login form", async () => {
+    window.history.pushState({}, "", "/?code=auth-code&state=state-value");
+    const fetchStub = routedFetch({
+      "POST /v1/auth/login/google/callback": () =>
+        new Response(
+          JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    });
+    vi.stubGlobal("fetch", fetchStub);
+
+    render(<App language="nl" />);
+
+    expect(screen.queryByTestId("login-form")).toBeNull();
+    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+    expect(fetchStub).toHaveBeenCalled();
+  });
+
+  it("switching to signup and back to login preserves the frame, wiring both forms to the same Shell", () => {
+    vi.stubGlobal("fetch", routedFetch({}));
+    render(<App language="nl" />);
+
+    fireEvent.click(screen.getByTestId("switch-to-signup"));
+    expect(screen.getByTestId("signup-form")).toBeDefined();
+
+    fireEvent.click(screen.getByTestId("switch-to-login"));
+    expect(screen.getByTestId("login-form")).toBeDefined();
+  });
 });

@@ -43,10 +43,10 @@ import { OfflineError, type CaptureApi } from "./api";
 
 /**
  * Where a sitting posts. Supplied by whatever knows the session — today a
- * prop, because there is no sign-in flow and no active-client endpoint wired
- * (see App.tsx and auth/SignInPending), and it stays a prop when there is: a
- * hook that reached for the "currently open client" itself is the one that
- * uploads a receipt into the wrong one.
+ * prop, because there is no active-client endpoint wired yet (see
+ * App.tsx), and it stays a prop when there is: a hook that reached for the
+ * "currently open client" itself is the one that uploads a receipt into
+ * the wrong one.
  */
 export interface SittingContext {
   readonly organizationId: string;

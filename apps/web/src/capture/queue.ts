@@ -23,10 +23,13 @@
  * caller cannot invent a purge that forgets the key. Only one of them is
  * reachable today, and honestly so:
  *
- *   logout       there is no sign-out flow yet (see auth/SignInPending), so
- *                nothing calls this. When one lands it calls this BEFORE
- *                clearing the session, and it warns first — see
- *                `capturesAtRisk`.
+ *   logout       `App.tsx`'s `Shell` has a real sign-out button as of
+ *                ADR-054, and it does not yet call this — a named gap, not
+ *                an oversight rediscovered later: wiring it means a
+ *                confirmation UI reading `capturesAtRisk()` before the
+ *                purge runs (the warning MOB-009 requires), which is its
+ *                own small piece of design work the auth screens did not
+ *                need to block on shipping.
  *   role_change  the client switcher is the place this belongs; the endpoint
  *                that would report a changed grant is not built.
  *   remote_wipe  server-initiated, and the signal for it does not exist yet.

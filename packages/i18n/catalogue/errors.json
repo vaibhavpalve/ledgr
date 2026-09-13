@@ -61,6 +61,86 @@
       "nl": "Voeg een passkey of wachtwoord toe voordat u boekingen doet — uw account heeft op dit moment geen andere aanmeldmethode dan Google.",
       "en": "Add a passkey or password before posting to the ledger — your account currently has no sign-in method other than Google."
     },
+    "errors.email_already_registered": {
+      "note": "FR-MDL-001 signup. Deliberately does not say 'wrong password' or invite a retry with different credentials — this IS an account, and the actionable next step is signing in rather than signing up again.",
+      "nl": "Er bestaat al een account met dit e-mailadres. Meld u aan in plaats van een account aan te maken.",
+      "en": "An account with this email address already exists. Sign in instead of creating a new one."
+    },
+    "errors.signup_unavailable": {
+      "note": "The internal precondition api.auth.signup.OwnerRoleMissingError guards (migration 0010's seeded Owner role missing) — unreachable on a correctly migrated database. A person meets this only if something is genuinely broken, so it says so plainly rather than implying they did something wrong.",
+      "nl": "Aanmaken van een account is momenteel niet mogelijk. Probeer het later opnieuw.",
+      "en": "Creating an account is not possible right now. Try again later."
+    },
+    "errors.weak_password": {
+      "note": "IAM-013. `weaknesses` (api.auth.passwords.WeakPasswordError.reasons) travels beside the sentence as machine-readable field names, not inside it — the same reasoning errors.document_too_large gives for limit_bytes. Says what to do (choose a different one) rather than reciting NIST 800-63B at a person signing up.",
+      "nl": "Dit wachtwoord is niet sterk genoeg. Kies een ander wachtwoord.",
+      "en": "This password is not strong enough. Choose a different one."
+    },
+    "errors.invalid_credentials": {
+      "note": "SEC-008/api.auth.service.InvalidCredentialsError: one message for 'no such account' and 'wrong password' alike, so this sentence must never be adjusted to distinguish them — that distinction is exactly what an attacker enumerating accounts is trying to learn.",
+      "nl": "E-mailadres of wachtwoord onjuist.",
+      "en": "Incorrect email address or password."
+    },
+    "errors.no_organization": {
+      "note": "A user record exists and authenticated correctly, but holds no organization-scoped role assignment (FR-MDL-001's founding grant) - reachable today only if something upstream of signup went wrong, since this module's own signup flow always creates both together. Kept distinct from errors.invalid_credentials because the credential WAS correct; the account is simply not usable yet.",
+      "nl": "Dit account is nog niet aan een organisatie gekoppeld. Neem contact op met support.",
+      "en": "This account is not yet linked to an organization. Contact support."
+    },
+    "errors.totp_already_enrolled": {
+      "note": "IAM-012. Met when a confirm_enrollment call arrives for a user who already completed one - the fix is to revoke the existing factor first, not to retry the same call.",
+      "nl": "Er is al een authenticatie-app gekoppeld aan dit account.",
+      "en": "An authenticator app is already linked to this account."
+    },
+    "errors.invalid_totp_code": {
+      "note": "api.auth.totp.InvalidTotpCodeError, covering both a wrong code and a correct-but-already-used one (replay protection) identically - the same SEC-008-style reasoning as errors.invalid_credentials: the two cases must not be distinguishable from the message alone.",
+      "nl": "Deze code is onjuist of al gebruikt. Vraag een nieuwe code op in uw authenticatie-app.",
+      "en": "That code is incorrect or already used. Get a new code from your authenticator app."
+    },
+    "errors.totp_not_enrolled": {
+      "note": "mfa/totp/verify was called for a user with no confirmed TOTP credential - a client-side sequencing bug (it should have offered enrolment instead), not something a person caused.",
+      "nl": "Er is geen authenticatie-app gekoppeld aan dit account.",
+      "en": "No authenticator app is linked to this account."
+    },
+    "errors.ceremony_not_found": {
+      "note": "A WebAuthn or Google sign-in round trip (api.auth.ceremony) that expired, was already used, or belongs to someone else - one message for all three (see CeremonyNotFoundError's own docstring for why), naming the fix rather than which case occurred.",
+      "nl": "Deze aanmeldpoging is verlopen. Begin opnieuw.",
+      "en": "This sign-in attempt has expired. Start again."
+    },
+    "errors.passkey_registration_failed": {
+      "note": "api.auth.passkeys.PasskeyRegistrationError - a failed WebAuthn ceremony (wrong origin, unsupported authenticator, cancelled prompt). No further detail belongs in the sentence; the underlying reason is developer-facing (SEC-008).",
+      "nl": "De passkey kon niet worden geregistreerd. Probeer het opnieuw.",
+      "en": "The passkey could not be registered. Try again."
+    },
+    "errors.passkey_authentication_failed": {
+      "note": "api.auth.passkeys.PasskeyAuthenticationError, covering an unknown credential, a revoked one, and a failed signature check identically (IAM-010's 'individually revocable' - the revoked case must not read differently from a wrong one).",
+      "nl": "Aanmelden met de passkey is niet gelukt. Probeer het opnieuw of gebruik een andere methode.",
+      "en": "Signing in with that passkey did not succeed. Try again, or use another method."
+    },
+    "errors.google_signin_unavailable": {
+      "note": "settings.google_client_id/secret/redirect_uri are unset in this deployment (api.auth.google_oidc.build_google_oidc_client). Not a per-user failure - it says so, and points at another method rather than inviting a retry that cannot succeed.",
+      "nl": "Aanmelden met Google is momenteel niet beschikbaar. Gebruik een andere methode.",
+      "en": "Signing in with Google is not available right now. Use another method."
+    },
+    "errors.google_signin_unverified_email": {
+      "note": "IAM-010b: Google's own email_verified claim was not true. Distinct from errors.google_signin_failed because the fix is specific - verify the email with Google - rather than a generic retry.",
+      "nl": "Google heeft dit e-mailadres niet geverifieerd. Verifieer uw e-mailadres bij Google en probeer het opnieuw.",
+      "en": "Google has not verified this email address. Verify your email with Google and try again."
+    },
+    "errors.google_signin_failed": {
+      "note": "Catch-all for a Google sign-in round trip that failed structurally - bad state/nonce, a token exchange failure, an account-linking precondition that did not hold. The specific reason is machine-readable only (SEC-008); the sentence just says to retry.",
+      "nl": "Aanmelden met Google is niet gelukt. Probeer het opnieuw.",
+      "en": "Signing in with Google did not succeed. Try again."
+    },
+    "errors.google_signin_link_required": {
+      "note": "IAM-010c: this Google identity's email matches an existing account created a different way. No mutation happened yet - the sentence explains what has to happen (confirm with the existing account's password) rather than implying the sign-in itself failed.",
+      "nl": "Er bestaat al een account met dit e-mailadres via een andere aanmeldmethode. Bevestig met uw bestaande wachtwoord om Google te koppelen.",
+      "en": "An account with this email already exists via another sign-in method. Confirm with your existing password to link Google."
+    },
+    "errors.google_signin_needs_signup_first": {
+      "note": "This Google identity has no LEDGR account linked at all - a genuinely new signup, which this module deliberately does not carry through Google's own redirect (see api.auth.routes' module docstring). Names the actual next step rather than a generic failure.",
+      "nl": "Er is nog geen account voor dit Google-account. Maak eerst een account aan met e-mailadres en wachtwoord, en koppel Google daarna in de instellingen.",
+      "en": "There is no account for this Google identity yet. Create an account with email and password first, then connect Google from settings."
+    },
     "errors.document_too_large": {
       "note": "SEC-005's size cap. {limit_bytes} travels beside the sentence as a machine field rather than inside it, so a client can render a human size ('25 MB') in its own units without the message having to guess which.",
       "nl": "Dit bestand is te groot om te bewaren. Probeer een kleinere scan of foto.",

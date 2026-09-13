@@ -25,9 +25,28 @@ from starlette.responses import JSONResponse, Response
 from api.config import settings
 from api.i18n.http import message
 
-# Infrastructure endpoints only. Anything not listed here is required to
-# carry verified tenant context before it can reach a route handler.
-EXEMPT_PATHS = frozenset({"/health"})
+# Infrastructure endpoints, plus the sign-up/sign-in paths that ESTABLISH
+# tenant context rather than presenting one - a request has to be able to
+# reach `/v1/auth/signup` and `/v1/auth/login` with no bearer token at all,
+# since proving who you are is what those endpoints exist to do. Defined
+# here (the canonical "needs no tenant context" list) rather than imported
+# from api.auth.routes, which imports FROM this module - api.auth.routes
+# re-exports this same frozenset as NO_TENANT_PATHS rather than defining its
+# own, so there is one list, not two that could drift.
+#
+# Anything not listed here is required to carry verified tenant context
+# before it can reach a route handler.
+EXEMPT_PATHS = frozenset(
+    {
+        "/health",
+        "/v1/auth/signup",
+        "/v1/auth/login",
+        "/v1/auth/login/passkey/begin",
+        "/v1/auth/login/passkey/finish",
+        "/v1/auth/login/google/start",
+        "/v1/auth/login/google/callback",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)

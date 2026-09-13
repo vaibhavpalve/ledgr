@@ -165,7 +165,12 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     const { rerender } = render(<App language="nl" authenticated />);
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
 
-    rerender(<App language="nl" />); // signs out
+    // Explicit `false`, not an omitted prop: `Shell` now derives its own
+    // `authenticated` state when the prop is entirely absent (ADR-054 - see
+    // App.tsx's own docstring on the controlled/uncontrolled-fallback
+    // shape), so an omitted prop here would leave whatever `Shell` already
+    // decided untouched rather than simulating a sign-out.
+    rerender(<App language="nl" authenticated={false} />); // signs out
     rerender(<App language="nl" authenticated />); // a different person signs in
 
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));

@@ -4,7 +4,18 @@ import { useI18n } from "@ledgr/i18n";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { Wordmark } from "../Wordmark";
 
-export type PreAuthScreenKind = "login" | "signup";
+export type PreAuthScreenKind = "login" | "signup" | "mfa";
+
+const HEADING_KEY: Record<PreAuthScreenKind, string> = {
+  login: "auth.sign_in.heading",
+  signup: "auth.sign_up.heading",
+  // ADR-054: shown to an already-authenticated caller who has not yet
+  // cleared IAM-011's MFA gate - "mfa" is not one of IAM-010g's two named
+  // screens, but reuses this same frame (Wordmark, heading, the pre-auth
+  // language control) rather than inventing a second one, since nothing
+  // about that layout is specific to signing in or signing up.
+  mfa: "auth.mfa.heading",
+};
 
 /**
  * The frame the login and signup screens render inside — IAM-010g,
@@ -37,10 +48,11 @@ export type PreAuthScreenKind = "login" | "signup";
  *
  * --- What this does not do ---
  *
- * It renders no credential fields. The sign-in methods of IAM-010 (password,
- * Google, passkey) have no API endpoints yet, so the form is `children` and
- * the app passes a component that says so. Drawing a password field that
- * posts nowhere would be worse than an honest sentence.
+ * It renders no credential fields itself — `children` is `LoginForm`,
+ * `SignupForm` or `MfaEnrollment` (see `App.tsx`'s `Shell`), never built
+ * in here. This component owns exactly one thing: the frame every
+ * pre-authenticated screen shares, so the language control (IAM-010g) and
+ * the heading are never something a new screen has to remember to add.
  */
 export function PreAuthScreen({
   screen,
@@ -61,7 +73,7 @@ export function PreAuthScreen({
       <header className="pre-auth__header">
         <Wordmark />
         <h1 className="pre-auth__heading" data-testid="pre-auth-heading">
-          {t(screen === "login" ? "auth.sign_in.heading" : "auth.sign_up.heading")}
+          {t(HEADING_KEY[screen])}
         </h1>
       </header>
 

@@ -20,9 +20,18 @@ import { I18nProvider, LANGUAGE_STORAGE_KEY } from "@ledgr/i18n";
 
 import { App } from "../App";
 import { PreAuthScreen } from "./PreAuthScreen";
-import { SignInPending } from "./SignInPending";
 import { initialLanguage } from "../i18n";
 import { assertNoAxeViolations, axeViolations } from "../testing/axe";
+
+/** These tests are about the FRAME (language control, heading) rather than
+ * about any particular form, so `children` is a placeholder - the same
+ * reason `PreAuthScreen` itself takes `children` rather than building a
+ * form: the frame has no opinion about what is inside it. `LoginForm`'s
+ * and `SignupForm`'s own accessibility is covered separately below, and
+ * their own behaviour in their own test files. */
+function StubChildren() {
+  return <p data-testid="stub-children">stub</p>;
+}
 
 const REAL_LANGUAGES = navigator.languages;
 
@@ -46,7 +55,7 @@ describe("IAM-010g: the control is on both pre-authentication screens", () => {
     render(
       <I18nProvider initialLanguage="nl">
         <PreAuthScreen screen={kind}>
-          <SignInPending />
+          <StubChildren />
         </PreAuthScreen>
       </I18nProvider>,
     );
@@ -61,7 +70,7 @@ describe("IAM-010g: the control is on both pre-authentication screens", () => {
     const { unmount } = render(
       <I18nProvider initialLanguage="nl">
         <PreAuthScreen screen="login">
-          <SignInPending />
+          <StubChildren />
         </PreAuthScreen>
       </I18nProvider>,
     );
@@ -74,7 +83,7 @@ describe("IAM-010g: the control is on both pre-authentication screens", () => {
     render(
       <I18nProvider initialLanguage="nl">
         <PreAuthScreen screen="signup">
-          <SignInPending />
+          <StubChildren />
         </PreAuthScreen>
       </I18nProvider>,
     );
@@ -87,7 +96,7 @@ describe("IAM-010g: the control is on both pre-authentication screens", () => {
     render(
       <I18nProvider initialLanguage="en">
         <PreAuthScreen screen="login">
-          <SignInPending />
+          <StubChildren />
         </PreAuthScreen>
       </I18nProvider>,
     );
@@ -113,7 +122,7 @@ describe("IAM-010g: selectable before authentication", () => {
     fireEvent.click(screen.getByTestId("language-option-en"));
 
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Sign in");
-    expect(screen.getByTestId("sign-in-pending").textContent).toContain("not available");
+    expect(screen.getByTestId("login-form")).toBeTruthy();
   });
 
   it("remembers the choice across a reload", () => {
@@ -205,17 +214,38 @@ describe("FR-LOC-004: the page declares the language it is actually in", () => {
 });
 
 describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
-  it.each(["login", "signup"] as const)("the %s screen, in each shipped language", async (kind) => {
-    for (const language of ["nl", "en"] as const) {
-      const { container, unmount } = render(
-        <I18nProvider initialLanguage={language}>
-          <PreAuthScreen screen={kind}>
-            <SignInPending />
-          </PreAuthScreen>
-        </I18nProvider>,
+  it.each(["login", "signup"] as const)(
+    "the frame on the %s screen, in each shipped language",
+    async (kind) => {
+      for (const language of ["nl", "en"] as const) {
+        const { container, unmount } = render(
+          <I18nProvider initialLanguage={language}>
+            <PreAuthScreen screen={kind}>
+              <StubChildren />
+            </PreAuthScreen>
+          </I18nProvider>,
+        );
+        assertNoAxeViolations(await axeViolations(container));
+        unmount();
+      }
+    },
+  );
+
+  // The real forms, not the frame alone - LoginForm and SignupForm have
+  // their own fields, fieldsets and buttons the frame-only check above
+  // cannot see.
+  it.each(["login", "signup"] as const)(
+    "the real %s form, in each shipped language",
+    async (kind) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => new Response(null, { status: 401 })),
       );
-      assertNoAxeViolations(await axeViolations(container));
-      unmount();
-    }
-  });
+      for (const language of ["nl", "en"] as const) {
+        const { container, unmount } = render(<App language={language} screen={kind} />);
+        assertNoAxeViolations(await axeViolations(container));
+        unmount();
+      }
+    },
+  );
 });

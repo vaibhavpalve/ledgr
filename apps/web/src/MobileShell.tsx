@@ -55,10 +55,10 @@ export type MobileTab = "home" | "capture" | "approve" | "view" | "invoice";
  *               send). Template EDITING stays web-only in TemplateDesigner.
  *
  * `administrationId`/`fiscalYearId` are props for the same reason
- * `SittingContext` is one on `useSitting`: there is no session/active-client
- * endpoint wired yet (see App.tsx and auth/SignInPending), and a shell that
- * reached for "the currently open client" itself would be the one that opens
- * a capture, an approval or an invoice against the wrong administration.
+ * `SittingContext` is one on `useSitting`: there is no active-client
+ * endpoint wired yet (see App.tsx), and a shell that reached for "the
+ * currently open client" itself would be the one that opens a capture, an
+ * approval or an invoice against the wrong administration.
  *
  * --- `badge` and `ClientHeader` (FR-FRM-000a) ---
  *

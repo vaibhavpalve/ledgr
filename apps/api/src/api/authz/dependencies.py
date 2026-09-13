@@ -135,6 +135,24 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #              Note this is a PUT and therefore still carries idempotency
 #              (NFR-032, no exemption) and still passes the MFA gate. What it
 #              is exempt from is the permission check alone.
+#   /v1/auth/*
+#              Every route in api.auth.routes (IAM-010's signup/sign-in
+#              surface, and the MFA enrolment/step-up flow) is exempt, for
+#              one of two reasons depending on which half of the module it
+#              is in:
+#                - signup/login/passkey-login/google (api.tenancy.
+#                  EXEMPT_PATHS): there is no tenant yet for a permission to
+#                  be scoped to - these routes ESTABLISH identity, they do
+#                  not act on a resource within one.
+#                - MFA enrolment/verify, logout (api.mfa_middleware.
+#                  MFA_EXEMPT_PATHS): a real user id exists, but enrolling
+#                  or verifying YOUR OWN second factor is the same kind of
+#                  "no resource for a permission to be about" case
+#                  /v1/me/language already is, for the same reason - a user
+#                  with no role assignment yet must still be able to finish
+#                  the MFA gate that IAM-011 puts in front of everything
+#                  else, or they are locked out of the product by the very
+#                  mechanism meant to secure it.
 AUTHORIZATION_EXEMPT_PATHS = frozenset(
     {
         "/health",
@@ -143,6 +161,20 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/switcher/search",
         "/v1/switcher/active",
         "/v1/me/language",
+        "/v1/auth/signup",
+        "/v1/auth/login",
+        "/v1/auth/logout",
+        "/v1/auth/login/passkey/begin",
+        "/v1/auth/login/passkey/finish",
+        "/v1/auth/login/google/start",
+        "/v1/auth/login/google/callback",
+        "/v1/auth/mfa/totp/enroll/begin",
+        "/v1/auth/mfa/totp/enroll/confirm",
+        "/v1/auth/mfa/totp/verify",
+        "/v1/auth/mfa/passkey/enroll/begin",
+        "/v1/auth/mfa/passkey/enroll/finish",
+        "/v1/auth/mfa/passkey/verify/begin",
+        "/v1/auth/mfa/passkey/verify/finish",
     }
 )
 

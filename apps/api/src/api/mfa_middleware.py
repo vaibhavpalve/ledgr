@@ -36,6 +36,7 @@ from api.auth.mfa import (
     MfaRequirementPolicy,
 )
 from api.auth.passkeys_repository import SqlPasskeyRepository
+from api.auth.routes import MFA_EXEMPT_PATHS
 from api.auth.totp_repository import SqlTotpRepository
 from api.db import engine
 from api.i18n.http import message
@@ -90,7 +91,12 @@ class MfaEnforcementMiddleware(BaseHTTPMiddleware):
         self._enrollment_checker = enrollment_checker
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        if request.url.path in EXEMPT_PATHS:
+        # EXEMPT_PATHS: no tenant context exists yet to check MFA against
+        # (signup, login itself). MFA_EXEMPT_PATHS: tenant context DOES
+        # exist - a real user id - but the endpoint is the enrolment/
+        # step-up-verification flow that establishes mfa_verified in the
+        # first place (api.auth.routes), so it cannot also require it.
+        if request.url.path in EXEMPT_PATHS or request.url.path in MFA_EXEMPT_PATHS:
             return await call_next(request)
 
         tenant = getattr(request.state, "tenant_context", None)

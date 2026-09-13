@@ -149,6 +149,42 @@ class FakeAuthenticator:
         )
 
 
+def registration_credential_json(credential: RegistrationCredential) -> dict:
+    """The wire shape a browser's navigator.credentials.create() promise
+    resolves to and a client JSON-serializes for the server - what
+    api.auth.routes' passkey enrolment endpoints actually receive as
+    `body.credential`, as opposed to the already-parsed
+    RegistrationCredential FakeAuthenticator builds for the pure-logic tests
+    in test_passkeys.py. See webauthn.helpers.parse_registration_credential_json
+    for the exact fields this has to carry.
+    """
+    return {
+        "id": credential.id,
+        "rawId": bytes_to_base64url(credential.raw_id),
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": bytes_to_base64url(credential.response.client_data_json),
+            "attestationObject": bytes_to_base64url(credential.response.attestation_object),
+        },
+    }
+
+
+def authentication_credential_json(credential: AuthenticationCredential) -> dict:
+    """The HTTP-layer counterpart of registration_credential_json, for the
+    sign-in and step-up-verification endpoints.
+    """
+    return {
+        "id": credential.id,
+        "rawId": bytes_to_base64url(credential.raw_id),
+        "type": "public-key",
+        "response": {
+            "clientDataJSON": bytes_to_base64url(credential.response.client_data_json),
+            "authenticatorData": bytes_to_base64url(credential.response.authenticator_data),
+            "signature": bytes_to_base64url(credential.response.signature),
+        },
+    }
+
+
 def another_authenticators_signature_over(credential: AuthenticationCredential) -> bytes:
     """Signs the SAME authenticator_data/clientDataJSON with a freshly
     generated, unrelated private key - simulating a forged assertion from
@@ -167,5 +203,7 @@ def another_authenticators_signature_over(credential: AuthenticationCredential) 
 __all__ = [
     "FakeAuthenticator",
     "another_authenticators_signature_over",
+    "authentication_credential_json",
     "generate_challenge",
+    "registration_credential_json",
 ]

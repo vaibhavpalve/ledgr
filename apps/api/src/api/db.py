@@ -60,3 +60,24 @@ async def get_db_session(
             {"org_id": str(tenant.organization_id)},
         )
         yield session
+
+
+async def get_bootstrap_db_session() -> AsyncIterator[AsyncSession]:
+    """For the one family of routes that runs before any tenant exists to
+    scope a session to: signup, and the sign-in paths that authenticate a
+    caller from a request body rather than a bearer token
+    (api.auth.routes). No app.current_org_id is set — there is genuinely
+    none yet — so any RLS-protected table this session queries sees
+    nothing, by the same mechanism that protects every other tenant's data.
+    The signup path's own writes (organization, role_assignment) go through
+    either a SECURITY DEFINER bootstrap function or a same-transaction
+    set_config immediately after the organization it scopes to is created
+    — see api.auth.signup.SignupService.
+
+    These routes are, deliberately, the ones listed in
+    api.tenancy.EXEMPT_PATHS: there is no tenant context for
+    TenantContextMiddleware to have verified, so get_db_session (which
+    requires one) cannot be their dependency.
+    """
+    async with _session_factory() as session, session.begin():
+        yield session

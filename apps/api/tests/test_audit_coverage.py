@@ -43,9 +43,51 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       the context an auditor needs to read the rest of their activity.
 #       Which language they read it in is not.
 #
+#   api.auth.routes' sign-up/sign-in/MFA surface (IAM-010/IAM-011/IAM-012)
+#       Every one of these runs before any permission can be evaluated - the
+#       route IS how a permission-bearing identity gets established, so
+#       there is no require_permission(audit=...) call to hang a
+#       declaration on (declared_requirements only sees that dependency).
+#       This is exactly the case api.audit.trail's module docstring
+#       anticipates ("authentication - api.auth.service ... wiring those at
+#       the service rather than waiting for their routes"): these handlers
+#       call AuditTrail.authentication() directly - see
+#       api.auth.routes._record_authentication_event and its call sites in
+#       signup(), login(), logout(), mfa_totp_enroll_confirm(),
+#       mfa_totp_verify(), mfa_passkey_enroll_finish(),
+#       mfa_passkey_verify_finish(), login_passkey_finish() and
+#       login_google_callback().
+#
+#       The "begin" half of each ceremony (mfa_totp_enroll_begin,
+#       mfa_passkey_enroll_begin, mfa_passkey_verify_begin,
+#       login_passkey_begin, login_google_start) is exempt for the ordinary
+#       reason above instead: it only writes a short-lived, single-use
+#       WebAuthn challenge or OIDC state/PKCE row (auth_ceremony) with no
+#       security-relevant outcome of its own - nothing IAM-090 asks about
+#       until the matching finish/confirm/callback either succeeds or is
+#       abandoned.
+#
 # A route that changes tenant data does not belong here. The bar is "this
 # changes nothing an auditor would ask about".
-AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset({"/v1/me/language"})
+AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
+    {
+        "/v1/me/language",
+        "/v1/auth/signup",
+        "/v1/auth/login",
+        "/v1/auth/logout",
+        "/v1/auth/mfa/totp/enroll/begin",
+        "/v1/auth/mfa/totp/enroll/confirm",
+        "/v1/auth/mfa/totp/verify",
+        "/v1/auth/mfa/passkey/enroll/begin",
+        "/v1/auth/mfa/passkey/enroll/finish",
+        "/v1/auth/mfa/passkey/verify/begin",
+        "/v1/auth/mfa/passkey/verify/finish",
+        "/v1/auth/login/passkey/begin",
+        "/v1/auth/login/passkey/finish",
+        "/v1/auth/login/google/start",
+        "/v1/auth/login/google/callback",
+    }
+)
 
 
 def _mutating_routes() -> list[tuple[str, str, object]]:

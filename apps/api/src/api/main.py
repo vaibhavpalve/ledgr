@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.audit.log import AuditCategory
 from api.audit.middleware import AuditMiddleware
+from api.auth import routes as auth_routes
 from api.authz.dependencies import (
     administration_from_path,
     organization_scope,
@@ -75,6 +76,12 @@ app = FastAPI(title="LEDGR API")
 # router: this FastAPI version hides an included router's routes behind an
 # opaque wrapper that the authorization middleware and all four coverage checks
 # walk straight past. See api.documents.routes.register.
+# IAM-010/FR-MDL-001's signup and sign-in surface. Registered first among
+# these deliberately means nothing about precedence - route registration
+# order carries no meaning here, as every other comment on this block
+# already says - but it is the one every other route in this list is
+# unreachable without, so it reads first.
+auth_routes.register(app)
 document_routes.register(app)
 # PRD §6.7's receipt capture, registered the same way and for the same reason.
 expense_routes.register(app)

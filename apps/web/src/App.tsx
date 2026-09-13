@@ -5,8 +5,13 @@ import type { ClientBadge } from "@ledgr/shared-types";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileShell } from "./MobileShell";
 import { Wordmark } from "./Wordmark";
+import { AuthApi, type AuthResult, type MfaEnrollmentStatus } from "./auth/api";
+import { GoogleCallback } from "./auth/GoogleCallback";
+import { LoginForm } from "./auth/LoginForm";
+import { MfaEnrollment } from "./auth/MfaEnrollment";
 import { PreAuthScreen, type PreAuthScreenKind } from "./auth/PreAuthScreen";
-import { SignInPending } from "./auth/SignInPending";
+import { clearSession, hasVerifiedStoredSession, storeSession } from "./auth/session";
+import { SignupForm } from "./auth/SignupForm";
 import { CaptureApi } from "./capture/api";
 import { browserDecode } from "./capture/decode";
 import { captureQueue } from "./capture/queue";
@@ -41,19 +46,25 @@ import { useDocumentLanguage } from "./useDocumentLanguage";
  * and there is no client for it yet. When one lands, the value is passed in
  * here and every figure in the tree follows it with no other change.
  *
- * --- `authenticated` is a seam, not a session check ---
+ * --- `authenticated`/`screen` are controlled overrides, not the only source of truth ---
  *
- * There is no sign-in flow to derive it from: IAM-010's endpoints do not
- * exist yet (see auth/SignInPending). It is a prop defaulting to `false`,
- * which is the honest answer today — nobody can be signed in — and is what
- * lets the pre-authentication behaviour IAM-010g specifies be built, wired
- * and tested now rather than after the forms land.
+ * ADR-054 wired IAM-010's endpoints and `Shell` now derives real state:
+ * whether this browser holds a stored, MFA-verified session
+ * (`auth/session.hasVerifiedStoredSession`), and which pre-auth screen is
+ * showing (flipped by `LoginForm`/`SignupForm`'s own "switch" links). Both
+ * props stay `undefined` by default so that happens — the same
+ * controlled-with-uncontrolled-fallback shape a form input takes. Passing
+ * either one explicitly (as the test suite does, to force a specific
+ * screen with no token or fetch involved) overrides the derived value on
+ * every render for as long as the prop keeps being passed; production
+ * (`main.tsx`) never passes either, so the real session/screen state runs
+ * the whole time.
  */
 export function App({
   formattingLocale,
   language = initialLanguage(),
-  authenticated = false,
-  screen = "login",
+  authenticated,
+  screen,
   mobileContext,
 }: {
   formattingLocale?: FormattingLocale;
@@ -63,11 +74,10 @@ export function App({
   /**
    * The mobile shell's tenant context — the same seam `useSitting`'s own
    * `SittingContext` already is (see that module's docstring): supplied by
-   * whatever knows the session, because there is no sign-in flow and no
-   * active-client endpoint wired yet (see auth/SignInPending). Left
-   * `undefined`, the authenticated branch renders today's bare header only —
-   * the pre-existing, already-documented gap, not a regression introduced by
-   * the mobile shell.
+   * whatever knows the session, because there is no active-client endpoint
+   * wired yet. Left `undefined`, the authenticated branch renders today's
+   * bare header only — the pre-existing, already-documented gap, not a
+   * regression introduced by the mobile shell.
    */
   mobileContext?: SittingContext;
 } = {}) {
@@ -93,29 +103,150 @@ export function App({
 /**
  * Inside the provider, because everything here needs the language that is
  * actually being rendered rather than the one the app started with.
+ *
+ * --- The four things this can be showing, in priority order ---
+ *
+ *   1. Google's OAuth redirect landing (`readGoogleCallbackParams`) — a
+ *      one-time condition read from the URL at mount, never re-entered
+ *      once handled.
+ *   2. `MfaEnrollment` — a session exists (`pendingMfa !== null`) but has
+ *      not cleared IAM-011's gate. ADR-054's whole point: this is not
+ *      optional and there is no way to dismiss it, the same as
+ *      `MfaEnforcementMiddleware` gives a route no opt-out.
+ *   3. `LoginForm`/`SignupForm` — nobody is signed in.
+ *   4. The authenticated shell.
+ *
+ * `pendingMfa` and `authenticated` are deliberately separate pieces of
+ * state rather than one three-way enum: `authenticated` alone is what the
+ * pre-existing test suite already controls via the prop (see `App`'s own
+ * docstring), and folding the MFA gate into that same flag would mean a
+ * test forcing `authenticated` would also have to know about a screen it
+ * never asked for.
  */
 function Shell({
-  authenticated,
-  screen,
+  authenticated: authenticatedProp,
+  screen: screenProp,
   mobileContext,
 }: {
-  authenticated: boolean;
-  screen: PreAuthScreenKind;
+  authenticated?: boolean;
+  screen?: PreAuthScreenKind;
   mobileContext?: SittingContext;
 }) {
-  const { language, adoptLanguage } = useI18n();
+  const { language, adoptLanguage, t } = useI18n();
 
   // WCAG 2.2 SC 3.1.1 (FR-LOC-004). Part of "immediately": a switch that
   // repaints the words and leaves the page declaring itself English has
   // changed the product for sighted users only.
   useDocumentLanguage(language);
 
+  const [authenticated, setAuthenticated] = useState(
+    () => authenticatedProp ?? hasVerifiedStoredSession(),
+  );
+  useEffect(() => {
+    if (authenticatedProp !== undefined) setAuthenticated(authenticatedProp);
+  }, [authenticatedProp]);
+
+  const [screen, setScreen] = useState<PreAuthScreenKind>(screenProp ?? "login");
+  useEffect(() => {
+    if (screenProp !== undefined) setScreen(screenProp);
+  }, [screenProp]);
+
+  const [pendingMfa, setPendingMfa] = useState<MfaEnrollmentStatus | null>(null);
+  const [google, setGoogle] = useState(() => readGoogleCallbackParams());
+
+  const authApi = useMemo(() => new AuthApi({ language: () => language }), [language]);
+
   useAccountLanguageOnFirstLogin(authenticated, language, adoptLanguage);
+
+  // Every sign-in/sign-up/MFA path in ADR-054 answers the same shape
+  // (AuthResult), so there is exactly one place that decides what a
+  // caller sees next: straight into the app when MFA is already
+  // satisfied (passkey sign-in, or a step-up verification), or the
+  // enrolment gate otherwise (a fresh signup, or a password/Google
+  // sign-in with no factor verified yet this session).
+  const handleAuthResult = useCallback((result: AuthResult) => {
+    storeSession({ accessToken: result.accessToken, mfaVerified: result.mfaVerified });
+    // Clearing the Google-callback state here too (not just in
+    // `onBackToLogin`) matters even for a sign-in that did NOT come from
+    // Google: `google !== null` outranks every other branch below, so a
+    // successful LoginForm/SignupForm/MfaEnrollment result would otherwise
+    // leave `GoogleCallback` rendered forever underneath state that has
+    // already moved on. A no-op when there was no callback to clear.
+    setGoogle(null);
+    clearGoogleCallbackParams();
+    if (result.mfaVerified) {
+      setPendingMfa(null);
+      setAuthenticated(true);
+    } else {
+      setPendingMfa(result.enrollment ?? { hasPasskey: false, hasTotp: false });
+    }
+  }, []);
+
+  const handleSignOut = useCallback(() => {
+    // The client-side state is what actually controls what this browser
+    // shows next; a failed logout call leaves nothing worse than a
+    // session that later expires on its own (ADR-054's own named
+    // limitation — see its Consequences on revocation not being
+    // immediate), never a reason to leave the person stuck on a
+    // "signing out…" screen.
+    void authApi.logout().catch(() => {});
+    clearSession();
+    setPendingMfa(null);
+    setAuthenticated(false);
+    // MOB-009's "logout" purge trigger is NOT wired here yet - see
+    // capture/queue.ts's own comment on `purgeCaptureQueue`. Signing out
+    // today leaves any queued-but-undelivered captures in IndexedDB rather
+    // than warning about and purging them; a named, bounded gap, not
+    // something this change silently broke.
+  }, [authApi]);
+
+  if (google !== null) {
+    return (
+      <PreAuthScreen screen="login">
+        <GoogleCallback
+          api={authApi}
+          code={google.code}
+          state={google.state}
+          onSignedIn={handleAuthResult}
+          onBackToLogin={() => {
+            clearGoogleCallbackParams();
+            setGoogle(null);
+            setScreen("login");
+          }}
+        />
+      </PreAuthScreen>
+    );
+  }
+
+  if (pendingMfa) {
+    return (
+      <PreAuthScreen screen="mfa">
+        <MfaEnrollment api={authApi} enrollment={pendingMfa} onVerified={handleAuthResult} />
+      </PreAuthScreen>
+    );
+  }
 
   if (!authenticated) {
     return (
       <PreAuthScreen screen={screen}>
-        <SignInPending />
+        {screen === "login" ? (
+          <LoginForm
+            api={authApi}
+            onSwitchToSignup={() => setScreen("signup")}
+            onSignedIn={handleAuthResult}
+            onGoogleStart={(authorizationUrl) => {
+              // A full page navigation, not a fetch: this is Google's own
+              // consent screen, outside this SPA entirely.
+              window.location.href = authorizationUrl;
+            }}
+          />
+        ) : (
+          <SignupForm
+            api={authApi}
+            onSwitchToLogin={() => setScreen("login")}
+            onSignedUp={handleAuthResult}
+          />
+        )}
       </PreAuthScreen>
     );
   }
@@ -125,10 +256,32 @@ function Shell({
       <header className="app__bar">
         <Wordmark />
         <LanguageSwitcher />
+        <button type="button" data-testid="sign-out" onClick={handleSignOut}>
+          {t("auth.sign_out")}
+        </button>
       </header>
       {mobileContext !== undefined ? <AuthenticatedMobileShell context={mobileContext} /> : null}
     </div>
   );
+}
+
+/** Google's redirect back to this app carries `?code=...&state=...` - read
+ * once at mount (a `useState` initializer, not an effect) because the URL
+ * this page loaded with does not change again while it stays mounted. */
+function readGoogleCallbackParams(): { code: string; state: string } | null {
+  if (typeof window === "undefined") return null;
+  const search = new URLSearchParams(window.location.search);
+  const code = search.get("code");
+  const state = search.get("state");
+  return code && state ? { code, state } : null;
+}
+
+function clearGoogleCallbackParams(): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("code");
+  url.searchParams.delete("state");
+  window.history.replaceState(null, "", url.toString());
 }
 
 /**
