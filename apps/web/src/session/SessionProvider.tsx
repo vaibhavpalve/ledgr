@@ -117,6 +117,20 @@ export function SessionProvider({
   // re-fetch the session: the ref keeps the first load's answer and only an
   // explicit `refresh()` replaces it.
   const loaded = useRef(false);
+  //: The load that is already running, so a second effect invocation ADOPTS it
+  //: rather than being turned away by `loaded` or starting a duplicate.
+  //:
+  //: This is what StrictMode requires. In development React mounts, runs the
+  //: effect, runs its cleanup, and runs the effect again — deliberately, to
+  //: surface exactly this class of bug. A guard that only says "already
+  //: started" turns the second run away, while the first run's cleanup has
+  //: already set its `cancelled` flag, so the answer that eventually arrives
+  //: is discarded and NOTHING sets the phase: the app sits on its loading
+  //: skeleton forever. It did, for every `pnpm dev` session, while the
+  //: production build (no StrictMode) worked — which is why no test caught it
+  //: until the app was opened in a real browser.
+  const inFlight = useRef<Promise<MeView> | null>(null);
+
   const refresh = useCallback(async (): Promise<MeView> => {
     const me = await load();
     setPhase({ kind: "ready", me });
@@ -125,15 +139,20 @@ export function SessionProvider({
 
   useEffect(() => {
     if (loaded.current) return;
-    loaded.current = true;
     let cancelled = false;
-    load()
+    const pending = inFlight.current ?? load();
+    inFlight.current = pending;
+    pending
       .then((me) => {
+        loaded.current = true;
+        inFlight.current = null;
         if (!cancelled) setPhase({ kind: "ready", me });
       })
       .catch((error: unknown) => {
+        // `loaded` stays false: a failed load is not a load, and the retry
+        // below (or a later `load` identity) must be able to start another.
+        inFlight.current = null;
         if (!cancelled) setPhase({ kind: "error", message: describeError(error) });
-        loaded.current = false;
       });
     return () => {
       cancelled = true;
@@ -142,12 +161,17 @@ export function SessionProvider({
 
   const retry = useCallback(() => {
     setPhase({ kind: "loading" });
-    loaded.current = true;
-    load()
-      .then((me) => setPhase({ kind: "ready", me }))
+    const pending = load();
+    inFlight.current = pending;
+    pending
+      .then((me) => {
+        loaded.current = true;
+        inFlight.current = null;
+        setPhase({ kind: "ready", me });
+      })
       .catch((error: unknown) => {
+        inFlight.current = null;
         setPhase({ kind: "error", message: describeError(error) });
-        loaded.current = false;
       });
   }, [load]);
 
