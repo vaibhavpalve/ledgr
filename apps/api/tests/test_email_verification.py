@@ -8,6 +8,7 @@ tests/integration/test_account_security.py's job against a real Postgres.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -92,6 +93,36 @@ async def test_issue_sends_one_mail_and_verify_stamps_the_user_once() -> None:
     assert verified_user_id == user.id
     stamped = await users.get_by_id(user.id)
     assert stamped is not None and stamped.email_verified
+
+
+async def test_the_collecting_provider_puts_the_link_where_a_developer_will_see_it(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """With `email_provider=collecting` no mail is sent anywhere, so this log
+    line is the only copy of the link outside the dev outbox.
+
+    It asserts the link is in the MESSAGE and the level is WARNING, because
+    both were wrong and each alone made it invisible: an application logger at
+    INFO is not emitted by uvicorn's default configuration, and a link passed
+    in `extra` is not rendered by the default formatter. The result was a
+    person waiting for an e-mail that was never sent, with nothing in the
+    console to tell them so.
+    """
+    users = InMemoryUserRepository()
+    user = await users.create("owner@example.com")
+    service, _sender = _service(users, InMemoryCeremonyRepository())
+
+    with caplog.at_level(logging.WARNING, logger="api.auth.email_verification"):
+        issued = await service.issue(user_id=user.id, email=user.email, language=Language.NL)
+
+    records = [record for record in caplog.records if record.levelno >= logging.WARNING]
+    assert len(records) == 1, "exactly one line, so it cannot be lost in noise"
+    rendered = records[0].getMessage()
+    assert verification_link(issued.token) in rendered
+    assert user.email in rendered
+    # Says plainly that nothing was sent — the fact the person on the other
+    # side of the screen is missing.
+    assert "NO E-MAIL WAS SENT" in rendered
 
 
 async def test_a_link_is_single_use() -> None:

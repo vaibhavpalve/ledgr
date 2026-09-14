@@ -144,23 +144,41 @@ class EmailVerificationService:
         a mail provider being down is not the signup's failure, and the
         person can ask for another link.
 
-        With the collecting provider (local development) the link is also
-        written to the log at INFO, so a developer without the dev outbox
-        route still has it in front of them.
+        With the collecting provider (local development) NOTHING IS SENT, so
+        the link is written to the log instead - see below for why that is a
+        warning carrying the link in its own message text rather than an info
+        line with the link in `extra`.
         """
         token = await self._ceremonies.create_email_verification_ceremony(user_id=user_id)
         outcome = await self._sender.send(
             build_verification_message(to=email, token=token, language=language)
         )
         if outcome.provider == "collecting":
-            logger.info(
-                "email_verification_link_collected",
-                extra={"email": email, "link": verification_link(token)},
+            # WARNING, and the link INSIDE the message.
+            #
+            # This line is the only thing standing between a developer and a
+            # verification link that no mailbox will ever receive, and for a
+            # while it delivered neither half of that. It was `logger.info`,
+            # which uvicorn's default configuration does not emit for an
+            # application logger at all; and the link travelled in `extra`,
+            # which the default formatter does not render even when the
+            # record does get through. The link was therefore invisible in
+            # the console AND absent from the mailbox, and the only way to
+            # find it was GET /v1/dev/outbox - which nothing tells you about.
+            #
+            # A warning is also the honest level: an account was asked to
+            # confirm an address and the message went nowhere.
+            logger.warning(
+                "NO E-MAIL WAS SENT (email_provider=collecting). Verification link for %s: %s",
+                email,
+                verification_link(token),
             )
         elif not outcome.accepted:
             logger.warning(
-                "email_verification_send_failed",
-                extra={"email": email, "provider": outcome.provider, "detail": outcome.detail},
+                "e-mail verification could not be sent to %s via %s: %s",
+                email,
+                outcome.provider,
+                outcome.detail,
             )
         return IssuedVerification(token=token, outcome=outcome)
 
