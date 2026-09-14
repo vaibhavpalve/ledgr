@@ -16,6 +16,8 @@ import { LANGUAGE_STORAGE_KEY } from "@ledgr/i18n";
 
 import { App } from "../App";
 import { applyAccountLanguage } from "../i18n";
+import { inRouter } from "../testing/renderApp";
+import { meFixture } from "../testing/session";
 
 beforeEach(() => {
   localStorage.clear();
@@ -23,7 +25,16 @@ beforeEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** A fetch that answers GET /v1/me/language and records every PUT. */
+/**
+ * A fetch that answers the language endpoint and records every PUT.
+ *
+ * It also answers `GET /v1/me`, which an authenticated render now makes on
+ * its own (the session bootstrap, ADR-058) — unrelated to what this file
+ * tests, but a render that cannot load a session shows the error state
+ * instead of the app. `languageCalls()` is what the counting assertions
+ * below use, so that adding another unrelated startup read never silently
+ * turns one of them into a different claim.
+ */
 function apiWith(accountLanguage: string | null) {
   const puts: Array<{ language: string; idempotencyKey: string }> = [];
   const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
@@ -35,12 +46,27 @@ function apiWith(accountLanguage: string | null) {
       });
       return new Response(null, { status: 200 });
     }
-    return new Response(JSON.stringify({ language: accountLanguage, supported: ["en", "nl"] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    if (String(url) === "/v1/me") {
+      return new Response(JSON.stringify(meFixture()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (String(url) === "/v1/me/language") {
+      return new Response(JSON.stringify({ language: accountLanguage, supported: ["en", "nl"] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    // Everything else — the dashboard, the client badge — refused rather than
+    // answered with the language payload. Handing every endpoint one shape is
+    // what a blanket stub does, and a screen given a 200 whose body is the
+    // wrong type crashes on it instead of showing its error state.
+    return new Response(null, { status: 503 });
   });
-  return { fetchImpl, puts };
+  const languageCalls = () =>
+    fetchImpl.mock.calls.filter(([url]) => String(url) === "/v1/me/language").length;
+  return { fetchImpl, puts, languageCalls };
 }
 
 describe("applyAccountLanguage", () => {
@@ -95,14 +121,16 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     // The person signed in on a machine that remembered Dutch; their account
     // says English. The account is authoritative (FR-LOC-001b) — the same
     // person on a borrowed laptop should not switch language.
-    const { fetchImpl, puts } = apiWith("en");
+    const { fetchImpl, puts, languageCalls } = apiWith("en");
     vi.stubGlobal("fetch", fetchImpl);
 
-    render(<App language="nl" authenticated />);
+    render(inRouter(<App language="nl" authenticated />));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("language-option-en").getAttribute("aria-pressed")).toBe("true");
-    });
+    // `<html lang>` rather than the switcher's own pressed state: inside the
+    // app the control lives in the user menu, which is closed. This is the
+    // repaint itself (WCAG 2.2 SC 3.1.1, FR-LOC-004) and it does not depend
+    // on where the chrome happens to put the control.
+    await waitFor(() => expect(document.documentElement.lang).toBe("en"));
     // And the device now caches it, so the next reload starts there.
     await waitFor(() => {
       expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
@@ -112,18 +140,18 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     // not choosing one, and writing it back would be a round trip per
     // sign-in on every machine that remembered something else.
     expect(puts).toEqual([]);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(languageCalls()).toBe(1);
   });
 
   it("seeds the account with the pre-login choice and leaves the screen alone", async () => {
     const { fetchImpl, puts } = apiWith(null);
     vi.stubGlobal("fetch", fetchImpl);
 
-    render(<App language="en" authenticated />);
+    render(inRouter(<App language="en" authenticated />));
 
     await waitFor(() => expect(puts).toHaveLength(1));
     expect(puts[0]?.language).toBe("en");
-    expect(screen.getByTestId("language-option-en").getAttribute("aria-pressed")).toBe("true");
+    expect(document.documentElement.lang).toBe("en");
   });
 
   it("does not run while signed out", () => {
@@ -133,7 +161,7 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     const { fetchImpl } = apiWith(null);
     vi.stubGlobal("fetch", fetchImpl);
 
-    render(<App language="nl" />);
+    render(inRouter(<App language="nl" />));
 
     expect(fetchImpl).not.toHaveBeenCalled();
   });
@@ -142,16 +170,16 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     // The bug this guards: re-reading the account on every render would
     // overwrite a click with whatever the account said when the page loaded,
     // and the switcher would appear to bounce.
-    const { fetchImpl } = apiWith("nl");
+    const { fetchImpl, languageCalls } = apiWith("nl");
     vi.stubGlobal("fetch", fetchImpl);
 
-    const { rerender } = render(<App language="nl" authenticated />);
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    const { rerender } = render(inRouter(<App language="nl" authenticated />));
+    await waitFor(() => expect(languageCalls()).toBe(1));
 
-    rerender(<App language="nl" authenticated />);
-    rerender(<App language="nl" authenticated />);
+    rerender(inRouter(<App language="nl" authenticated />));
+    rerender(inRouter(<App language="nl" authenticated />));
 
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(languageCalls()).toBe(1);
   });
 
   it("runs again for the next person to sign in on this machine", async () => {
@@ -159,21 +187,20 @@ describe("IAM-010g: applied at the moment authentication lands", () => {
     // pass the test above and fail this one, leaving a colleague signing in
     // after somebody else with that person's language — which is precisely
     // what FR-LOC-001b's per-user setting exists to prevent.
-    const { fetchImpl } = apiWith("en");
+    const { fetchImpl, languageCalls } = apiWith("en");
     vi.stubGlobal("fetch", fetchImpl);
 
-    const { rerender } = render(<App language="nl" authenticated />);
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    const first = render(inRouter(<App language="nl" authenticated />));
+    await waitFor(() => expect(languageCalls()).toBe(1));
 
-    // Explicit `false`, not an omitted prop: `Shell` now derives its own
-    // `authenticated` state when the prop is entirely absent (ADR-054 - see
-    // App.tsx's own docstring on the controlled/uncontrolled-fallback
-    // shape), so an omitted prop here would leave whatever `Shell` already
-    // decided untouched rather than simulating a sign-out.
-    rerender(<App language="nl" authenticated={false} />); // signs out
-    rerender(<App language="nl" authenticated />); // a different person signs in
+    // Unmount and mount again, rather than re-rendering with a different
+    // `authenticated`: since ADR-058 that prop seeds `AuthProvider`'s initial
+    // status and is not read again, and signing out in the real app unmounts
+    // everything under `RequireAuth` anyway. This is that, exactly.
+    first.unmount();
+    render(inRouter(<App language="nl" authenticated />)); // a different person signs in
 
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(languageCalls()).toBe(2));
   });
 });
 
@@ -185,8 +212,10 @@ describe("FR-LOC-001a: without reload or re-authentication", () => {
     const { fetchImpl } = apiWith("nl");
     vi.stubGlobal("fetch", fetchImpl);
 
-    render(<App language="nl" authenticated />);
+    render(inRouter(<App language="nl" authenticated />));
     await waitFor(() => expect(fetchImpl).toHaveBeenCalled());
+    // The control is in the user menu once someone is signed in.
+    fireEvent.click(await screen.findByTestId("user-menu-trigger"));
     fetchImpl.mockClear();
 
     fireEvent.click(screen.getByTestId("language-option-en"));
@@ -194,9 +223,23 @@ describe("FR-LOC-001a: without reload or re-authentication", () => {
     // Repainted synchronously, before any request resolves.
     expect(screen.getByTestId("language-option-en").getAttribute("aria-pressed")).toBe("true");
 
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
-    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("/v1/me/language");
-    expect(init.method).toBe("PUT");
+    // The preference write happens…
+    await waitFor(() =>
+      expect(
+        fetchImpl.mock.calls.some(
+          ([url, init]) =>
+            String(url) === "/v1/me/language" && (init as RequestInit | undefined)?.method === "PUT",
+        ),
+      ).toBe(true),
+    );
+
+    // …and nothing touches authentication. Screens may well re-read their own
+    // data in the new language — that is the switch working, not a session
+    // being renegotiated — so the claim is about WHICH endpoints are called,
+    // not how many.
+    const authCalls = fetchImpl.mock.calls.filter(([url]) => String(url).startsWith("/v1/auth/"));
+    expect(authCalls).toEqual([]);
   });
 });
+
+

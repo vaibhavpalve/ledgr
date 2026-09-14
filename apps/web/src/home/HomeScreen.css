@@ -61,26 +61,61 @@
   color: var(--ledgr-caution);
 }
 
-.home__item-chevron {
-  flex: none;
+/*
+ * A row is the description (a whole-row button) and, beside it, the row's
+ * one named action — the canvas's layout. The reserved colour is spent on
+ * the STATE (the left edge, the icon, the label), never on the action.
+ */
+.home__item {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  padding-right: var(--ledgr-space-4);
+  border-left: 3px solid transparent;
+}
+
+.home__item--overdue_invoice {
+  border-left-color: var(--ledgr-attention);
+  background-color: var(--ledgr-attention-wash);
+}
+
+.home__item-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home__item-state {
+  font-size: var(--ledgr-type-caption);
   color: var(--ledgr-text-muted);
 }
 
-/*
- * The chevron slides a little on hover — the one micro-interaction on this
- * screen, and it is doing a job: it says the row goes somewhere, which is
- * otherwise only implied by the cursor. Zeroed under prefers-reduced-motion by
- * tokens.css.
- */
-.list__row:hover .home__item-chevron {
-  color: var(--ledgr-accent);
-  transform: translateX(2px);
+.home__item-state--overdue_invoice {
+  color: var(--ledgr-attention);
+  font-weight: var(--ledgr-weight-semibold);
 }
 
-.home__item-chevron {
-  transition:
-    transform var(--ledgr-duration-fast) var(--ledgr-ease-out),
-    color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+.home__item-action {
+  flex: none;
+  min-height: 40px;
+  padding-inline: var(--ledgr-space-3);
+  font-size: var(--ledgr-type-caption);
+}
+
+.home__item-action:not(.button--primary) {
+  color: var(--ledgr-accent);
+  border-color: var(--ledgr-accent);
+}
+
+/* On a narrow screen the action drops under the description. */
+@media (max-width: 40rem) {
+  .home__item {
+    flex-wrap: wrap;
+    padding-bottom: var(--ledgr-space-2);
+  }
+
+  .home__item-action {
+    margin-left: calc(2.25rem + var(--ledgr-space-3) + var(--ledgr-space-4));
+  }
 }
 
 /* ==========================================================================
@@ -97,6 +132,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: var(--ledgr-space-3);
+}
+
+/* Three across on the desktop canvas, never two-and-one. */
+@media (min-width: 64rem) {
+  .home__figures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .home__figure {

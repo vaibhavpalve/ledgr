@@ -37,10 +37,27 @@ class Settings(BaseSettings):
     # --- Google sign-in (IAM-010a, IAM-010b) ---
     # No default: unset means Google sign-in is unavailable rather than
     # silently pointed at a placeholder client. See
-    # api.auth.google_oidc.build_google_oidc_client.
+    # api.auth.google_oidc.build_google_oidc_client. google_redirect_uri must
+    # be byte-for-byte the URI registered on the OAuth client in Google Cloud
+    # Console AND the page the web app reads `?code&state` from - see
+    # .env.example for the contract.
     google_client_id: str | None = None
     google_client_secret: str | None = None
     google_redirect_uri: str | None = None
+
+    # --- E-mail verification (IAM-010b) ---
+    # Where links in e-mails point: the web app's origin. The verification
+    # link is `{app_base_url}/verify-email?token=...`, which the web app turns
+    # into POST /v1/auth/verify-email. Distinct from webauthn_origin even
+    # though the two coincide locally - one is a security boundary passkeys
+    # are checked against, the other is where a person is sent.
+    app_base_url: str = "http://localhost:5173"
+    # Development only. With email_provider=collecting nothing is ever sent;
+    # this exposes what WOULD have been sent on GET /v1/dev/outbox so the
+    # frontend can read a verification link without a mailbox. The route is
+    # not registered at all unless this is true, and it is never true by
+    # default - see api.mail.dev_outbox.
+    expose_dev_outbox: bool = False
 
     # --- WebAuthn passkeys (IAM-010) ---
     # rp_id is the relying party identifier (typically the bare domain,

@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .brand { display: flex; align-items: center; gap: 9px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .seg { display: inline-flex; align-items: center; gap: 2px; padding: 3px; background: #EFEAE2; border: 1px solid #DCD9D3; border-radius: 10px; }
+    .seg span { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #5F5A52; }
+    .seg span.on { background: #FBF8F4; color: #00686C; font-weight: 600; box-shadow: 0 1px 2px rgba(38,34,28,.06); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 48px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .fact { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px 0; border-top: 1px solid #DCD9D3; }
+    .fact .t { font-size: 17px; font-weight: 600; line-height: 1.3; }
+    .fact .d { font-size: 14px; color: #6E685F; line-height: 1.4; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden;">
+
+  <header style="flex: none; display: flex; align-items: center; height: 56px; padding: 0 26px; gap: 12px;">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div class="seg"><span class="on">Nederlands</span><span>English</span></div>
+    <div class="seg"><span class="on">Systeem</span><span>Licht</span><span>Donker</span></div>
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700;">SB</span>
+  </header>
+
+  <main style="flex: 1; display: flex; justify-content: center; padding: 20px 26px 0; overflow: hidden;">
+    <div style="width: 640px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <span class="num" style="font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F;">Stap 3 van 3</span>
+        <div style="width: 132px; height: 6px; border-radius: 999px; background: #DCD9D3; overflow: hidden;"><div style="width: 100%; height: 6px; background: #00686C;"></div></div>
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 13px; color: #6E685F;">
+          <span style="display: inline-flex; align-items: center; gap: 4px; color: #396741;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg><span>Bedrijf</span></span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; color: #396741;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg><span>Boekjaar</span></span>
+          <span style="color: #26221C; font-weight: 600;">Klaar</span>
+        </div>
+      </div>
+
+      <!-- The done card. One check, three facts, two exits. No confetti. -->
+      <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 40px 40px 28px; display: flex; flex-direction: column; gap: 22px;">
+
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 14px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 999px; background: #E0EFE2;">
+            <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="#396741" stroke-width="1.07" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+          </span>
+          <h1 class="serif" style="margin: 0; font-size: 33px; font-weight: 600; letter-spacing: -.012em; line-height: 1.2;">Uw administratie staat klaar</h1>
+          <p style="margin: 0; font-size: 17px; color: #5F5A52; text-wrap: pretty;">Dit hebben we voor u ingericht. Alles is later aan te passen bij Instellingen.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+          <div class="fact">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V4.2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V17"/><path d="M13 8h2.2a1 1 0 0 1 1 1v8"/><path d="M2.5 17h15"/><path d="M7 6.5h2M7 9.5h2M7 12.5h2"/></svg>
+            <div><div class="t">Van Doorn Bouw B.V.</div><div class="d num">B.V. · KvK 34281907 · nl-NL notatie</div></div>
+          </div>
+          <div class="fact">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.4" width="14" height="12.6" rx="1.4"/><path d="M3 8.4h14M6.8 2.8v3M13.2 2.8v3"/></svg>
+            <div><div class="t num">Boekjaar 2026, 4 periodes</div><div class="d num">1 januari t/m 31 december · BTW per kwartaal</div></div>
+          </div>
+          <div class="fact" style="border-bottom: 1px solid #DCD9D3;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg>
+            <div><div class="t num">62 grootboekrekeningen aangemaakt</div><div class="d">Uit het Referentie Grootboekschema (RGS 3.8) voor een B.V. — u hoeft er niets aan te doen.</div></div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="btn primary">
+            <span>Naar het overzicht</span>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11.6 5.6 16 10l-4.4 4.4"/></svg>
+          </span>
+          <span class="btn quiet">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg>
+            <span>Eerst een bon vastleggen</span>
+          </span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: flex-start; gap: 9px; padding: 12px 14px; background: #FAEBD8; border-left: 3px solid #755421; border-radius: 10px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#755421" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><rect x="2.6" y="4.6" width="14.8" height="10.8" rx="1.4"/><path d="m3.4 5.6 6.6 5 6.6-5"/></svg>
+        <span style="font-size: 15px; line-height: 1.4; color: #755421; text-wrap: pretty;">Bevestig nog uw e-mailadres via de link die we naar <span style="font-weight: 600;">s.bakker@vandoornbouw.nl</span> stuurden. Boeken in het grootboek kan pas daarna.</span>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

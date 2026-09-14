@@ -22,6 +22,7 @@ import { App } from "../App";
 import { PreAuthScreen } from "./PreAuthScreen";
 import { initialLanguage } from "../i18n";
 import { assertNoAxeViolations, axeViolations } from "../testing/axe";
+import { inRouter } from "../testing/renderApp";
 
 /** These tests are about the FRAME (language control, heading) rather than
  * about any particular form, so `children` is a placeholder - the same
@@ -115,7 +116,7 @@ describe("IAM-010g: selectable before authentication", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    render(<App language="nl" />);
+    render(inRouter(<App language="nl" />));
 
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Inloggen");
 
@@ -133,13 +134,13 @@ describe("IAM-010g: selectable before authentication", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    const first = render(<App language="nl" />);
+    const first = render(inRouter(<App language="nl" />));
     fireEvent.click(screen.getByTestId("language-option-en"));
     first.unmount();
 
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
 
-    render(<App language={initialLanguage()} />);
+    render(inRouter(<App language={initialLanguage()} />));
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Sign in");
   });
 
@@ -150,7 +151,7 @@ describe("IAM-010g: selectable before authentication", () => {
     const refuse = vi.fn(async () => new Response(null, { status: 401 }));
     vi.stubGlobal("fetch", refuse);
 
-    render(<App language="nl" />);
+    render(inRouter(<App language="nl" />));
     fireEvent.click(screen.getByTestId("language-option-en"));
 
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Sign in");
@@ -201,7 +202,7 @@ describe("FR-LOC-004: the page declares the language it is actually in", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    render(<App language="nl" />);
+    render(inRouter(<App language="nl" />));
 
     expect(document.documentElement.lang).toBe("nl");
 
@@ -242,10 +243,16 @@ describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
         vi.fn(async () => new Response(null, { status: 401 })),
       );
       for (const language of ["nl", "en"] as const) {
-        const { container, unmount } = render(<App language={language} screen={kind} />);
+        // Which form is on screen is now the URL's answer, not a prop's
+        // (ADR-058) — `/login` and `/signup` are the two addresses.
+        const { container, unmount } = render(
+          inRouter(<App language={language} />, `/${kind}`),
+        );
         assertNoAxeViolations(await axeViolations(container));
         unmount();
       }
     },
   );
 });
+
+

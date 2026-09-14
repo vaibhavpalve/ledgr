@@ -45,6 +45,186 @@
     "common.theme.dark": {
       "nl": "Donker",
       "en": "Dark"
+    },
+
+    "common.nav.label": {
+      "note": "Accessible name of the desktop rail (the shell's main navigation).",
+      "nl": "Hoofdnavigatie",
+      "en": "Main navigation"
+    },
+    "common.nav.group.daily": {
+      "note": ".design/Main.dc.html's first rail heading.",
+      "nl": "Dagelijks werk",
+      "en": "Daily work"
+    },
+    "common.nav.group.books": {
+      "nl": "De boeken",
+      "en": "The books"
+    },
+    "common.nav.group.firm": {
+      "nl": "Kantoor",
+      "en": "Firm"
+    },
+    "common.nav.home": {
+      "nl": "Start",
+      "en": "Home"
+    },
+    "common.nav.capture": {
+      "nl": "Vastleggen",
+      "en": "Capture"
+    },
+    "common.nav.review": {
+      "nl": "Beoordelen",
+      "en": "Review"
+    },
+    "common.nav.overview": {
+      "nl": "Overzicht",
+      "en": "Overview"
+    },
+    "common.nav.invoices": {
+      "nl": "Verkoopfacturen",
+      "en": "Sales invoices"
+    },
+    "common.nav.customers": {
+      "nl": "Klanten",
+      "en": "Customers"
+    },
+    "common.nav.ledger": {
+      "note": "Kept Dutch in the English UI per glossary.json's grootboek entry.",
+      "identical": true,
+      "nl": "Grootboek",
+      "en": "Grootboek"
+    },
+    "common.nav.clients": {
+      "note": "A firm's client administrations (FR-ONB-001b) — distinct from an administration's own customers (common.nav.customers).",
+      "nl": "Klantportfolio",
+      "en": "Client portfolio"
+    },
+    "common.nav.settings": {
+      "nl": "Instellingen",
+      "en": "Settings"
+    },
+    "common.user_menu.open": {
+      "note": "Accessible name of the avatar button that opens the user menu.",
+      "nl": "Gebruikersmenu openen",
+      "en": "Open user menu"
+    },
+    "common.user_menu.label": {
+      "nl": "Gebruikersmenu",
+      "en": "User menu"
+    },
+    "common.fiscal_year.label": {
+      "nl": "Boekjaar",
+      "en": "Fiscal year"
+    },
+    "common.fiscal_year.option": {
+      "note": "{label} is '2026' or '2025/2026' — the canvas's 'Boekjaar 2026'.",
+      "nl": "Boekjaar {label}",
+      "en": "Fiscal year {label}"
+    },
+    "common.search.label": {
+      "nl": "Zoeken en navigeren",
+      "en": "Search and go to"
+    },
+    "common.search.placeholder": {
+      "nl": "Zoek in alles…",
+      "en": "Search everything…"
+    },
+    "common.search.shortcut": {
+      "note": "The keyboard chord shown in the search field; a key name, not a word.",
+      "identical": true,
+      "nl": "Ctrl K",
+      "en": "Ctrl K"
+    },
+    "common.search.results": {
+      "nl": "Resultaten",
+      "en": "Results"
+    },
+    "common.search.no_matches": {
+      "nl": "Niets gevonden voor “{query}”",
+      "en": "Nothing matches “{query}”"
+    },
+    "common.search.hint": {
+      "nl": "↑ ↓ kiezen · Enter openen · Esc sluiten",
+      "en": "↑ ↓ to choose · Enter to open · Esc to close"
+    },
+    "common.search.kind_client": {
+      "nl": "Klant",
+      "en": "Client"
+    },
+    "common.search.kind_screen": {
+      "nl": "Scherm",
+      "en": "Screen"
+    },
+    "common.verification.banner": {
+      "note": "IAM-010b: shown in the shell until the address is verified. Says what is blocked (posting) and what to do.",
+      "nl": "Bevestig uw e-mailadres via de link die we naar {email} hebben gestuurd. Tot die tijd kunt u alles voorbereiden, maar nog niets boeken.",
+      "en": "Verify your email address using the link we sent to {email}. Until then you can prepare everything, but not post to the books yet."
+    },
+    "common.verification.resend": {
+      "nl": "Link opnieuw sturen",
+      "en": "Send the link again"
+    },
+    "common.verification.resent": {
+      "nl": "Verstuurd. Controleer ook uw spammap.",
+      "en": "Sent. Check your spam folder too."
+    },
+    "common.error.title": {
+      "nl": "Dit kon niet worden geladen",
+      "en": "This could not be loaded"
+    },
+    "common.error.next_step": {
+      "note": "D5: every error says what to do next. The specific sentence above it is the server's; this is the generic next step.",
+      "nl": "Probeer het opnieuw. Blijft het misgaan, controleer dan uw verbinding of probeer het later nog eens.",
+      "en": "Try again. If it keeps failing, check your connection or try again later."
+    },
+    "common.action.retry": {
+      "nl": "Opnieuw proberen",
+      "en": "Try again"
+    },
+    "common.action.cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    },
+    "common.action.back": {
+      "nl": "Terug",
+      "en": "Back"
+    },
+    "common.action.save": {
+      "nl": "Opslaan",
+      "en": "Save"
+    },
+    "common.action.saving": {
+      "nl": "Bezig met opslaan…",
+      "en": "Saving…"
+    },
+    "common.action.saved": {
+      "nl": "Opgeslagen.",
+      "en": "Saved."
+    },
+    "common.action.edit": {
+      "nl": "Bewerken",
+      "en": "Edit"
+    },
+    "common.action.close": {
+      "nl": "Sluiten",
+      "en": "Close"
+    },
+    "common.not_found.title": {
+      "nl": "Deze pagina bestaat niet",
+      "en": "This page does not exist"
+    },
+    "common.not_found.body": {
+      "nl": "Het adres klopt niet, of de pagina is verplaatst. Ga terug naar het overzicht.",
+      "en": "The address is wrong, or the page has moved. Go back to the overview."
+    },
+    "common.not_found.home": {
+      "nl": "Naar het overzicht",
+      "en": "Go to the overview"
+    },
+    "common.session.load_failed_hint": {
+      "nl": "Uw account kon niet worden geladen. Lukt het na een nieuwe poging nog niet, log dan uit en weer in.",
+      "en": "Your account could not be loaded. If it still fails after retrying, sign out and back in."
     }
   }
 }

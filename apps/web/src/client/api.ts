@@ -33,7 +33,7 @@
  * this method only ever returns what it actually received.
  */
 
-import type { ClientBadge, ClientColour } from "@ledgr/shared-types";
+import type { ClientBadge, ClientColour, SwitcherEntry } from "@ledgr/shared-types";
 import type { Language } from "@ledgr/i18n";
 
 import { languageHeaders } from "../i18n";
@@ -75,6 +75,13 @@ interface ActiveBadgeResponse {
   colour_is_ambiguous: boolean;
 }
 
+/** `_entry_json` in full — what `/v1/switcher/search` returns per row. */
+interface SwitcherEntryResponse extends ActiveBadgeResponse {
+  role: string;
+  role_is_system: boolean;
+  expires_at: string | null;
+}
+
 export class ClientApi {
   constructor(private readonly options: ApiOptions) {}
 
@@ -89,6 +96,34 @@ export class ClientApi {
     return raw === null ? null : toBadge(raw);
   }
 
+  /**
+   * FR-FRM-000 / IAM-110: `PUT /v1/switcher/{id}` — sets the SESSION's active
+   * administration. With session-backed tenant context (§4.1) it takes
+   * effect on the very next request, so the caller re-reads `GET /v1/me`
+   * afterwards rather than trusting its own idea of what changed. Mutating,
+   * so it carries an idempotency key (NFR-032).
+   */
+  switchTo(administrationId: string): Promise<{ administrationId: string; legalName: string }> {
+    return this.call<{ administration_id: string; legal_name: string }>(
+      "PUT",
+      `/v1/switcher/${encodeURIComponent(administrationId)}`,
+    ).then((raw) => ({ administrationId: raw.administration_id, legalName: raw.legal_name }));
+  }
+
+  /** FR-FRM-000's search: exact → prefix → substring, server-side, granted administrations only. */
+  async searchSwitcher(query: string): Promise<SwitcherEntry[]> {
+    const raw = await this.call<readonly SwitcherEntryResponse[]>(
+      "GET",
+      `/v1/switcher/search${query === "" ? "" : `?q=${encodeURIComponent(query)}`}`,
+    );
+    return raw.map((entry) => ({
+      ...toBadge(entry),
+      role: entry.role,
+      roleIsSystem: entry.role_is_system,
+      expiresAt: entry.expires_at,
+    }));
+  }
+
   private async call<T>(method: string, path: string): Promise<T> {
     const fetchImpl = this.options.fetchImpl ?? fetch;
 
@@ -96,7 +131,10 @@ export class ClientApi {
     try {
       response = await fetchImpl(path, {
         method,
-        headers: languageHeaders(this.options.language()),
+        headers: {
+          ...languageHeaders(this.options.language()),
+          ...(method === "GET" ? {} : { "Idempotency-Key": crypto.randomUUID() }),
+        },
       });
     } catch (cause) {
       throw new OfflineError(`${method} ${path} could not reach the API`, { cause });

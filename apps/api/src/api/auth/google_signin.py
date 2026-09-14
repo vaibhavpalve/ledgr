@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Protocol
 
 from api.auth.google_oidc import GoogleIdentity
@@ -105,6 +106,10 @@ class GoogleSignInService:
 
         new_user = await self._users.create(identity.email)
         await self._google_identities.link(new_user.id, identity)
+        # IAM-010b's exemption: a GoogleIdentity cannot be constructed from a
+        # token whose email_verified is not true (api.auth.google_oidc), so
+        # the address is already proven and LEDGR sends no link of its own.
+        await self._users.mark_email_verified(new_user.id, at=datetime.now(UTC))
         return new_user
 
     async def confirm_link_with_password(
@@ -133,4 +138,9 @@ class GoogleSignInService:
             raise LinkIdentityMismatchError
 
         await self._google_identities.link(user.id, link_required.google_identity)
+        # The Google identity carries the SAME address this account holds,
+        # verified by Google, and the person just proved the account's own
+        # password too - both halves of IAM-010b are now satisfied, so an
+        # outstanding verification link for it has nothing left to prove.
+        await self._users.mark_email_verified(user.id, at=datetime.now(UTC))
         return user

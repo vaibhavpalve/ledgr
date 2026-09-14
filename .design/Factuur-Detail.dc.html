@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .app { display: flex; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden; }
+    .rail { width: 240px; flex: none; background: #FBF8F4; border-right: 1px solid #DCD9D3; display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px; }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .nav { display: flex; flex-direction: column; gap: 20px; }
+    .group { display: flex; flex-direction: column; gap: 2px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px; }
+    .item { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px; }
+    .item.on { background: #D8F4F6; color: #00686C; font-weight: 600; }
+    .badge { font-size: 13px; font-weight: 700; color: #00686C; background: #D8F4F6; border-radius: 999px; padding: 1px 9px; }
+    .item-settings { display: flex; align-items: center; gap: 11px; padding: 16px 8px 9px; border-radius: 9px; color: #5F5A52; font-size: 16px; border-top: 1px solid #DCD9D3; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .bar { flex: none; background: #FBF8F4; border-bottom: 3px solid #59739B; display: flex; align-items: center; gap: 18px; padding: 0 26px; height: 66px; }
+    .marker { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #59739B; color: #FFFFFF; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+    .vsep { width: 1px; height: 30px; background: #DCD9D3; }
+    .search { flex-grow: 1; display: flex; align-items: center; gap: 9px; max-width: 380px; height: 38px; padding: 0 13px; border: 1px solid #8F8878; border-radius: 10px; background: #FFFEFB; font-size: 15px; color: #6E685F; }
+    .kbd { font-size: 12px; font-weight: 600; color: #6E685F; border: 1px solid #8F8878; border-radius: 5px; padding: 1px 6px; background: #FBF8F4; }
+    .avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700; }
+    .page { flex: 1; overflow: hidden; padding: 18px 26px 0; display: flex; flex-direction: column; gap: 14px; }
+    h1 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 12px; font-weight: 600; letter-spacing: .03em; white-space: nowrap; }
+    .chip.attention { background: #FEE8E1; color: #814A39; }
+    .dl { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 6px 12px; font-size: 15px; align-content: start; }
+    .dl dt { color: #6E685F; margin: 0; } .dl dd { margin: 0; }
+    .lcols { grid-template-columns: minmax(0, 1fr) 70px 110px 90px 120px; }
+    .th { display: grid; align-items: center; padding: 0 16px; height: 36px; background: #EFEAE2; border-bottom: 1px solid #8F8878; font-size: 12px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; color: #5F5A52; }
+    .tr { display: grid; align-items: center; padding: 0 16px; height: 40px; font-size: 15px; border-bottom: 1px solid #DCD9D3; }
+    .r { text-align: right; } .muted { color: #6E685F; } .sec { color: #5F5A52; }
+    .act { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0; font-size: 14px; }
+    /* The PDF is document content, not UI: white paper, black ink, no palette. */
+    .pdf { width: 300px; background: #FFFFFF; color: #1A1A1A; padding: 22px 24px; box-shadow: 0 2px 4px rgba(38,34,28,.06), 0 8px 20px -10px rgba(38,34,28,.18); font-size: 8px; line-height: 1.4; display: flex; flex-direction: column; gap: 10px; }
+  </style>
+</helmet>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <nav class="nav">
+      <div class="group">
+        <div class="eyebrow">Dagelijks werk</div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5"/></svg><span>Start</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg><span>Vastleggen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg><span style="flex-grow: 1;">Beoordelen</span><span class="badge num">7</span></div>
+        <div class="item on"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg><span>Verkoopfacturen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.6 16.2c0-2.7 2.2-4.6 4.9-4.6s4.9 1.9 4.9 4.6"/><path d="M13 7.4a2.4 2.4 0 0 1 0 4.6"/><path d="M14.4 12.1c1.8.5 3 1.9 3 4.1"/></svg><span>Klanten</span></div>
+      </div>
+      <div class="group">
+        <div class="eyebrow">De boeken</div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg><span>Grootboek</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15"/><circle cx="6.6" cy="6.6" r="2.1"/><circle cx="13.4" cy="13.4" r="2.1"/></svg><span>BTW-aangifte</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.2v-4.4M10 16.2V4.4M15.5 16.2V9"/></svg><span>Rapportage</span></div>
+      </div>
+    </nav>
+    <div style="flex-grow: 1;"></div>
+    <div class="item-settings"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.6v2.2M10 15.2v2.2M17.4 10h-2.2M4.8 10H2.6M15.23 4.77l-1.56 1.56M6.33 13.67l-1.56 1.56M15.23 15.23l-1.56-1.56M6.33 6.33 4.77 4.77"/></svg><span>Instellingen</span></div>
+  </aside>
+
+  <div class="main">
+    <header class="bar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="marker num">VD</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 16px; font-weight: 600;">Van Doorn Bouw B.V.</span>
+          <span class="num" style="font-size: 13px; color: #6E685F;">KvK 34281907</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+      </div>
+      <div class="vsep"></div>
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span>Boekjaar 2026</span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg></div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+        <span style="flex-grow: 1;">Zoek in alles…</span><span class="kbd">Ctrl K</span>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <span class="avatar">SB</span>
+    </header>
+
+    <main class="page">
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: #6E685F;">
+          <span>Verkoopfacturen</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+          <span class="num" style="color: #26221C; font-weight: 600;">2026-0184</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <h1 class="num">Factuur 2026-0184</h1>
+          <span class="chip attention" style="font-size: 13px; padding: 3px 11px;">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="M10 5.8v4.4l3 1.8"/></svg>
+            <span class="num">Te laat · 23 dagen</span>
+          </span>
+          <span style="font-size: 15px; color: #6E685F;">aan <a href="#">Hoveniersbedrijf Kroon</a></span>
+          <div style="flex-grow: 1;"></div>
+          <span class="btn">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9"/><path d="m6.4 8.6 3.6 3.6 3.6-3.6"/><path d="M3.8 15.4h12.4"/></svg>
+            <span>PDF downloaden</span>
+          </span>
+          <span class="btn">Dupliceren</span>
+          <!-- Overdue, so the one action is the reminder — in the accent, never the alarm colour -->
+          <span class="btn primary">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m3.2 9.8 13.6-6.4-3.6 13.2-3.8-4.6z"/><path d="m9.4 12 7.4-8.6"/></svg>
+            <span>Herinnering sturen</span>
+          </span>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 16px;">
+
+        <!-- Left: the facts, the lines, the activity -->
+        <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+          <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px;">
+            <dl class="dl" style="margin: 0;">
+              <dt>Klant</dt><dd>Hoveniersbedrijf Kroon<br><span class="muted" style="font-size: 13px;">facturen@kroon.nl · KvK 51772004</span></dd>
+              <dt>Betaalkenmerk</dt><dd class="num">2026-0184</dd>
+            </dl>
+            <dl class="dl" style="margin: 0;">
+              <dt>Factuurdatum</dt><dd class="num">30-07-2026</dd>
+              <dt>Vervaldatum</dt><dd class="num" style="color: #814A39;">22-08-2026<br><span style="font-weight: 600; font-size: 13px;">23 dagen verstreken</span></dd>
+              <dt>Betaaltermijn</dt><dd class="num">23 dagen</dd>
+            </dl>
+          </div>
+
+          <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
+            <div class="th lcols"><span>Omschrijving</span><span class="r">Aantal</span><span class="r">Stukprijs</span><span class="r">BTW</span><span class="r">Bedrag</span></div>
+            <div class="tr lcols"><span>Aanleg terras, incl. materiaal</span><span class="num r">1</span><span class="num r">2.400,00</span><span class="num r sec">21%</span><span class="num r">2.400,00</span></div>
+            <div class="tr lcols"><span>Arbeid hovenier</span><span class="num r">18</span><span class="num r">55,00</span><span class="num r sec">21%</span><span class="num r">990,00</span></div>
+            <div class="tr lcols"><span>Afvoer groenafval</span><span class="num r">1</span><span class="num r">110,00</span><span class="num r sec">21%</span><span class="num r">110,00</span></div>
+            <div style="display: flex; justify-content: flex-end; padding: 12px 16px 14px;">
+              <div style="width: 300px; display: flex; flex-direction: column; gap: 4px; font-size: 15px;">
+                <div style="display: flex; justify-content: space-between;"><span class="sec">Subtotaal</span><span class="num">€ 3.500,00</span></div>
+                <div style="display: flex; justify-content: space-between;"><span class="sec">BTW 21%</span><span class="num">€ 735,00</span></div>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 6px; margin-top: 4px; border-top: 1px solid #8F8878;"><span style="font-weight: 600;">Totaal</span><span class="serif num" style="font-size: 24px; font-weight: 600; letter-spacing: -.01em;">€ 4.235,00</span></div>
+                <div style="display: flex; justify-content: space-between;"><span class="sec">Ontvangen</span><span class="num muted">€ 0,00</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 12px 18px; display: flex; flex-direction: column;">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; padding-bottom: 4px;">Verloop</span>
+            <div class="act" style="border-bottom: 1px solid #DCD9D3;">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#814A39" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="M10 5.8v4.4l3 1.8"/></svg>
+              <div><span>Vervaldatum verstreken</span> <span class="muted num">· 22 aug</span></div>
+            </div>
+            <div class="act" style="border-bottom: 1px solid #DCD9D3;">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="4.6" width="14.8" height="10.8" rx="1.4"/><path d="m3.4 5.6 6.6 5 6.6-5"/></svg>
+              <div><span>Verstuurd naar facturen@kroon.nl door S. Bakker</span> <span class="muted num">· 30 jul 09:12</span></div>
+            </div>
+            <div class="act">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg>
+              <div><span>Geboekt op 1300 Debiteuren</span> <a href="#" style="font-weight: 600;">2026-V-0184</a> <span class="muted num">· 30 jul 09:12</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: the PDF preview on a sunken pane -->
+        <div style="background: #E3DED5; border: 1px solid #DCD9D3; border-radius: 14px; position: relative; display: flex; flex-direction: column; align-items: center; padding: 22px; gap: 12px; overflow: hidden;">
+          <span style="font-size: 13px; color: #5F5A52;">Zo ziet uw klant de factuur</span>
+          <div class="pdf">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div><div style="font-size: 12px; font-weight: 700; letter-spacing: .04em;">VAN DOORN BOUW</div><div style="color: #555;">Nijverheidsweg 14 · 3821 BM Amersfoort</div><div style="color: #555;">KvK 34281907 · BTW NL001234567B01</div></div>
+              <div style="text-align: right;"><div style="font-size: 12px; font-weight: 700;">FACTUUR</div><div class="num">2026-0184</div></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+              <div><div style="color: #555;">Aan</div><div style="font-weight: 600;">Hoveniersbedrijf Kroon</div><div>Lange Brinkweg 3</div><div>3764 AB Soest</div></div>
+              <div class="num" style="text-align: right;"><div style="color: #555;">Factuurdatum</div><div>30-07-2026</div><div style="color: #555; margin-top: 2px;">Vervaldatum</div><div>22-08-2026</div></div>
+            </div>
+            <div style="border-top: 1px solid #1A1A1A; margin-top: 4px;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 24px 44px 44px; gap: 2px 6px;">
+              <span style="font-weight: 600;">Omschrijving</span><span style="font-weight: 600; text-align: right;">Aantal</span><span style="font-weight: 600; text-align: right;">Prijs</span><span style="font-weight: 600; text-align: right;">Bedrag</span>
+              <span>Aanleg terras, incl. materiaal</span><span class="num" style="text-align: right;">1</span><span class="num" style="text-align: right;">2.400,00</span><span class="num" style="text-align: right;">2.400,00</span>
+              <span>Arbeid hovenier</span><span class="num" style="text-align: right;">18</span><span class="num" style="text-align: right;">55,00</span><span class="num" style="text-align: right;">990,00</span>
+              <span>Afvoer groenafval</span><span class="num" style="text-align: right;">1</span><span class="num" style="text-align: right;">110,00</span><span class="num" style="text-align: right;">110,00</span>
+            </div>
+            <div style="border-top: 1px solid #CCCCCC;"></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+              <div class="num" style="display: flex; gap: 16px;"><span style="color: #555;">Subtotaal</span><span style="width: 52px; text-align: right;">3.500,00</span></div>
+              <div class="num" style="display: flex; gap: 16px;"><span style="color: #555;">BTW 21%</span><span style="width: 52px; text-align: right;">735,00</span></div>
+              <div class="num" style="display: flex; gap: 16px; font-weight: 700; font-size: 9px;"><span>Totaal</span><span style="width: 52px; text-align: right;">€ 4.235,00</span></div>
+            </div>
+            <div style="color: #555; padding-top: 6px; border-top: 1px solid #CCCCCC;">Betaling binnen 23 dagen op NL91 ABNA 0417 1643 00 t.n.v. Van Doorn Bouw B.V. onder vermelding van 2026-0184.</div>
+            <div style="height: 40px;"></div>
+          </div>
+          <div style="position: absolute; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 2px; background: #FBF8F4; border: 1px solid #8F8878; border-radius: 10px; padding: 3px;">
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 7px;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 10h9"/></svg></span>
+            <span class="num" style="font-size: 14px; font-weight: 600; color: #5F5A52; padding: 0 4px;">60%</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 7px;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round"><path d="M10 5.5v9M5.5 10h9"/></svg></span>
+            <div style="width: 1px; height: 20px; background: #DCD9D3; margin: 0 3px;"></div>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 7px;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 4.5H5a1 1 0 0 0-1 1V15a1 1 0 0 0 1 1h9.5a1 1 0 0 0 1-1v-3.5"/><path d="M11.5 3.5h5v5M16.5 3.5 9.5 10.5"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div style="flex: none; height: 14px;"></div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

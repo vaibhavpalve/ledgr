@@ -48,6 +48,13 @@ class InMemoryUserRepository:
         self._credentials_by_user_id[user_id] = credential
         return credential
 
+    async def mark_email_verified(self, user_id: uuid.UUID, *, at: datetime) -> bool:
+        user = self._users_by_id[user_id]
+        if user.email_verified_at is not None:
+            return False
+        self._users_by_id[user_id] = replace(user, email_verified_at=at)
+        return True
+
     def set_status(self, user_id: uuid.UUID, status: str) -> None:
         """Test-only helper - the real schema updates this via ordinary
         application code (offboarding, suspension), not exposed on the
@@ -94,6 +101,20 @@ class InMemorySessionRepository:
 
     async def get_by_token_hash(self, token_hash: str) -> Session | None:
         return next((s for s in self._sessions.values() if s.token_hash == token_hash), None)
+
+    async def get_by_id(self, session_id: uuid.UUID) -> Session | None:
+        return self._sessions.get(session_id)
+
+    def set_active_administration(
+        self, session_id: uuid.UUID, administration_id: uuid.UUID | None
+    ) -> None:
+        """Test-only: what api.authz.firm_access_repository's
+        set_active_administration writes for the real switcher (0017), so a
+        tenancy test can prove the middleware reads the column back.
+        """
+        self._sessions[session_id] = replace(
+            self._sessions[session_id], active_administration_id=administration_id
+        )
 
     async def touch(self, session_id: uuid.UUID, *, at: datetime) -> None:
         self._sessions[session_id] = replace(self._sessions[session_id], last_active_at=at)

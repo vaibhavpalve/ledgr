@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .app { display: flex; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden; }
+    .rail { width: 240px; flex: none; background: #FBF8F4; border-right: 1px solid #DCD9D3; display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px; }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .nav { display: flex; flex-direction: column; gap: 20px; }
+    .group { display: flex; flex-direction: column; gap: 2px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px; }
+    .item { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px; }
+    .item.on { background: #D8F4F6; color: #00686C; font-weight: 600; }
+    .item-settings { display: flex; align-items: center; gap: 11px; padding: 16px 8px 9px; border-radius: 9px; color: #5F5A52; font-size: 16px; border-top: 1px solid #DCD9D3; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .bar { flex: none; background: #FBF8F4; border-bottom: 3px solid #DCD9D3; display: flex; align-items: center; gap: 18px; padding: 0 26px; height: 66px; }
+    .search { flex-grow: 1; display: flex; align-items: center; gap: 9px; max-width: 380px; height: 38px; padding: 0 13px; border: 1px solid #8F8878; border-radius: 10px; background: #FFFEFB; font-size: 15px; color: #6E685F; }
+    .kbd { font-size: 12px; font-weight: 600; color: #6E685F; border: 1px solid #8F8878; border-radius: 5px; padding: 1px 6px; background: #FBF8F4; }
+    .avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700; }
+    .page { flex: 1; overflow: hidden; padding: 26px 26px 0; display: flex; flex-direction: column; gap: 16px; }
+    h1 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 48px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+    .step .n { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700; }
+    .step .t { font-size: 16px; font-weight: 600; line-height: 1.3; }
+    .step .d { font-size: 14px; line-height: 1.4; color: #6E685F; text-wrap: pretty; }
+  </style>
+</helmet>
+
+<div class="app">
+
+  <!-- The firm's rail: portfolio first, no "de boeken" group — the books belong to a client -->
+  <aside class="rail">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <nav class="nav">
+      <div class="group">
+        <div class="eyebrow">Kantoor</div>
+        <div class="item on">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="6" width="14.4" height="10.4" rx="1.4"/><path d="M7 6V4.4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V6M2.8 10.5h14.4"/></svg>
+          <span>Portfolio</span>
+        </div>
+        <div class="item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.6 16.2c0-2.7 2.2-4.6 4.9-4.6s4.9 1.9 4.9 4.6"/><path d="M13 7.4a2.4 2.4 0 0 1 0 4.6"/><path d="M14.4 12.1c1.8.5 3 1.9 3 4.1"/></svg>
+          <span>Medewerkers</span>
+        </div>
+        <div class="item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+          <span>Beoordelen</span>
+        </div>
+      </div>
+    </nav>
+    <div style="flex-grow: 1;"></div>
+    <div class="item-settings">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.6v2.2M10 15.2v2.2M17.4 10h-2.2M4.8 10H2.6M15.23 4.77l-1.56 1.56M6.33 13.67l-1.56 1.56M15.23 15.23l-1.56-1.56M6.33 6.33 4.77 4.77"/></svg>
+      <span>Instellingen</span>
+    </div>
+  </aside>
+
+  <div class="main">
+    <!-- No client is open: the bar shows the firm itself, a neutral rule, no fiscal year -->
+    <header class="bar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #26221C; color: #FFFFFF; font-size: 13px; font-weight: 700;">BZ</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 16px; font-weight: 600;">Bakker &amp; Zn. Accountants</span>
+          <span style="font-size: 13px; color: #6E685F;">Geen klant geopend</span>
+        </div>
+      </div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+        <span style="flex-grow: 1;">Zoek klanten…</span>
+        <span class="kbd">Ctrl K</span>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <span class="avatar">SB</span>
+    </header>
+
+    <main class="page">
+      <div style="display: flex; align-items: baseline; gap: 14px;">
+        <h1>Uw klanten</h1>
+        <span class="num" style="font-size: 15px; color: #6E685F;">0 administraties</span>
+      </div>
+
+      <!-- One decision on an empty portfolio: add the first client. -->
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start;">
+        <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 56px 32px 48px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 999px; background: #EFEAE2; margin-bottom: 6px;">
+            <svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.6 16.2c0-2.7 2.2-4.6 4.9-4.6s4.9 1.9 4.9 4.6"/><path d="M14.5 6.5v5M12 9h5"/></svg>
+          </span>
+          <h2 class="serif" style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.006em;">Voeg uw eerste klant toe</h2>
+          <p style="margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.45; color: #6E685F; text-wrap: pretty;">Elke klant krijgt een eigen administratie met een eigen kleur, initialen en boekjaar, zodat u nooit in de verkeerde boeken werkt. Wisselen doet u met <span class="kbd" style="margin: 0 2px;">Ctrl K</span>.</p>
+          <span class="btn primary" style="margin-top: 14px;">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v12M4 10h12"/></svg>
+            <span>Klant toevoegen</span>
+          </span>
+          <span class="btn quiet" style="height: 40px;">Of nodig eerst een collega uit</span>
+        </div>
+
+        <!-- What happens next, so the empty state teaches rather than just waits (FR-UX-004) -->
+        <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F;">Zo werkt een klant toevoegen</span>
+          <div class="step"><span class="n num">1</span><div><div class="t">KvK-nummer invoeren</div><div class="d">Naam, rechtsvorm en adres halen we op uit het Handelsregister.</div></div></div>
+          <div class="step"><span class="n num">2</span><div><div class="t">Boekjaar kiezen</div><div class="d">Meestal het kalenderjaar; het rekeningschema volgt uit de rechtsvorm (RGS).</div></div></div>
+          <div class="step"><span class="n num">3</span><div><div class="t">Toegang regelen</div><div class="d">U krijgt zelf direct toegang. Collega's en de klant nodigt u daarna uit, per administratie.</div></div></div>
+          <div style="display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: #EFEAE2; border-radius: 10px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="10" cy="10" r="7.3"/><path d="M10 13.6V9.4"/><path d="M10 6.6h.01"/></svg>
+            <span style="font-size: 13px; line-height: 1.4; color: #5F5A52;">Neemt u een administratie over? Import uit een auditfile (XAF) volgt in een latere versie.</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

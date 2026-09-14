@@ -30,14 +30,22 @@ $pgdata = Join-Path $devtools 'pgdata'
 $pgPort = 55432
 
 function Test-Port([int]$port) {
-  try {
-    $client = New-Object System.Net.Sockets.TcpClient
-    $async = $client.BeginConnect('127.0.0.1', $port, $null, $null)
-    $ok = $async.AsyncWaitHandle.WaitOne(500)
-    if ($ok) { $client.EndConnect($async) }
-    $client.Close()
-    return $ok
-  } catch { return $false }
+  # Vite binds ::1 (IPv6 localhost) while Postgres and uvicorn bind 127.0.0.1,
+  # so a probe of only one address family reports a running server as down.
+  foreach ($address in @('127.0.0.1', '::1')) {
+    try {
+      # The client must be created in the SAME address family as the address,
+      # or connecting to ::1 throws on a socket opened for IPv4 — which is how
+      # a perfectly healthy Vite (it binds [::1] only) reported as down.
+      $ip = [System.Net.IPAddress]::Parse($address)
+      $client = New-Object System.Net.Sockets.TcpClient($ip.AddressFamily)
+      $async = $client.BeginConnect($ip, $port, $null, $null)
+      $ok = $async.AsyncWaitHandle.WaitOne(500)
+      if ($ok) { $client.EndConnect($async); $client.Close(); return $true }
+      $client.Close()
+    } catch { }
+  }
+  return $false
 }
 
 function Get-ProcessesMatching([string]$pattern) {

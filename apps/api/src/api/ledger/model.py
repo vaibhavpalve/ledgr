@@ -28,6 +28,7 @@ The tripwire has to be at the door.
 
 from __future__ import annotations
 
+import base64
 import enum
 import uuid
 from collections.abc import Sequence
@@ -304,6 +305,11 @@ class PostedLine:
     subledger_party_id: uuid.UUID | None = None
     cost_centre_id: uuid.UUID | None = None
     description: str | None = None
+    #: The account as it read when the line was fetched. Carried on the line
+    #: so a screen showing an entry does not need a second call for the chart;
+    #: None only for a line built without the join (in-memory doubles).
+    account_code: str | None = None
+    account_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,6 +335,82 @@ class PostedEntry:
     idempotency_key: str | None = None
     suppletie_id: uuid.UUID | None = None
     lines: Sequence[PostedLine] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class EntryCursor:
+    """Where a page of journal entries ends, as an opaque token.
+
+    Keyset rather than offset: an offset over an append-only table drifts the
+    moment a posting lands between two page fetches, so a reader paging
+    through the journal would see one entry twice and miss another. The pair
+    (posted_at, id) is unique - `id` breaks the tie for two entries committed
+    in the same instant - and ordering on it is stable no matter what is
+    posted meanwhile.
+    """
+
+    posted_at: datetime
+    entry_id: uuid.UUID
+
+    def encode(self) -> str:
+        raw = f"{self.posted_at.isoformat()}|{self.entry_id}".encode()
+        return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+
+    @classmethod
+    def decode(cls, token: str) -> EntryCursor:
+        """Raises ValueError for anything that is not a cursor this class
+        produced - the caller turns that into a 422, never into a guess.
+        """
+        padded = token + "=" * (-len(token) % 4)
+        try:
+            raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise ValueError("not a journal-entry cursor") from exc
+        posted_at_text, separator, entry_id_text = raw.partition("|")
+        if not separator:
+            raise ValueError("not a journal-entry cursor")
+        posted_at = datetime.fromisoformat(posted_at_text)
+        if posted_at.tzinfo is None:
+            raise ValueError("a journal-entry cursor carries a timezone-aware instant")
+        return cls(posted_at=posted_at, entry_id=uuid.UUID(entry_id_text))
+
+
+@dataclass(frozen=True, slots=True)
+class JournalEntrySummary:
+    """One row of the journal as a list shows it: the entry's header plus
+    its totals, without its lines. The lines are `PostedEntry.lines`, on the
+    detail read.
+    """
+
+    id: uuid.UUID
+    administration_id: uuid.UUID
+    fiscal_year_id: uuid.UUID
+    period_id: uuid.UUID
+    journal_id: uuid.UUID
+    journal_code: str
+    journal_name: str
+    entry_number: int
+    entry_date: date
+    description: str
+    source_system: str
+    posted_at: datetime
+    total_debit: Decimal
+    total_credit: Decimal
+    line_count: int
+    document_reference: str | None = None
+    posted_by_user_id: uuid.UUID | None = None
+    reverses_entry_id: uuid.UUID | None = None
+
+    @property
+    def cursor(self) -> EntryCursor:
+        return EntryCursor(posted_at=self.posted_at, entry_id=self.id)
+
+
+@dataclass(frozen=True, slots=True)
+class JournalEntryPage:
+    items: tuple[JournalEntrySummary, ...]
+    #: The cursor to pass for the next page, or None when this was the last.
+    next_cursor: EntryCursor | None = None
 
 
 @dataclass(frozen=True, slots=True)

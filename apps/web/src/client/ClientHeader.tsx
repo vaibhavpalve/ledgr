@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useI18n } from "@ledgr/i18n";
 import type { ClientBadge } from "@ledgr/shared-types";
 
@@ -54,7 +55,21 @@ import type { ClientBadge } from "@ledgr/shared-types";
  * there are no figures on it — but when there are, they follow the
  * administration's locale rather than the reader's language (FR-LOC-002).
  */
-export function ClientHeader({ badge }: { badge: ClientBadge | null | undefined }) {
+export function ClientHeader({
+  badge,
+  children,
+}: {
+  badge: ClientBadge | null | undefined;
+  /**
+   * The rest of the top bar (fiscal-year selector, search, user menu),
+   * rendered INSIDE the client header rather than beside it: the desktop
+   * canvas (`.design/Main.dc.html`) makes the whole header bar carry the
+   * client's colour as its bottom rule, so the header IS the client header.
+   * DOM order keeps the identity first, which is what "unmistakable at all
+   * times" asks of a screen reader too.
+   */
+  children?: ReactNode;
+}) {
   const { t } = useI18n();
 
   if (badge === undefined) {
@@ -67,6 +82,7 @@ export function ClientHeader({ badge }: { badge: ClientBadge | null | undefined 
         <span className="client-header__name" role="status">
           {t("client.header.loading")}
         </span>
+        {children}
       </header>
     );
   }
@@ -79,6 +95,7 @@ export function ClientHeader({ badge }: { badge: ClientBadge | null | undefined 
         data-state="none"
       >
         <span className="client-header__name">{t("client.header.none_selected")}</span>
+        {children}
       </header>
     );
   }
@@ -101,14 +118,25 @@ export function ClientHeader({ badge }: { badge: ClientBadge | null | undefined 
       >
         {badge.initials}
       </span>
-      <span className="client-header__name" data-testid="client-name">
-        {badge.displayName}
-      </span>
-      {badge.tradeName !== null && badge.tradeName !== badge.legalName ? (
-        <span className="client-header__legal-name" data-testid="client-legal-name">
-          {badge.legalName}
+      <span className="client-header__identity">
+        <span className="client-header__name" data-testid="client-name">
+          {badge.displayName}
         </span>
-      ) : null}
+        {badge.tradeName !== null && badge.tradeName !== badge.legalName ? (
+          <span className="client-header__legal-name" data-testid="client-legal-name">
+            {badge.legalName}
+          </span>
+        ) : null}
+        {/* The KvK number, as the canvas shows it under the name: the one
+            identifier on the paper in front of the person (FR-FRM-000).
+            `KvK` keeps its Dutch form in both languages (FR-LOC-001c). */}
+        {badge.kvkNumber !== null ? (
+          <span className="client-header__kvk ledgr-num" data-testid="client-kvk">
+            {t("client.switcher.kvk", { number: badge.kvkNumber })}
+          </span>
+        ) : null}
+      </span>
+      {children}
       {badge.colourIsAmbiguous ? (
         <span className="client-header__ambiguous" data-testid="client-colour-ambiguous">
           {t("client.header.colour_ambiguous")}

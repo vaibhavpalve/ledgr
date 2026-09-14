@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.account import routes as account_routes
+from api.account import security_routes as account_security_routes
 from api.audit.log import AuditCategory
 from api.audit.middleware import AuditMiddleware
 from api.auth import routes as auth_routes
@@ -32,7 +34,10 @@ from api.i18n.http import problem
 from api.i18n.language import SUPPORTED_LANGUAGE_CODES, parse_language
 from api.idempotency_middleware import IdempotencyMiddleware
 from api.invoicing import routes as invoice_routes
+from api.ledger_reads import routes as ledger_read_routes
+from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
+from api.onboarding import routes as onboarding_routes
 from api.security.csrf import CsrfProtectionMiddleware
 from api.security.headers import SecurityHeadersMiddleware
 from api.templates import routes as template_routes
@@ -99,6 +104,20 @@ template_routes.register(app)
 # see api.dashboard.routes' module docstring for why it reuses "View reports"
 # rather than a permission of its own.
 dashboard_routes.register(app)
+# The founder review's §4.1-4.3 (docs/founder-review-2026-09-14.md): the
+# caller's own bootstrap (GET /v1/me), onboarding (FR-ONB-004/005/006,
+# FR-MDL-004) and the Grootboek screen's reads. Same registration reason;
+# see each module's docstring for its permission choices and ADR-059 for the
+# onboarding transaction.
+account_routes.register(app)
+onboarding_routes.register(app)
+ledger_read_routes.register(app)
+# §4.4: the account's own security settings (IAM-017 sessions, passkeys,
+# password, TOTP) - see api.account.security_routes and ADR-060. And the
+# development-only e-mail outbox, which registers nothing unless
+# settings.expose_dev_outbox is true (api.mail.dev_outbox).
+account_security_routes.register(app)
+dev_outbox.register(app)
 
 app.add_middleware(AuthorizationEnforcementMiddleware)
 app.add_middleware(IdempotencyMiddleware)

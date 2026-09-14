@@ -41,6 +41,8 @@ export interface ThemeTokens {
   "surface-raised": string;
   "surface-sunken": string;
   "surface-input": string;
+  /* The backdrop behind a dialog or drawer — the one translucent surface. */
+  "surface-scrim": string;
 
   /* Lines. `border-focus` is the ring colour; see `focus-ring` below. */
   "border-subtle": string;
@@ -77,6 +79,8 @@ export const lightTheme: ThemeTokens = {
   "surface-raised": NEUTRAL_LIGHT.raised,
   "surface-sunken": NEUTRAL_LIGHT.sunken,
   "surface-input": NEUTRAL_LIGHT.input,
+  /* Warm ink (NEUTRAL_LIGHT.ink) at 48%: dimmed paper, not a grey film. */
+  "surface-scrim": "rgba(38, 34, 28, 0.48)",
 
   "border-subtle": NEUTRAL_LIGHT.rule,
   "border-strong": NEUTRAL_LIGHT.ruleStrong,
@@ -109,6 +113,9 @@ export const darkTheme: ThemeTokens = {
   "surface-raised": NEUTRAL_DARK.raised,
   "surface-sunken": NEUTRAL_DARK.sunken,
   "surface-input": NEUTRAL_DARK.input,
+  /* Black, like the dark shadows: a warm scrim over a warm dark ground goes
+     muddy rather than reading as depth. */
+  "surface-scrim": "rgba(0, 0, 0, 0.6)",
 
   "border-subtle": NEUTRAL_DARK.rule,
   "border-strong": NEUTRAL_DARK.ruleStrong,
@@ -220,6 +227,31 @@ export const scaleTokens = {
 
   /* Touch targets. MOB-013's floor, as a token so no screen re-derives it. */
   "touch-min": "48px",
+
+  /* Layout (docs/design/system.md §2): the desktop shell's fixed dimensions.
+     The 64rem desktop breakpoint itself is not here — a custom property
+     cannot be used inside a media query. */
+  "layout-rail": "15rem" /* 240 — the left rail, Main.dc.html */,
+  "layout-bar": "4rem" /* 64 — the client bar */,
+  "layout-measure": "72rem" /* content max width, MobileShell.css */,
+  "layout-form": "40rem" /* a single-column form */,
+  "layout-drawer": "30rem" /* a side drawer beside a list */,
+
+  /* Table and list rows at the two densities (`<html data-density>`). */
+  "row-comfortable": "3rem" /* 48 — the touch floor */,
+  "row-compact": "2.5rem" /* 40 — desktop only */,
+
+  /* The three sizes the 20-grid icons render at (stroke scaled to 1.5px). */
+  "icon-sm": "16px",
+  "icon-md": "20px",
+  "icon-lg": "24px",
+
+  /* Stacking, in order. Every z-index in the product is one of these. */
+  "z-nav": "10",
+  "z-header": "20",
+  "z-overlay": "50",
+  "z-toast": "60",
+  "z-skip": "100",
 } as const;
 
 export type ScaleTokenName = keyof typeof scaleTokens;

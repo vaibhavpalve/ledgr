@@ -23,9 +23,17 @@ from api.firm.switcher import ClientBadge, SwitcherEntry, initials_for, is_kvk_q
 # the user holds no live grant on, so there is nothing to accidentally leak
 # into a response body.
 #
+# A grant reaches an administration two ways, and both are joined: an
+# administration-scoped grant names it directly (firm staff, IAM-107), and an
+# organization-scoped grant cascades to the administrations that organization
+# OWNS (ADR-011) - which is how a self-managed business's Owner sees their own
+# books here without a second grant on each. The cascade keys on ownership,
+# never on firm_engagement, so a firm's organization grant reaches no client.
+# See ADR-059.
+#
 # DISTINCT ON keeps one row per administration when a user holds several
-# grants on it, preferring the most recently granted - which is the role a
-# switcher should show.
+# grants on it, preferring the administration-scoped one and then the most
+# recently granted - which is the role a switcher should show.
 _BASE = """
     SELECT DISTINCT ON (a.id)
            a.id, a.legal_name, a.trade_name, a.kvk_number, a.colour_token,
@@ -33,9 +41,9 @@ _BASE = """
            r.name AS role_name, r.is_system AS role_is_system, ra.expires_at
     FROM role_assignment ra
     JOIN "role" r          ON r.id = ra.role_id
-    JOIN administration a  ON a.id = ra.scope_id
+    JOIN administration a  ON (ra.scope_type = 'administration' AND a.id = ra.scope_id)
+                           OR (ra.scope_type = 'organization' AND a.organization_id = ra.scope_id)
     WHERE ra.user_id = :user_id
-      AND ra.scope_type = 'administration'
       AND ra.revoked_at IS NULL
       AND (ra.expires_at IS NULL OR ra.expires_at > :now)
       AND r.archived_at IS NULL
@@ -56,7 +64,7 @@ _KVK_FILTER = """
 # The interaction FR-FRM-000 calls keyboard-reachable is type-then-Enter, and
 # that only works if position 1 is predictable.
 _ORDER = """
-    ORDER BY a.id, ra.created_at DESC
+    ORDER BY a.id, (ra.scope_type = 'administration') DESC, ra.created_at DESC
 """
 _RANKED = """
     SELECT * FROM ({inner}) ranked

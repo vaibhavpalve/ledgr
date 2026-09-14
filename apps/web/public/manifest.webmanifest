@@ -1,12 +1,12 @@
 {
   "name": "LEDGR",
   "short_name": "LEDGR",
-  "description": "Capture, approve, view and send invoices from your phone.",
+  "description": "Boekhouden van bon tot aangifte: vastleggen, factureren en het grootboek, ook vanaf uw telefoon.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "background_color": "#f5f0e9",
+  "theme_color": "#f5f0e9",
   "lang": "nl",
   "icons": [
     {

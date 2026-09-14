@@ -1,20 +1,25 @@
 """Mints the bearer token api.tenancy.TenantContextMiddleware verifies.
 
 api.auth.sessions.SessionService issues a real, stateful, revocable session
-(ADR-005) - but the bearer token a client actually presents on every
-subsequent request has to carry the claims TenantContextMiddleware already
-decodes (`org_id`, `sub`, `mfa_verified`, `sid`), because every existing
-tested route in this codebase reads tenant context through that exact
-mechanism and none of it changes here (see docs/decisions/ADR-054-signup-
-and-login.md for why replacing it was out of scope for this change).
+(ADR-005). The bearer JWT a client presents on every subsequent request
+names that session - `sid` is the session's own id, a UUID, not the raw
+session secret, so the token and the session stay two different values
+pointing at one row - together with who it was issued to (`sub`) and which
+organization it is for (`org_id`).
 
-So a login/signup response mints a JWT whose claims restate what the
-session row already knows: `sid` is the session's own id (a UUID, not the
-session's raw bearer secret - the two are deliberately different values;
-see the ADR), and `mfa_verified`/`org_id` are the caller-supplied facts at
-the moment of issuance. The token's own `exp` matches the session's
-absolute lifetime, so a copied token cannot outlive the session record it
-was minted from purely by not being checked against it.
+That is all the token asserts. Whether the session is still live, whether
+its second factor has been verified, and which administration it has open
+are read from the `sessions` row on every request
+(docs/decisions/ADR-060-session-backed-tenant-context.md), because a token
+cannot know about anything that happened after it was minted. The token's
+own `exp` matches the session's absolute lifetime so a copied token cannot
+outlive the row purely by not being checked against it - belt and braces
+now that every request does check.
+
+`mfa_verified` is still written into the token for the CLIENT's benefit -
+the login/signup responses tell the app whether to route to MFA enrolment
+or straight in, and the same value is readable from the token it stores -
+but the server does not read it back.
 """
 
 from __future__ import annotations
@@ -36,7 +41,6 @@ def issue_access_token(
     session_id: uuid.UUID,
     mfa_verified: bool,
     expires_at: datetime,
-    active_administration_id: uuid.UUID | None = None,
 ) -> str:
     claims: dict[str, object] = {
         "sub": str(user_id),
@@ -45,6 +49,4 @@ def issue_access_token(
         "mfa_verified": mfa_verified,
         "exp": expires_at,
     }
-    if active_administration_id is not None:
-        claims["adm"] = str(active_administration_id)
     return jwt.encode(claims, settings.jwt_signing_key, algorithm=ALGORITHM)

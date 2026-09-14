@@ -1,6 +1,183 @@
 {
   "namespace": "invoice",
   "messages": {
+    "invoice.list.title": {
+      "note": "The /invoices screen. 'Verkoopfacturen' (sales invoices), not plain 'Facturen': purchase invoices are a different module and a bookkeeper reads the distinction as load-bearing.",
+      "nl": "Verkoopfacturen",
+      "en": "Sales invoices"
+    },
+    "invoice.list.count": {
+      "nl": { "one": "{count} factuur", "other": "{count} facturen" },
+      "en": { "one": "{count} invoice", "other": "{count} invoices" }
+    },
+    "invoice.list.new": {
+      "note": "The one primary action on the list (D1).",
+      "nl": "Nieuwe factuur",
+      "en": "New invoice"
+    },
+    "invoice.list.column.number": {
+      "note": "FR-GL-013: the statutory number series. A draft has none yet — see invoice.list.draft_reference.",
+      "nl": "Nummer",
+      "en": "Number"
+    },
+    "invoice.list.column.customer": {
+      "nl": "Klant",
+      "en": "Customer"
+    },
+    "invoice.list.column.date": {
+      "nl": "Factuurdatum",
+      "en": "Invoice date"
+    },
+    "invoice.list.column.due": {
+      "nl": "Vervaldatum",
+      "en": "Due date"
+    },
+    "invoice.list.column.status": {
+      "note": "Identical in both: 'status' is the ordinary Dutch word as well, and 'toestand' would be stilted.",
+      "identical": true,
+      "nl": "Status",
+      "en": "Status"
+    },
+    "invoice.list.draft_reference": {
+      "note": "Stands in for the number column on a draft. A draft deliberately holds no number: the series is gapless (FR-GL-013), so a number is allocated at issue and never before — showing a provisional one would be showing a number that can still change.",
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "invoice.list.empty_title": {
+      "note": "FR-UX-004.",
+      "nl": "Nog geen facturen",
+      "en": "No invoices yet"
+    },
+    "invoice.list.empty_body": {
+      "nl": "Maak uw eerste factuur. U kiest een klant, vult de regels in, en verstuurt hem als PDF per e-mail.",
+      "en": "Create your first invoice. Pick a customer, fill in the lines, and send it as a PDF by email."
+    },
+    "invoice.new.title": {
+      "nl": "Nieuwe factuur",
+      "en": "New invoice"
+    },
+    "invoice.new.customer_pick": {
+      "note": "FR-AR-006: the customer master is the source, so an invoice names a customer rather than re-typing an address that would then differ from the one on file.",
+      "nl": "Klant",
+      "en": "Customer"
+    },
+    "invoice.new.customer_typed": {
+      "note": "The empty option in the customer select: the person types the details on this invoice instead of picking a saved customer.",
+      "nl": "Gegevens hieronder zelf invullen",
+      "en": "Enter the details below myself"
+    },
+    "invoice.new.customer_create": {
+      "nl": "Nieuwe klant aanmaken",
+      "en": "Create a new customer"
+    },
+    "invoice.new.customer_address_incomplete": {
+      "note": "FR-AR-003: a sales invoice must carry the buyer's full address (art. 35a Wet OB), so a customer record missing one cannot be invoiced until it is completed. Names the screen that fixes it (D5).",
+      "nl": "Van deze klant ontbreekt het adres. Een factuur moet het volledige adres van de afnemer vermelden (art. 35a Wet OB). Vul het aan bij Klanten.",
+      "en": "This customer has no address on file. An invoice must state the buyer's full address (art. 35a Wet OB). Complete it under Customers."
+    },
+    "invoice.new.customers_unavailable": {
+      "note": "The customer list could not be loaded. The invoice is still writable by typing the details, so this is a degradation, not a dead end (D5).",
+      "nl": "De klantenlijst kan nu niet worden geladen. U kunt de gegevens hieronder zelf invullen.",
+      "en": "The customer list can't be loaded right now. You can enter the details below instead."
+    },
+    "invoice.new.irreversible": {
+      "note": "D7: sending is one of the genuinely irreversible acts, so it is stated plainly before the button rather than behind an 'are you sure?'. A sent invoice is corrected by a credit note (FR-AR-004), never by editing.",
+      "nl": "Versturen kan niet ongedaan worden gemaakt. Een verstuurde factuur corrigeert u met een creditnota.",
+      "en": "Sending cannot be undone. A sent invoice is corrected with a credit note."
+    },
+    "invoice.new.open_sent": {
+      "nl": "Factuur openen",
+      "en": "Open the invoice"
+    },
+    "invoice.detail.title": {
+      "nl": "Factuur",
+      "en": "Invoice"
+    },
+    "invoice.detail.heading": {
+      "note": "{reference} is the statutory number once issued, and the draft label before that — see invoice.list.draft_reference.",
+      "nl": "Factuur {reference}",
+      "en": "Invoice {reference}"
+    },
+    "invoice.detail.back": {
+      "nl": "Terug naar facturen",
+      "en": "Back to invoices"
+    },
+    "invoice.detail.line_net": {
+      "note": "Column header over the per-line amount. Net, because VAT is summarised per rate below rather than per line (FR-AR-002).",
+      "nl": "Bedrag excl. btw",
+      "en": "Amount excl. VAT"
+    },
+    "invoice.detail.net_and_vat": {
+      "note": "The subtotal line. Both amounts are already formatted in the ADMINISTRATION's locale (FR-LOC-002) before they reach this message.",
+      "nl": "{net} excl. btw, {vat} btw",
+      "en": "{net} excl. VAT, {vat} VAT"
+    },
+    "invoice.detail.vat_group": {
+      "note": "FR-AR-002: VAT totalled per rate. {rate} is the percentage, {taxable} the amount it applies to.",
+      "nl": "{rate}% over {taxable}",
+      "en": "{rate}% on {taxable}"
+    },
+    "invoice.detail.vat_group_no_rate": {
+      "note": "The treatments that carry no percentage at all — reverse charge, intra-community supply, exempt. {treatment} is the treatment's own translated name, so this message must not restate it.",
+      "nl": "{treatment}",
+      "identical": true,
+      "en": "{treatment}"
+    },
+    "invoice.detail.total": {
+      "nl": "Totaal incl. btw",
+      "en": "Total incl. VAT"
+    },
+    "invoice.detail.pdf": {
+      "note": "Opens the stored rendering — FR-TPL-017: the PDF is kept, not re-rendered, so what is opened is exactly what the customer received.",
+      "nl": "Factuur-PDF bekijken",
+      "en": "View invoice PDF"
+    },
+    "invoice.detail.pdf_none": {
+      "note": "A draft has no PDF because nothing has been issued yet. Stated rather than showing a button that would fail.",
+      "nl": "Er is nog geen PDF: die wordt aangemaakt zodra u de factuur definitief maakt.",
+      "en": "There's no PDF yet — it's created when you issue the invoice."
+    },
+    "invoice.detail.finish_draft": {
+      "note": "The primary action on a draft: continue where the invoice was left (D6, never lose work).",
+      "nl": "Concept afmaken",
+      "en": "Finish this draft"
+    },
+    "invoice.detail.send": {
+      "nl": "Factuur versturen",
+      "en": "Send invoice"
+    },
+    "invoice.detail.timeline": {
+      "note": "D9, show the source: what happened to this invoice and when, so a question about it is answered on the invoice rather than in the audit log.",
+      "nl": "Geschiedenis",
+      "en": "History"
+    },
+    "invoice.detail.event.created": {
+      "nl": "Concept aangemaakt",
+      "en": "Draft created"
+    },
+    "invoice.detail.event.issued": {
+      "nl": "Definitief gemaakt",
+      "en": "Issued"
+    },
+    "invoice.detail.event.issued_number": {
+      "note": "FR-GL-013: the moment the gapless series allocated this invoice its number.",
+      "nl": "Factuurnummer {number} toegekend",
+      "en": "Assigned invoice number {number}"
+    },
+    "invoice.detail.event.posted": {
+      "note": "FR-GL-003: the entry is permanent from here, which is why issuing and posting are shown as separate events rather than one. 'grootboek' stays Dutch in the English UI (FR-LOC-001c, see glossary.json) — an English-speaking owner in the Netherlands deals with a grootboek, not with whatever their own country calls a ledger.",
+      "nl": "Geboekt in het grootboek",
+      "en": "Posted to the grootboek"
+    },
+    "invoice.detail.event.sent": {
+      "nl": "Verstuurd naar de klant",
+      "en": "Sent to the customer"
+    },
+    "invoice.detail.event.now": {
+      "note": "The relative time on the newest event, where a date would read as oddly formal for something that just happened.",
+      "nl": "zojuist",
+      "en": "just now"
+    },
     "invoice.required.supplier_name": {
       "note": "FR-AR-003 / D5. Every message in this block states WHAT is missing, WHY the law wants it, and WHERE to go and fix it — the three things D5 requires. The citation is part of the 'why': a person who does not believe the product will believe the statute.",
       "nl": "De naam van je onderneming ontbreekt. Een factuur moet de volledige naam van de verkoper vermelden (art. 35a Wet OB). Vul de bedrijfsnaam in bij de gegevens van deze administratie.",

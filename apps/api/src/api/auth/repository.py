@@ -34,6 +34,13 @@ class UserRepository(Protocol):
         self, user_id: uuid.UUID, *, password_hash: str, algorithm: str = "argon2id"
     ) -> PasswordCredential: ...
 
+    async def mark_email_verified(self, user_id: uuid.UUID, *, at: datetime) -> bool:
+        """IAM-010b. Sets users.email_verified_at once - a second call is a
+        no-op returning False, so a verification link cannot move the
+        timestamp of an address that was already proven.
+        """
+        ...
+
 
 class SessionRepository(Protocol):
     async def create(
@@ -51,6 +58,15 @@ class SessionRepository(Protocol):
 
     async def get_by_token_hash(self, token_hash: str) -> Session | None: ...
 
+    async def get_by_id(self, session_id: uuid.UUID) -> Session | None:
+        """The lookup api.tenancy.TenantContextMiddleware performs on every
+        request: the bearer JWT names the session by id (`sid`), not by its
+        raw secret, so this is the read that makes the session row - not the
+        token's restated claims - the authority on revocation, expiry, MFA
+        and the active administration.
+        """
+        ...
+
     async def touch(self, session_id: uuid.UUID, *, at: datetime) -> None: ...
 
     async def record_reauthentication(self, session_id: uuid.UUID, *, at: datetime) -> None: ...
@@ -62,17 +78,23 @@ class SessionRepository(Protocol):
     async def list_for_user(self, user_id: uuid.UUID) -> list[Session]: ...
 
 
-_USER_COLUMNS = "id, email, status, mfa_enrolled"
+_USER_COLUMNS = "id, email, status, mfa_enrolled, email_verified_at"
 _CREDENTIAL_COLUMNS = "id, user_id, password_hash, algorithm"
 _SESSION_COLUMNS = (
     "id, user_id, token_hash, privileged, created_at, expires_at, "
     "last_active_at, last_reauthenticated_at, mfa_verified_at, revoked_at, "
-    "ip_address, user_agent"
+    "ip_address, user_agent, active_administration_id"
 )
 
 
 def _row_to_user(row: Row[Any]) -> User:
-    return User(id=row.id, email=str(row.email), status=row.status, mfa_enrolled=row.mfa_enrolled)
+    return User(
+        id=row.id,
+        email=str(row.email),
+        status=row.status,
+        mfa_enrolled=row.mfa_enrolled,
+        email_verified_at=row.email_verified_at,
+    )
 
 
 def _row_to_credential(row: Row[Any]) -> PasswordCredential:
@@ -95,6 +117,7 @@ def _row_to_session(row: Row[Any]) -> Session:
         revoked_at=row.revoked_at,
         ip_address=str(row.ip_address) if row.ip_address is not None else None,
         user_agent=row.user_agent,
+        active_administration_id=row.active_administration_id,
     )
 
 
@@ -153,6 +176,16 @@ class SqlUserRepository:
         )
         return _row_to_credential(result.one())
 
+    async def mark_email_verified(self, user_id: uuid.UUID, *, at: datetime) -> bool:
+        result = await self._session.execute(
+            text(
+                "UPDATE users SET email_verified_at = :at, updated_at = now() "
+                "WHERE id = :id AND email_verified_at IS NULL RETURNING id"
+            ),
+            {"id": str(user_id), "at": at},
+        )
+        return result.first() is not None
+
 
 class SqlSessionRepository:
     def __init__(self, session: AsyncSession) -> None:
@@ -198,6 +231,14 @@ class SqlSessionRepository:
         result = await self._session.execute(
             text(f"SELECT {_SESSION_COLUMNS} FROM sessions WHERE token_hash = :token_hash"),
             {"token_hash": token_hash},
+        )
+        row = result.first()
+        return _row_to_session(row) if row is not None else None
+
+    async def get_by_id(self, session_id: uuid.UUID) -> Session | None:
+        result = await self._session.execute(
+            text(f"SELECT {_SESSION_COLUMNS} FROM sessions WHERE id = :id"),
+            {"id": str(session_id)},
         )
         row = result.first()
         return _row_to_session(row) if row is not None else None

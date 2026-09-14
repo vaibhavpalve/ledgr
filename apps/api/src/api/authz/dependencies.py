@@ -85,6 +85,7 @@ from api.authz.model import (
 )
 from api.authz.repository import SqlAuthorizationRepository
 from api.authz.service import AuthorizationService
+from api.config import settings
 from api.db import get_db_session
 from api.i18n.http import problem
 from api.tenancy import TenantContext, get_tenant_context
@@ -135,6 +136,27 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #              Note this is a PUT and therefore still carries idempotency
 #              (NFR-032, no exemption) and still passes the MFA gate. What it
 #              is exempt from is the permission check alone.
+#   /v1/me
+#              The caller's own identity and memberships: their user row,
+#              their organization, the administrations they ALREADY hold a
+#              live grant on (the switcher's own list, or the business's
+#              administrations read through RLS) and their own MFA factors.
+#              The same argument /v1/switcher makes: it discloses nothing the
+#              caller cannot already reach, and requiring a permission would
+#              break it for exactly the users it exists for - a firm
+#              accountant's grants are administration-scoped, and a user who
+#              has just signed up holds an organization with no
+#              administration yet, which is the state this route exists to
+#              report (`onboarding.needs_administration`). A GET; changes
+#              nothing.
+#   /v1/fiscal-years/preview
+#              FR-ONB-006's period preview: arithmetic on two dates the
+#              caller typed, naming no administration and touching no table
+#              (api.ledger.fiscal.FiscalYearService.preview says the same).
+#              Onboarding needs it BEFORE a year exists to be authorized
+#              against. Still behind tenant context and the MFA gate; exempt
+#              from the permission check alone, for the same "no resource for
+#              a permission to be about" reason /v1/me/language is.
 #   /v1/auth/*
 #              Every route in api.auth.routes (IAM-010's signup/sign-in
 #              surface, and the MFA enrolment/step-up flow) is exempt, for
@@ -153,6 +175,31 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #                  the MFA gate that IAM-011 puts in front of everything
 #                  else, or they are locked out of the product by the very
 #                  mechanism meant to secure it.
+#                - /v1/auth/verify-email (api.tenancy.EXEMPT_PATHS): the
+#                  single-use token in the body is the proof, and the link
+#                  is opened wherever the mail is read - no session, no
+#                  tenant. /v1/auth/verify-email/resend needs a session but
+#                  acts only on the caller's own address, the /v1/me case.
+#   /v1/me/sessions, /v1/me/sessions/{id}, /v1/me/passkeys,
+#   /v1/me/passkeys/{id}, /v1/me/password, /v1/me/mfa/totp
+#              IAM-017 and the account's own security settings
+#              (api.account.security_routes). The /v1/me/language argument
+#              exactly: every one of these reads or changes only rows the
+#              verified token's own user owns - their sessions, their
+#              passkeys, their password, their second factor - and no route
+#              names another user's. A person with no role assignment yet
+#              must still be able to see where they are signed in and revoke
+#              a device they no longer hold; a permission would only ever
+#              stand between them and their own account. Each mutation is
+#              recorded via AuditTrail.authentication from its handler (see
+#              tests/test_audit_coverage.py for that list) and still carries
+#              idempotency and the MFA gate.
+#   /v1/dev/outbox
+#              Exists only when settings.expose_dev_outbox is true (never the
+#              default) and is exempt only then, from the same flag, so the
+#              exemption cannot outlive the route. Returns what the
+#              collecting e-mail sender would have sent - developer tooling
+#              with no tenant data in it. See api.mail.dev_outbox.
 AUTHORIZATION_EXEMPT_PATHS = frozenset(
     {
         "/health",
@@ -161,6 +208,14 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/switcher/search",
         "/v1/switcher/active",
         "/v1/me/language",
+        "/v1/me",
+        "/v1/me/sessions",
+        "/v1/me/sessions/{session_id}",
+        "/v1/me/passkeys",
+        "/v1/me/passkeys/{passkey_id}",
+        "/v1/me/password",
+        "/v1/me/mfa/totp",
+        "/v1/fiscal-years/preview",
         "/v1/auth/signup",
         "/v1/auth/signup/google",
         "/v1/auth/login",
@@ -176,7 +231,10 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/auth/mfa/passkey/enroll/finish",
         "/v1/auth/mfa/passkey/verify/begin",
         "/v1/auth/mfa/passkey/verify/finish",
+        "/v1/auth/verify-email",
+        "/v1/auth/verify-email/resend",
     }
+    | ({"/v1/dev/outbox"} if settings.expose_dev_outbox else set())
 )
 
 

@@ -50,8 +50,10 @@ from api.ledger.model import (
     AccountStatus,
     AccountType,
     ControlKind,
+    EntryCursor,
     EntryInput,
     Journal,
+    JournalEntryPage,
     JournalType,
     LedgerError,
     Party,
@@ -248,6 +250,31 @@ class LedgerService:
 
     async def reversal_of(self, entry_id: uuid.UUID) -> PostedEntry | None:
         return await self._repository.reversal_of(entry_id)
+
+    async def entries(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        fiscal_year_id: uuid.UUID | None = None,
+        after: EntryCursor | None = None,
+        limit: int = 50,
+    ) -> JournalEntryPage:
+        """The journal, one page at a time, for the Grootboek screen.
+
+        A read with no authorization of its own, like `entry()` and
+        `trial_balance()`: the route that exposes it declares the permission
+        through the one library, and RLS scopes the rows underneath. The
+        page is keyset-bounded (see `EntryCursor`), so paging through an
+        append-only journal while postings land neither skips nor repeats.
+        """
+        if limit < 1:
+            raise LedgerError("a page of journal entries holds at least one entry")
+        return await self._repository.entries(
+            administration_id=administration_id,
+            fiscal_year_id=fiscal_year_id,
+            after=after,
+            limit=limit,
+        )
 
     # -- master data ------------------------------------------------------
 

@@ -102,6 +102,23 @@ class AdministrationKeyRepository(Protocol):
     async def rewrap_in_place(self, key_id: uuid.UUID, wrapped: WrappedKey) -> None: ...
 
 
+async def generate_wrapped_dek(kms: KeyManagementService) -> WrappedKey:
+    """A fresh DEK, wrapped under the current KEK, for a caller that persists
+    the row ITSELF rather than through this service.
+
+    There is exactly one such caller, and it is not a shortcut around
+    `EnvelopeEncryptionService.provision_key` below: migration 0002's
+    `app.create_firm_client_administration` inserts the client organization,
+    the administration, the engagement AND the encryption key in one
+    SECURITY DEFINER call, precisely so no window exists in which a client
+    administration holds documents it has no key for. That function needs the
+    wrapped material as arguments, so the generation has to happen before it
+    runs — and it belongs here, beside `_DEK_LENGTH`, rather than as a second
+    place that decides how long a DEK is.
+    """
+    return await kms.wrap_key(os.urandom(_DEK_LENGTH))
+
+
 class EnvelopeEncryptionService:
     def __init__(self, kms: KeyManagementService, repository: AdministrationKeyRepository) -> None:
         self._kms = kms
@@ -115,8 +132,7 @@ class EnvelopeEncryptionService:
         brand-new administration and as the second half of rotate_key
         below.
         """
-        dek = os.urandom(_DEK_LENGTH)
-        wrapped = await self._kms.wrap_key(dek)
+        wrapped = await generate_wrapped_dek(self._kms)
         # get_latest, not get_active: a revoked row must still count for
         # version numbering, or re-provisioning after a revoke would try to
         # reuse key_version=1 and collide with the (administration_id,

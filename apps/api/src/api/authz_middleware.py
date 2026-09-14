@@ -97,7 +97,17 @@ class AuthorizationEnforcementMiddleware(BaseHTTPMiddleware):
             # handler, so there is nothing here to authorize.
             return await call_next(request)
 
+        # The exemption list names routes by their TEMPLATE
+        # (`/v1/me/sessions/{session_id}`), which is what
+        # tests/test_authz_coverage.py checks against - so a parameterised
+        # exemption is honoured here by the same name, not only when the
+        # concrete path happens to equal it. Before this, a templated entry
+        # passed the coverage test and 500'd every real request.
+        template = getattr(matched, "path", path)
+        if template in AUTHORIZATION_EXEMPT_PATHS:
+            return await call_next(request)
+
         if not declared_requirements(matched):
-            return _misconfigured(request.method, getattr(matched, "path", path))
+            return _misconfigured(request.method, template)
 
         return await call_next(request)

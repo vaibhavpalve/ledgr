@@ -87,6 +87,7 @@ route-coverage checks in apps/api/tests.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -309,12 +310,56 @@ def check_api_file_list(problems: Problems) -> None:
         problems.add("apps/api/.../i18n/catalogue.py", f"cannot read: {exc}")
         return
 
-    match = re.search(r"CATALOGUE_FILES\s*=\s*\(([^)]*)\)", source)
-    if match is None:
+    # Parsed, not pattern-matched. A regex over the tuple's source text ends
+    # at the first `)` it meets, which any comment inside the tuple containing
+    # a parenthesis truncates - silently, reporting the half of the list it
+    # managed to read as though the rest were missing, and sending whoever
+    # reads the failure to look at the catalogue directory instead of at the
+    # comment that broke the parse. `ast` is stdlib, so this costs the script
+    # nothing it was protecting (it runs before any install - see the module
+    # docstring and the Makefile's check-i18n target).
+    named: list[str] = []
+    try:
+        module = ast.parse(source)
+    except SyntaxError as exc:
+        problems.add("apps/api/.../i18n/catalogue.py", f"cannot parse: {exc}")
+        return
+
+    for node in module.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "CATALOGUE_FILES"
+            for target in node.targets
+        ):
+            continue
+        if not isinstance(node.value, (ast.Tuple, ast.List)):
+            problems.add(
+                "apps/api/.../i18n/catalogue.py",
+                "CATALOGUE_FILES is not a literal tuple or list, so this check cannot read it.",
+            )
+            return
+        for element in node.value.elts:
+            if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                named.append(element.value)
+        break
+    else:
         problems.add("apps/api/.../i18n/catalogue.py", "cannot find CATALOGUE_FILES")
         return
 
-    listed = set(re.findall(r'"([^"]+)"', match.group(1)))
+    listed = set(named)
+    # A file named twice loads twice, and the second pass hits
+    # api.i18n.catalogue's own duplicate-key guard - an import-time crash of
+    # the whole API, whose message names a message key and not the repeated
+    # file that caused it. The set comparison below cannot see it.
+    repeated = sorted({name for name in named if named.count(name) > 1})
+    if repeated:
+        problems.add(
+            "apps/api/.../i18n/catalogue.py",
+            f"CATALOGUE_FILES names {repeated} more than once. Loading a file twice raises "
+            f"'duplicate message key' at import, before the API can serve anything.",
+        )
+
     present = {p.name for p in catalogue_files()}
     if listed != present:
         problems.add(

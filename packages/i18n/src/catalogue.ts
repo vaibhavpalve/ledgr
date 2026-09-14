@@ -27,11 +27,15 @@ import authFile from "../catalogue/auth.json";
 import captureFile from "../catalogue/capture.json";
 import clientFile from "../catalogue/client.json";
 import commonFile from "../catalogue/common.json";
+import customersFile from "../catalogue/customers.json";
 import errorsFile from "../catalogue/errors.json";
 import invoiceFile from "../catalogue/invoice.json";
 import glossaryFile from "../catalogue/glossary.json";
+import ledgerFile from "../catalogue/ledger.json";
 import mobileFile from "../catalogue/mobile.json";
+import onboardingFile from "../catalogue/onboarding.json";
 import rolesFile from "../catalogue/roles.json";
+import settingsFile from "../catalogue/settings.json";
 
 /** A single form, or the two CLDR categories Dutch and English share. */
 export type MessageText = string | { readonly one: string; readonly other: string };
@@ -78,6 +82,13 @@ const FILES: readonly CatalogueFile[] = [
   invoiceFile as CatalogueFile,
   mobileFile as CatalogueFile,
   rolesFile as CatalogueFile,
+  // The routed web app's four namespaces (docs/founder-review-2026-09-14.md
+  // §5.2). Listed here AND in api.i18n.catalogue.CATALOGUE_FILES;
+  // scripts/check_translations.py fails if the two lists differ.
+  onboardingFile as CatalogueFile,
+  settingsFile as CatalogueFile,
+  ledgerFile as CatalogueFile,
+  customersFile as CatalogueFile,
 ];
 
 function mergeMessages(files: readonly CatalogueFile[]): Record<string, MessageRecord> {

@@ -113,6 +113,11 @@ async def test_changing_language_does_not_disturb_the_session(
     An implementation that rotated the token, moved `expires_at`, or set
     `revoked_at` would leave a session that exists and no longer works, and a
     person would meet that as being logged out for changing language.
+
+    `last_active_at` is deliberately NOT in the comparison: since ADR-060
+    every authenticated request touches it (it is IAM-016's idle-timeout
+    heartbeat, and this request is activity). Moving it forward is the
+    opposite of re-authentication - it is what keeps the session alive.
     """
     session_id = await seed_session(app_engine, user_id=two_organizations.owner_a)
 
@@ -120,7 +125,7 @@ async def test_changing_language_does_not_disturb_the_session(
         async with app_engine.begin() as conn:
             result = await conn.execute(
                 text(
-                    "SELECT token_hash, expires_at, revoked_at, last_active_at, "
+                    "SELECT token_hash, expires_at, revoked_at, "
                     "       last_reauthenticated_at, active_administration_id "
                     "FROM sessions WHERE id = :id"
                 ),

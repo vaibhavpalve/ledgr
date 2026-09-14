@@ -1,6 +1,73 @@
 {
   "namespace": "client",
   "messages": {
+    "client.portfolio.title": {
+      "note": "FR-ONB-001b / FR-MDL-003: the firm's client portfolio at /clients — the screen a firm lands on, and the one a business reaches when it has no administration yet.",
+      "nl": "Klanten",
+      "en": "Clients"
+    },
+    "client.portfolio.count": {
+      "note": "Counted. Beside the heading, so a firm with many clients sees the size of the list before scrolling it.",
+      "nl": { "one": "{count} klant", "other": "{count} klanten" },
+      "en": { "one": "{count} client", "other": "{count} clients" }
+    },
+    "client.portfolio.choose": {
+      "nl": "Kies de klant waarin u wilt werken.",
+      "en": "Choose the client you want to work in."
+    },
+    "client.portfolio.open": {
+      "note": "The action on a client card. 'Openen', not 'Wisselen': from this screen nothing is open yet, so there is nothing to switch away from.",
+      "nl": "Openen",
+      "en": "Open"
+    },
+    "client.portfolio.opening": {
+      "note": "While PUT /v1/switcher/{id} is in flight.",
+      "nl": "Bezig met openen…",
+      "en": "Opening…"
+    },
+    "client.portfolio.no_kvk": {
+      "note": "Placeholder where a client card would show its KvK number. A client created by a firm before the number is known is a real state, not an error.",
+      "nl": "Geen KvK-nummer",
+      "en": "No KvK number"
+    },
+    "client.portfolio.add": {
+      "note": "The secondary action beside a portfolio that already has clients in it.",
+      "nl": "Klant toevoegen",
+      "en": "Add a client"
+    },
+    "client.portfolio.add_first": {
+      "note": "FR-ONB-001b names this one literally: 'an empty client portfolio with a single prominent \"Add your first client\" action'. The one primary action on the screen (D1).",
+      "nl": "Voeg uw eerste klant toe",
+      "en": "Add your first client"
+    },
+    "client.portfolio.empty_title": {
+      "note": "FR-UX-004: an empty list teaches what belongs in it. The firm variant.",
+      "nl": "Nog geen klanten",
+      "en": "No clients yet"
+    },
+    "client.portfolio.empty_body": {
+      "nl": "Voeg uw eerste klant toe. Wij maken de administratie aan, met een rekeningschema dat past bij de rechtsvorm — u hoeft niets in te richten.",
+      "en": "Add your first client. We create the administration for you, with a chart of accounts matching the legal form — there is nothing to set up."
+    },
+    "client.portfolio.empty_title_business": {
+      "note": "The same screen reached by a self-managed business with no administration yet (Model B). It keeps its own books, so 'client' would be the wrong word for what is missing.",
+      "nl": "Nog geen administratie",
+      "en": "No administration yet"
+    },
+    "client.portfolio.empty_body_business": {
+      "nl": "Richt uw administratie in om bonnen vast te leggen en facturen te versturen.",
+      "en": "Set up your books to start capturing receipts and sending invoices."
+    },
+    "client.portfolio.add_administration": {
+      "note": "The Model B wording of the same action — see empty_title_business.",
+      "nl": "Administratie inrichten",
+      "en": "Set up your books"
+    },
+    "client.portfolio.no_matches_body": {
+      "note": "Follows client.switcher.no_matches, which already names the query. This is the way out: the search came up empty, the portfolio did not.",
+      "nl": "Pas uw zoekopdracht aan, of voeg deze klant toe.",
+      "en": "Adjust your search, or add this client."
+    },
     "client.switcher.dialog_label": {
       "note": "Accessible name of the client switcher dialog (FR-FRM-000).",
       "nl": "Wissel van klant",

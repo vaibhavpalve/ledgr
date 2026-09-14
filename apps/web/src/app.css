@@ -235,6 +235,59 @@
   background-color: var(--ledgr-attention-wash);
 }
 
+/*
+ * A link that is a call to action — "new invoice", "add your first client".
+ * Semantically a link (it goes to a URL, the back button works, it can be
+ * opened in a new tab), visually the same shape as a button, so a screen's
+ * one primary action reads the same whether it navigates or submits.
+ */
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ledgr-space-2);
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-text-primary);
+  border: 1px solid var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-control);
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-tight);
+  text-decoration: none;
+}
+
+.button-link:hover {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-primary);
+}
+
+.button-link--primary {
+  background-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+  border-color: var(--ledgr-accent);
+}
+
+.button-link--primary:hover {
+  background-color: var(--ledgr-accent-hover);
+  border-color: var(--ledgr-accent-hover);
+  color: var(--ledgr-text-on-accent);
+}
+
+.button-link--quiet {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ledgr-text-secondary);
+}
+
+/* The pre-auth card's own links (verify-email's "continue"). */
+.auth-form__link {
+  display: inline-block;
+  padding: var(--ledgr-space-2) 0;
+  font-weight: var(--ledgr-weight-medium);
+}
+
 /* ==========================================================================
  * SEGMENTED CONTROLS — language, theme
  * ==========================================================================

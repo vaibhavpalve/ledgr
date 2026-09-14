@@ -1611,10 +1611,23 @@ async def test_the_active_badge_is_null_for_a_client_the_user_cannot_reach(
     """A session pointing at an administration the user cannot reach must
     render no header rather than a stale name - a stale name is exactly the
     wrong-client failure FR-FRM-000a is about.
+
+    Since ADR-060 the active administration is read from the SESSION ROW on
+    every request and no token claim can assert one, so the pointer is
+    written into the row directly - the state a revoked grant leaves behind
+    when clear_administration_context has not (yet) run - and the forged
+    `adm` claim that used to drive this test is sent alongside to show it
+    changes nothing.
     """
-    token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
-    # A token claiming org B's administration is open, which org A's user
-    # holds no grant on.
+    session_id = await seed_session(app_engine, user_id=two_organizations.owner_a)
+    async with app_engine.begin() as conn:
+        await conn.execute(
+            text("UPDATE sessions SET active_administration_id = :admin WHERE id = :id"),
+            {"admin": str(two_organizations.admin_b), "id": str(session_id)},
+        )
+    token = make_token(
+        two_organizations.org_a, user_id=two_organizations.owner_a, session_id=session_id
+    )
     forged = jwt.encode(
         {
             **jwt.decode(token, settings.jwt_signing_key, algorithms=["HS256"]),
@@ -1676,11 +1689,18 @@ async def test_a_user_cannot_switch_into_another_tenants_administration(
     assert foreign.status_code == 403, "org B's administration is not reachable at all"
 
 
-async def test_switching_without_a_session_identifier_is_refused(
+async def test_switching_with_a_token_naming_no_live_session_is_refused(
     two_organizations: SeededTenants,
 ) -> None:
     """Writing to every session the user holds would move devices they are
-    not holding, so a token with no `sid` cannot switch.
+    not holding, so a switch has to name exactly one live session.
+
+    Since ADR-060 that is settled one layer earlier than it used to be: the
+    route's own 409 for a missing `sid` is now unreachable through HTTP,
+    because TenantContextMiddleware resolves the session row before any
+    handler runs and refuses a token whose `sid` names nothing (401). The
+    property this test exists for is unchanged and is now enforced for every
+    route at once rather than by this one handler's guard.
     """
     await grant_role(
         app_engine,
@@ -1692,7 +1712,15 @@ async def test_switching_without_a_session_identifier_is_refused(
     )
     headers = {
         "Authorization": "Bearer "
-        + make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        + make_token(
+            two_organizations.org_a,
+            user_id=two_organizations.owner_a,
+            # A session id that was never issued. make_token otherwise fills
+            # in the live one seed_user created, which is what every other
+            # test in this file wants; here the whole point is a token that
+            # names no session the store can find.
+            session_id=uuid.uuid4(),
+        )
     }
 
     transport = ASGITransport(app=app)
@@ -1702,7 +1730,8 @@ async def test_switching_without_a_session_identifier_is_refused(
             headers={**headers, "Idempotency-Key": f"switch-{uuid.uuid4()}"},
         )
 
-    assert response.status_code == 409
+    assert response.status_code == 401
+    assert response.json()["reason"] == "session_not_found"
 
 
 async def test_reading_an_administration_records_the_access(

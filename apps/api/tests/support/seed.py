@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -39,6 +39,17 @@ async def signup_organization(engine: AsyncEngine, *, name: str, kvk: str) -> uu
         return result.scalar_one()  # type: ignore[no-any-return]
 
 
+async def signup_firm_organization(engine: AsyncEngine, *, name: str, kvk: str) -> uuid.UUID:
+    """FR-ONB-001b's branch, through the same SECURITY DEFINER function
+    api.auth.signup.SignupService calls for it (migration 0046)."""
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text("SELECT (app.signup_firm_organization(:name, :kvk)).id"),
+            {"name": name, "kvk": kvk},
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
 async def seed_administration(
     engine: AsyncEngine, *, org_id: uuid.UUID, legal_name: str, legal_form: str
 ) -> uuid.UUID:
@@ -57,26 +68,67 @@ async def seed_administration(
         return result.scalar_one()  # type: ignore[no-any-return]
 
 
-async def seed_user(engine: AsyncEngine, *, email: str) -> uuid.UUID:
-    async with engine.begin() as conn:
-        result = await conn.execute(
-            text("INSERT INTO users (email) VALUES (:email) RETURNING id"), {"email": email}
-        )
-        return result.scalar_one()  # type: ignore[no-any-return]
+#: The live session each seeded user was given, by user id - what
+#: tests.support.isolation.make_token puts in `sid` when a test does not
+#: name a session itself. See seed_user.
+SESSION_FOR_USER: dict[uuid.UUID, uuid.UUID] = {}
 
 
-async def seed_session(engine: AsyncEngine, *, user_id: uuid.UUID) -> uuid.UUID:
-    """A live session row, so IAM-110's switcher has something to write its
-    active administration onto. Sessions carry no tenant column (users are
-    global - 0003), so this needs no tenant context.
+async def seed_user(
+    engine: AsyncEngine, *, email: str, email_verified: bool = True, with_session: bool = True
+) -> uuid.UUID:
+    """A user who can act: verified (IAM-010b - the posting routes refuse an
+    unverified address, and an isolation test that got a 403 there would
+    prove nothing about isolation) and, by default, holding one live,
+    MFA-verified session.
+
+    The session matters since api.tenancy started resolving every token's
+    `sid` against `sessions` (ADR-060): a token that names no session is
+    refused at the door, so a test that mints one for this user needs a row
+    to name. Recording it in SESSION_FOR_USER lets make_token find it without
+    every call site being told - the same real lookup runs either way, which
+    is what keeps those tests meaningful rather than merely passing. A test
+    that wants a specific session (revocation, the switcher) still seeds and
+    names its own.
     """
     async with engine.begin() as conn:
         result = await conn.execute(
             text(
-                "INSERT INTO sessions (user_id, token_hash, expires_at) "
-                "VALUES (:user_id, :token_hash, now() + interval '12 hours') RETURNING id"
+                "INSERT INTO users (email, email_verified_at) "
+                "VALUES (:email, :verified_at) RETURNING id"
             ),
-            {"user_id": str(user_id), "token_hash": f"test-{uuid.uuid4().hex}"},
+            {"email": email, "verified_at": datetime.now(UTC) if email_verified else None},
+        )
+        user_id: uuid.UUID = result.scalar_one()
+    if with_session:
+        SESSION_FOR_USER[user_id] = await seed_session(engine, user_id=user_id)
+    return user_id
+
+
+async def seed_session(
+    engine: AsyncEngine, *, user_id: uuid.UUID, mfa_verified: bool = True
+) -> uuid.UUID:
+    """A live session row - what a token's `sid` names, and what IAM-110's
+    switcher writes its active administration onto. Sessions carry no tenant
+    column (users are global - 0003), so this needs no tenant context.
+
+    MFA-verified by default, for the reason make_token defaults
+    mfa_verified=True: since ADR-060 the ROW is what
+    api.mfa_middleware reads, and a test about anything other than the MFA
+    gate wants to get past it.
+    """
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                "INSERT INTO sessions (user_id, token_hash, expires_at, mfa_verified_at) "
+                "VALUES (:user_id, :token_hash, now() + interval '12 hours', :mfa_verified_at) "
+                "RETURNING id"
+            ),
+            {
+                "user_id": str(user_id),
+                "token_hash": f"test-{uuid.uuid4().hex}",
+                "mfa_verified_at": datetime.now(UTC) if mfa_verified else None,
+            },
         )
         return result.scalar_one()  # type: ignore[no-any-return]
 

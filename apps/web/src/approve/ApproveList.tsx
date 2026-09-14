@@ -22,14 +22,28 @@ import { ExpenseForm } from "../capture/ExpenseForm";
 export function ApproveList({
   administrationId,
   api,
+  openId: openIdProp,
+  onOpenChange,
 }: {
   administrationId: string;
   api: CaptureApi;
+  /**
+   * Which draft is open — controlled by the route (`/review/:expenseId`)
+   * when given, so a dashboard action or a deep link lands straight on one
+   * receipt's form; the list's own state otherwise, exactly as before.
+   */
+  openId?: string | null;
+  onOpenChange?: (id: string | null) => void;
 }) {
   const { t, money, date } = useI18n();
   const [items, setItems] = useState<readonly ExpenseSummaryView[] | null>(null);
   const [problem, setProblem] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openIdState, setOpenIdState] = useState<string | null>(null);
+  const openId = openIdProp === undefined ? openIdState : openIdProp;
+  const setOpenId = (id: string | null) => {
+    setOpenIdState(id);
+    onOpenChange?.(id);
+  };
 
   const load = useCallback(() => {
     setProblem(false);
@@ -46,9 +60,10 @@ export function ApproveList({
 
   if (openId !== null) {
     return (
-      <section aria-label={t("mobile.approve.title")}>
+      <section aria-label={t("mobile.approve.title")} className="screen">
         <button
           type="button"
+          className="button--quiet"
           data-testid="approve-back"
           onClick={() => {
             setOpenId(null);
@@ -71,39 +86,57 @@ export function ApproveList({
   }
 
   return (
-    <section aria-label={t("mobile.approve.title")}>
+    <section aria-label={t("mobile.approve.title")} className="screen">
       <h1>{t("mobile.approve.title")}</h1>
 
       {items === null && !problem ? (
-        <p role="status" data-testid="approve-loading">
-          {t("mobile.common.loading")}
-        </p>
+        <div role="status" data-testid="approve-loading" className="skeleton-list">
+          <span className="ledgr-visually-hidden">{t("mobile.common.loading")}</span>
+          <div className="skeleton skeleton-list__row" aria-hidden="true" />
+          <div className="skeleton skeleton-list__row" aria-hidden="true" />
+        </div>
       ) : null}
 
       {problem ? (
-        <p role="alert" data-testid="approve-error">
-          {t("mobile.common.error")}
-        </p>
+        <div role="alert" data-testid="approve-error" className="alert alert--attention error-state">
+          <div className="error-state__text">
+            <p>{t("mobile.common.error")}</p>
+            <p className="error-state__hint">{t("common.error.next_step")}</p>
+          </div>
+          <button type="button" onClick={load}>
+            {t("common.action.retry")}
+          </button>
+        </div>
       ) : null}
 
       {items !== null && items.length === 0 ? (
-        <p data-testid="approve-empty">{t("mobile.approve.empty")}</p>
+        <div className="panel empty-state" data-testid="approve-empty">
+          <p className="empty-state__title">{t("mobile.approve.empty")}</p>
+          <p className="empty-state__body">{t("mobile.approve.empty_hint")}</p>
+        </div>
       ) : null}
 
       {items !== null && items.length > 0 ? (
-        <ul aria-label={t("mobile.approve.list_label")} data-testid="approve-list">
+        <ul className="panel list" aria-label={t("mobile.approve.list_label")} data-testid="approve-list">
           {items.map((item) => (
             <li key={item.id} data-testid="approve-item">
               <button
                 type="button"
+                className="list__row"
                 data-testid={`approve-open-${item.id}`}
                 onClick={() => setOpenId(item.id)}
               >
-                <span data-testid="approve-item-supplier">
-                  {item.supplier ?? t("mobile.approve.untitled")}
+                <span className="list__row-text">
+                  <span data-testid="approve-item-supplier">
+                    {item.supplier ?? t("mobile.approve.untitled")}
+                  </span>
+                  {item.expense_date !== null ? (
+                    <span className="caption ledgr-num">{date(item.expense_date)}</span>
+                  ) : null}
                 </span>
-                {item.expense_date !== null ? <span>{date(item.expense_date)}</span> : null}
-                {item.gross_amount !== null ? <span>{money(item.gross_amount)}</span> : null}
+                {item.gross_amount !== null ? (
+                  <span className="list__row-amount">{money(item.gross_amount)}</span>
+                ) : null}
               </button>
             </li>
           ))}

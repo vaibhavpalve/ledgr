@@ -65,10 +65,14 @@ def test_a_declared_requirement_is_readable_without_running_the_route() -> None:
     dependency graph, with nothing executed and no side registry to keep in
     step.
     """
+    # By method as well as path: PATCH /v1/administrations/{administration_id}
+    # (api.onboarding.routes) shares the path and declares a different
+    # permission, and the route table's order is not this test's business.
     route = next(
         r
         for r in app.routes
         if getattr(r, "path", None) == "/v1/administrations/{administration_id}"
+        and "GET" in (getattr(r, "methods", None) or set())
     )
 
     requirements = declared_requirements(route)

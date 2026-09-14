@@ -1,0 +1,178 @@
+{
+  "namespace": "settings",
+  "note": "The settings area: profile, appearance, security (IAM-017 sessions, IAM-010f passkeys, password), organization, invoice design. Nothing here is needed for the core loop (FR-UX-003).",
+  "messages": {
+    "settings.sections_label": {
+      "note": "Accessible name of the settings sub-navigation.",
+      "nl": "Instellingen-onderdelen",
+      "en": "Settings sections"
+    },
+    "settings.profile.title": {
+      "nl": "Profiel",
+      "en": "Profile"
+    },
+    "settings.profile.verified": {
+      "nl": "E-mailadres bevestigd",
+      "en": "Email address verified"
+    },
+    "settings.profile.unverified": {
+      "nl": "E-mailadres nog niet bevestigd",
+      "en": "Email address not yet verified"
+    },
+    "settings.profile.language_hint": {
+      "note": "FR-LOC-001b: per person, follows the account.",
+      "nl": "Uw eigen keuze, op elk apparaat waar u inlogt. Verandert niets aan hoe bedragen worden geschreven.",
+      "en": "Your own choice, on every device you sign in on. Changes nothing about how amounts are written."
+    },
+    "settings.appearance.title": {
+      "nl": "Weergave",
+      "en": "Appearance"
+    },
+    "settings.appearance.theme_hint": {
+      "nl": "Systeem volgt uw apparaat, ook als dat 's avonds naar donker wisselt. Wordt per apparaat onthouden.",
+      "en": "System follows your device, including when it switches to dark in the evening. Remembered per device."
+    },
+    "settings.security.title": {
+      "nl": "Beveiliging",
+      "en": "Security"
+    },
+    "settings.security.password_title": {
+      "nl": "Wachtwoord wijzigen",
+      "en": "Change password"
+    },
+    "settings.security.password_current": {
+      "nl": "Huidig wachtwoord",
+      "en": "Current password"
+    },
+    "settings.security.password_new": {
+      "nl": "Nieuw wachtwoord",
+      "en": "New password"
+    },
+    "settings.security.password_hint": {
+      "note": "IAM-013: length over composition rules; breach-checked server-side.",
+      "nl": "Minstens 12 tekens. Een zin die u onthoudt werkt beter dan een kort woord met cijfers.",
+      "en": "At least 12 characters. A sentence you remember works better than a short word with digits."
+    },
+    "settings.security.password_confirm": {
+      "nl": "Nieuw wachtwoord herhalen",
+      "en": "Repeat new password"
+    },
+    "settings.security.password_mismatch": {
+      "nl": "De twee wachtwoorden zijn niet gelijk.",
+      "en": "The two passwords do not match."
+    },
+    "settings.security.password_changed": {
+      "nl": "Uw wachtwoord is gewijzigd.",
+      "en": "Your password has been changed."
+    },
+    "settings.security.password_submit": {
+      "nl": "Wachtwoord wijzigen",
+      "en": "Change password"
+    },
+    "settings.security.totp_title": {
+      "nl": "Authenticator-app",
+      "en": "Authenticator app"
+    },
+    "settings.security.totp_enrolled": {
+      "nl": "Ingesteld",
+      "en": "Set up"
+    },
+    "settings.security.totp_remove_unavailable": {
+      "note": "Honest about a missing capability rather than drawing a dead button (D5): the API has no route to remove a TOTP factor yet.",
+      "nl": "Een authenticator-app loskoppelen kan nog niet vanuit de app. Neem contact op met support als dat nodig is.",
+      "en": "Unlinking an authenticator app is not possible from the app yet. Contact support if you need this."
+    },
+    "settings.security.passkeys_title": {
+      "identical": true,
+      "nl": "Passkeys",
+      "en": "Passkeys"
+    },
+    "settings.security.passkeys_empty": {
+      "nl": "U heeft nog geen passkey. Met een passkey logt u in zonder wachtwoord en zonder code — één stap.",
+      "en": "You have no passkey yet. With a passkey you sign in without a password and without a code — one step."
+    },
+    "settings.security.passkey_added": {
+      "nl": "Toegevoegd op {date}",
+      "en": "Added on {date}"
+    },
+    "settings.security.passkey_used": {
+      "nl": "laatst gebruikt op {date}",
+      "en": "last used on {date}"
+    },
+    "settings.security.passkey_remove": {
+      "nl": "Verwijderen",
+      "en": "Remove"
+    },
+    "settings.security.sessions_title": {
+      "nl": "Actieve sessies",
+      "en": "Active sessions"
+    },
+    "settings.security.sessions_hint": {
+      "note": "IAM-017. Says what revoking does, and that the current session is left alone.",
+      "nl": "Elke browser of telefoon waar u bent ingelogd. Intrekken logt dat apparaat direct uit; uw huidige sessie kunt u alleen via Uitloggen beëindigen.",
+      "en": "Every browser or phone you are signed in on. Revoking signs that device out immediately; your current session can only be ended with Sign out."
+    },
+    "settings.security.session_started": {
+      "nl": "Ingelogd op {date}",
+      "en": "Signed in on {date}"
+    },
+    "settings.security.session_current": {
+      "nl": "Deze sessie",
+      "en": "This session"
+    },
+    "settings.security.session_active": {
+      "nl": "Laatst actief op {date}",
+      "en": "Last active on {date}"
+    },
+    "settings.security.session_revoke": {
+      "nl": "Intrekken",
+      "en": "Revoke"
+    },
+    "settings.organization.title": {
+      "nl": "Organisatie",
+      "en": "Organization"
+    },
+    "settings.organization.kind.business": {
+      "nl": "Eigen boekhouding",
+      "en": "Own business"
+    },
+    "settings.organization.kind.firm": {
+      "nl": "Accountantskantoor",
+      "en": "Accounting firm"
+    },
+    "settings.organization.name_readonly": {
+      "nl": "De naam van uw organisatie is vastgelegd bij het aanmaken van uw account. Neem contact op met support om hem te wijzigen.",
+      "en": "Your organization's name was set when your account was created. Contact support to change it."
+    },
+    "settings.organization.administrations": {
+      "nl": "Administraties",
+      "en": "Administrations"
+    },
+    "settings.organization.no_administrations": {
+      "nl": "Nog geen administratie",
+      "en": "No administration yet"
+    },
+    "settings.organization.no_administrations_body": {
+      "nl": "Een administratie is één boekhouding: de boeken van één bedrijf. Maak er een aan om te beginnen.",
+      "en": "An administration is one set of books: one business's accounts. Create one to get started."
+    },
+    "settings.organization.no_fiscal_years": {
+      "nl": "Nog geen boekjaar",
+      "en": "No fiscal year yet"
+    },
+    "settings.invoice_design.title": {
+      "nl": "Factuurontwerp",
+      "en": "Invoice design"
+    },
+    "settings.invoice_design.intro": {
+      "note": "FR-TPL: the template designer. Says what is fixed by law before the person looks for the switch that removes it (FR-TPL-009).",
+      "nl": "Logo, lettertype, indeling en teksten van uw facturen. Wat de wet op een factuur verplicht stelt, staat vast en kunt u niet verbergen.",
+      "en": "Logo, typeface, layout and wording of your invoices. What the law requires on an invoice is fixed and cannot be hidden."
+    },
+    "settings.invoice_design.default_name": {
+      "note": "The name a brand-new administration's first template gets, created on first visit.",
+      "nl": "Standaard",
+      "en": "Standard"
+    }
+  }
+}

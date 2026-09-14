@@ -67,11 +67,29 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       until the matching finish/confirm/callback either succeeds or is
 #       abandoned.
 #
+#   /v1/auth/verify-email, /v1/auth/verify-email/resend (IAM-010b) and the
+#   account security settings under /v1/me (IAM-017, IAM-010f, IAM-011,
+#   IAM-013 - api.account.security_routes)
+#       The same case as the auth routes above, for the same reason: they
+#       are authorization-exempt (they act only on the caller's own account
+#       - api.authz.dependencies.AUTHORIZATION_EXEMPT_PATHS) so there is no
+#       require_permission(audit=...) to declare a category on, and each
+#       handler records its own AuditTrail.authentication event instead:
+#       verify_email() and resend_verification_email() via
+#       _record_authentication_event, and revoke_session(), revoke_passkey(),
+#       change_password() (including the DENIED entry for a wrong current
+#       password) and remove_totp() via api.account.security_routes._record.
+#       tests/integration/test_account_security.py asserts the entries land.
+#
 # A route that changes tenant data does not belong here. The bar is "this
 # changes nothing an auditor would ask about".
 AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
     {
         "/v1/me/language",
+        "/v1/me/sessions/{session_id}",
+        "/v1/me/passkeys/{passkey_id}",
+        "/v1/me/password",
+        "/v1/me/mfa/totp",
         "/v1/auth/signup",
         "/v1/auth/signup/google",
         "/v1/auth/login",
@@ -87,6 +105,8 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
         "/v1/auth/login/passkey/finish",
         "/v1/auth/login/google/start",
         "/v1/auth/login/google/callback",
+        "/v1/auth/verify-email",
+        "/v1/auth/verify-email/resend",
     }
 )
 

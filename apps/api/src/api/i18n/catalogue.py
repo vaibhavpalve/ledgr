@@ -61,6 +61,14 @@ CATALOGUE_FILES = (
     "invoice.json",
     "mobile.json",
     "roles.json",
+    # The routed web app's namespaces (founder review 2026-09-14 §5.2). The
+    # API never renders these itself; they are listed so the two runtimes
+    # load the same directory, which check 7 of scripts/check_translations.py
+    # asserts.
+    "customers.json",
+    "ledger.json",
+    "onboarding.json",
+    "settings.json",
 )
 
 GLOSSARY_FILE = "glossary.json"

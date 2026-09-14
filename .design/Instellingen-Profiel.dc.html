@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .app { display: flex; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden; }
+    .rail { width: 240px; flex: none; background: #FBF8F4; border-right: 1px solid #DCD9D3; display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px; }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .nav { display: flex; flex-direction: column; gap: 20px; }
+    .group { display: flex; flex-direction: column; gap: 2px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px; }
+    .item { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px; }
+    .item.on { background: #D8F4F6; color: #00686C; font-weight: 600; }
+    .badge { font-size: 13px; font-weight: 700; color: #00686C; background: #D8F4F6; border-radius: 999px; padding: 1px 9px; }
+    .item-settings { display: flex; align-items: center; gap: 11px; padding: 16px 8px 9px; border-radius: 9px; color: #5F5A52; font-size: 16px; border-top: 1px solid #DCD9D3; }
+    .item-settings.on { color: #00686C; font-weight: 600; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .bar { flex: none; background: #FBF8F4; border-bottom: 3px solid #59739B; display: flex; align-items: center; gap: 18px; padding: 0 26px; height: 66px; }
+    .marker { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #59739B; color: #FFFFFF; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+    .vsep { width: 1px; height: 30px; background: #DCD9D3; }
+    .search { flex-grow: 1; display: flex; align-items: center; gap: 9px; max-width: 380px; height: 38px; padding: 0 13px; border: 1px solid #8F8878; border-radius: 10px; background: #FFFEFB; font-size: 15px; color: #6E685F; }
+    .kbd { font-size: 12px; font-weight: 600; color: #6E685F; border: 1px solid #8F8878; border-radius: 5px; padding: 1px 6px; background: #FBF8F4; }
+    .avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700; }
+    .page { flex: 1; overflow: hidden; padding: 26px 26px 0; display: flex; flex-direction: column; gap: 16px; }
+    h1 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2; }
+    h2 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 24px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2; }
+    h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.sm { height: 36px; padding: 0 13px; font-size: 14px; }
+    .sub { display: flex; flex-direction: column; gap: 2px; width: 200px; flex: none; }
+    .sub span { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; font-size: 15px; color: #26221C; }
+    .sub span.on { background: #D8F4F6; color: #00686C; font-weight: 600; }
+    .panel { background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .label { font-size: 13px; font-weight: 600; color: #5F5A52; }
+    .input { display: flex; align-items: center; height: 44px; padding: 0 13px; background: #FFFEFB; border: 1px solid #8F8878; border-radius: 10px; font-size: 17px; }
+    .input.ro { background: #EFEAE2; border-color: #DCD9D3; color: #5F5A52; }
+    .help { font-size: 13px; line-height: 1.35; color: #6E685F; }
+    .seg { display: inline-flex; align-items: center; gap: 2px; padding: 3px; background: #EFEAE2; border: 1px solid #DCD9D3; border-radius: 10px; align-self: flex-start; }
+    .seg span { padding: 6px 14px; border-radius: 6px; font-size: 14px; font-weight: 500; color: #5F5A52; }
+    .seg span.on { background: #FBF8F4; color: #00686C; font-weight: 600; box-shadow: 0 1px 2px rgba(38,34,28,.06); }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 12px; font-weight: 600; letter-spacing: .03em; white-space: nowrap; }
+    .chip.positive { background: #E0EFE2; color: #396741; }
+    .theme { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid #8F8878; border-radius: 14px; background: #FBF8F4; }
+    .theme.on { border: 2px solid #00686C; padding: 9px; background: #D8F4F6; }
+    .theme .pv { height: 64px; border-radius: 8px; border: 1px solid #DCD9D3; overflow: hidden; display: flex; }
+    .theme .lbl { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; padding: 0 4px; }
+  </style>
+</helmet>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <nav class="nav">
+      <div class="group">
+        <div class="eyebrow">Dagelijks werk</div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5"/></svg><span>Start</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg><span>Vastleggen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg><span style="flex-grow: 1;">Beoordelen</span><span class="badge num">7</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg><span>Verkoopfacturen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.6 16.2c0-2.7 2.2-4.6 4.9-4.6s4.9 1.9 4.9 4.6"/><path d="M13 7.4a2.4 2.4 0 0 1 0 4.6"/><path d="M14.4 12.1c1.8.5 3 1.9 3 4.1"/></svg><span>Klanten</span></div>
+      </div>
+      <div class="group">
+        <div class="eyebrow">De boeken</div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg><span>Grootboek</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15"/><circle cx="6.6" cy="6.6" r="2.1"/><circle cx="13.4" cy="13.4" r="2.1"/></svg><span>BTW-aangifte</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.2v-4.4M10 16.2V4.4M15.5 16.2V9"/></svg><span>Rapportage</span></div>
+      </div>
+    </nav>
+    <div style="flex-grow: 1;"></div>
+    <div class="item-settings on"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.6v2.2M10 15.2v2.2M17.4 10h-2.2M4.8 10H2.6M15.23 4.77l-1.56 1.56M6.33 13.67l-1.56 1.56M15.23 15.23l-1.56-1.56M6.33 6.33 4.77 4.77"/></svg><span>Instellingen</span></div>
+  </aside>
+
+  <div class="main">
+    <header class="bar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="marker num">VD</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 16px; font-weight: 600;">Van Doorn Bouw B.V.</span>
+          <span class="num" style="font-size: 13px; color: #6E685F;">KvK 34281907</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+      </div>
+      <div class="vsep"></div>
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span>Boekjaar 2026</span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg></div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+        <span style="flex-grow: 1;">Zoek in alles…</span><span class="kbd">Ctrl K</span>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <span class="avatar">SB</span>
+    </header>
+
+    <main class="page">
+      <h1>Instellingen</h1>
+
+      <div style="flex-grow: 1; min-height: 0; display: flex; gap: 32px; align-items: flex-start;">
+        <nav class="sub">
+          <span class="on"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3 2.7-5 6-5s6 2 6 5"/></svg><span>Profiel en taal</span></span>
+          <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.2"/><path d="M10 2.6v1.8M10 15.6v1.8M17.4 10h-1.8M4.4 10H2.6M15.2 4.8l-1.3 1.3M6.1 13.9l-1.3 1.3M15.2 15.2l-1.3-1.3M6.1 6.1 4.8 4.8"/></svg><span>Weergave</span></span>
+          <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8 4 5.2v4.4c0 3.6 2.5 6.4 6 7.6 3.5-1.2 6-4 6-7.6V5.2z"/><path d="m7.4 10 1.8 1.8 3.4-3.6"/></svg><span>Beveiliging</span></span>
+          <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V4.2a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V17"/><path d="M13 8h2.2a1 1 0 0 1 1 1v8"/><path d="M2.5 17h15"/><path d="M7 6.5h2M7 9.5h2M7 12.5h2"/></svg><span>Organisatie</span></span>
+          <span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8a7.2 7.2 0 1 0 0 14.4c1 0 1.4-.7 1.1-1.5-.4-1 .3-1.9 1.4-1.9h1.4A3.3 3.3 0 0 0 17.2 10 7.2 7.2 0 0 0 10 2.8z"/><circle cx="6.6" cy="9.4" r=".9"/><circle cx="9.4" cy="6.4" r=".9"/><circle cx="13.2" cy="7.2" r=".9"/></svg><span>Factuurontwerp</span></span>
+        </nav>
+
+        <div style="width: 720px; display: flex; flex-direction: column; gap: 14px;">
+
+          <!-- Profile -->
+          <div class="panel">
+            <div style="display: flex; align-items: baseline; gap: 12px;">
+              <h2>Profiel en taal</h2>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #396741;">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg>
+                <span>Opgeslagen</span>
+              </span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px;">
+              <div class="field"><label class="label">Naam</label><div class="input">Sanne Bakker</div></div>
+              <div class="field">
+                <label class="label">E-mailadres</label>
+                <div class="input ro" style="justify-content: space-between;"><span>s.bakker@vandoornbouw.nl</span><span class="chip positive">Geverifieerd</span></div>
+                <span class="help">Wijzigen kan via Beveiliging; u bevestigt het nieuwe adres eerst.</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Taal</label>
+              <div class="seg"><span class="on">Nederlands</span><span>English</span></div>
+              <span class="help">Geldt voor deze account op elk apparaat. Boekhoudtermen als BTW, KvK en grootboek blijven ook in het Engels Nederlands.</span>
+            </div>
+          </div>
+
+          <!-- Appearance: shown here so the profile page carries the two things every user touches -->
+          <div class="panel">
+            <h2>Weergave</h2>
+            <div class="field" style="gap: 8px;">
+              <label class="label">Thema</label>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+                <div class="theme on">
+                  <div class="pv"><div style="flex: 1; background: #F5F0E9; display: flex; flex-direction: column; gap: 4px; padding: 8px;"><div style="height: 6px; width: 40%; background: #26221C; border-radius: 3px;"></div><div style="height: 6px; width: 70%; background: #DCD9D3; border-radius: 3px;"></div><div style="height: 6px; width: 30%; background: #00686C; border-radius: 3px;"></div></div><div style="flex: 1; background: #15120E; display: flex; flex-direction: column; gap: 4px; padding: 8px;"><div style="height: 6px; width: 40%; background: #F2ECE3; border-radius: 3px;"></div><div style="height: 6px; width: 70%; background: #3D372F; border-radius: 3px;"></div><div style="height: 6px; width: 30%; background: #4FBCC0; border-radius: 3px;"></div></div></div>
+                  <span class="lbl"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg><span>Systeem</span><span class="help" style="font-weight: 400;">volgt uw apparaat</span></span>
+                </div>
+                <div class="theme">
+                  <div class="pv"><div style="flex: 1; background: #F5F0E9; display: flex; flex-direction: column; gap: 4px; padding: 8px;"><div style="height: 6px; width: 40%; background: #26221C; border-radius: 3px;"></div><div style="height: 6px; width: 70%; background: #DCD9D3; border-radius: 3px;"></div><div style="height: 6px; width: 30%; background: #00686C; border-radius: 3px;"></div></div></div>
+                  <span class="lbl"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.2"/><path d="M10 2.6v1.8M10 15.6v1.8M17.4 10h-1.8M4.4 10H2.6M15.2 4.8l-1.3 1.3M6.1 13.9l-1.3 1.3M15.2 15.2l-1.3-1.3M6.1 6.1 4.8 4.8"/></svg><span>Licht</span></span>
+                </div>
+                <div class="theme">
+                  <div class="pv"><div style="flex: 1; background: #15120E; display: flex; flex-direction: column; gap: 4px; padding: 8px;"><div style="height: 6px; width: 40%; background: #F2ECE3; border-radius: 3px;"></div><div style="height: 6px; width: 70%; background: #3D372F; border-radius: 3px;"></div><div style="height: 6px; width: 30%; background: #4FBCC0; border-radius: 3px;"></div></div></div>
+                  <span class="lbl"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 12.2A6.8 6.8 0 0 1 7.8 3.5a6.8 6.8 0 1 0 8.7 8.7z"/></svg><span>Donker</span></span>
+                </div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px;">
+              <div class="field">
+                <label class="label">Dichtheid</label>
+                <div class="seg"><span class="on">Ruim</span><span>Compact</span></div>
+                <span class="help">Compact maakt tabellen en lijsten lager; op een telefoon verandert er niets.</span>
+              </div>
+              <div class="field">
+                <label class="label">Getallen en datums</label>
+                <div class="input ro num">€ 1.234,56 · 14-09-2026</div>
+                <span class="help">Volgt de notatie van de administratie (nl-NL), niet van uw apparaat.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

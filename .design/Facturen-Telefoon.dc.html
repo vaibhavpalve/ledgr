@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 12px; font-weight: 600; letter-spacing: .03em; white-space: nowrap; }
+    .chip.positive { background: #E0EFE2; color: #396741; } .chip.caution { background: #FAEBD8; color: #755421; } .chip.attention { background: #FEE8E1; color: #814A39; }
+    .row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; border-bottom: 1px solid #DCD9D3; border-left: 3px solid transparent; }
+    .row .t { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
+    .row .a { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row .b { font-size: 13px; color: #6E685F; display: flex; align-items: center; gap: 6px; }
+    .row .amt { flex: none; font-family: 'Source Serif 4', Georgia, serif; font-size: 17px; font-weight: 600; }
+    .seg { display: flex; gap: 8px; overflow: hidden; }
+    .seg span { flex: none; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #5F5A52; background: #EFEAE2; }
+    .seg span.on { background: #D8F4F6; color: #00686C; }
+    .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; font-size: 12px; font-weight: 500; color: #5F5A52; }
+    .tab .ic { display: flex; align-items: center; justify-content: center; width: 36px; height: 24px; border-radius: 999px; }
+    .tab.on { color: #00686C; font-weight: 600; box-shadow: inset 0 2px 0 #00686C; }
+    .tab.on .ic { background: #D8F4F6; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 390px; height: 844px; background: #F5F0E9; overflow: hidden; position: relative;">
+
+  <!-- Sticky client header (FR-FRM-000a): marker, name, KvK, and the 3px client rule -->
+  <header style="flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #FBF8F4; border-bottom: 3px solid #59739B;">
+    <span class="num" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #59739B; color: #FFFFFF; font-size: 12px; font-weight: 700;">VD</span>
+    <div style="display: flex; flex-direction: column; line-height: 1.25; flex-grow: 1; min-width: 0;">
+      <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Van Doorn Bouw B.V.</span>
+      <span class="num" style="font-size: 12px; color: #6E685F;">KvK 34281907 · Boekjaar 2026</span>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 12px; font-weight: 700;">SB</span>
+  </header>
+
+  <main style="flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 14px 0 0;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 0 16px;">
+      <h1 class="serif" style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2;">Verkoopfacturen</h1>
+      <div style="flex-grow: 1;"></div>
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; background: #00686C; color: #FFFFFF; font-size: 14px; font-weight: 600;">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v12M4 10h12"/></svg>
+        <span>Nieuw</span>
+      </span>
+    </div>
+
+    <div style="display: flex; gap: 10px; padding: 0 16px;">
+      <div style="flex: 1; background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 1px;">
+        <span style="font-size: 13px; font-weight: 600; color: #5F5A52;">Openstaand</span>
+        <span class="serif num" style="font-size: 20px; font-weight: 600; letter-spacing: -.01em;">€ 18.940,00</span>
+      </div>
+      <div style="flex: 1; background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 1px;">
+        <span style="font-size: 13px; font-weight: 600; color: #5F5A52;">Te laat</span>
+        <span class="serif num" style="font-size: 20px; font-weight: 600; letter-spacing: -.01em; color: #814A39;">€ 4.235,00</span>
+      </div>
+    </div>
+
+    <div class="seg" style="padding: 0 16px;"><span class="on">Alle</span><span>Concept</span><span>Verstuurd</span><span>Te laat</span><span>Betaald</span></div>
+
+    <div style="flex-grow: 1; min-height: 0; background: #FBF8F4; border-top: 1px solid #DCD9D3; display: flex; flex-direction: column; overflow: hidden;">
+      <div class="row" style="background: #FEE8E1; border-left-color: #814A39;">
+        <div class="t">
+          <span class="a">Hoveniersbedrijf Kroon</span>
+          <span class="b"><span class="num">2026-0184</span><span class="chip attention num">Te laat · 23 d</span></span>
+        </div>
+        <span class="amt num">€ 4.235,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Bakkerij De Vries</span><span class="b"><span>concept</span><span class="chip caution">Concept</span></span></div>
+        <span class="amt num">€ 1.450,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Praktijk Oosterhuis</span><span class="b"><span class="num">2026-0191 · vervalt 5 okt</span></span></div>
+        <span class="amt num">€ 2.780,50</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Van Dijk Installatie V.O.F.</span><span class="b"><span class="num">2026-0190 · vervalt 3 okt</span></span></div>
+        <span class="amt num">€ 6.120,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Hoveniersbedrijf Kroon</span><span class="b"><span class="num">2026-0189 · vervalt 1 okt</span></span></div>
+        <span class="amt num">€ 1.815,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Gemeente Amersfoort</span><span class="b"><span class="num">2026-0188</span><span class="chip positive">Betaald</span></span></div>
+        <span class="amt num">€ 9.680,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+      <div class="row">
+        <div class="t"><span class="a">Praktijk Oosterhuis</span><span class="b"><span class="num">2026-0187</span><span class="chip positive">Betaald</span></span></div>
+        <span class="amt num">€ 3.025,00</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      </div>
+    </div>
+  </main>
+
+  <!-- The five-tab bar: 64px, above the safe area -->
+  <nav style="flex: none; display: flex; background: #FBF8F4; border-top: 1px solid #DCD9D3; padding-bottom: 16px;">
+    <div class="tab"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5"/></svg></span><span>Start</span></div>
+    <div class="tab"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg></span><span>Vastleggen</span></div>
+    <div class="tab"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg></span><span>Beoordelen</span></div>
+    <div class="tab on"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg></span><span>Facturen</span></div>
+    <div class="tab"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h6"/><path d="M3.8 5.5h.01M3.8 10h.01M3.8 14.5h.01"/></svg></span><span>Meer</span></div>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>

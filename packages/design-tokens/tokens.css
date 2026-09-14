@@ -33,6 +33,53 @@
  * block. They reference the token; this file decides what it means.
  */
 
+/* ==========================================================================
+ * WEBFONTS — self-hosted (ADR-061)
+ * ==========================================================================
+ *
+ * Source Sans 3 and Source Serif 4, served from this origin under
+ * /fonts/ (apps/web/public/fonts, SIL OFL 1.1 — the licence files sit beside
+ * the woff2s). ADR-055 shipped them from Google Fonts, which is a third-party
+ * request carrying the visitor's IP on a product that is otherwise
+ * self-contained; for EU users that is a PRIV consideration, and this closes
+ * it.
+ *
+ * Both are the variable builds: one file per family instead of one per
+ * weight, and the serif carries its optical-size axis (opsz 8–60), so the
+ * browser picks the right master for a 33px figure and a 13px caption with
+ * `font-optical-sizing: auto` (the default) — never set
+ * `font-variation-settings` by hand. No italic files: the UI sets nothing in
+ * italic, and a browser synthesises an oblique for the rare <em>.
+ *
+ * `font-display: swap` — text renders in the fallback immediately rather than
+ * staying invisible while the file loads; on a phone in a car park
+ * (FR-EXP-001) that matters more than the first frame being perfect. The
+ * fallback stacks in `--ledgr-font-*` below are chosen for close metrics.
+ *
+ * Absolute `/fonts/` URLs on purpose: this stylesheet is imported from a
+ * workspace package, and a relative URL would resolve against the package
+ * path rather than the site root.
+ */
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src:
+    url("/fonts/SourceSans3VF-Upright.ttf.woff2") format("woff2-variations"),
+    url("/fonts/SourceSans3VF-Upright.ttf.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src:
+    url("/fonts/SourceSerif4Variable-Roman.ttf.woff2") format("woff2-variations"),
+    url("/fonts/SourceSerif4Variable-Roman.ttf.woff2") format("woff2");
+}
+
 :root {
   /*
    * Tells the user agent which palette to give native controls it paints
@@ -47,6 +94,12 @@
   --ledgr-surface-raised: #efeae2;
   --ledgr-surface-sunken: #e3ded5;
   --ledgr-surface-input: #fffefb;
+  /*
+   * The backdrop behind a dialog or a drawer. Warm ink at 48% rather than a
+   * cool black, so the page behind reads as dimmed paper, not as a grey film
+   * (the design canvas's ClientSwitch scrim).
+   */
+  --ledgr-surface-scrim: rgba(38, 34, 28, 0.48);
 
   /* ---- Lines ----------------------------------------------------------- */
   /*
@@ -147,6 +200,51 @@
 
   /* ---- Touch (MOB-013) -------------------------------------------------- */
   --ledgr-touch-min: 48px;
+
+  /*
+   * ---- Layout (docs/design/system.md §2) -------------------------------
+   *
+   * The desktop shell's fixed dimensions, so no screen re-derives them: the
+   * left rail from Main.dc.html, the client bar, the content measure that
+   * MobileShell.css already caps at 72rem, a single-column form, a side
+   * drawer. Desktop starts at 64rem (ADR-057's switch); that breakpoint is
+   * not a token because custom properties cannot be used in a media query.
+   */
+  --ledgr-layout-rail: 15rem;
+  --ledgr-layout-bar: 4rem;
+  --ledgr-layout-measure: 72rem;
+  --ledgr-layout-form: 40rem;
+  --ledgr-layout-drawer: 30rem;
+
+  /*
+   * ---- Rows and icons ---------------------------------------------------
+   *
+   * Table and list rows at the two densities (`<html data-density>`, chosen
+   * in Instellingen › Weergave). Comfortable is the touch floor; compact is
+   * for the bookkeeper's monitor and is ignored below 64rem.
+   *
+   * Icons are drawn on a 20-unit grid with a 1.5px painted stroke; these are
+   * the three sizes they render at, so `stroke-width` can be scaled per size
+   * (16px → 1.88, 20px → 1.5, 24px → 1.25).
+   */
+  --ledgr-row-comfortable: 3rem;
+  --ledgr-row-compact: 2.5rem;
+  --ledgr-icon-sm: 16px;
+  --ledgr-icon-md: 20px;
+  --ledgr-icon-lg: 24px;
+
+  /*
+   * ---- Stacking ---------------------------------------------------------
+   *
+   * Every z-index in the product, in one place, in order: the nav rail and
+   * tab bar, the sticky client header above it, overlays (dialog, drawer),
+   * toasts above overlays, and the skip link above everything.
+   */
+  --ledgr-z-nav: 10;
+  --ledgr-z-header: 20;
+  --ledgr-z-overlay: 50;
+  --ledgr-z-toast: 60;
+  --ledgr-z-skip: 100;
 }
 
 /*
@@ -163,6 +261,7 @@
     --ledgr-surface-raised: #2a251f;
     --ledgr-surface-sunken: #100d0a;
     --ledgr-surface-input: #1a1712;
+    --ledgr-surface-scrim: rgba(0, 0, 0, 0.6);
 
     --ledgr-border-subtle: #3d372f;
     --ledgr-border-strong: #756d5f;
@@ -203,6 +302,7 @@
   --ledgr-surface-raised: #2a251f;
   --ledgr-surface-sunken: #100d0a;
   --ledgr-surface-input: #1a1712;
+  --ledgr-surface-scrim: rgba(0, 0, 0, 0.6);
 
   --ledgr-border-subtle: #3d372f;
   --ledgr-border-strong: #756d5f;

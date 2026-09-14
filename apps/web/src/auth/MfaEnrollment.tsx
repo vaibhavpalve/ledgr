@@ -50,7 +50,8 @@ export function MfaEnrollment({
   );
 }
 
-function TotpSection({
+/** Exported for the security settings screen, which offers the same enrolment after sign-in. */
+export function TotpSection({
   api,
   alreadyEnrolled,
   onVerified,
@@ -236,7 +237,8 @@ function TotpSection({
   );
 }
 
-function PasskeySection({
+/** Exported for the security settings screen — adding a passkey is this same ceremony. */
+export function PasskeySection({
   api,
   alreadyEnrolled,
   onVerified,

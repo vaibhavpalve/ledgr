@@ -1,0 +1,66 @@
+/*
+ * The onboarding frame and wizard (FR-ONB-004/005/006). One column, a
+ * readable measure, the product's own bar at the top — the first screen
+ * after MFA, so it takes the pre-auth screen's care rather than the shell's
+ * density.
+ */
+
+.onboarding-frame {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--ledgr-surface-ground);
+}
+
+.onboarding-frame__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+.onboarding-frame__main {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  padding: var(--ledgr-space-5) var(--ledgr-space-4) var(--ledgr-space-7);
+}
+
+.onboarding {
+  width: 100%;
+  max-width: 52rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-5);
+}
+
+.onboarding__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+}
+
+.onboarding__intro {
+  max-width: 60ch;
+  color: var(--ledgr-text-secondary);
+}
+
+.onboarding__form {
+  padding: var(--ledgr-space-5);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-sm);
+}
+
+.onboarding__form legend {
+  padding: 0;
+  margin-bottom: var(--ledgr-space-1);
+}
+
+.onboarding .facts {
+  padding: var(--ledgr-space-4);
+}

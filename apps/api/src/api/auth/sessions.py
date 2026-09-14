@@ -61,6 +61,15 @@ class SessionIdleTimeoutError(SessionError):
     """
 
 
+class SessionUserMismatchError(SessionError):
+    """The session exists but belongs to a different user than the caller
+    claims to be. Only reachable with a token whose `sub` and `sid` name
+    two different people - which no token this system mints ever does, so
+    a request carrying one is treated exactly like a revoked session:
+    refused, before any handler runs.
+    """
+
+
 def _hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
@@ -133,7 +142,32 @@ class SessionService:
         session = await self._repository.get_by_token_hash(_hash_token(raw_token))
         if session is None:
             raise SessionNotFoundError
+        return await self._validate_and_touch(session)
 
+    async def validate_session_by_id(
+        self, session_id: uuid.UUID, *, user_id: uuid.UUID | None = None
+    ) -> Session:
+        """The per-request check api.tenancy.TenantContextMiddleware runs
+        (see docs/decisions/ADR-060-session-backed-tenant-context.md): the
+        bearer JWT names the session by id rather than by its raw secret,
+        and this is what makes the ROW - revoked_at, expires_at,
+        last_active_at, mfa_verified_at, active_administration_id - the
+        authority over the token's restated claims. Same checks, same
+        touch, same exceptions as validate_session; the only difference is
+        the lookup key.
+
+        `user_id`, when given, must match the session's own owner. A token
+        this system mints always names its session's owner in `sub`, so a
+        mismatch is a forged or spliced token and is refused as such.
+        """
+        session = await self._repository.get_by_id(session_id)
+        if session is None:
+            raise SessionNotFoundError
+        if user_id is not None and session.user_id != user_id:
+            raise SessionUserMismatchError
+        return await self._validate_and_touch(session)
+
+    async def _validate_and_touch(self, session: Session) -> Session:
         now = self._clock()
 
         if session.revoked_at is not None:
@@ -145,6 +179,13 @@ class SessionService:
 
         await self._repository.touch(session.id, at=now)
         return session
+
+    async def get_session(self, session_id: uuid.UUID) -> Session | None:
+        """The raw row, with no validation and no touch - for a caller that
+        already holds a validated context and wants to read or act on a
+        specific session (IAM-017's device list, revocation of one entry).
+        """
+        return await self._repository.get_by_id(session_id)
 
     async def record_reauthentication(self, session_id: uuid.UUID) -> None:
         """Call after a sensitive action re-proves the user's credential

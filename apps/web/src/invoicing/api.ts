@@ -96,16 +96,19 @@ export interface InvoiceLineBody {
 }
 
 /**
- * `api.invoicing.routes.InvoiceBody`. Typed customer details only — no
- * `customer_id` path here: this form's MVP is the typed one-off customer
- * `CustomerDetailsMissing`'s own docstring describes, per this task's ADR.
+ * `api.invoicing.routes.InvoiceBody`: EITHER `customer_id` (FR-AR-006's
+ * master fills the snapshot in) OR the customer's details typed out — never
+ * both, which the server refuses as `invoice_customer_conflict`. The typed
+ * path was this form's MVP (ADR-046 §4); the picker path arrived with the
+ * customers screen, and `SendInvoiceForm` sends exactly one of the two.
  */
 export interface CreateInvoiceBody {
   fiscal_year_id: string;
   invoice_date: string;
-  customer_name: string;
-  customer_address: string;
-  customer_country: string;
+  customer_id?: string | null;
+  customer_name?: string | null;
+  customer_address?: string | null;
+  customer_country?: string | null;
   customer_vat_number?: string | null;
 }
 

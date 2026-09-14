@@ -3,7 +3,7 @@ import { useI18n } from "@ledgr/i18n";
 import type { DashboardActionItemView, DashboardView } from "@ledgr/shared-types";
 
 import "./HomeScreen.css";
-import type { MobileTab } from "../MobileShell";
+import { ErrorState } from "../shell/ScreenState";
 import type { DashboardApi } from "./api";
 
 /**
@@ -36,51 +36,61 @@ import type { DashboardApi } from "./api";
  * The API has already ordered the list (FR-UX-005's ranking is the backend's
  * job, tested there) and this component does not re-sort it.
  *
- * Tapping an item calls `onNavigate` with the tab that item belongs to.
- * Neither `ApproveList` nor `ViewList` supports opening directly to one
- * record today, so a tap switches tabs only - see this feature's ADR, Known
- * gaps - it does not jump straight to the item.
+ * Tapping an item calls `onOpenItem` with the item; the route
+ * (`DashboardRoute`) turns that into the record's own URL — the "open this
+ * one" entry point ADR-048 recorded as a gap the tab shell could not offer.
+ * Each row also carries the item's one action as a button (the canvas's
+ * "Aanvullen"/"Openen"), so a keyboard user has a named control rather than
+ * a whole-row target only.
  */
 export function HomeScreen({
   administrationId,
   fiscalYearId,
   api,
-  onNavigate,
+  onOpenItem,
 }: {
   administrationId: string;
   fiscalYearId: string;
   api: DashboardApi;
-  onNavigate: (tab: MobileTab) => void;
+  onOpenItem: (item: DashboardActionItemView) => void;
 }) {
   const { t, money, date } = useI18n();
   const [summary, setSummary] = useState<DashboardView | null>(null);
-  const [problem, setProblem] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setSummary(null);
-    setProblem(false);
+    setProblem(null);
     api
       .getDashboard(administrationId, fiscalYearId)
       .then((result) => {
         if (!cancelled) setSummary(result);
       })
-      .catch(() => {
-        if (!cancelled) setProblem(true);
+      .catch((error: unknown) => {
+        if (!cancelled) setProblem(error instanceof Error ? error.message : t("mobile.common.error"));
       });
     return () => {
       cancelled = true;
     };
-  }, [administrationId, fiscalYearId, api]);
+    // `t` is stable per language and the message it produces is a fallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [administrationId, fiscalYearId, api, attempt]);
 
   return (
     <section className="home" aria-label={t("mobile.home.title")}>
-      <h1>{t("mobile.home.title")}</h1>
+      <div className="page-header">
+        <div className="page-header__titles">
+          <h1>{t("mobile.home.title")}</h1>
+          <p className="page-header__context ledgr-num" data-testid="home-today">
+            {date(todayIso(), "long")}
+          </p>
+        </div>
+      </div>
 
-      {problem ? (
-        <p role="alert" data-testid="home-error" className="alert alert--attention">
-          {t("mobile.common.error")}
-        </p>
+      {problem !== null ? (
+        <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} testId="home-error" />
       ) : null}
 
       {/*
@@ -90,7 +100,7 @@ export function HomeScreen({
         accessible one did not — and the visible text stays in the tree for
         anyone who needs it, hidden from sight only.
       */}
-      {summary === null && !problem ? (
+      {summary === null && problem === null ? (
         <div role="status" data-testid="home-loading" className="home__loading">
           <span className="ledgr-visually-hidden">{t("mobile.common.loading")}</span>
           <div className="skeleton home__loading-row" />
@@ -141,12 +151,16 @@ export function HomeScreen({
                 data-testid="home-items-list"
               >
                 {summary.items_needing_action.map((item) => (
-                  <li key={item.id} data-testid="home-item">
+                  <li
+                    key={item.id}
+                    data-testid="home-item"
+                    className={`home__item home__item--${item.kind}`}
+                  >
                     <button
                       type="button"
-                      className="list__row"
+                      className="list__row home__item-row"
                       data-testid={`home-item-${item.id}`}
-                      onClick={() => onNavigate(tabFor(item))}
+                      onClick={() => onOpenItem(item)}
                     >
                       <span className={`home__item-icon home__item-icon--${item.kind}`}>
                         <ItemIcon kind={item.kind} />
@@ -155,21 +169,28 @@ export function HomeScreen({
                         {/* Already translated server-side (FR-UX-007) — placed
                             as-is rather than recomposed from `kind`. */}
                         <span>{item.description}</span>
+                        <span className={`home__item-state home__item-state--${item.kind}`}>
+                          {t(`mobile.home.state.${item.kind}`)}
+                        </span>
                       </span>
-                      <span className="home__item-chevron" aria-hidden="true">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.67"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m8 5.5 4.5 4.5L8 14.5" />
-                        </svg>
-                      </span>
+                    </button>
+                    {/*
+                      The row's one action, as the canvas draws it: a named
+                      button at the right. Only the overdue invoice — the
+                      one kind where something has gone wrong — wears the
+                      filled treatment; the drafts are outlined.
+                    */}
+                    <button
+                      type="button"
+                      className={
+                        item.kind === "overdue_invoice"
+                          ? "button--primary home__item-action"
+                          : "home__item-action"
+                      }
+                      data-testid={`home-item-action-${item.id}`}
+                      onClick={() => onOpenItem(item)}
+                    >
+                      {t(`mobile.home.action.${item.kind}`)}
                     </button>
                   </li>
                 ))}
@@ -241,18 +262,12 @@ export function HomeScreen({
   );
 }
 
-/**
- * Which existing tab a tapped item routes to. Neither destination opens
- * directly to the specific record (see this component's own docstring and
- * this feature's ADR) - the tab is the closest existing screen that already
- * lists the item, per kind:
- *
- *   overdue_invoice  the invoice is issued - View's invoices list has it.
- *   draft_invoice    View's invoices list includes drafts too (MOB-005).
- *   draft_expense    Approve is exactly "draft expenses awaiting completion".
- */
-function tabFor(item: DashboardActionItemView): MobileTab {
-  return item.kind === "draft_expense" ? "approve" : "view";
+/** Today as an ISO calendar date in the browser's own zone — a display date, never a posting date. */
+function todayIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 /**

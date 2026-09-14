@@ -1,0 +1,1111 @@
+/*
+ * The application shell: the left rail, the client header, the content
+ * column and the compact bottom bar — `.design/Main.dc.html` in tokens.
+ *
+ * Two layouts from one DOM, decided here and only here (the component never
+ * reads the viewport): a grid with the rail beside a header-over-main column
+ * from 64rem up, a single column with a fixed bottom bar below it. 64rem is
+ * the same breakpoint the pre-auth screen switches its marketing rail on
+ * (ADR-057), so the product changes shape at one width, not two.
+ *
+ * The client header and marker rules that `MobileShell.css` used to carry
+ * live here now — the shell is what renders them, and the disc and the band
+ * must stay in one file so they can never disagree about a client's colour.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--ledgr-surface-ground);
+}
+
+/* ==========================================================================
+ * THE RAIL — desktop only
+ * ==========================================================================
+ */
+
+.shell__rail {
+  display: none;
+}
+
+.shell__brand {
+  padding: 0 var(--ledgr-space-2);
+}
+
+.shell__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-5);
+}
+
+.shell__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shell__nav-heading {
+  padding: 0 var(--ledgr-space-2) var(--ledgr-space-2);
+}
+
+.shell__nav-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-control);
+  color: var(--ledgr-text-primary);
+  font-size: var(--ledgr-type-small);
+  text-decoration: none;
+  transition: background-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+.shell__nav-link:hover {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-primary);
+}
+
+/*
+ * The current section. `aria-current` drives it — the attribute a screen
+ * reader announces — so the visual state and the announced state are one
+ * fact. Weight changes too, so colour is never the only signal.
+ */
+.shell__nav-link[aria-current="page"] {
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.shell__rail-foot {
+  padding-top: var(--ledgr-space-3);
+  border-top: 1px solid var(--ledgr-border-subtle);
+}
+
+.shell__rail-foot .shell__nav-link {
+  color: var(--ledgr-text-secondary);
+}
+
+@media (forced-colors: active) {
+  .shell__nav-link[aria-current="page"],
+  .shell__tab[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* ==========================================================================
+ * CLIENT HEADER — FR-FRM-000a (moved from MobileShell.css)
+ * ==========================================================================
+ *
+ * The one piece of chrome that is never allowed to scroll away. Sticky
+ * rather than fixed so it sits in normal flow and re-sticks correctly
+ * however tall it gets (a long legal name wrapping, the ambiguous-colour
+ * warning appearing).
+ */
+.client-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2) var(--ledgr-space-3);
+  min-height: 4rem;
+  padding: var(--ledgr-space-2) var(--ledgr-space-4);
+
+  background-color: var(--ledgr-surface-paper);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+/*
+ * The client's own colour, as a 3px rule under the whole header — the device
+ * that makes a client switch register peripherally. Falls back to the subtle
+ * border when the colour is unknown.
+ */
+.client-header[data-state="active"] {
+  border-bottom-width: 3px;
+  border-bottom-color: var(--client-colour, var(--ledgr-border-subtle));
+  transition: border-bottom-color var(--ledgr-duration-base) var(--ledgr-ease-out);
+}
+
+.client-header[data-colour="indigo"] { --client-colour: var(--ledgr-client-indigo); }
+.client-header[data-colour="amber"] { --client-colour: var(--ledgr-client-amber); }
+.client-header[data-colour="teal"] { --client-colour: var(--ledgr-client-teal); }
+.client-header[data-colour="rose"] { --client-colour: var(--ledgr-client-rose); }
+.client-header[data-colour="lime"] { --client-colour: var(--ledgr-client-lime); }
+.client-header[data-colour="violet"] { --client-colour: var(--ledgr-client-violet); }
+.client-header[data-colour="cyan"] { --client-colour: var(--ledgr-client-cyan); }
+.client-header[data-colour="orange"] { --client-colour: var(--ledgr-client-orange); }
+.client-header[data-colour="emerald"] { --client-colour: var(--ledgr-client-emerald); }
+.client-header[data-colour="fuchsia"] { --client-colour: var(--ledgr-client-fuchsia); }
+
+.client-header--empty,
+.client-header--loading {
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-small);
+}
+
+.client-header__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--ledgr-leading-snug);
+}
+
+.client-header__name {
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-snug);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-header__legal-name,
+.client-header__kvk {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+}
+
+/* The ambiguous-colour warning takes a full row of its own: it is a sentence. */
+.client-header__ambiguous {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  padding: var(--ledgr-space-1) var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-chip);
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-medium);
+  line-height: var(--ledgr-leading-snug);
+}
+
+/* The marker — initials on the client's own colour; theme-independent. */
+.client-marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-bold);
+  letter-spacing: 0.02em;
+  font-variant-numeric: lining-nums;
+}
+
+.client-marker--indigo { background-color: var(--ledgr-client-indigo); color: var(--ledgr-text-on-marker); }
+.client-marker--amber { background-color: var(--ledgr-client-amber); color: var(--ledgr-text-on-marker); }
+.client-marker--teal { background-color: var(--ledgr-client-teal); color: var(--ledgr-text-on-marker); }
+.client-marker--rose { background-color: var(--ledgr-client-rose); color: var(--ledgr-text-on-marker); }
+.client-marker--lime { background-color: var(--ledgr-client-lime); color: var(--ledgr-text-on-marker); }
+.client-marker--violet { background-color: var(--ledgr-client-violet); color: var(--ledgr-text-on-marker); }
+.client-marker--cyan { background-color: var(--ledgr-client-cyan); color: var(--ledgr-text-on-marker); }
+.client-marker--orange { background-color: var(--ledgr-client-orange); color: var(--ledgr-text-on-marker); }
+.client-marker--emerald { background-color: var(--ledgr-client-emerald); color: var(--ledgr-text-on-marker); }
+.client-marker--fuchsia { background-color: var(--ledgr-client-fuchsia); color: var(--ledgr-text-on-marker); }
+
+.client-marker--large {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--ledgr-type-small);
+}
+
+/* The compact header's own wordmark; the rail carries it on desktop. */
+.shell__header-brand {
+  order: -1;
+  display: inline-flex;
+  margin-right: var(--ledgr-space-1);
+}
+
+.shell__header-brand .wordmark {
+  font-size: var(--ledgr-type-body);
+}
+
+.shell__header-spacer {
+  flex-grow: 1;
+}
+
+.shell__switch {
+  gap: var(--ledgr-space-1);
+  padding-inline: var(--ledgr-space-2);
+  font-weight: var(--ledgr-weight-medium);
+}
+
+/* The fiscal-year selector: a select styled as the canvas's quiet control. */
+.shell__fiscal-year select {
+  width: auto;
+  min-height: 2.5rem;
+  padding: var(--ledgr-space-1) var(--ledgr-space-3);
+  border-color: var(--ledgr-border-subtle);
+  background-color: var(--ledgr-surface-paper);
+  font-size: var(--ledgr-type-small);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* The search trigger: a field-shaped button. Hidden on a phone, where the
+   header has no room and Ctrl+K has no keyboard. */
+.shell__search {
+  display: none;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  flex: 1 1 auto;
+  max-width: 24rem;
+  min-height: 2.5rem;
+  padding: 0 var(--ledgr-space-3);
+  background-color: var(--ledgr-surface-input);
+  border: 1px solid var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-control);
+  color: var(--ledgr-text-muted);
+  font-weight: var(--ledgr-weight-regular);
+  text-align: left;
+}
+
+.shell__search-text {
+  flex-grow: 1;
+}
+
+.shell__kbd {
+  font-family: inherit;
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-semibold);
+  padding: 1px 5px;
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-chip);
+  color: var(--ledgr-text-muted);
+}
+
+/* ==========================================================================
+ * USER MENU
+ * ==========================================================================
+ */
+
+.user-menu {
+  position: relative;
+}
+
+.user-menu__trigger {
+  min-width: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-1);
+  border-color: transparent;
+  background-color: transparent;
+}
+
+.user-menu__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-bold);
+}
+
+.user-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--ledgr-space-2));
+  right: 0;
+  z-index: 40;
+  width: min(20rem, calc(100vw - 2 * var(--ledgr-space-4)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-lg);
+}
+
+.user-menu__email {
+  font-weight: var(--ledgr-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.user-menu__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+}
+
+.user-menu__links {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ledgr-border-subtle);
+  padding-top: var(--ledgr-space-2);
+}
+
+.user-menu__link {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-control);
+  color: var(--ledgr-text-primary);
+  text-decoration: none;
+}
+
+.user-menu__link:hover {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-primary);
+}
+
+.user-menu__sign-out {
+  justify-content: flex-start;
+}
+
+/* ==========================================================================
+ * MAIN
+ * ==========================================================================
+ */
+
+.shell__main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-5);
+  padding: var(--ledgr-space-4);
+  /* Room for the fixed tab bar below, so the last rows of a list are not
+     hidden behind it. Removed once the bar is gone. */
+  padding-bottom: calc(64px + var(--ledgr-space-4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* A readable measure on a wide screen. */
+.shell__main > * {
+  width: 100%;
+  max-width: 76rem;
+}
+
+/* ==========================================================================
+ * THE BOTTOM BAR — compact only
+ * ==========================================================================
+ */
+
+.shell__tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: var(--ledgr-surface-paper);
+  border-top: 1px solid var(--ledgr-border-subtle);
+}
+
+.shell__tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* Above MOB-013's 48px floor: the control people hit one-handed, walking. */
+  min-height: 64px;
+  min-width: 48px;
+  padding: var(--ledgr-space-2) var(--ledgr-space-1);
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-medium);
+  line-height: var(--ledgr-leading-tight);
+  text-align: center;
+  text-decoration: none;
+}
+
+.shell__tab:hover {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-primary);
+}
+
+.shell__tab[aria-current="page"] {
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+  box-shadow: inset 0 2px 0 var(--ledgr-accent);
+}
+
+.shell__tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 1.5rem;
+  border-radius: var(--ledgr-radius-pill);
+  transition: background-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+.shell__tab[aria-current="page"] .shell__tab-icon {
+  background-color: var(--ledgr-accent-wash);
+}
+
+/* ==========================================================================
+ * WIDE: the rail appears, the bar goes
+ * ==========================================================================
+ */
+
+@media (min-width: 64rem) {
+  .shell {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "rail header"
+      "rail main";
+    align-items: start;
+  }
+
+  .shell__rail {
+    grid-area: rail;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ledgr-space-5);
+    padding: var(--ledgr-space-5) var(--ledgr-space-3) var(--ledgr-space-4);
+    background-color: var(--ledgr-surface-paper);
+    border-right: 1px solid var(--ledgr-border-subtle);
+    overflow-y: auto;
+  }
+
+  .shell__nav {
+    flex-grow: 1;
+  }
+
+  .client-header {
+    grid-area: header;
+    flex-wrap: nowrap;
+    gap: var(--ledgr-space-4);
+    padding-inline: var(--ledgr-space-5);
+  }
+
+  .shell__header-brand {
+    display: none;
+  }
+
+  .shell__search {
+    display: inline-flex;
+  }
+
+  .shell__main {
+    grid-area: main;
+    padding: var(--ledgr-space-5);
+    padding-bottom: var(--ledgr-space-7);
+  }
+
+  .shell__tabs {
+    display: none;
+  }
+
+  .user-menu__link--compact-only {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+ * QUICK SEARCH (Ctrl+K)
+ * ==========================================================================
+ */
+
+.dialog-backdrop--top {
+  align-items: flex-start;
+  padding-top: 10vh;
+}
+
+.quick-search {
+  max-width: 36rem;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-4);
+}
+
+.quick-search__field {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  color: var(--ledgr-text-muted);
+}
+
+.quick-search__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.quick-search__option,
+.quick-search__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+  border-radius: var(--ledgr-radius-control);
+  cursor: pointer;
+}
+
+.quick-search__empty {
+  color: var(--ledgr-text-muted);
+  cursor: default;
+}
+
+.quick-search__option.is-active {
+  background-color: var(--ledgr-accent-wash);
+  box-shadow: inset 3px 0 0 var(--ledgr-accent);
+}
+
+.quick-search__screen-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+}
+
+.quick-search__label {
+  flex-grow: 1;
+  font-weight: var(--ledgr-weight-medium);
+}
+
+.quick-search__detail {
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-caption);
+}
+
+/* ==========================================================================
+ * EMAIL VERIFICATION BANNER (IAM-010b)
+ * ==========================================================================
+ */
+
+.verification-banner {
+  align-items: center;
+}
+
+.verification-banner__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.verification-banner__text {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ==========================================================================
+ * SCREEN STATES (ScreenState.tsx) and page furniture
+ * ==========================================================================
+ */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--ledgr-space-3) var(--ledgr-space-4);
+}
+
+.page-header__titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ledgr-space-3);
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.page-header__context {
+  font-size: var(--ledgr-type-small);
+  color: var(--ledgr-text-muted);
+}
+
+.page-header__action {
+  display: flex;
+  gap: var(--ledgr-space-2);
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+
+.skeleton-list__row {
+  height: 3.5rem;
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.error-state {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.error-state__text {
+  flex: 1 1 20rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.error-state__title {
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.error-state__hint {
+  color: var(--ledgr-text-secondary);
+}
+
+.error-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+}
+
+.empty-state__action {
+  margin-top: var(--ledgr-space-2);
+}
+
+/* A section heading row with a count and an action at the right. */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+}
+
+.section-head > .section-head__spacer {
+  flex-grow: 1;
+}
+
+/* Stacked screen: title, then panels. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-5);
+}
+
+.screen__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+}
+
+/* A form laid out as the product's forms are: stacked fields, a two-column
+   grid from 40rem, actions in a row at the end. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.form__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ledgr-space-4);
+}
+
+@media (min-width: 40rem) {
+  .form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form__grid > .form__span {
+    grid-column: 1 / -1;
+  }
+}
+
+.form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+}
+
+.form__hint {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+  align-items: center;
+}
+
+/* A data table: hairline rules, right-aligned figures, sticky head. */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ledgr-type-small);
+}
+
+.table th,
+.table td {
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+  vertical-align: middle;
+}
+
+.table th {
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-bold);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--ledgr-text-secondary);
+  background-color: var(--ledgr-surface-raised);
+  white-space: nowrap;
+}
+
+.table .table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.table .table__muted {
+  color: var(--ledgr-text-muted);
+}
+
+.table tbody tr:hover {
+  background-color: var(--ledgr-surface-raised);
+}
+
+.table tfoot td {
+  font-weight: var(--ledgr-weight-bold);
+  background-color: var(--ledgr-surface-raised);
+  border-top: 2px solid var(--ledgr-border-strong);
+}
+
+.table__row-button {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-weight: inherit;
+  font-size: inherit;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* A drawer for detail beside a list (the ledger's entry detail). */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  background-color: color-mix(in srgb, var(--ledgr-surface-sunken) 60%, transparent);
+}
+
+.drawer {
+  width: min(36rem, 100%);
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+  padding: var(--ledgr-space-5);
+  background-color: var(--ledgr-surface-paper);
+  border-left: 1px solid var(--ledgr-border-subtle);
+  box-shadow: var(--ledgr-shadow-lg);
+}
+
+.drawer__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ledgr-space-3);
+}
+
+.drawer__head h2 {
+  flex-grow: 1;
+}
+
+/* A definition list of facts (invoice detail, customer detail). */
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--ledgr-space-3) var(--ledgr-space-4);
+}
+
+.facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.figure {
+  font-family: var(--ledgr-font-serif);
+  font-weight: var(--ledgr-weight-semibold);
+  font-size: var(--ledgr-type-section);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Segmented sub-navigation inside a screen (ledger views, settings). */
+.subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-1);
+  padding: 3px;
+  background-color: var(--ledgr-surface-raised);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-control);
+  align-self: flex-start;
+}
+
+.subnav a,
+.subnav button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: var(--ledgr-space-1) var(--ledgr-space-3);
+  border: none;
+  border-radius: var(--ledgr-radius-chip);
+  background-color: transparent;
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-medium);
+  text-decoration: none;
+}
+
+.subnav a[aria-current="page"],
+.subnav button[aria-pressed="true"] {
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+  box-shadow: var(--ledgr-shadow-sm);
+}
+
+/* Cards in a responsive grid (the firm portfolio, the legal-form choice). */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--ledgr-space-3);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+  padding: var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+}
+
+.card__title {
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.card__meta {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+}
+
+.card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+  margin-top: auto;
+}
+
+/* A choice card: a radio the whole card is the label for. */
+.choice {
+  position: relative;
+  cursor: pointer;
+  border-width: 2px;
+  transition: border-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+.choice:has(input:checked) {
+  border-color: var(--ledgr-accent);
+  background-color: var(--ledgr-accent-wash);
+}
+
+.choice:has(input:focus-visible) {
+  outline: 3px solid var(--ledgr-border-focus);
+  outline-offset: 2px;
+}
+
+.choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.choice__title {
+  font-weight: var(--ledgr-weight-semibold);
+  font-size: var(--ledgr-type-body);
+}
+
+.choice__body {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-secondary);
+  text-wrap: pretty;
+}
+
+/* Radio options in a row (period scheme). */
+.option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+}
+
+.option-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+  border: 1px solid var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-control);
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-medium);
+  color: var(--ledgr-text-primary);
+}
+
+.option-row label:has(input:checked) {
+  border-color: var(--ledgr-accent);
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent);
+}
+
+.option-row input {
+  width: auto;
+  min-height: 0;
+}
+
+/* Inline lists of key facts (a status line under a heading). */
+.meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+}
+
+/* The document frame (invoice PDF preview). */
+.document-frame {
+  width: 100%;
+  min-height: 32rem;
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  background-color: var(--ledgr-surface-sunken);
+}
+
+/* A timeline (invoice detail). */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+
+.timeline li {
+  display: flex;
+  gap: var(--ledgr-space-3);
+  align-items: baseline;
+}
+
+.timeline__when {
+  flex: none;
+  min-width: 7rem;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-caption);
+}
+
+/* Progress steps (onboarding). */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--ledgr-space-2);
+  counter-reset: step;
+}
+
+.steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+}
+
+.steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  font-weight: var(--ledgr-weight-bold);
+  font-variant-numeric: lining-nums;
+}
+
+.steps li[aria-current="step"] {
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.steps li[aria-current="step"]::before {
+  background-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+}
+
+.steps li[data-done="true"]::before {
+  background-color: var(--ledgr-positive-wash);
+  color: var(--ledgr-positive);
+}
+
+/* A row of figures at the top of a screen (the dashboard, the ledger totals). */
+.figure-row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--ledgr-space-3);
+}

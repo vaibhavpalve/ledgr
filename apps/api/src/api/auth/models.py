@@ -18,6 +18,17 @@ class User:
     email: str
     status: str  # 'active' | 'suspended' | 'deactivated'
     mfa_enrolled: bool
+    # IAM-010b: when this address was proven to belong to the person - by
+    # a verification link (api.auth.email_verification) or by the identity
+    # provider at Google sign-in, which verified it before LEDGR ever saw
+    # it. None means unverified, which is a real, allowed state: such an
+    # account can sign in and onboard but cannot post to the ledger
+    # (require_verified_email). Migration 0049.
+    email_verified_at: datetime | None = None
+
+    @property
+    def email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,3 +61,13 @@ class Session:
     revoked_at: datetime | None
     ip_address: str | None
     user_agent: str | None
+    # FR-FRM-000a / IAM-110: the administration this session currently has
+    # open - what the client switcher writes (migration 0017). Read by
+    # api.tenancy on every request, so a switch takes effect on the very
+    # next request without re-minting a token. None means "not inside any
+    # client".
+    active_administration_id: uuid.UUID | None = None
+
+    @property
+    def mfa_verified(self) -> bool:
+        return self.mfa_verified_at is not None

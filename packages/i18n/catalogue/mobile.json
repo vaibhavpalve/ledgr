@@ -295,6 +295,37 @@
     "mobile.home.item.draft_invoice": {
       "nl": "Conceptfactuur aan {customer} is nog niet verstuurd",
       "en": "Draft invoice to {customer} has not been sent yet"
+    },
+    "mobile.home.state.overdue_invoice": {
+      "note": "The row's state label under its description (.design/Main.dc.html). The reserved colour is spent on this, never on the action.",
+      "nl": "Te laat",
+      "en": "Overdue"
+    },
+    "mobile.home.state.draft_expense": {
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "mobile.home.state.draft_invoice": {
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "mobile.home.action.overdue_invoice": {
+      "note": "The row's one action. Opens the invoice; a reminder e-mail is not built, so the button does not promise one.",
+      "nl": "Openen",
+      "en": "Open"
+    },
+    "mobile.home.action.draft_expense": {
+      "nl": "Aanvullen",
+      "en": "Complete"
+    },
+    "mobile.home.action.draft_invoice": {
+      "nl": "Openen",
+      "en": "Open"
+    },
+    "mobile.approve.empty_hint": {
+      "note": "FR-UX-004: what belongs here and where it comes from.",
+      "nl": "Elke bon die u vastlegt komt hier terecht totdat de gegevens compleet zijn. Leg een bon vast om te beginnen.",
+      "en": "Every receipt you capture lands here until its details are complete. Capture a receipt to get started."
     }
   }
 }

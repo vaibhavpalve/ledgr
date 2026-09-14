@@ -24,6 +24,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { languageHeaders, persistLanguage, reconcileWithAccount } from "./i18n";
 import { ClientHeader } from "./client/ClientHeader";
 import { ClientSwitcher } from "./client/ClientSwitcher";
+import { inRouter } from "./testing/renderApp";
 
 beforeEach(() => {
   localStorage.clear();
@@ -111,7 +112,7 @@ describe("FR-LOC-001a: one click, immediately, without a reload", () => {
     const fetchSpy = vi.fn(() => never);
     vi.stubGlobal("fetch", fetchSpy);
 
-    render(<App language="nl" />);
+    render(inRouter(<App language="nl" />));
     fireEvent.click(screen.getByTestId("language-option-en"));
 
     expect(screen.getByTestId("language-option-en").getAttribute("aria-pressed")).toBe("true");
@@ -313,3 +314,5 @@ describe("FR-UX-007: the API is told which language to answer in", () => {
     expect(languageHeaders("nl")).toEqual({ "Accept-Language": "nl" });
   });
 });
+
+

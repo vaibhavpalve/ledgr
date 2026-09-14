@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .app { display: flex; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden; }
+    .rail { width: 240px; flex: none; background: #FBF8F4; border-right: 1px solid #DCD9D3; display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px; }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .nav { display: flex; flex-direction: column; gap: 20px; }
+    .group { display: flex; flex-direction: column; gap: 2px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px; }
+    .item { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px; }
+    .item.on { background: #D8F4F6; color: #00686C; font-weight: 600; }
+    .badge { font-size: 13px; font-weight: 700; color: #00686C; background: #D8F4F6; border-radius: 999px; padding: 1px 9px; }
+    .item-settings { display: flex; align-items: center; gap: 11px; padding: 16px 8px 9px; border-radius: 9px; color: #5F5A52; font-size: 16px; border-top: 1px solid #DCD9D3; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .bar { flex: none; background: #FBF8F4; border-bottom: 3px solid #59739B; display: flex; align-items: center; gap: 18px; padding: 0 26px; height: 66px; }
+    .marker { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #59739B; color: #FFFFFF; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+    .vsep { width: 1px; height: 30px; background: #DCD9D3; }
+    .search { flex-grow: 1; display: flex; align-items: center; gap: 9px; max-width: 380px; height: 38px; padding: 0 13px; border: 1px solid #8F8878; border-radius: 10px; background: #FFFEFB; font-size: 15px; color: #6E685F; }
+    .kbd { font-size: 12px; font-weight: 600; color: #6E685F; border: 1px solid #8F8878; border-radius: 5px; padding: 1px 6px; background: #FBF8F4; }
+    .avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700; }
+    .page { flex: 1; overflow: hidden; padding: 18px 26px 0; display: flex; flex-direction: column; gap: 14px; }
+    h1 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 600; letter-spacing: -.006em; line-height: 1.2; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 38px; padding: 0 15px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .sel { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 13px; background: #FBF8F4; border: 1px solid #8F8878; border-radius: 10px; font-size: 15px; }
+    .tabs { display: flex; gap: 26px; border-bottom: 1px solid #DCD9D3; }
+    .tab { padding: 8px 2px 10px; font-size: 15px; font-weight: 600; color: #5F5A52; }
+    .tab.on { color: #26221C; box-shadow: inset 0 -2px 0 #00686C; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 5px; background: #EFEAE2; color: #5F5A52; font-size: 12px; font-weight: 600; letter-spacing: .03em; white-space: nowrap; }
+    .chip.caution { background: #FAEBD8; color: #755421; }
+    .cols { grid-template-columns: 100px minmax(0, 1fr) 190px 170px 120px 36px; }
+    .th { display: grid; align-items: center; padding: 0 16px; height: 40px; background: #EFEAE2; border-bottom: 1px solid #8F8878; font-size: 13px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; color: #5F5A52; }
+    .grp { display: grid; align-items: center; padding: 0 16px; height: 34px; background: #F5F0E9; border-bottom: 1px solid #DCD9D3; font-size: 12px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; color: #6E685F; }
+    .tr { display: grid; align-items: center; padding: 0 16px; height: 40px; font-size: 16px; border-bottom: 1px solid #DCD9D3; }
+    .r { text-align: right; } .muted { color: #6E685F; } .sec { color: #5F5A52; }
+  </style>
+</helmet>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <nav class="nav">
+      <div class="group">
+        <div class="eyebrow">Dagelijks werk</div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5"/></svg><span>Start</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg><span>Vastleggen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg><span style="flex-grow: 1;">Beoordelen</span><span class="badge num">7</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg><span>Verkoopfacturen</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.6 16.2c0-2.7 2.2-4.6 4.9-4.6s4.9 1.9 4.9 4.6"/><path d="M13 7.4a2.4 2.4 0 0 1 0 4.6"/><path d="M14.4 12.1c1.8.5 3 1.9 3 4.1"/></svg><span>Klanten</span></div>
+      </div>
+      <div class="group">
+        <div class="eyebrow">De boeken</div>
+        <div class="item on"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg><span>Grootboek</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15"/><circle cx="6.6" cy="6.6" r="2.1"/><circle cx="13.4" cy="13.4" r="2.1"/></svg><span>BTW-aangifte</span></div>
+        <div class="item"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.2v-4.4M10 16.2V4.4M15.5 16.2V9"/></svg><span>Rapportage</span></div>
+      </div>
+    </nav>
+    <div style="flex-grow: 1;"></div>
+    <div class="item-settings"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.6v2.2M10 15.2v2.2M17.4 10h-2.2M4.8 10H2.6M15.23 4.77l-1.56 1.56M6.33 13.67l-1.56 1.56M15.23 15.23l-1.56-1.56M6.33 6.33 4.77 4.77"/></svg><span>Instellingen</span></div>
+  </aside>
+
+  <div class="main">
+    <header class="bar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="marker num">VD</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 16px; font-weight: 600;">Van Doorn Bouw B.V.</span>
+          <span class="num" style="font-size: 13px; color: #6E685F;">KvK 34281907</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+      </div>
+      <div class="vsep"></div>
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 15px;"><span>Boekjaar 2026</span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg></div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+        <span style="flex-grow: 1;">Zoek in alles…</span><span class="kbd">Ctrl K</span>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <span class="avatar">SB</span>
+    </header>
+
+    <main class="page">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: baseline; gap: 14px;">
+          <h1>Grootboek</h1>
+          <span class="num" style="font-size: 15px; color: #6E685F;">62 rekeningen · RGS 3.8 voor een B.V.</span>
+        </div>
+        <div class="tabs">
+          <span class="tab">Saldibalans</span>
+          <span class="tab on">Rekeningschema</span>
+          <span class="tab">Boekingen</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 38px; width: 320px; padding: 0 13px; background: #FFFEFB; border: 1px solid #8F8878; border-radius: 10px; font-size: 15px; color: #6E685F;">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+          <span>Zoek op nummer of naam</span>
+        </div>
+        <div class="sel"><span>Alle rubrieken</span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg></div>
+        <div class="sel"><span>Actieve rekeningen</span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg></div>
+        <div style="flex-grow: 1;"></div>
+        <!-- Progressive (D4): most users never add an account, so this is secondary, not primary -->
+        <span class="btn">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v12M4 10h12"/></svg>
+          <span>Rekening toevoegen</span>
+        </span>
+      </div>
+
+      <div style="flex-grow: 1; min-height: 0; background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="th cols"><span>Rekening</span><span>Naam</span><span>RGS-code</span><span>BTW-standaard</span><span>Herkomst</span><span></span></div>
+
+        <div class="grp cols"><span class="num">1</span><span style="grid-column: span 5;">Vlottende activa</span></div>
+        <div class="tr cols"><span class="num sec">1100</span><span>Bank</span><span class="num sec">BLimBanRba</span><span class="muted">Geen BTW</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">1300</span><span>Debiteuren</span><span class="num sec">BVorDebHad</span><span class="muted">Geen BTW</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">1520</span><span>Te vorderen BTW hoog</span><span class="num sec">BVorVbkTvo</span><span class="muted">Geen BTW</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+
+        <div class="grp cols"><span class="num">4</span><span style="grid-column: span 5;">Kosten</span></div>
+        <div class="tr cols"><span class="num sec">4000</span><span>Lonen en salarissen</span><span class="num sec">WPerLesLon</span><span class="muted">Geen BTW</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">4300</span><span>Onderhoud gebouwen</span><span class="num sec">WBedAdlAnk</span><span class="num">21% hoog</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">4500</span><span>Autokosten</span><span class="num sec">WBedAutBra</span><span class="num">21% hoog</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <!-- A self-added account: caution chip says "not from RGS", nothing more -->
+        <div class="tr cols"><span class="num sec">4510</span><span>Steigerhuur projecten</span><span class="num sec">WBedHuiHui</span><span class="num">21% hoog</span><span><span class="chip caution">Zelf toegevoegd</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">4700</span><span>Kantoorkosten</span><span class="num sec">WBedKanKan</span><span class="num">21% hoog</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+
+        <div class="grp cols"><span class="num">8</span><span style="grid-column: span 5;">Opbrengsten</span></div>
+        <div class="tr cols"><span class="num sec">8000</span><span>Omzet hoog tarief</span><span class="num sec">WOmzNopOlh</span><span class="num">21% hoog</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">8100</span><span>Omzet laag tarief</span><span class="num sec">WOmzNopOll</span><span class="num">9% laag</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+        <div class="tr cols"><span class="num sec">8200</span><span>Omzet BTW verlegd</span><span class="num sec">WOmzNopOlv</span><span class="num">BTW verlegd</span><span><span class="chip">RGS 3.8</span></span><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg></div>
+
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 44px; background: #F5F0E9; border-top: 1px solid #DCD9D3; font-size: 13px; color: #6E685F;">
+          <span>Een rekening met boekingen kan niet worden verwijderd — alleen gesloten voor nieuwe boekingen.</span>
+          <div style="flex-grow: 1;"></div>
+          <span class="num">62 rekeningen · 1 zelf toegevoegd</span>
+        </div>
+      </div>
+      <div style="flex: none; height: 12px;"></div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

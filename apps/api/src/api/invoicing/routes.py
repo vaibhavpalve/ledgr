@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.audit.log import AuditCategory, AuditLog
 from api.audit.repository import SqlAuditRepository
+from api.auth.email_verification import require_verified_email
 from api.authz.dependencies import (
     administration_from_path,
     get_authorization_service,
@@ -638,6 +639,9 @@ async def issue_invoice(
             audit=AuditCategory.CONFIGURATION,
         )
     ),
+    # IAM-010b: issuing posts to the ledger, the one action an unverified
+    # address cannot perform - see api.auth.email_verification.
+    __: None = Depends(require_verified_email),
 ) -> dict[str, object]:
     """FR-AR-003, FR-AR-004, FR-GL-006 and FR-TPL-017: check, resolve the
     posting, number, freeze, post, and store the PDF as issued - in one
@@ -736,6 +740,8 @@ async def credit_invoice(
             audit=AuditCategory.CONFIGURATION,
         )
     ),
+    # IAM-010b: a credit note is issued, and issuing posts - same gate as issue.
+    __: None = Depends(require_verified_email),
 ) -> dict[str, object]:
     """FR-AR-001's credit: a NEW issued document pointing at the original.
 

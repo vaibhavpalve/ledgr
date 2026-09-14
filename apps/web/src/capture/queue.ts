@@ -74,7 +74,15 @@ export function captureQueue(): CaptureQueue {
  * may have switched language, and FR-UX-007 wants any refusal to come back in
  * the one they are actually reading.
  */
-export function startCaptureUploads(currentLanguage: () => Language): QueueUploader {
+export function startCaptureUploads(
+  currentLanguage: () => Language,
+  /**
+   * The authenticated fetch (`session/authenticatedFetch.ts`): an upload
+   * needs the bearer token like every other request, and this is the one
+   * transport that did not carry it before the routed app existed.
+   */
+  fetchImpl: typeof fetch = fetch,
+): QueueUploader {
   // Asked for once, early, and not waited on. An origin whose storage is
   // best-effort can be cleared by the browser with no warning and no event,
   // which for this queue means a photograph vanishing between the car park and
@@ -83,7 +91,7 @@ export function startCaptureUploads(currentLanguage: () => Language): QueueUploa
 
   uploader ??= new QueueUploader({
     queue: captureQueue(),
-    transport: new FetchTransport(),
+    transport: new FetchTransport(fetchImpl),
     connectivity: new BrowserConnectivity(),
     clock: { now: () => Date.now() },
     scheduler: {

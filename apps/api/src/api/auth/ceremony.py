@@ -24,10 +24,20 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 CeremonyKind = Literal[
-    "passkey_registration", "passkey_authentication", "google_oidc", "google_signup"
+    "passkey_registration",
+    "passkey_authentication",
+    "google_oidc",
+    "google_signup",
+    "email_verification",
 ]
 
 _TTL = timedelta(minutes=5)
+# IAM-010b. A verification link is read from a mailbox, not completed in the
+# same sitting as a WebAuthn prompt, so the five-minute TTL the sign-in
+# ceremonies share would expire most of them before they were opened. A day
+# is the conventional window; a link is single-use and superseded by any
+# later resend regardless, so the longer life is not a standing replay.
+EMAIL_VERIFICATION_TTL = timedelta(hours=24)
 
 
 class CeremonyError(Exception):
@@ -84,6 +94,10 @@ class CeremonyRepository(Protocol):
     async def create_google_signup_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID: ...
 
     async def consume_google_signup_ceremony(self, ticket_id: uuid.UUID) -> uuid.UUID: ...
+
+    async def create_email_verification_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID: ...
+
+    async def consume_email_verification_ceremony(self, token_id: uuid.UUID) -> uuid.UUID: ...
 
 
 def _utcnow() -> datetime:
@@ -211,6 +225,53 @@ class SqlCeremonyRepository:
                 "RETURNING user_id"
             ),
             {"id": str(ticket_id), "now": _utcnow()},
+        )
+        row = result.first()
+        if row is None or row.user_id is None:
+            raise CeremonyNotFoundError
+        user_id: uuid.UUID = row.user_id
+        return user_id
+
+    async def create_email_verification_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID:
+        """IAM-010b's single-use token, the same shape as the google_signup
+        ticket (migration 0049 widens the kind CHECK the way 0047 did): the
+        row's own id is the secret in the link. Postgres' gen_random_uuid()
+        is 122 bits of CSPRNG output, which is more entropy than the
+        24-byte `state` the Google ceremony already stakes its replay
+        protection on.
+
+        Any earlier unconsumed link for this user is retired first, so
+        "request a new link" means exactly that - the newest one works and
+        an older one found in a forwarded mail does not.
+        """
+        now = _utcnow()
+        await self._session.execute(
+            text(
+                "UPDATE auth_ceremony SET consumed_at = :now "
+                "WHERE kind = 'email_verification' AND user_id = :user_id "
+                "AND consumed_at IS NULL"
+            ),
+            {"user_id": str(user_id), "now": now},
+        )
+        result = await self._session.execute(
+            text(
+                "INSERT INTO auth_ceremony (kind, user_id, expires_at) "
+                "VALUES ('email_verification', :user_id, :expires_at) RETURNING id"
+            ),
+            {"user_id": str(user_id), "expires_at": now + EMAIL_VERIFICATION_TTL},
+        )
+        ceremony_id: uuid.UUID = result.scalar_one()
+        return ceremony_id
+
+    async def consume_email_verification_ceremony(self, token_id: uuid.UUID) -> uuid.UUID:
+        result = await self._session.execute(
+            text(
+                "UPDATE auth_ceremony SET consumed_at = :now "
+                "WHERE id = :id AND kind = 'email_verification' "
+                "AND consumed_at IS NULL AND expires_at > :now "
+                "RETURNING user_id"
+            ),
+            {"id": str(token_id), "now": _utcnow()},
         )
         row = result.first()
         if row is None or row.user_id is None:

@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 // Tokens FIRST: every stylesheet below reads `var(--ledgr-*)`, and a custom
 // property referenced before it is declared resolves to nothing rather than to
 // a sensible default (ADR-055).
@@ -14,9 +15,13 @@ if (!rootElement) {
   throw new Error("Root element not found");
 }
 
+// The router lives here, not in `App`, so a test can mount `App` inside a
+// `MemoryRouter` at any URL (ADR-058).
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );
 

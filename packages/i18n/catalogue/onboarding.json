@@ -1,0 +1,233 @@
+{
+  "namespace": "onboarding",
+  "note": "The onboarding wizard (FR-ONB-004 company and legal form, FR-ONB-005 chart seeded from RGS, FR-ONB-006 fiscal year) and FR-ONB-001b's firm variant. Plain language on the surface, the accounting consequence in one line (D2); only what is needed to start (FR-UX-006).",
+  "messages": {
+    "onboarding.title": {
+      "nl": "Uw administratie inrichten",
+      "en": "Set up your books"
+    },
+    "onboarding.title_firm": {
+      "note": "FR-ONB-001b: a firm adding a client administration — same wizard, different framing.",
+      "nl": "Nieuwe klant toevoegen",
+      "en": "Add a client"
+    },
+    "onboarding.intro": {
+      "nl": "Drie korte stappen, en u kunt uw eerste bon vastleggen. Alles wat u nu overslaat, kunt u later bij Instellingen aanvullen.",
+      "en": "Three short steps and you can capture your first receipt. Anything you skip now can be filled in later under Settings."
+    },
+    "onboarding.intro_firm": {
+      "nl": "Vul de gegevens van de klant in. Het rekeningschema wordt voor u aangemaakt op basis van de rechtsvorm.",
+      "en": "Enter the client's details. The chart of accounts is created for you from the legal form."
+    },
+    "onboarding.progress_label": {
+      "note": "Accessible name of the step indicator.",
+      "nl": "Voortgang",
+      "en": "Progress"
+    },
+    "onboarding.step.company": {
+      "nl": "Bedrijf",
+      "en": "Company"
+    },
+    "onboarding.step.fiscal_year": {
+      "nl": "Boekjaar",
+      "en": "Fiscal year"
+    },
+    "onboarding.step.review": {
+      "nl": "Controleren",
+      "en": "Review"
+    },
+    "onboarding.legal_form.label": {
+      "nl": "Rechtsvorm",
+      "en": "Legal form"
+    },
+    "onboarding.legal_form.hint": {
+      "note": "D2: why the question is asked, said plainly — the chart seeder picks the RGS subset by it (api.ledger.chart).",
+      "nl": "Bepaalt welk rekeningschema u krijgt. Kies wat op uw KvK-uittreksel staat.",
+      "en": "Decides which chart of accounts you get. Choose what your KvK extract says."
+    },
+    "onboarding.legal_form.eenmanszaak.title": {
+      "note": "Statutory form names stay Dutch in both languages (FR-LOC-001c): they are what the KvK extract says.",
+      "identical": true,
+      "nl": "Eenmanszaak",
+      "en": "Eenmanszaak"
+    },
+    "onboarding.legal_form.eenmanszaak.consequence": {
+      "nl": "U en het bedrijf zijn één. Privéopnames en -stortingen krijgen eigen rekeningen; er is geen aandelenkapitaal.",
+      "en": "You and the business are one. Private withdrawals and deposits get their own accounts; there is no share capital."
+    },
+    "onboarding.legal_form.vof.title": {
+      "identical": true,
+      "nl": "VOF",
+      "en": "VOF"
+    },
+    "onboarding.legal_form.vof.consequence": {
+      "nl": "Meerdere vennoten. Het kapitaal en de privéopnames worden per vennoot bijgehouden.",
+      "en": "Several partners. Capital and private withdrawals are tracked per partner."
+    },
+    "onboarding.legal_form.bv.title": {
+      "identical": true,
+      "nl": "BV",
+      "en": "BV"
+    },
+    "onboarding.legal_form.bv.consequence": {
+      "nl": "Een aparte rechtspersoon. Aandelenkapitaal, een rekening-courant met de directie en vennootschapsbelasting.",
+      "en": "A separate legal entity. Share capital, a current account with the director, and corporate income tax."
+    },
+    "onboarding.legal_form.stichting.title": {
+      "identical": true,
+      "nl": "Stichting",
+      "en": "Stichting"
+    },
+    "onboarding.legal_form.stichting.consequence": {
+      "nl": "Geen eigenaren en geen winstuitkering. Het resultaat gaat naar het stichtingsvermogen.",
+      "en": "No owners and no profit distribution. The result goes to the foundation's equity."
+    },
+    "onboarding.legal_form.vereniging.title": {
+      "identical": true,
+      "nl": "Vereniging",
+      "en": "Vereniging"
+    },
+    "onboarding.legal_form.vereniging.consequence": {
+      "nl": "Leden in plaats van eigenaren. Contributies zijn de belangrijkste opbrengst; het resultaat gaat naar het verenigingsvermogen.",
+      "en": "Members instead of owners. Membership fees are the main income; the result goes to the association's equity."
+    },
+    "onboarding.company.legal_name": {
+      "nl": "Statutaire naam",
+      "en": "Legal name"
+    },
+    "onboarding.company.legal_name_hint": {
+      "nl": "Zoals ingeschreven bij de KvK. Komt op elke factuur.",
+      "en": "As registered with the KvK. Appears on every invoice."
+    },
+    "onboarding.company.trade_name": {
+      "nl": "Handelsnaam",
+      "en": "Trade name"
+    },
+    "onboarding.company.trade_name_hint": {
+      "nl": "Alleen als die afwijkt van de statutaire naam.",
+      "en": "Only if it differs from the legal name."
+    },
+    "onboarding.company.kvk_number": {
+      "nl": "KvK-nummer",
+      "en": "KvK number"
+    },
+    "onboarding.company.kvk_hint": {
+      "nl": "Acht cijfers. Mag u later invullen.",
+      "en": "Eight digits. Can be added later."
+    },
+    "onboarding.company.kvk_invalid": {
+      "nl": "Een KvK-nummer bestaat uit precies acht cijfers.",
+      "en": "A KvK number is exactly eight digits."
+    },
+    "onboarding.company.vat_number": {
+      "nl": "BTW-identificatienummer",
+      "en": "BTW identification number"
+    },
+    "onboarding.company.vat_hint": {
+      "nl": "Bijvoorbeeld NL001234567B01. Mag u later invullen.",
+      "en": "For example NL001234567B01. Can be added later."
+    },
+    "onboarding.company.vat_invalid": {
+      "nl": "Dit ziet er niet uit als een BTW-identificatienummer. Nederlandse nummers zijn NL, negen cijfers, B en twee cijfers.",
+      "en": "This does not look like a BTW identification number. Dutch numbers are NL, nine digits, B and two digits."
+    },
+    "onboarding.company.formatting_locale": {
+      "nl": "Notatie van bedragen en datums",
+      "en": "Number and date format"
+    },
+    "onboarding.company.formatting_locale.nl_nl": {
+      "note": "The example figures are the point of the label: a person picks the notation they recognise.",
+      "nl": "Nederlands — € 1.234,56 · 14-09-2026",
+      "en": "Dutch — € 1.234,56 · 14-09-2026"
+    },
+    "onboarding.company.formatting_locale.en_gb": {
+      "nl": "Engels — €1,234.56 · 14/09/2026",
+      "en": "English — €1,234.56 · 14/09/2026"
+    },
+    "onboarding.company.formatting_locale_hint": {
+      "note": "FR-LOC-002: the administration's locale, not the reader's language.",
+      "nl": "Geldt voor deze administratie, voor iedereen die erin werkt — los van de taal van de app.",
+      "en": "Applies to these books, for everyone who works in them — independent of the app's language."
+    },
+    "onboarding.company.incomplete": {
+      "nl": "Kies een rechtsvorm en vul de statutaire naam in om verder te gaan.",
+      "en": "Choose a legal form and enter the legal name to continue."
+    },
+    "onboarding.action.next": {
+      "nl": "Volgende",
+      "en": "Next"
+    },
+    "onboarding.action.creating": {
+      "nl": "Bezig met aanmaken…",
+      "en": "Creating…"
+    },
+    "onboarding.action.create": {
+      "nl": "Administratie aanmaken",
+      "en": "Create my books"
+    },
+    "onboarding.action.create_firm": {
+      "nl": "Klant toevoegen",
+      "en": "Add client"
+    },
+    "onboarding.fiscal_year.intro": {
+      "note": "FR-ONB-006, D2: the calendar year is the default and the common case; a short first year is the exception the form allows.",
+      "nl": "Meestal is het boekjaar gelijk aan het kalenderjaar. Bent u dit jaar gestart? Kies dan de startdatum als begin: een kort eerste boekjaar mag.",
+      "en": "The fiscal year is usually the calendar year. Started this year? Use your start date as the beginning: a short first year is allowed."
+    },
+    "onboarding.fiscal_year.start": {
+      "nl": "Begin van het boekjaar",
+      "en": "Start of the fiscal year"
+    },
+    "onboarding.fiscal_year.end": {
+      "nl": "Einde van het boekjaar",
+      "en": "End of the fiscal year"
+    },
+    "onboarding.fiscal_year.scheme": {
+      "nl": "Periodes",
+      "en": "Periods"
+    },
+    "onboarding.fiscal_year.scheme.monthly": {
+      "nl": "Per maand",
+      "en": "Monthly"
+    },
+    "onboarding.fiscal_year.scheme.quarterly": {
+      "nl": "Per kwartaal",
+      "en": "Quarterly"
+    },
+    "onboarding.fiscal_year.scheme_hint": {
+      "nl": "Kies wat past bij hoe vaak u BTW-aangifte doet. Per kwartaal is voor de meeste kleine ondernemers de norm.",
+      "en": "Match how often you file BTW. Quarterly is the norm for most small businesses."
+    },
+    "onboarding.fiscal_year.invalid": {
+      "nl": "De einddatum moet na de begindatum liggen.",
+      "en": "The end date must be after the start date."
+    },
+    "onboarding.fiscal_year.preview_heading": {
+      "nl": "Dit worden uw periodes",
+      "en": "These will be your periods"
+    },
+    "onboarding.fiscal_year.period_count": {
+      "nl": { "one": "{count} periode", "other": "{count} periodes" },
+      "en": { "one": "{count} period", "other": "{count} periods" }
+    },
+    "onboarding.review.intro": {
+      "nl": "Controleer de gegevens. Na het aanmaken wordt het rekeningschema ingericht en kunt u direct beginnen.",
+      "en": "Check the details. Once created, the chart of accounts is set up and you can start straight away."
+    },
+    "onboarding.review.year_range": {
+      "note": "{start} and {end} are already formatted dates.",
+      "nl": "{start} t/m {end}",
+      "en": "{start} to {end}"
+    },
+    "onboarding.review.chart_note": {
+      "note": "FR-ONB-005: the RGS-seeded chart, said plainly. {form} is the chosen legal form's title.",
+      "nl": "Het rekeningschema wordt aangemaakt volgens het Referentie Grootboekschema (RGS) voor een {form}. U hoeft hier niets voor te doen.",
+      "en": "The chart of accounts is created from the Referentie Grootboekschema (RGS) for a {form}. There is nothing you need to do for this."
+    },
+    "onboarding.review.field_problem": {
+      "note": "{field} is the machine field name the server flagged; shown so the person knows which step to go back to.",
+      "nl": "Het gaat om het veld: {field}.",
+      "en": "The field concerned: {field}."
+    }
+  }
+}

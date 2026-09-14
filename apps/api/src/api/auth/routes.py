@@ -21,15 +21,18 @@ already counts a passkey as a full MFA factor, so successfully
 authenticating with one is treated as having satisfied MFA in the same
 step, not merely as identifying the user (see login_passkey_finish).
 
---- What this deliberately does not build yet ---
+--- Email verification (IAM-010b) ---
 
-  * Email verification before password/passkey signup. IAM-010b's
-    exemption is real for Google specifically (the identity provider
-    verified it); for password and passkey signup this module marks the
-    account active immediately. A known, named gap - not the one this
-    change exists to close, and adding it later needs no rework here (a
-    `users.email_verified_at` column and a gate on it, nothing this module
-    would have to unwind).
+ADR-054 marked a password signup's account active immediately and named
+verification as the one gap it left open. Closed by ADR-060: `signup()`
+issues a single-use link (api.auth.email_verification) after its own
+transaction commits, `verify_email` consumes it with no session at all (the
+link is opened wherever the mail is read - api.tenancy.EXEMPT_PATHS), and
+`resend_verification_email` is the signed-in account holder asking again.
+An unverified account signs in, enrols MFA and onboards as before; only
+posting to the ledger is gated (api.auth.email_verification.
+require_verified_email). Google-created accounts are verified at creation -
+the identity provider already did it (api.auth.google_signin).
 
 --- Google sign-in creating a brand-new account ---
 
@@ -58,7 +61,7 @@ from typing import Any, Literal
 from fastapi import Depends, FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from webauthn.helpers import (
     parse_authentication_credential_json,
     parse_registration_credential_json,
@@ -69,6 +72,12 @@ from api.audit.repository import SqlAuditRepository
 from api.audit.trail import AuditTrail
 from api.auth.breach_check import build_breach_checker
 from api.auth.ceremony import CeremonyNotFoundError, SqlCeremonyRepository
+from api.auth.email_verification import (
+    EmailAlreadyVerifiedError,
+    EmailVerificationService,
+    UnknownUserError,
+    VerificationLinkInvalidError,
+)
 from api.auth.google_oidc import (
     InvalidGoogleIdentityError,
     UnverifiedGoogleEmailError,
@@ -106,11 +115,18 @@ from api.auth.totp import (
 from api.auth.totp_repository import SqlTotpRepository
 from api.config import settings
 from api.crypto.kms import build_kms
-from api.db import get_bootstrap_db_session, get_db_session
-from api.i18n.http import message, problem
+from api.db import engine, get_bootstrap_db_session, get_db_session
+from api.i18n.http import message, problem, request_language
+from api.i18n.language import Language, parse_language
+from api.mail.outbox import get_email_sender
 from api.tenancy import TenantContext, get_tenant_context
 
 _BASE = "/v1/auth"
+
+# For the verification mail's own transaction after signup commits - the
+# same "a session cannot be shared across transactions" reason
+# api.mfa_middleware builds its own.
+_post_commit_session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
 # Reachable with a valid, tenant-scoped token whose mfa_verified is still
 # False - the enrolment and step-up-verification endpoints themselves, plus
@@ -218,6 +234,14 @@ def register(app: FastAPI) -> None:
         name="signup_google",
     )
 
+    app.add_api_route(f"{_BASE}/verify-email", verify_email, methods=["POST"], name="verify_email")
+    app.add_api_route(
+        f"{_BASE}/verify-email/resend",
+        resend_verification_email,
+        methods=["POST"],
+        name="resend_verification_email",
+    )
+
 
 # ---------------------------------------------------------------------------
 # Composition
@@ -243,6 +267,12 @@ def _session_service_for(session: AsyncSession) -> SessionService:
 
 def _audit_trail_for(session: AsyncSession) -> AuditTrail:
     return AuditTrail(AuditLog(SqlAuditRepository(session)))
+
+
+def _email_verification_for(session: AsyncSession) -> EmailVerificationService:
+    return EmailVerificationService(
+        SqlUserRepository(session), SqlCeremonyRepository(session), get_email_sender()
+    )
 
 
 async def _record_authentication_event(
@@ -403,7 +433,125 @@ async def signup(
         request=request,
     )
     await session.commit()
+
+    # IAM-010b, after the commit and in its own transaction: an e-mail is an
+    # irreversible act by somebody else's server, so it must not go out for
+    # a signup that rolled back, and a mail provider being down must not
+    # undo a signup that succeeded (the person can ask for a new link).
+    # The language is the signup screen's (Accept-Language): the one
+    # language this person is known to read, before any stored preference.
+    async with _post_commit_session_factory() as mail_session, mail_session.begin():
+        await _email_verification_for(mail_session).issue(
+            user_id=result.user.id, email=result.user.email, language=request_language(request)
+        )
     return _auth_response(token=token, mfa_verified=False)
+
+
+# ---------------------------------------------------------------------------
+# E-mail verification - IAM-010b
+# ---------------------------------------------------------------------------
+
+
+class VerifyEmailBody(BaseModel):
+    token: uuid.UUID
+
+
+async def verify_email(
+    request: Request,
+    body: VerifyEmailBody,
+    session: AsyncSession = Depends(get_bootstrap_db_session),
+) -> dict[str, Any]:
+    """Consumes the link's token and stamps the address. No bearer token:
+    the link is opened wherever the mail is read, and the single-use token
+    is the proof (api.tenancy.EXEMPT_PATHS). A second click is refused
+    like an expired link; the address stays verified from the first.
+    """
+    try:
+        user_id = await _email_verification_for(session).verify(body.token)
+    except (VerificationLinkInvalidError, UnknownUserError) as exc:
+        raise problem(
+            request, 410, "errors.verification_link_invalid", reason="verification_link_invalid"
+        ) from exc
+
+    # Recorded against the user's home organization (IAM-090); a bare Google
+    # user with no organization yet cannot reach this path (they are already
+    # verified), but a missing home is answered with no audit entry rather
+    # than a failed verification.
+    organization_id = await _home_organization_id(session, user_id)
+    if organization_id is not None:
+        await _record_authentication_event(
+            session,
+            organization_id=organization_id,
+            actor_user_id=user_id,
+            action="email_verify",
+            source_ip=request.client.host if request.client else None,
+            request=request,
+            set_org_context=True,
+        )
+    await session.commit()
+    return {"status": "verified"}
+
+
+async def resend_verification_email(
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, Any]:
+    """A new link for the signed-in caller's own address, retiring the old
+    one. Rate-limited per account (IAM-019's sliding window) so a stuck
+    "resend" button cannot turn LEDGR into a mail cannon aimed at its own
+    customer. The language is the stored preference when there is one
+    (this is a server-initiated mail in the api.i18n.language sense), else
+    the request's.
+    """
+    user_id = await _require_user(request, tenant)
+    user = await SqlUserRepository(session).get_by_id(user_id)
+    assert user is not None, "a verified tenant context named a nonexistent user"
+    if user.email_verified:
+        raise problem(
+            request, 409, "errors.email_already_verified", reason="email_already_verified"
+        )
+
+    rate_limiter = AuthRateLimiter(SqlAuthAttemptRepository(session), LoggingAnomalyAlerter())
+    decision = await rate_limiter.check(endpoint="verify_email_resend", account_key=user.email)
+    if not decision.allowed:
+        raise problem(
+            request,
+            429,
+            "errors.rate_limited",
+            reason=decision.reason,
+            retry_after_seconds=decision.retry_after_seconds,
+        )
+    await rate_limiter.record_attempt(
+        endpoint="verify_email_resend",
+        account_key=user.email,
+        source_ip=request.client.host if request.client else None,
+        outcome="success",
+    )
+
+    stored = await session.execute(
+        text("SELECT language FROM users WHERE id = :user_id"), {"user_id": str(user_id)}
+    )
+    language: Language = parse_language(stored.scalar_one_or_none()) or request_language(request)
+    try:
+        issued = await _email_verification_for(session).issue(
+            user_id=user_id, email=user.email, language=language
+        )
+    except EmailAlreadyVerifiedError as exc:  # pragma: no cover - checked above
+        raise problem(
+            request, 409, "errors.email_already_verified", reason="email_already_verified"
+        ) from exc
+
+    await _record_authentication_event(
+        session,
+        organization_id=tenant.organization_id,
+        actor_user_id=user_id,
+        action="email_verification_resend",
+        source_ip=request.client.host if request.client else None,
+        request=request,
+    )
+    await session.commit()
+    return {"status": "sent", "email": user.email, "accepted": issued.outcome.accepted}
 
 
 # ---------------------------------------------------------------------------

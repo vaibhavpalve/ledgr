@@ -550,6 +550,235 @@ export interface DashboardActionItemView {
   readonly description: string;
 }
 
+/* ==========================================================================
+ * SESSION BOOTSTRAP — `GET /v1/me` (docs/founder-review-2026-09-14.md §4.1)
+ * ==========================================================================
+ *
+ * Field names match the wire exactly, the same rule `ExpenseView` follows:
+ * this shape is placed on screen more or less as received (the header, the
+ * settings screens, the firm portfolio), and a hand-written camelCase mirror
+ * would be the second shape. `ClientBadge` above is the deliberate exception
+ * and says why.
+ */
+
+/** FR-ONB-004's list, mirroring `api.ledger.chart.LegalForm` and migration 0024's CHECK. */
+export const LEGAL_FORMS = ["eenmanszaak", "vof", "bv", "stichting", "vereniging"] as const;
+export type LegalForm = (typeof LEGAL_FORMS)[number];
+
+/** FR-ONB-006, mirroring `api.ledger.fiscal.PeriodScheme`. */
+export const PERIOD_SCHEMES = ["monthly", "quarterly"] as const;
+export type PeriodScheme = (typeof PERIOD_SCHEMES)[number];
+
+export interface FiscalYearView {
+  readonly id: string;
+  /** ISO calendar dates, never instants — see `formatDate` in @ledgr/i18n. */
+  readonly start_date: string;
+  readonly end_date: string;
+  readonly period_scheme: PeriodScheme;
+  readonly is_current: boolean;
+}
+
+/** One period of `GET /v1/fiscal-years/preview` — `api.ledger.fiscal.DerivedPeriod`. */
+export interface FiscalYearPreviewPeriodView {
+  readonly period_number: number;
+  readonly start_date: string;
+  readonly end_date: string;
+}
+
+/**
+ * One administration the caller holds a grant on — the `administrations[]`
+ * entry of `GET /v1/me`, and the response of `POST /v1/administrations`.
+ * `role`/`role_is_system` follow `SwitcherEntry`'s reasoning: the NAME is the
+ * identifier and is rendered through `roleLabel`.
+ */
+export interface AdministrationView {
+  readonly id: string;
+  readonly legal_name: string;
+  readonly trade_name: string | null;
+  /** Whatever the administration recorded (FR-ONB-002) — canonicalised server-side to `LegalForm`. */
+  readonly legal_form: string;
+  readonly kvk_number: string | null;
+  readonly vat_number: string | null;
+  /** FR-LOC-002: how figures in THESE books are written, for every reader. */
+  readonly formatting_locale: string;
+  readonly colour: ClientColour;
+  readonly initials: string;
+  readonly role: string;
+  readonly role_is_system: boolean;
+  readonly fiscal_years: readonly FiscalYearView[];
+}
+
+/** `POST /v1/administrations`' answer: the administration plus what seeding it produced (FR-ONB-005). */
+export interface CreatedAdministrationView extends AdministrationView {
+  readonly chart: { readonly seeded: number; readonly rgs_version: string };
+}
+
+/** `kind` is `business` (Model B) or `firm` (Model A) — FR-MDL-001. */
+export type OrganizationKind = "business" | "firm";
+
+export interface MeView {
+  readonly user: {
+    readonly id: string;
+    readonly email: string;
+    readonly language: string | null;
+    /** IAM-010b. False shows the persistent verification banner. */
+    readonly email_verified: boolean;
+  };
+  readonly organization: {
+    readonly id: string;
+    readonly name: string;
+    readonly kind: OrganizationKind;
+    readonly kvk_number: string | null;
+  };
+  readonly administrations: readonly AdministrationView[];
+  readonly active_administration_id: string | null;
+  readonly mfa: { readonly has_totp: boolean; readonly has_passkey: boolean };
+  readonly onboarding: { readonly needs_administration: boolean };
+}
+
+/* ==========================================================================
+ * ACCOUNT SECURITY — §4.4
+ * ==========================================================================
+ */
+
+/** One row of `GET /v1/me/sessions` — `api.auth.models.Session`, minus the secret. */
+export interface SessionView {
+  readonly id: string;
+  readonly created_at: string;
+  readonly last_active_at: string;
+  readonly expires_at: string;
+  /** The session this request itself rides on — the one that cannot be revoked from here without signing out. */
+  readonly is_current: boolean;
+}
+
+/** One row of `GET /v1/me/passkeys` — `api.auth.passkeys.Passkey`, minus the key material. */
+export interface PasskeyView {
+  readonly id: string;
+  readonly name: string;
+  readonly created_at: string;
+  readonly last_used_at: string | null;
+}
+
+/* ==========================================================================
+ * CUSTOMERS — `api.customers.routes._customer_json`, field for field
+ * ==========================================================================
+ */
+
+/** Mirrors `api.customers.model.VatNumberStatus`: the VIES verdict travels WITH the number (FR-ONB-003). */
+export type VatNumberStatus = "unchecked" | "valid" | "invalid" | "unavailable";
+
+/** Mirrors `api.customers.model.DeliveryChannel` (FR-AR-005). */
+export const DELIVERY_CHANNELS = ["email", "peppol"] as const;
+export type DeliveryChannel = (typeof DELIVERY_CHANNELS)[number];
+
+export interface CustomerView {
+  readonly id: string;
+  readonly name: string;
+  readonly trade_name: string | null;
+  readonly address_line1: string | null;
+  readonly address_line2: string | null;
+  readonly postal_code: string | null;
+  readonly city: string | null;
+  readonly country: string;
+  /** FR-AR-003: street, postcode and city — returned rather than inferred from four nullable fields. */
+  readonly address_is_complete: boolean;
+  readonly kvk_number: string | null;
+  readonly vat_number: string | null;
+  readonly vat_number_status: VatNumberStatus;
+  readonly vat_number_checked_at: string | null;
+  readonly vat_number_checked_name: string | null;
+  readonly vat_number_consultation_number: string | null;
+  readonly peppol_participant_id: string | null;
+  readonly peppol_checked_at: string | null;
+  readonly is_deliverable_over_peppol: boolean;
+  readonly payment_terms_days: number;
+  /** NFR-031: a decimal STRING; null is "no limit set", which is not "0". */
+  readonly credit_limit: string | null;
+  readonly delivery_channel: DeliveryChannel;
+  readonly invoice_email: string | null;
+  readonly language: string;
+  readonly notes: string | null;
+  readonly archived_at: string | null;
+  readonly erased_at: string | null;
+}
+
+/* ==========================================================================
+ * LEDGER READS — §4.3 (the Grootboek screen)
+ * ==========================================================================
+ *
+ * Every amount is a STRING (NFR-031).
+ */
+
+/** Mirrors `api.ledger.model.AccountType`. */
+export const ACCOUNT_TYPES = ["asset", "liability", "equity", "revenue", "expense"] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+
+/** One row of `GET .../chart-of-accounts` — `api.ledger.chart.ChartAccount`. */
+export interface ChartAccountView {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly account_type: AccountType;
+  readonly status: "active" | "blocked";
+  readonly rgs_code: string | null;
+  readonly control_kind: string | null;
+}
+
+/** One row of `GET .../trial-balance` — `api.ledger.model.TrialBalanceRow`. */
+export interface TrialBalanceRowView {
+  readonly account_id: string;
+  readonly account_code: string;
+  readonly account_name: string;
+  readonly account_type: AccountType;
+  readonly total_debit: string;
+  readonly total_credit: string;
+  readonly balance: string;
+}
+
+export interface TrialBalanceView {
+  readonly fiscal_year_id: string;
+  readonly rows: readonly TrialBalanceRowView[];
+  readonly total_debit: string;
+  readonly total_credit: string;
+}
+
+/** One line of a journal entry — `api.ledger.model.PostedLine`, with the account named for display. */
+export interface JournalLineView {
+  readonly id: string;
+  readonly line_number: number;
+  readonly account_id: string;
+  readonly account_code: string;
+  readonly account_name: string;
+  readonly debit: string;
+  readonly credit: string;
+  readonly description: string | null;
+}
+
+/** One row of `GET .../journal-entries` — `api.ledger.model.PostedEntry` without its lines. */
+export interface JournalEntrySummaryView {
+  readonly id: string;
+  readonly entry_number: number;
+  readonly entry_date: string;
+  readonly description: string;
+  readonly journal_code: string;
+  readonly document_reference: string | null;
+  /** FR-GL-003: set when this entry reverses another — the only kind of row that earns a marker. */
+  readonly reverses_entry_id: string | null;
+  readonly total: string;
+}
+
+/** Cursor pagination, the shape §4.3 names: `cursor` is opaque and `null` when the list is exhausted. */
+export interface JournalEntryPageView {
+  readonly entries: readonly JournalEntrySummaryView[];
+  readonly next_cursor: string | null;
+}
+
+export interface JournalEntryView extends JournalEntrySummaryView {
+  readonly posted_at: string;
+  readonly source_system: string;
+  readonly lines: readonly JournalLineView[];
+}
+
 export interface SwitcherEntry extends ClientBadge {
   /**
    * The role's NAME, which is its identifier — authorization matches on it and

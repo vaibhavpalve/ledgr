@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .brand { display: flex; align-items: center; gap: 9px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em; color: #26221C; }
+    .seg { display: inline-flex; align-items: center; gap: 2px; padding: 3px; background: #EFEAE2; border: 1px solid #DCD9D3; border-radius: 10px; }
+    .seg span { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; color: #5F5A52; }
+    .seg span.on { background: #FBF8F4; color: #00686C; font-weight: 600; box-shadow: 0 1px 2px rgba(38,34,28,.06); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 48px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .label { font-size: 13px; font-weight: 600; color: #5F5A52; }
+    .input { display: flex; align-items: center; height: 48px; padding: 0 13px; background: #FFFEFB; border: 1px solid #8F8878; border-radius: 10px; font-size: 17px; }
+    .help { font-size: 13px; line-height: 1.35; color: #6E685F; }
+    .card { position: relative; display: flex; flex-direction: column; gap: 3px; min-height: 84px; padding: 14px 16px; background: #FBF8F4; border: 1px solid #8F8878; border-radius: 14px; }
+    .card.on { border: 2px solid #00686C; background: #D8F4F6; padding: 13px 15px; }
+    .card .t { font-size: 17px; font-weight: 600; line-height: 1.3; }
+    .card .d { font-size: 14px; line-height: 1.4; color: #6E685F; text-wrap: pretty; }
+    .period { display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 6px; background: #F5F0E9; border: 1px solid #DCD9D3; }
+    .period .m { font-size: 14px; font-weight: 600; }
+    .period .r { font-size: 12px; color: #6E685F; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden;">
+
+  <header style="flex: none; display: flex; align-items: center; height: 56px; padding: 0 26px; gap: 12px;">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+      <span>LEDGR</span>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div class="seg"><span class="on">Nederlands</span><span>English</span></div>
+    <div class="seg"><span class="on">Systeem</span><span>Licht</span><span>Donker</span></div>
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700;">SB</span>
+  </header>
+
+  <main style="flex: 1; display: flex; justify-content: center; padding: 20px 26px 0; overflow: hidden;">
+    <div style="width: 880px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; flex-direction: column; gap: 6px; max-width: 640px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span class="num" style="font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F;">Stap 2 van 3</span>
+          <div style="width: 132px; height: 6px; border-radius: 999px; background: #DCD9D3; overflow: hidden;"><div style="width: 66%; height: 6px; background: #00686C;"></div></div>
+          <div style="flex-grow: 1;"></div>
+          <div style="display: flex; align-items: center; gap: 14px; font-size: 13px; color: #6E685F;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; color: #396741;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg><span>Bedrijf</span></span>
+            <span style="color: #26221C; font-weight: 600;">Boekjaar</span>
+            <span>Klaar</span>
+          </div>
+        </div>
+        <h1 class="serif" style="margin: 0; font-size: 33px; font-weight: 600; letter-spacing: -.012em; line-height: 1.2;">Uw eerste boekjaar</h1>
+        <p style="margin: 0; font-size: 17px; color: #5F5A52; text-wrap: pretty;">Een boekjaar loopt meestal gelijk met het kalenderjaar. De periodes bepalen hoe vaak u BTW aangeeft.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start;">
+
+        <!-- Left: the choices -->
+        <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; padding: 28px 32px 0; display: flex; flex-direction: column; gap: 18px;">
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="field">
+              <label class="label">Begin van het boekjaar</label>
+              <div class="input num" style="justify-content: space-between;">
+                <span>01-01-2026</span>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.4" width="14" height="12.6" rx="1.4"/><path d="M3 8.4h14M6.8 2.8v3M13.2 2.8v3"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Einde van het boekjaar</label>
+              <div class="input num" style="justify-content: space-between;">
+                <span>31-12-2026</span>
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.4" width="14" height="12.6" rx="1.4"/><path d="M3 8.4h14M6.8 2.8v3M13.2 2.8v3"/></svg>
+              </div>
+            </div>
+            <span class="help" style="grid-column: span 2; margin-top: -8px;">Begonnen in de loop van het jaar? Kies dan de startdatum van de onderneming; het eerste boekjaar mag korter of langer zijn.</span>
+          </div>
+
+          <div class="field" style="gap: 8px;">
+            <label class="label">Hoe vaak geeft u BTW aan?</label>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+              <div class="card">
+                <span class="t">Per maand</span>
+                <span class="d">Voor wie maandelijks aangifte doet of dat verwacht — 12 periodes.</span>
+              </div>
+              <div class="card on">
+                <svg style="position: absolute; top: 14px; right: 14px;" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+                <span class="t">Per kwartaal</span>
+                <span class="d">De meeste kleine ondernemingen — 4 periodes. De boekhouding blijft per maand inzichtelijk.</span>
+              </div>
+            </div>
+            <span class="help">De Belastingdienst bepaalt uw aangiftetermijn; u vindt hem in uw laatste aangiftebrief. Later aanpassen kan.</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; margin: 2px -32px 0; padding: 14px 32px; border-top: 1px solid #DCD9D3; background: #F5F0E9; border-radius: 0 0 14px 14px;">
+            <span class="btn quiet" style="padding-left: 4px;">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H4M8.4 5.6 4 10l4.4 4.4"/></svg>
+              <span>Terug</span>
+            </span>
+            <div style="flex-grow: 1;"></div>
+            <span class="btn primary">
+              <span>Administratie aanmaken</span>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11.6 5.6 16 10l-4.4 4.4"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: the period preview from GET /v1/fiscal-years/preview -->
+        <div style="background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #DCD9D3;">
+            <span style="font-size: 15px; font-weight: 600;">Zo ziet het boekjaar eruit</span>
+            <div style="flex-grow: 1;"></div>
+            <span class="num" style="font-size: 13px; font-weight: 600; color: #5F5A52; background: #EFEAE2; border-radius: 999px; padding: 1px 10px;">4 periodes</span>
+          </div>
+          <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <span class="serif num" style="font-size: 20px; font-weight: 600;">Boekjaar 2026</span>
+              <span class="num" style="font-size: 13px; color: #6E685F;">365 dagen</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+              <div class="period"><span class="m num">Q1 2026</span><span class="r num">01-01 t/m 31-03</span></div>
+              <div class="period"><span class="m num">Q2 2026</span><span class="r num">01-04 t/m 30-06</span></div>
+              <div class="period"><span class="m num">Q3 2026</span><span class="r num">01-07 t/m 30-09</span></div>
+              <div class="period"><span class="m num">Q4 2026</span><span class="r num">01-10 t/m 31-12</span></div>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; background: #EFEAE2; border-radius: 10px;">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="10" cy="10" r="7.3"/><path d="M10 13.6V9.4"/><path d="M10 6.6h.01"/></svg>
+              <span style="font-size: 13px; line-height: 1.4; color: #5F5A52; text-wrap: pretty;">Een afgesloten periode wordt nooit meer gewijzigd; een correctie is altijd een nieuwe boeking.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

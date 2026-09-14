@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 48px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .label { font-size: 13px; font-weight: 600; color: #5F5A52; }
+    .input { display: flex; align-items: center; height: 48px; padding: 0 13px; background: #FFFEFB; border: 1px solid #8F8878; border-radius: 10px; font-size: 17px; }
+    .help { font-size: 13px; line-height: 1.35; color: #6E685F; }
+    .card { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; padding-right: 96px; background: #FBF8F4; border: 1px solid #8F8878; border-radius: 14px; min-height: 48px; }
+    .card.on { border: 2px solid #00686C; background: #D8F4F6; padding: 11px 13px; padding-right: 95px; }
+    .card .t { font-size: 16px; font-weight: 600; line-height: 1.3; }
+    .card .d { font-size: 13px; line-height: 1.35; color: #6E685F; }
+    .card .term { position: absolute; top: 12px; right: 12px; font-size: 12px; font-weight: 600; letter-spacing: .03em; color: #5F5A52; background: #EFEAE2; border-radius: 999px; padding: 1px 8px; }
+    .card.on .term { background: #FBF8F4; color: #00686C; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 390px; height: 844px; background: #F5F0E9; overflow: hidden;">
+
+  <header style="flex: none; display: flex; align-items: center; height: 56px; padding: 0 16px; gap: 9px; font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .055em;">
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.5" stroke-linecap="round"><path d="M4 5.5h12M4 9.5h7.5"/><path d="M4 14h12M4 16.5h12" stroke-width="1.2"/></svg>
+    <span>LEDGR</span>
+    <div style="flex-grow: 1;"></div>
+    <span style="font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0; color: #5F5A52; border: 1px solid #DCD9D3; background: #EFEAE2; border-radius: 10px; padding: 6px 10px;">NL</span>
+  </header>
+
+  <main style="flex: 1; overflow: hidden; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="num" style="font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F;">Stap 1 van 3</span>
+        <div style="flex-grow: 1; height: 6px; border-radius: 999px; background: #DCD9D3; overflow: hidden;"><div style="width: 33%; height: 6px; background: #00686C;"></div></div>
+      </div>
+      <h1 class="serif" style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -.012em; line-height: 1.2;">Over uw onderneming</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 1.4; color: #5F5A52; text-wrap: pretty;">Alleen wat nodig is om te beginnen.</p>
+    </div>
+
+    <div class="field">
+      <label class="label">Naam van de onderneming</label>
+      <div class="input">Van Doorn Bouw B.V.</div>
+    </div>
+
+    <div class="field">
+      <label class="label">KvK-nummer</label>
+      <div class="input num" style="justify-content: space-between;">
+        <span>34281907</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#396741" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg>
+      </div>
+      <span class="help">Gevonden in het Handelsregister.</span>
+    </div>
+
+    <div class="field" style="gap: 8px;">
+      <label class="label">Wat voor onderneming is het?</label>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="card"><span class="term">Eenmanszaak</span><span class="t">Ik ben zelf de onderneming</span><span class="d">De winst is uw inkomen.</span></div>
+        <div class="card"><span class="term">V.O.F.</span><span class="t">Met een of meer partners</span><span class="d">U deelt winst en aansprakelijkheid.</span></div>
+        <div class="card on"><span class="term">B.V.</span><span class="t">Een vennootschap met aandelen</span><span class="d">Eigen rechtspersoon; u bent bestuurder.</span></div>
+        <div class="card"><span class="term">Stichting</span><span class="t">Een doel, geen eigenaren</span><span class="d">Geen winstuitkering.</span></div>
+        <div class="card"><span class="term">Vereniging</span><span class="t">Leden met een gezamenlijk doel</span><span class="d">Leden beslissen samen.</span></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #5F5A52;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+      <span>Meer opties</span>
+    </div>
+  </main>
+
+  <!-- Sticky footer: the primary full width, the quiet exit beneath it -->
+  <footer style="flex: none; display: flex; flex-direction: column; gap: 4px; padding: 12px 16px 16px; background: #FBF8F4; border-top: 1px solid #DCD9D3;">
+    <span class="btn primary" style="width: 100%;">
+      <span>Verder naar boekjaar</span>
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h12M11.6 5.6 16 10l-4.4 4.4"/></svg>
+    </span>
+    <span class="btn quiet" style="width: 100%;">Later afmaken — uw invoer wordt bewaard</span>
+  </footer>
+</div>
+</x-dc>
+</body>
+</html>

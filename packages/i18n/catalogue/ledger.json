@@ -1,0 +1,172 @@
+{
+  "namespace": "ledger",
+  "note": "The grootboek screen (§4.3): trial balance, journal entries, chart of accounts. 'Grootboek' is the word on screen (FR-LOC-001c, glossary); every figure is a decimal string rendered by money().",
+  "messages": {
+    "ledger.title": {
+      "note": "Kept Dutch in the English UI per glossary.json's grootboek entry.",
+      "identical": true,
+      "nl": "Grootboek",
+      "en": "Grootboek"
+    },
+    "ledger.fiscal_year_context": {
+      "note": "{start}/{end} are years. Shown once as 'Boekjaar 2026' when they are equal — the same label the header selector uses.",
+      "nl": "Boekjaar {start}–{end}",
+      "en": "Fiscal year {start}–{end}"
+    },
+    "ledger.views_label": {
+      "nl": "Onderdelen van het grootboek",
+      "en": "Views of the grootboek"
+    },
+    "ledger.view.trial-balance": {
+      "note": "'Saldibalans' is the bookkeeper's word; 'proef- en saldibalans' in full. D2: plain on the surface.",
+      "nl": "Saldibalans",
+      "en": "Trial balance"
+    },
+    "ledger.view.journal": {
+      "nl": "Boekingen",
+      "en": "Journal entries"
+    },
+    "ledger.view.chart": {
+      "nl": "Rekeningschema",
+      "en": "Chart of accounts"
+    },
+    "ledger.column.account": {
+      "nl": "Rekening",
+      "en": "Account"
+    },
+    "ledger.column.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "ledger.column.debit": {
+      "nl": "Debet",
+      "en": "Debit"
+    },
+    "ledger.column.credit": {
+      "identical": true,
+      "nl": "Credit",
+      "en": "Credit"
+    },
+    "ledger.column.balance": {
+      "nl": "Saldo",
+      "en": "Balance"
+    },
+    "ledger.column.marker": {
+      "note": "Accessible name of the exceptions-only marker column.",
+      "nl": "Bijzonderheid",
+      "en": "Marker"
+    },
+    "ledger.column.date": {
+      "nl": "Datum",
+      "en": "Date"
+    },
+    "ledger.column.entry": {
+      "nl": "Boekstuk",
+      "en": "Entry"
+    },
+    "ledger.column.description": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "ledger.column.amount": {
+      "nl": "Bedrag",
+      "en": "Amount"
+    },
+    "ledger.column.type": {
+      "nl": "Soort",
+      "en": "Type"
+    },
+    "ledger.column.rgs": {
+      "identical": true,
+      "nl": "RGS",
+      "en": "RGS"
+    },
+    "ledger.account_type.asset": {
+      "nl": "Bezitting",
+      "en": "Asset"
+    },
+    "ledger.account_type.liability": {
+      "nl": "Schuld",
+      "en": "Liability"
+    },
+    "ledger.account_type.equity": {
+      "nl": "Eigen vermogen",
+      "en": "Equity"
+    },
+    "ledger.account_type.revenue": {
+      "nl": "Opbrengst",
+      "en": "Revenue"
+    },
+    "ledger.account_type.expense": {
+      "nl": "Kosten",
+      "en": "Expense"
+    },
+    "ledger.trial_balance.empty_title": {
+      "nl": "Nog niets geboekt",
+      "en": "Nothing posted yet"
+    },
+    "ledger.trial_balance.empty_body": {
+      "note": "FR-UX-004: what belongs here and where the first item comes from.",
+      "nl": "Zodra u een bon boekt of een factuur verstuurt, verschijnen de saldi per rekening hier. Begin met het vastleggen van een bon.",
+      "en": "As soon as you post a receipt or send an invoice, the balance per account appears here. Start by capturing a receipt."
+    },
+    "ledger.trial_balance.balanced": {
+      "nl": "In balans",
+      "en": "In balance"
+    },
+    "ledger.trial_balance.unbalanced": {
+      "note": "Structurally impossible under the ledger's own CHECK (NFR-042); shown rather than hidden so that if it ever appears, somebody sees it.",
+      "nl": "Niet in balans — neem contact op met support",
+      "en": "Out of balance — contact support"
+    },
+    "ledger.journal.empty_title": {
+      "nl": "Nog geen boekingen",
+      "en": "No entries yet"
+    },
+    "ledger.journal.empty_body": {
+      "nl": "Elke geboekte bon en elke verstuurde factuur wordt hier een boeking. Geboekte regels worden nooit gewijzigd of verwijderd; een correctie is zelf een boeking.",
+      "en": "Every posted receipt and every sent invoice becomes an entry here. Posted lines are never edited or deleted; a correction is itself an entry."
+    },
+    "ledger.journal.reversal": {
+      "note": "FR-GL-003: the one kind of row that earns a marker.",
+      "nl": "Tegenboeking",
+      "en": "Reversing entry"
+    },
+    "ledger.journal.entry_number": {
+      "note": "FR-GL-013: numbered per journal. {journal} is the journal code, {number} the sequence.",
+      "identical": true,
+      "nl": "{journal}-{number}",
+      "en": "{journal}-{number}"
+    },
+    "ledger.journal.load_more": {
+      "nl": "Meer boekingen laden",
+      "en": "Load more entries"
+    },
+    "ledger.entry.title": {
+      "nl": "Boeking",
+      "en": "Journal entry"
+    },
+    "ledger.entry.posted_final": {
+      "note": ".design/LedgerTable's sealed-detail label.",
+      "nl": "Geboekt — definitief",
+      "en": "Posted — final"
+    },
+    "ledger.entry.immutable_note": {
+      "note": "FR-GL-003 in the reader's own words. A reversing-entry action is not built yet, so this says what a correction IS rather than offering a button that does nothing.",
+      "nl": "Geboekte regels worden nooit gewijzigd of verwijderd. Een correctie is zelf een boeking (tegenboeking).",
+      "en": "Posted lines are never edited or deleted. A correction is itself an entry (a reversing entry)."
+    },
+    "ledger.chart.empty_title": {
+      "nl": "Geen rekeningschema",
+      "en": "No chart of accounts"
+    },
+    "ledger.chart.empty_body": {
+      "nl": "Deze administratie heeft nog geen rekeningen. Normaal wordt het schema bij het aanmaken ingericht; neem contact op met support.",
+      "en": "This administration has no accounts yet. The chart is normally set up on creation; contact support."
+    },
+    "ledger.chart.blocked": {
+      "nl": "Geblokkeerd",
+      "en": "Blocked"
+    }
+  }
+}

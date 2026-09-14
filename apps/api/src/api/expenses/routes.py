@@ -43,6 +43,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.audit.log import AuditCategory, AuditLog
 from api.audit.repository import SqlAuditRepository
+from api.auth.email_verification import require_verified_email
 from api.authz.dependencies import (
     administration_from_path,
     get_authorization_service,
@@ -756,6 +757,9 @@ async def post_expense(
             audit=AuditCategory.POSTING,
         )
     ),
+    # IAM-010b: posting is the one action an unverified address cannot
+    # perform - see api.auth.email_verification for where that line is drawn.
+    __: None = Depends(require_verified_email),
 ) -> dict[str, object]:
     """Turn a confirmed claim into a ledger entry.
 

@@ -2,10 +2,10 @@ import { fireEvent, render as renderBare, screen, waitFor } from "@testing-libra
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider, type Language } from "@ledgr/i18n";
-import type { DashboardView } from "@ledgr/shared-types";
+import type { DashboardActionItemView, DashboardView } from "@ledgr/shared-types";
 
-import type { MobileTab } from "../MobileShell";
 import type { DashboardApi } from "./api";
+import { destinationFor } from "./DashboardRoute";
 import { HomeScreen } from "./HomeScreen";
 
 function render(ui: ReactElement, language: Language = "nl") {
@@ -48,13 +48,16 @@ function api(summary: DashboardView): DashboardApi {
   } as unknown as DashboardApi;
 }
 
-function renderHome(summary: DashboardView, onNavigate: (tab: MobileTab) => void = vi.fn()) {
+function renderHome(
+  summary: DashboardView,
+  onOpenItem: (item: DashboardActionItemView) => void = vi.fn(),
+) {
   return render(
     <HomeScreen
       administrationId="adm-A"
       fiscalYearId="fy-2026"
       api={api(summary)}
-      onNavigate={onNavigate}
+      onOpenItem={onOpenItem}
     />,
   );
 }
@@ -86,34 +89,57 @@ describe("HomeScreen — FR-UX-005/MOB-006's prioritised home screen", () => {
 
     await waitFor(() => expect(screen.getByTestId("home-items-list")).toBeDefined());
 
-    const items = screen.getAllByTestId("home-item");
-    expect(items.map((item) => item.textContent)).toEqual([
-      "Invoice INV-2024-003 to Jansen BV, 12 days overdue",
-      "Receipt from Café Central is missing details",
-      "Draft invoice to Bakker BV has not been sent yet",
-    ]);
+    // Each row also carries a status chip and its one action, so the check is
+    // that the Nth row is about the Nth item the API returned — the ORDER,
+    // which is what the API decided and this component must not second-guess.
+    const rows = screen.getAllByTestId("home-item").map((item) => item.textContent ?? "");
+    expect(rows).toHaveLength(summaryWithItems.items_needing_action.length);
+    summaryWithItems.items_needing_action.forEach((item, index) => {
+      expect(rows[index]).toContain(item.description);
+    });
   });
 
-  it("tapping an overdue-invoice or draft-invoice item navigates to the View tab", async () => {
-    const onNavigate = vi.fn();
-    renderHome(summaryWithItems, onNavigate);
+  it("tapping an item hands the whole item up, not a destination it decided itself", async () => {
+    // ADR-058 moved the decision out of this component: with URLs there is a
+    // record to open, so the screen reports WHICH item was tapped and the
+    // route (DashboardRoute.destinationFor) turns that into an address. A
+    // screen that computed the URL would be a second place routing lives.
+    const onOpenItem = vi.fn();
+    renderHome(summaryWithItems, onOpenItem);
 
     await waitFor(() => expect(screen.getByTestId("home-item-inv-1")).toBeDefined());
     fireEvent.click(screen.getByTestId("home-item-inv-1"));
-    expect(onNavigate).toHaveBeenCalledWith("view");
 
-    fireEvent.click(screen.getByTestId("home-item-inv-2"));
-    expect(onNavigate).toHaveBeenCalledWith("view");
+    expect(onOpenItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "inv-1", kind: "overdue_invoice" }),
+    );
   });
 
-  it("tapping a draft-expense item navigates to the Approve tab", async () => {
-    const onNavigate = vi.fn();
-    renderHome(summaryWithItems, onNavigate);
+  it("opens an invoice item at the invoice and a draft receipt at its own form", () => {
+    // The gap ADR-048 recorded and the router closed: the mobile shell could
+    // only switch tab, so a tap landed on a LIST and left the person to find
+    // the row again.
+    expect(destinationFor({ kind: "overdue_invoice", id: "inv-1", description: "" })).toBe(
+      "/invoices/inv-1",
+    );
+    expect(destinationFor({ kind: "draft_invoice", id: "inv-2", description: "" })).toBe(
+      "/invoices/inv-2",
+    );
+    expect(destinationFor({ kind: "draft_expense", id: "exp-1", description: "" })).toBe(
+      "/review/exp-1",
+    );
+  });
+
+  it("reports a tapped draft receipt as itself, kind included", async () => {
+    const onOpenItem = vi.fn();
+    renderHome(summaryWithItems, onOpenItem);
 
     await waitFor(() => expect(screen.getByTestId("home-item-exp-1")).toBeDefined());
     fireEvent.click(screen.getByTestId("home-item-exp-1"));
 
-    expect(onNavigate).toHaveBeenCalledWith("approve");
+    expect(onOpenItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "exp-1", kind: "draft_expense" }),
+    );
   });
 
   it("shows an error state when the dashboard cannot be loaded", async () => {
@@ -128,7 +154,7 @@ describe("HomeScreen — FR-UX-005/MOB-006's prioritised home screen", () => {
         administrationId="adm-A"
         fiscalYearId="fy-2026"
         api={failingApi}
-        onNavigate={vi.fn()}
+        onOpenItem={vi.fn()}
       />,
     );
 

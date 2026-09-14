@@ -37,8 +37,11 @@ from api.ledger.model import (
     AccountStatus,
     AccountType,
     ControlKind,
+    EntryCursor,
     EntryInput,
     Journal,
+    JournalEntryPage,
+    JournalEntrySummary,
     JournalType,
     Party,
     PartyKind,
@@ -93,6 +96,58 @@ def _line(row: Any) -> PostedLine:
         subledger_party_id=row.subledger_party_id,
         cost_centre_id=row.cost_centre_id,
         description=row.description,
+        account_code=row.account_code,
+        account_name=row.account_name,
+    )
+
+
+# The journal as a list reads it (FR-GL-004's header fields plus totals), in
+# keyset order. The year filter and the cursor are both optional and both
+# typed with an explicit cast: asyncpg binds a None parameter with no type of
+# its own, and `:x IS NULL` on an untyped bind is what the driver refuses.
+_ENTRY_PAGE_SQL = """
+    SELECT je.id, je.administration_id, je.fiscal_year_id, je.period_id, je.journal_id,
+           j.code AS journal_code, j.name AS journal_name,
+           je.entry_number, je.entry_date, je.description, je.document_reference,
+           je.posted_by_user_id, je.source_system, je.posted_at, je.reverses_entry_id,
+           coalesce(sum(jl.debit), 0)::numeric(19, 2)  AS total_debit,
+           coalesce(sum(jl.credit), 0)::numeric(19, 2) AS total_credit,
+           count(jl.id)                                AS line_count
+    FROM journal_entry je
+    JOIN ledger_journal j ON j.id = je.journal_id
+    LEFT JOIN journal_line jl ON jl.journal_entry_id = je.id
+    WHERE je.administration_id = :administration_id
+      AND (cast(:fiscal_year_id as uuid) IS NULL
+           OR je.fiscal_year_id = cast(:fiscal_year_id as uuid))
+      AND (cast(:after_posted_at as timestamptz) IS NULL
+           OR (je.posted_at, je.id)
+              < (cast(:after_posted_at as timestamptz), cast(:after_id as uuid)))
+    GROUP BY je.id, j.code, j.name
+    ORDER BY je.posted_at DESC, je.id DESC
+    LIMIT :limit
+"""
+
+
+def _summary(row: Any) -> JournalEntrySummary:
+    return JournalEntrySummary(
+        id=row.id,
+        administration_id=row.administration_id,
+        fiscal_year_id=row.fiscal_year_id,
+        period_id=row.period_id,
+        journal_id=row.journal_id,
+        journal_code=row.journal_code,
+        journal_name=row.journal_name,
+        entry_number=int(row.entry_number),
+        entry_date=row.entry_date,
+        description=row.description,
+        document_reference=row.document_reference,
+        posted_by_user_id=row.posted_by_user_id,
+        source_system=row.source_system,
+        posted_at=row.posted_at,
+        reverses_entry_id=row.reverses_entry_id,
+        total_debit=Decimal(row.total_debit),
+        total_credit=Decimal(row.total_credit),
+        line_count=int(row.line_count),
     )
 
 
@@ -114,6 +169,15 @@ class LedgerRepository(Protocol):
     async def entry(self, entry_id: uuid.UUID) -> PostedEntry | None: ...
 
     async def reversal_of(self, entry_id: uuid.UUID) -> PostedEntry | None: ...
+
+    async def entries(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        fiscal_year_id: uuid.UUID | None,
+        after: EntryCursor | None,
+        limit: int,
+    ) -> JournalEntryPage: ...
 
     async def create_account(
         self,
@@ -287,13 +351,44 @@ class SqlLedgerRepository:
         row = result.first()
         return await self._with_lines(_entry(row)) if row is not None else None
 
+    async def entries(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        fiscal_year_id: uuid.UUID | None,
+        after: EntryCursor | None,
+        limit: int,
+    ) -> JournalEntryPage:
+        """One page of the journal, newest posting first.
+
+        Fetches one row more than asked for: that row's existence is what
+        says there is a next page, and it is dropped rather than returned.
+        """
+        result = await self._session.execute(
+            text(_ENTRY_PAGE_SQL),
+            {
+                "administration_id": str(administration_id),
+                "fiscal_year_id": str(fiscal_year_id) if fiscal_year_id else None,
+                "after_posted_at": after.posted_at if after else None,
+                "after_id": str(after.entry_id) if after else None,
+                "limit": limit + 1,
+            },
+        )
+        rows = [_summary(row) for row in result]
+        items = tuple(rows[:limit])
+        next_cursor = items[-1].cursor if len(rows) > limit and items else None
+        return JournalEntryPage(items=items, next_cursor=next_cursor)
+
     async def _with_lines(self, entry: PostedEntry) -> PostedEntry:
         result = await self._session.execute(
             text(
-                "SELECT id, line_number, account_id, debit, credit, "
-                "       subledger_party_id, cost_centre_id, description "
-                "FROM journal_line WHERE journal_entry_id = :id "
-                "ORDER BY line_number"
+                "SELECT l.id, l.line_number, l.account_id, l.debit, l.credit, "
+                "       l.subledger_party_id, l.cost_centre_id, l.description, "
+                "       a.code AS account_code, a.name AS account_name "
+                "FROM journal_line l "
+                "JOIN ledger_account a ON a.id = l.account_id "
+                "WHERE l.journal_entry_id = :id "
+                "ORDER BY l.line_number"
             ),
             {"id": str(entry.id)},
         )

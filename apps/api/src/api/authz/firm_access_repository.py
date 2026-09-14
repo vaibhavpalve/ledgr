@@ -70,19 +70,29 @@ _RECORD_ACCESS_SQL = """
     RETURNING user_id
 """
 
+# Two ways a live grant reaches an administration, and the switcher lists
+# both: an administration-scoped grant names it directly (firm staff, IAM-107;
+# a client's own per-administration users), and an organization-scoped grant
+# cascades to every administration that organization OWNS (ADR-011's
+# _scope_covers - a Model B Owner, an Org Admin). The second arm is what puts a
+# self-managed business's own books in its Owner's switcher without a second,
+# redundant grant on each of them; it never reaches a client's administration
+# from a firm's organization grant, because the join keys on ownership, not on
+# firm_engagement - the same line api.authz.service draws. The ORDER BY
+# prefers the more specific grant when a user holds both. See ADR-059.
 _SWITCHER_SQL = """
     SELECT DISTINCT ON (a.id)
            a.id AS administration_id, a.legal_name, r.name AS role_name, ra.expires_at
     FROM role_assignment ra
     JOIN "role" r         ON r.id = ra.role_id
-    JOIN administration a ON a.id = ra.scope_id
+    JOIN administration a ON (ra.scope_type = 'administration' AND a.id = ra.scope_id)
+                          OR (ra.scope_type = 'organization' AND a.organization_id = ra.scope_id)
     WHERE ra.user_id = :user_id
-      AND ra.scope_type = 'administration'
       AND ra.revoked_at IS NULL
       AND (ra.expires_at IS NULL OR ra.expires_at > :now)
       AND r.archived_at IS NULL
       AND a.status = 'active'
-    ORDER BY a.id, ra.created_at DESC
+    ORDER BY a.id, (ra.scope_type = 'administration') DESC, ra.created_at DESC
 """
 
 

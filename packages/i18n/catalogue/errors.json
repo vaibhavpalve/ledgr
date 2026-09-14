@@ -419,6 +419,86 @@
       "note": "FR-TPL-017. The invoice has no stored PDF, which only happens for invoices issued before rendering was stored at issue. Rendering one now would be a different document under the same number, so the refusal names a credit note as the way to reissue rather than offering to re-render.",
       "nl": "Van deze factuur is geen opgeslagen PDF beschikbaar; hij kan niet worden verstuurd. Crediteer de factuur en maak een nieuwe aan.",
       "en": "No stored PDF is available for this invoice, so it cannot be sent. Credit it and raise a new one."
+    },
+    "errors.email_not_verified": {
+      "note": "IAM-010b's gate (api.auth.email_verification.require_verified_email): an unverified account may sign in and onboard but not post to the ledger. Like errors.google_only_account this is an instruction, not a denial - it names both things the person can do next (check the inbox, request a new link).",
+      "nl": "Bevestig eerst uw e-mailadres voordat u boekingen vastlegt. Controleer uw inbox of vraag een nieuwe bevestigingslink aan.",
+      "en": "Confirm your email address before posting to the books. Check your inbox or request a new confirmation link."
+    },
+    "errors.verification_link_invalid": {
+      "note": "POST /v1/auth/verify-email with a token that expired, was already used, or was never issued - one message for all three (api.auth.email_verification.VerificationLinkInvalidError says why), naming the fix rather than the case.",
+      "nl": "Deze bevestigingslink is verlopen of al gebruikt. Vraag een nieuwe link aan via uw accountinstellingen.",
+      "en": "This confirmation link has expired or has already been used. Request a new link from your account settings."
+    },
+    "errors.email_already_verified": {
+      "note": "A resend was asked for an address that needs nothing. Not an error a person can do anything about, so it just says the state.",
+      "nl": "Uw e-mailadres is al bevestigd.",
+      "en": "Your email address has already been confirmed."
+    },
+    "errors.session_not_found": {
+      "note": "IAM-017's DELETE /v1/me/sessions/{id}: the session does not exist, already ended, or belongs to another user - one answer for all three, so the route cannot be used to learn which session ids exist.",
+      "nl": "Deze sessie bestaat niet of is al beëindigd.",
+      "en": "This session does not exist or has already ended."
+    },
+    "errors.passkey_not_found": {
+      "note": "DELETE /v1/me/passkeys/{id}: does not exist, already removed, or somebody else's - api.auth.passkeys.PasskeyNotFoundError's own reasoning for one answer.",
+      "nl": "Deze passkey bestaat niet of is al verwijderd.",
+      "en": "This passkey does not exist or has already been removed."
+    },
+    "errors.last_mfa_factor": {
+      "note": "IAM-011: MFA is mandatory with no opt-out, so the only second factor cannot be removed. An instruction rather than a refusal - it says the order to do it in (add the replacement first).",
+      "nl": "Dit is uw enige tweede factor. Voeg eerst een andere passkey of authenticatie-app toe voordat u deze verwijdert.",
+      "en": "This is your only second factor. Add another passkey or authenticator app before removing this one."
+    },
+    "errors.last_sign_in_method": {
+      "note": "IAM-010f, from the other side: removing this passkey would leave the account with no way to sign in except Google, or no way at all. Names the two things that clear it.",
+      "nl": "Met deze passkey kunt u als enige nog inloggen. Stel eerst een wachtwoord in of voeg een andere passkey toe.",
+      "en": "This passkey is the only way you can still sign in. Set a password or add another passkey first."
+    },
+    "errors.invalid_current_password": {
+      "note": "POST /v1/me/password: IAM-016's re-authentication for a sensitive action did not verify. Says which field, because the person is already signed in and SEC-008's account-enumeration concern does not apply to their own account.",
+      "nl": "Het huidige wachtwoord is onjuist.",
+      "en": "The current password is incorrect."
+    },
+    "errors.legal_name_required": {
+      "note": "FR-ONB-004. POST/PATCH /v1/administrations with an empty legal name. The name is what every invoice and filing carries, so there is no sensible default to fall back to.",
+      "nl": "Vul de statutaire naam van de onderneming in. Deze naam komt op facturen en aangiften te staan.",
+      "en": "Enter the business's legal name. It appears on invoices and filings."
+    },
+    "errors.legal_form_unknown": {
+      "note": "FR-ONB-004. The legal form decides which chart of accounts is seeded (FR-ONB-005), so a spelling legal_form_alias cannot place is refused before anything is written rather than seeding the wrong chart. `accepted` is the list the PRD names; the database also accepts common aliases (B.V., v.o.f., ZZP).",
+      "nl": "De rechtsvorm '{legal_form}' is niet herkend, en die bepaalt welk rekeningschema wordt aangemaakt. Kies een van: {accepted}.",
+      "en": "The legal form '{legal_form}' was not recognised, and it decides which chart of accounts is set up. Choose one of: {accepted}."
+    },
+    "errors.formatting_locale_unsupported": {
+      "note": "FR-LOC-002. Mirrors the CHECK constraint on administration.formatting_locale so the refusal is a sentence rather than a constraint violation. `supported` is the list api.i18n.formatting.LOCALES holds.",
+      "nl": "Deze notatie voor bedragen en datums wordt niet ondersteund. Kies een van: {supported}.",
+      "en": "This notation for amounts and dates is not supported. Choose one of: {supported}."
+    },
+    "errors.fiscal_year_invalid": {
+      "note": "FR-ONB-006. The two rules validate_fiscal_year enforces: the end date must follow the start date, and a year may not exceed 24 months (a long first book year is allowed, an arbitrary one is not). One message for both: the fix is the same - look at the two dates.",
+      "nl": "Dit boekjaar kan niet worden aangemaakt: de einddatum moet na de begindatum liggen en een boekjaar duurt hoogstens 24 maanden. Pas de datums aan.",
+      "en": "This fiscal year cannot be created: the end date must come after the start date, and a fiscal year lasts at most 24 months. Adjust the dates."
+    },
+    "errors.fiscal_year_overlaps": {
+      "note": "FR-ONB-006 / FR-GL-002. The fiscal_year_no_overlap exclusion constraint (0029): a posting dated in an overlap would belong to two years. The next step is concrete - start the new year the day after the last one ends.",
+      "nl": "Dit boekjaar overlapt met een bestaand boekjaar van deze administratie. Laat het nieuwe boekjaar beginnen op de dag na het einde van het vorige.",
+      "en": "This fiscal year overlaps an existing fiscal year of this administration. Start the new year on the day after the previous one ends."
+    },
+    "errors.chart_seed_unavailable": {
+      "note": "FR-ONB-005. POST /v1/administrations could not seed the chart of accounts - no current RGS version is loaded, or no profile exists for the legal form. The administration is NOT created (one transaction), and the cause is the platform's, so the message sends the person to support rather than to their own data. A 503.",
+      "nl": "Het standaardrekeningschema is op dit moment niet beschikbaar, daarom is de administratie niet aangemaakt. Probeer het later opnieuw of neem contact op met de helpdesk.",
+      "en": "The standard chart of accounts is not available right now, so the administration was not created. Try again later or contact support."
+    },
+    "errors.cursor_invalid": {
+      "note": "GET .../journal-entries with a `cursor` this API did not produce (edited, truncated, or from another list). A 422; the only fix is to start the list again.",
+      "nl": "De paginaverwijzing is niet geldig. Laad de lijst opnieuw vanaf het begin.",
+      "en": "The page reference is not valid. Reload the list from the beginning."
+    },
+    "errors.journal_entry_not_found": {
+      "note": "GET .../journal-entries/{id}. Answers 'no such entry', 'another tenant's entry' and 'another administration's entry' identically - the same RLS posture errors.administration_not_found takes.",
+      "nl": "Deze boeking bestaat niet in deze administratie.",
+      "en": "This journal entry does not exist in this administration."
     }
   }
 }

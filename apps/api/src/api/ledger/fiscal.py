@@ -47,7 +47,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.authz.model import (
@@ -58,12 +58,22 @@ from api.authz.model import (
 from api.authz.service import AuthorizationService
 from api.ledger.model import LedgerError
 
+if TYPE_CHECKING:  # pragma: no cover
+    from sqlalchemy.ext.asyncio import AsyncSession
+
 #: Appendix A, "Year-end close": Full for Owner and Accountant, and the only
 #: fiscal-year capability the matrix has. Defining a year rides on it, which is
 #: a wider grant than opening one deserves and still the right audience -
 #: inventing a permission the PRD does not name is what ADR-012 forbids. See
 #: ADR-028.
 MANAGE_FISCAL_YEAR = ("close", "fiscal_year")
+
+#: api.authz.matrix's baseline capability, held by every role. Reading which
+#: years an administration HAS is not defining one: every screen with a year
+#: selector - the trial balance, the dashboard, the journal - needs the list,
+#: and a Bookkeeper or Viewer who cannot see it cannot pick a year to read.
+#: See ADR-059.
+VIEW_ADMINISTRATION = ("view", "administration")
 
 #: The Netherlands permits a long first book year of up to about two years.
 #: Anything beyond it is a typo, not a policy.
@@ -358,6 +368,27 @@ class FiscalYearService:
         )
         return await self._repository.years(administration_id=administration_id)
 
+    async def visible_years(
+        self, *, administration_id: uuid.UUID, actor_user_id: uuid.UUID
+    ) -> Sequence[FiscalYear]:
+        """The same list as `years()`, for anyone who may see the
+        administration at all.
+
+        `years()` rides on "Year-end close" because that is the capability
+        defining a year rides on, and a reader of the list was assumed to be
+        about to define one. The onboarding and ledger screens broke that
+        assumption: `GET /v1/me` and the trial balance need the list for a
+        Bookkeeper and a Viewer, who hold no close permission and never will.
+        Nothing here is written and nothing beyond the year's boundaries is
+        disclosed, so the baseline `view administration` is the right gate.
+        """
+        await self._require(
+            VIEW_ADMINISTRATION,
+            user_id=actor_user_id,
+            administration_id=administration_id,
+        )
+        return await self._repository.years(administration_id=administration_id)
+
     async def periods_of(self, *, fiscal_year_id: uuid.UUID) -> Sequence[DerivedPeriod]:
         return await self._repository.periods_of(fiscal_year_id=fiscal_year_id)
 
@@ -434,3 +465,19 @@ class FiscalYearService:
                 detail=dict(detail or {}),
             )
         )
+
+
+def build_fiscal_year_service(
+    session: AsyncSession, authorization: AuthorizationService, audit_log: AuditLog
+) -> FiscalYearService:
+    """A wired FiscalYearService, for callers outside this bounded context.
+
+    The same deliberate widening `api.ledger.chart.build_chart_service` is -
+    see its docstring. tests/ledger/test_bounded_context.py keeps
+    `api.ledger.fiscal_repository` internal to this package, so a route that
+    needs fiscal years imports this function rather than the repository.
+    `api.onboarding.routes` and `api.account.routes` are the first callers.
+    """
+    from api.ledger.fiscal_repository import SqlFiscalYearRepository
+
+    return FiscalYearService(SqlFiscalYearRepository(session), authorization, audit_log)

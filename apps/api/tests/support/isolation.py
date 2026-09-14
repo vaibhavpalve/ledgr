@@ -31,6 +31,7 @@ from httpx import AsyncClient, Response
 from api.config import settings
 from api.main import app
 from api.tenancy import EXEMPT_PATHS
+from tests.support.seed import SESSION_FOR_USER
 
 FRAMEWORK_PATHS = frozenset({"/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"})
 IGNORED_METHODS = frozenset({"HEAD", "OPTIONS"})
@@ -65,23 +66,34 @@ def make_token(
     session_id: uuid.UUID | None = None,
 ) -> str:
     """A bearer token for tests, carrying everything the middleware chain
-    needs to let a request reach a handler: org_id (TenantContextMiddleware),
-    sub, and mfa_verified (MfaEnforcementMiddleware, which rejects a context
-    with no user or no verified factor - see ADR-008).
+    needs to let a request reach a handler: org_id and sub
+    (TenantContextMiddleware), and a `sid` naming a live session row - since
+    ADR-060 the middleware resolves that row on every request and takes
+    revocation, expiry and MFA state from it, so a token naming no session
+    is refused at the door.
 
-    mfa_verified defaults to True because these are ISOLATION tests: they
-    exist to prove a request that IS fully authenticated still cannot see
-    another tenant's rows. A token that gets rejected at the MFA gate would
-    pass every leak assertion for the wrong reason, proving nothing about
-    isolation. Tests specifically about the MFA gate live in
-    tests/test_mfa_middleware.py and set this explicitly.
+    When `session_id` is not given, the session tests.support.seed.seed_user
+    created for this user is used (SESSION_FOR_USER). That is the REAL
+    lookup, against a real row, on every one of these tests - nothing is
+    skipped; the helper only spares each call site from restating which
+    session a user it just seeded is signed in on. A user seeded another
+    way, with no session, gets a token with no `sid` and is refused, which
+    is the correct answer for such a token.
+
+    `mfa_verified` is written into the token for the same reason
+    api.auth.tokens writes it - the client reads it - but the server does
+    not: the ROW's mfa_verified_at decides (seed_session sets it, by
+    default). These are ISOLATION tests: they exist to prove a request that
+    IS fully authenticated still cannot see another tenant's rows, and a
+    token refused at the MFA gate would pass every leak assertion for the
+    wrong reason. Tests specifically about the MFA gate live in
+    tests/test_mfa_middleware.py.
     """
     claims: dict[str, object] = {"org_id": str(org_id), "mfa_verified": mfa_verified}
     if user_id is not None:
         claims["sub"] = str(user_id)
-    # IAM-110: only routes that write to the session need this, so it is
-    # omitted unless a test asks for it - which keeps the "a request with no
-    # sid cannot be switched" path reachable.
+        if session_id is None:
+            session_id = SESSION_FOR_USER.get(user_id)
     if session_id is not None:
         claims["sid"] = str(session_id)
     return jwt.encode(claims, settings.jwt_signing_key, algorithm="HS256")

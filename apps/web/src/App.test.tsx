@@ -1,11 +1,24 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CaptureQueue } from "@ledgr/offline-queue";
 import type { QueueStore, StoredCapture } from "@ledgr/offline-queue";
 
-import { App } from "./App";
 import { MemoryKeyVault, WebCryptoCipher } from "./capture/webCryptoCipher";
-import type { SittingContext } from "./capture/useSitting";
+import { jsonResponse } from "./testing/fakeFetch";
+import { renderApp } from "./testing/renderApp";
+import { meFixture } from "./testing/session";
+
+/**
+ * The composition root, as it is since ADR-058: a router, an `AuthProvider`
+ * holding who is signed in, and an `AuthenticatedLayout` that loads
+ * `GET /v1/me` before any screen behind it renders.
+ *
+ * What this file asserts is the WIRING between those — that a sign-in lands
+ * where it should, that the MFA gate has no way past it, that a Google
+ * redirect is recognised, that signing out returns to `/login`, and that
+ * MOB-009's purge warning still sits in front of it. Each screen's own
+ * behaviour is tested in its own suite.
+ */
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -32,23 +45,21 @@ class MemoryStore implements QueueStore {
   }
 }
 
-// `AuthenticatedMobileShell` calls `captureQueue()`, whose real composition
-// (capture/queue.ts) opens an IndexedDB database — unavailable in jsdom, the
-// same reason every other suite touching the capture screen (e.g.
-// CaptureScreen.test.tsx, MobileShell.test.tsx) builds its own `CaptureQueue`
-// over a `MemoryStore` rather than going through the module singleton. Mocked
-// here so App.test.tsx can exercise the real composition root's WIRING
-// (does authenticated + a mobile context reach MobileShell) without needing a
-// real IndexedDB.
+// The real composition (capture/queue.ts) opens an IndexedDB database, which
+// jsdom does not have — the same reason every other suite touching capture
+// builds its own `CaptureQueue` over a `MemoryStore`. `capturesAtRisk` and
+// `purgeCaptureQueue` are MOB-009's sign-out wiring, mocked here so this file
+// can assert that `AuthProvider` still asks before it signs out.
 //
-// `capturesAtRiskMock`/`purgeCaptureQueueMock` cover MOB-009's sign-out
-// wiring the same way — `vi.hoisted` because `vi.mock`'s factory runs before
-// this file's own top-level code, so a plain `const` here would not exist yet
-// when the factory closes over it. Default resolves to 0 (nothing at risk);
-// individual tests override with `mockResolvedValueOnce`.
-const { capturesAtRiskMock, purgeCaptureQueueMock } = vi.hoisted(() => ({
+// `vi.hoisted` because `vi.mock`'s factory runs before this file's own
+// top-level code, so a plain `const` would not exist yet when it closes over
+// it.
+const { capturesAtRiskMock, purgeCaptureQueueMock, startUploadsMock } = vi.hoisted(() => ({
   capturesAtRiskMock: vi.fn(async () => 0),
   purgeCaptureQueueMock: vi.fn(async (reason: string) => ({ reason, discarded: 0 })),
+  // A `QueueUploader`, not a teardown function: `SessionProvider` starts one
+  // for as long as a session is ready (MOB-003) and calls `.stop()` on unmount.
+  startUploadsMock: vi.fn(() => ({ stop: () => {} })),
 }));
 
 vi.mock("./capture/queue", () => ({
@@ -61,217 +72,108 @@ vi.mock("./capture/queue", () => ({
     }),
   capturesAtRisk: capturesAtRiskMock,
   purgeCaptureQueue: purgeCaptureQueueMock,
+  startCaptureUploads: startUploadsMock,
 }));
 
-const mobileContext: SittingContext = {
-  organizationId: "org-1",
-  administrationId: "adm-A",
-  fiscalYearId: "fy-2026",
-  userId: "user-1",
-};
-
-describe("App", () => {
-  it("renders without crashing", () => {
-    render(<App />);
-    // Two, not one: PreAuthScreen (ADR-057) renders a wordmark in the task
-    // panel AND in the marketing rail, toggled by viewport width via CSS
-    // rather than JS — jsdom does not evaluate that media query, so both are
-    // genuinely present in the DOM regardless of which one a real browser
-    // would currently be showing.
-    expect(screen.getAllByText("LEDGR")).toHaveLength(2);
+const authResult = (mfaVerified: boolean) =>
+  jsonResponse({
+    access_token: "tok",
+    token_type: "bearer",
+    mfa_verified: mfaVerified,
+    ...(mfaVerified ? {} : { mfa: { has_passkey: false, has_totp: false } }),
   });
 
-  it("authenticated with no mobile context renders today's bare header only — the pre-existing, documented gap", () => {
-    render(<App authenticated />);
-    expect(screen.getByText("LEDGR")).toBeDefined();
-    expect(screen.queryByTestId("mobile-shell-tabs")).toBeNull();
-  });
-
-  it("authenticated with a mobile context renders the five-tab mobile shell, opening on Home", async () => {
-    render(<App authenticated mobileContext={mobileContext} />);
-    expect(screen.getByTestId("mobile-shell-tabs")).toBeDefined();
-    expect(screen.getByTestId("mobile-tab-home")).toBeDefined();
-    expect(screen.getByTestId("mobile-tab-capture")).toBeDefined();
-    // FR-UX-005: Home, not Capture, is where the shell opens.
-    expect(screen.getByTestId("mobile-tab-home").getAttribute("aria-current")).toBe("page");
-
-    // HomeScreen fetches the dashboard as soon as it mounts, which here means
-    // a real `fetch` against a relative URL — the one thing this
-    // composition-root test does not mock. Waited out so that its
-    // (necessarily failing) settlement lands inside this test rather than as
-    // an unwrapped state update blamed on whichever test runs next.
-    await waitFor(() => expect(screen.getByTestId("home-error")).toBeDefined());
-  });
-
-  it("switching to Capture from Home still starts a sitting on its own (ADR-047)", async () => {
-    render(<App authenticated mobileContext={mobileContext} />);
-    await waitFor(() => expect(screen.getByTestId("home-error")).toBeDefined());
-
-    fireEvent.click(screen.getByTestId("mobile-tab-capture"));
-
-    // ADR-047: the capture screen starts a sitting on its own as soon as it
-    // mounts, which here means a real `fetch` against a relative URL — the
-    // one thing this composition-root test does not mock.
-    await waitFor(() =>
-      expect(screen.getByTestId("capture-problem").getAttribute("data-reason")).toBe(
-        "offline_cannot_start",
-      ),
-    );
-  });
-});
-
-/** Routes a stubbed `fetch` by URL, matching the badge endpoint and failing everything else. */
-function fetchRoutedTo(activeClientResponse: () => Promise<Response> | Response) {
-  return vi.fn(async (input: RequestInfo | URL) => {
-    if (String(input) === "/v1/switcher/active") return activeClientResponse();
-    // Every other call (dashboard, capture-sessions, ...) fails the same way
-    // it does in the tests above, which don't stub fetch at all - this
-    // describe block is only about the badge fetch.
-    return new Response(null, { status: 500 });
-  });
-}
-
-const activeBadgeWire = {
-  administration_id: "adm-A",
-  display_name: "Bakker IT",
-  legal_name: "Bakker Consultancy B.V.",
-  trade_name: "Bakker IT",
-  kvk_number: "12345678",
-  colour: "indigo",
-  initials: "BI",
-  colour_is_ambiguous: false,
-  role: "Accountant",
-  role_is_system: true,
-  expires_at: null,
-};
-
-describe("AuthenticatedMobileShell: fetches the active-client badge on mount (FR-FRM-000a)", () => {
-  it("fetches GET /v1/switcher/active and passes the resolved badge through to the header", async () => {
-    vi.stubGlobal(
-      "fetch",
-      fetchRoutedTo(
-        () =>
-          new Response(JSON.stringify(activeBadgeWire), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-      ),
-    );
-
-    render(<App authenticated mobileContext={mobileContext} language="nl" />);
-
-    await waitFor(() => expect(screen.getByTestId("client-name").textContent).toBe("Bakker IT"));
-    expect(screen.getByTestId("client-header").dataset.state).toBe("active");
-  });
-
-  it(
-    "shows the neutral loading state while the fetch is in flight, and only renders " +
-      "'no client selected' once the API has confirmed there is none - never the reverse order",
-    async () => {
-      let resolveFetch: (response: Response) => void = () => {};
-      const pending = new Promise<Response>((resolve) => {
-        resolveFetch = resolve;
-      });
-      vi.stubGlobal(
-        "fetch",
-        fetchRoutedTo(() => pending),
-      );
-
-      render(<App authenticated mobileContext={mobileContext} language="nl" />);
-
-      // The fetch has not answered yet: the header must show the neutral
-      // loading state, not "no client selected" - that would be a false
-      // signal for the entire window the request is in flight.
-      expect(screen.getByTestId("client-header").dataset.state).toBe("loading");
-      expect(screen.queryByText("Geen klant geselecteerd")).toBeNull();
-
-      resolveFetch(
-        new Response("null", { status: 200, headers: { "Content-Type": "application/json" } }),
-      );
-
-      await waitFor(() => expect(screen.getByTestId("client-header").dataset.state).toBe("none"));
-      expect(screen.getByText("Geen klant geselecteerd")).toBeDefined();
-    },
-  );
-});
-
-/** Routes a stubbed `fetch` by method + path, for the ADR-054 wiring tests
- * below - `Shell` calls several real endpoints across one flow (login, MFA
- * enrolment, the account-language read on first login), and each needs its
- * own answer rather than one blanket stub. */
+/**
+ * A `fetch` routed by `METHOD url`, answering the two reads every
+ * authenticated render makes — `GET /v1/me` (the session bootstrap) and
+ * `GET /v1/me/language` (IAM-010g's first-login effect) — so that a test only
+ * has to state the call it is actually about.
+ */
 function routedFetch(handlers: Record<string, () => Response>): typeof fetch {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const key = `${init?.method ?? "GET"} ${String(input)}`;
     const handler = handlers[key];
     if (handler) return handler();
-    // GET /v1/me/language fires once `authenticated` becomes true
-    // (useAccountLanguageOnFirstLogin) - answered here with "never chosen"
-    // so it never needs its own entry in every test below.
+    if (key === "GET /v1/me") return jsonResponse(meFixture());
     if (key === "GET /v1/me/language") {
-      return new Response(JSON.stringify({ language: null, supported: ["en", "nl"] }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ language: null, supported: ["en", "nl"] });
     }
     return new Response(null, { status: 500 });
   }) as unknown as typeof fetch;
 }
 
-describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
-  it("a password login that has not cleared MFA lands on the enrolment gate, never the app", async () => {
-    vi.stubGlobal(
-      "fetch",
-      routedFetch({
-        "POST /v1/auth/login": () =>
-          new Response(
-            JSON.stringify({
-              access_token: "tok",
-              token_type: "bearer",
-              mfa_verified: false,
-              mfa: { has_passkey: false, has_totp: false },
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-      }),
-    );
+/** The dashboard is the landing screen; it is signed-in-ness we are asserting, not its contents. */
+const signedIn = () => screen.findByTestId("app-shell");
 
-    render(<App language="nl" />);
+describe("App — the unauthenticated door", () => {
+  it("renders the login screen at /login", () => {
+    renderApp({}, { route: "/login" });
+    // Two, not one: PreAuthScreen (ADR-057) renders a wordmark in the task
+    // panel AND in the marketing rail, toggled by viewport width via CSS
+    // rather than JS — jsdom does not evaluate that media query, so both are
+    // genuinely in the DOM regardless of which a real browser would show.
+    expect(screen.getAllByText("LEDGR")).toHaveLength(2);
+    expect(screen.getByTestId("login-form")).toBeDefined();
+  });
+
+  it("sends an anonymous visitor from a protected URL to /login", async () => {
+    renderApp({}, { route: "/invoices" });
+
+    await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
+    expect(screen.queryByTestId("app-shell")).toBeNull();
+  });
+
+  it("switching to signup and back keeps the same frame", async () => {
+    vi.stubGlobal("fetch", routedFetch({}));
+    renderApp({}, { route: "/login" });
+
+    fireEvent.click(screen.getByTestId("switch-to-signup"));
+    await waitFor(() => expect(screen.getByTestId("signup-form")).toBeDefined());
+
+    fireEvent.click(screen.getByTestId("switch-to-login"));
+    await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
+  });
+});
+
+describe("ADR-054: signup/login/MFA wired end to end", () => {
+  it("a password login that has not cleared MFA lands on the enrolment gate, never the app", async () => {
+    vi.stubGlobal("fetch", routedFetch({ "POST /v1/auth/login": () => authResult(false) }));
+
+    renderApp({ language: "nl" }, { route: "/login" });
     fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
     fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
     fireEvent.click(screen.getByTestId("login-submit"));
 
     await waitFor(() => expect(screen.getByTestId("mfa-enrollment")).toBeDefined());
-    expect(screen.queryByTestId("sign-out")).toBeNull();
+    expect(screen.queryByTestId("app-shell")).toBeNull();
+  });
+
+  it("a session pending MFA cannot reach a protected URL by typing it", async () => {
+    // IAM-011 has no opt-out, and the router must not become one: the guard
+    // sends a pending session to /mfa from wherever it was going.
+    vi.stubGlobal("fetch", routedFetch({ "POST /v1/auth/login": () => authResult(false) }));
+
+    renderApp({ language: "nl" }, { route: "/login" });
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+    await waitFor(() => expect(screen.getByTestId("mfa-enrollment")).toBeDefined());
+
+    expect(screen.queryByTestId("app-shell")).toBeNull();
   });
 
   it("completing TOTP enrolment on the gate moves into the authenticated shell", async () => {
     vi.stubGlobal(
       "fetch",
       routedFetch({
-        "POST /v1/auth/login": () =>
-          new Response(
-            JSON.stringify({
-              access_token: "tok",
-              token_type: "bearer",
-              mfa_verified: false,
-              mfa: { has_passkey: false, has_totp: false },
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+        "POST /v1/auth/login": () => authResult(false),
         "POST /v1/auth/mfa/totp/enroll/begin": () =>
-          new Response(
-            JSON.stringify({ secret: "JBSWY3DPEHPK3PXP", provisioning_uri: "otpauth://x" }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-        "POST /v1/auth/mfa/totp/enroll/confirm": () =>
-          new Response(
-            JSON.stringify({ access_token: "tok2", token_type: "bearer", mfa_verified: true }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+          jsonResponse({ secret: "JBSWY3DPEHPK3PXP", provisioning_uri: "otpauth://x" }),
+        "POST /v1/auth/mfa/totp/enroll/confirm": () => authResult(true),
       }),
     );
 
-    render(<App language="nl" />);
+    renderApp({ language: "nl" }, { route: "/login" });
     fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
     fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
     fireEvent.click(screen.getByTestId("login-submit"));
@@ -282,59 +184,65 @@ describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
     fireEvent.change(screen.getByTestId("mfa-totp-code"), { target: { value: "123456" } });
     fireEvent.click(screen.getByTestId("mfa-totp-confirm"));
 
-    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+    expect(await signedIn()).toBeDefined();
     expect(screen.queryByTestId("mfa-enrollment")).toBeNull();
   });
 
-  it("signing out returns to the login screen, and a second login starts unauthenticated again", async () => {
-    vi.stubGlobal(
-      "fetch",
-      routedFetch({
-        "POST /v1/auth/login": () =>
-          new Response(
-            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-        "POST /v1/auth/logout": () =>
-          new Response(JSON.stringify({ status: "logged_out" }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-      }),
-    );
+  it("a passkey sign-in goes straight in, because IAM-012 counts it as both factors", async () => {
+    vi.stubGlobal("fetch", routedFetch({ "POST /v1/auth/login": () => authResult(true) }));
 
-    render(<App language="nl" />);
+    renderApp({ language: "nl" }, { route: "/login" });
     fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
     fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
     fireEvent.click(screen.getByTestId("login-submit"));
 
-    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
+    expect(await signedIn()).toBeDefined();
+  });
 
-    fireEvent.click(screen.getByTestId("sign-out"));
+  it("a Google OAuth redirect landing shows the callback screen, not the login form", async () => {
+    window.history.pushState({}, "", "/?code=auth-code&state=state-value");
+    const fetchStub = routedFetch({
+      "POST /v1/auth/login/google/callback": () => authResult(true),
+    });
+    vi.stubGlobal("fetch", fetchStub);
 
+    renderApp({ language: "nl" }, { route: "/?code=auth-code&state=state-value" });
+
+    expect(screen.queryByTestId("login-form")).toBeNull();
+    expect(await signedIn()).toBeDefined();
+    expect(fetchStub).toHaveBeenCalled();
+  });
+});
+
+describe("Signing out", () => {
+  async function signInAndOut(handlers: Record<string, () => Response> = {}) {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "POST /v1/auth/login": () => authResult(true),
+        "POST /v1/auth/logout": () => jsonResponse({ status: "logged_out" }),
+        ...handlers,
+      }),
+    );
+
+    renderApp({ language: "nl" }, { route: "/login" });
+    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
+    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
+    fireEvent.click(screen.getByTestId("login-submit"));
+    await signedIn();
+
+    fireEvent.click(screen.getByTestId("user-menu-trigger"));
+    fireEvent.click(await screen.findByTestId("sign-out"));
+  }
+
+  it("returns to the login screen", async () => {
+    await signInAndOut();
     await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
   });
 
-  it("MOB-009: warns before signing out when captures are queued, and cancelling keeps the session", async () => {
-    vi.stubGlobal(
-      "fetch",
-      routedFetch({
-        "POST /v1/auth/login": () =>
-          new Response(
-            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-      }),
-    );
+  it("MOB-009: warns while captures are queued, and cancelling keeps the session", async () => {
     capturesAtRiskMock.mockResolvedValueOnce(3);
-
-    render(<App language="nl" />);
-    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
-    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
-    fireEvent.click(screen.getByTestId("login-submit"));
-    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
-
-    fireEvent.click(screen.getByTestId("sign-out"));
+    await signInAndOut();
 
     await waitFor(() => expect(screen.getByTestId("sign-out-confirm")).toBeDefined());
     expect(screen.getByTestId("sign-out-confirm").textContent).toContain("3");
@@ -343,36 +251,14 @@ describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
     fireEvent.click(screen.getByTestId("sign-out-confirm-cancel"));
 
     expect(screen.queryByTestId("sign-out-confirm")).toBeNull();
-    // Still signed in - the dialog was dismissed, not confirmed.
-    expect(screen.getByTestId("sign-out")).toBeDefined();
+    // Still signed in — the dialog was dismissed, not confirmed.
+    expect(screen.getByTestId("app-shell")).toBeDefined();
     expect(purgeCaptureQueueMock).not.toHaveBeenCalled();
   });
 
   it("MOB-009: confirming purges the queue with reason 'logout' before completing sign-out", async () => {
-    vi.stubGlobal(
-      "fetch",
-      routedFetch({
-        "POST /v1/auth/login": () =>
-          new Response(
-            JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
-        "POST /v1/auth/logout": () =>
-          new Response(JSON.stringify({ status: "logged_out" }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }),
-      }),
-    );
     capturesAtRiskMock.mockResolvedValueOnce(2);
-
-    render(<App language="nl" />);
-    fireEvent.change(screen.getByTestId("login-email"), { target: { value: "a@example.com" } });
-    fireEvent.change(screen.getByTestId("login-password"), { target: { value: "hunter2" } });
-    fireEvent.click(screen.getByTestId("login-submit"));
-    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
-
-    fireEvent.click(screen.getByTestId("sign-out"));
+    await signInAndOut();
     await waitFor(() => expect(screen.getByTestId("sign-out-confirm")).toBeDefined());
 
     fireEvent.click(screen.getByTestId("sign-out-confirm-anyway"));
@@ -380,33 +266,40 @@ describe("ADR-054: signup/login/MFA wired end to end through Shell", () => {
     await waitFor(() => expect(screen.getByTestId("login-form")).toBeDefined());
     expect(purgeCaptureQueueMock).toHaveBeenCalledWith("logout");
   });
+});
 
-  it("a Google OAuth redirect landing (?code&state in the URL) shows the callback screen, not the login form", async () => {
-    window.history.pushState({}, "", "/?code=auth-code&state=state-value");
-    const fetchStub = routedFetch({
-      "POST /v1/auth/login/google/callback": () =>
-        new Response(
-          JSON.stringify({ access_token: "tok", token_type: "bearer", mfa_verified: true }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
-    });
-    vi.stubGlobal("fetch", fetchStub);
+describe("The session bootstrap (GET /v1/me)", () => {
+  it("shows the honest error state, with a way out, when the session cannot be loaded", async () => {
+    // Not a blank screen and not a login form: the person IS signed in, and
+    // the failure is ours. D5 — what happened, and the two things they can do.
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({ "GET /v1/me": () => new Response(null, { status: 503 }) }),
+    );
 
-    render(<App language="nl" />);
+    renderApp({ authenticated: true, language: "nl" }, { route: "/" });
 
-    expect(screen.queryByTestId("login-form")).toBeNull();
-    await waitFor(() => expect(screen.getByTestId("sign-out")).toBeDefined());
-    expect(fetchStub).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId("session-error")).toBeDefined());
+    expect(screen.getByTestId("sign-out")).toBeDefined();
   });
 
-  it("switching to signup and back to login preserves the frame, wiring both forms to the same Shell", () => {
-    vi.stubGlobal("fetch", routedFetch({}));
-    render(<App language="nl" />);
+  it("sends a business with no administration to onboarding", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetch({
+        "GET /v1/me": () =>
+          jsonResponse(
+            meFixture({
+              administrations: [],
+              active_administration_id: null,
+              onboarding: { needs_administration: true },
+            }),
+          ),
+      }),
+    );
 
-    fireEvent.click(screen.getByTestId("switch-to-signup"));
-    expect(screen.getByTestId("signup-form")).toBeDefined();
+    renderApp({ authenticated: true, language: "nl" }, { route: "/" });
 
-    fireEvent.click(screen.getByTestId("switch-to-login"));
-    expect(screen.getByTestId("login-form")).toBeDefined();
+    await waitFor(() => expect(screen.getByTestId("onboarding")).toBeDefined());
   });
 });

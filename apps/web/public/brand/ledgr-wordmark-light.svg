@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 40" width="176" height="40" role="img" aria-label="LEDGR">
+  <!--
+    LEDGR wordmark lockup, light version — for the fixed-dark marketing rail
+    (ADR-057) and any dark ground. Same geometry as ledgr-wordmark.svg; the
+    colours are the dark-theme ink #F2ECE3 and accent #4FBCC0 (primitives.ts).
+  -->
+  <g transform="translate(0 6) scale(1.4)" fill="none" stroke="#4FBCC0" stroke-linecap="round">
+    <path d="M4 5.5h12M4 9.5h7.5" stroke-width="1.5"/>
+    <path d="M4 14h12M4 16.5h12" stroke-width="1.2"/>
+  </g>
+  <text x="40" y="29.5" font-family="'Source Serif 4', Georgia, 'Times New Roman', serif" font-size="27" font-weight="600" letter-spacing="1.5" fill="#F2ECE3">LEDGR</text>
+</svg>

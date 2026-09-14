@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 17px; line-height: 1.55; color: #26221C; -webkit-font-smoothing: antialiased; }
+    a { color: #00686C; text-decoration: none; } a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+    .serif { font-family: 'Source Serif 4', Georgia, serif; }
+    .tile { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .tile .cap { font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6E685F; }
+    .panel { background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 14px; }
+    .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 22px 16px; }
+    .empty .ic { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 999px; background: #EFEAE2; color: #6E685F; margin-bottom: 2px; }
+    .empty .t { font-size: 17px; font-weight: 600; }
+    .empty .b { max-width: 46ch; font-size: 15px; line-height: 1.45; color: #6E685F; text-wrap: pretty; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #8F8878; white-space: nowrap; }
+    .btn.primary { background: #00686C; border-color: #00686C; color: #FFFFFF; padding: 0 22px; }
+    .btn.quiet { background: transparent; border-color: transparent; color: #5F5A52; }
+    .btn.sm { height: 36px; padding: 0 13px; font-size: 14px; }
+    .alert { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: 10px; border-left: 3px solid #6E685F; background: #EFEAE2; font-size: 15px; line-height: 1.4; }
+    .alert.attention { border-left-color: #814A39; background: #FEE8E1; color: #814A39; }
+    .alert.caution { border-left-color: #755421; background: #FAEBD8; color: #755421; }
+    .alert.positive { border-left-color: #396741; background: #E0EFE2; color: #396741; }
+    .toast { display: flex; align-items: center; gap: 12px; width: 420px; padding: 8px 10px 8px 16px; background: #FBF8F4; border: 1px solid #DCD9D3; border-left: 3px solid #6E685F; border-radius: 14px; box-shadow: 0 4px 8px rgba(38,34,28,.08), 0 24px 48px -20px rgba(38,34,28,.32); font-size: 15px; line-height: 1.35; }
+    .toast.positive { border-left-color: #396741; } .toast.attention { border-left-color: #814A39; }
+    .toast .x { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 9px; color: #5F5A52; flex: none; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .label { font-size: 13px; font-weight: 600; color: #5F5A52; }
+    .input { display: flex; align-items: center; height: 44px; padding: 0 13px; background: #FFFEFB; border: 1px solid #8F8878; border-radius: 10px; font-size: 17px; }
+    .sk { background: linear-gradient(90deg, #EFEAE2 0%, #E3DED5 50%, #EFEAE2 100%); border-radius: 6px; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden; padding: 18px 26px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto; gap: 14px 24px; align-content: start;">
+
+  <!-- 1. List empty state -->
+  <div class="tile">
+    <span class="cap">1 · Lege lijst (FR-UX-004)</span>
+    <div class="panel empty">
+      <span class="ic"><svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg></span>
+      <span class="t">Nog geen facturen</span>
+      <span class="b">Maak uw eerste factuur. Het PDF-ontwerp en de verzending per e-mail zijn al geregeld; u vult alleen klant en regels in.</span>
+      <span class="btn primary" style="margin-top: 6px;">Nieuwe factuur</span>
+    </div>
+  </div>
+
+  <!-- 2. Search without results -->
+  <div class="tile">
+    <span class="cap">2 · Zoeken zonder resultaat</span>
+    <div class="panel empty">
+      <span class="ic"><svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg></span>
+      <span class="t">Geen facturen voor “kroon 2025”</span>
+      <span class="b">Zoek op factuurnummer of klantnaam. Het filter “Te laat” staat aan — misschien zit de factuur in een andere status.</span>
+      <div style="display: flex; gap: 8px; margin-top: 6px;"><span class="btn">Filters wissen</span></div>
+    </div>
+  </div>
+
+  <!-- 3. First-run dashboard -->
+  <div class="tile">
+    <span class="cap">3 · Overzicht zonder werk (D10)</span>
+    <div class="panel empty">
+      <span class="ic" style="background: #E0EFE2; color: #396741;"><svg width="24" height="24" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg></span>
+      <span class="t">Niets vraagt op dit moment uw aandacht</span>
+      <span class="b">Openstaande facturen en onvolledige bonnen verschijnen hier vanzelf. Begin met een bon of een factuur.</span>
+      <div style="display: flex; gap: 8px; margin-top: 6px;"><span class="btn primary">Bon vastleggen</span><span class="btn">Nieuwe factuur</span></div>
+    </div>
+  </div>
+
+  <!-- 4. Offline -->
+  <div class="tile">
+    <span class="cap">4 · Geen verbinding (D6)</span>
+    <div class="alert caution">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px;"><path d="M6.4 15.4h8a3.4 3.4 0 0 0 .6-6.75A5 5 0 0 0 5.6 8.6a3.4 3.4 0 0 0 .8 6.8z"/><path d="m4 4 12 12"/></svg>
+      <span><span style="font-weight: 600;">Geen verbinding.</span> 3 bonnen wachten op uw apparaat en worden vanzelf verstuurd zodra er weer verbinding is. U kunt gewoon doorgaan met vastleggen.</span>
+    </div>
+    <div class="alert">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px;"><circle cx="10" cy="10" r="7.3"/><path d="M10 13.6V9.4"/><path d="M10 6.6h.01"/></svg>
+      <span style="color: #5F5A52;">Neutrale mededeling: <span style="font-weight: 600;">Nieuwe BTW-tarieven geladen</span> — geldig vanaf 1 januari 2027. Bestaande boekingen veranderen niet.</span>
+    </div>
+  </div>
+
+  <!-- 5. Field validation -->
+  <div class="tile">
+    <span class="cap">5 · Veldfout (D5, FR-UX-007)</span>
+    <div class="panel" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px;">
+      <div class="field">
+        <label class="label" style="color: #814A39;">KvK-nummer</label>
+        <div class="input num" style="border: 2px solid #814A39;">3428190</div>
+        <span style="display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.35; color: #814A39;">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 1px;"><path d="M10 3.4 17.6 16.6H2.4z"/><path d="M10 8.2v3.4"/><path d="M10 14.2h.01"/></svg>
+          <span>Een KvK-nummer heeft 8 cijfers; dit zijn er 7. Controleer het op uw uittreksel en vul het cijfer aan.</span>
+        </span>
+      </div>
+      <div class="field">
+        <label class="label">BTW-nummer</label>
+        <div class="input num" style="justify-content: space-between;"><span>NL001234567B01</span><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#396741" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 10.4 3.4 3.4 7.6-8"/></svg></div>
+        <span style="font-size: 13px; color: #6E685F;">Geldig formaat; VIES-controle volgt bij versturen.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Failed action with retry -->
+  <div class="tile">
+    <span class="cap">6 · Mislukte actie met herstel (D5)</span>
+    <div class="alert attention" style="align-items: center;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M10 3.4 17.6 16.6H2.4z"/><path d="M10 8.2v3.4"/><path d="M10 14.2h.01"/></svg>
+      <span style="flex-grow: 1;"><span style="font-weight: 600;">Versturen is niet gelukt.</span> De mailserver antwoordde niet. Uw factuur is nog een concept en er is niets geboekt.</span>
+      <span class="btn sm" style="flex: none; color: #814A39; border-color: #814A39; background: transparent;">Opnieuw proberen</span>
+    </div>
+    <div class="alert positive" style="align-items: center;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+      <span style="flex-grow: 1;"><span style="font-weight: 600;">Geboekt.</span> Boekstuk <span class="num">2026-B-0160</span> staat in het grootboek; corrigeren kan alleen nog met een tegenboeking.</span>
+      <a href="#" style="font-weight: 600; font-size: 14px; flex: none; color: #396741;">Bekijken</a>
+    </div>
+  </div>
+
+  <!-- 7. Full-page errors -->
+  <div class="tile">
+    <span class="cap">7 · Paginafouten (404 · 403)</span>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+      <div class="panel empty" style="padding: 18px 12px; gap: 4px;">
+        <span class="num" style="font-family: 'Source Serif 4', Georgia, serif; font-size: 31px; font-weight: 600; color: #6E685F; line-height: 1;">404</span>
+        <span class="t" style="font-size: 15px;">Deze pagina bestaat niet</span>
+        <span class="b" style="font-size: 13px;">Verouderde of verkeerd overgetypte link. Uw werk is niet verloren.</span>
+        <span class="btn sm" style="margin-top: 4px;">Naar het overzicht</span>
+      </div>
+      <div class="panel empty" style="padding: 18px 12px; gap: 4px;">
+        <span class="num" style="font-family: 'Source Serif 4', Georgia, serif; font-size: 31px; font-weight: 600; color: #6E685F; line-height: 1;">403</span>
+        <span class="t" style="font-size: 15px;">Geen toegang tot deze administratie</span>
+        <span class="b" style="font-size: 13px;">U heeft hier geen rol. Vraag de eigenaar om toegang, of open een andere klant.</span>
+        <span class="btn sm" style="margin-top: 4px;">Wissel van klant</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Toasts -->
+  <div class="tile">
+    <span class="cap">8 · Toasts (D7: ongedaan maken in plaats van bevestigen)</span>
+    <div class="toast positive">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#396741" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+      <span style="flex-grow: 1;">Klant <span style="font-weight: 600;">Zorggroep Eemland</span> gearchiveerd.</span>
+      <span class="btn quiet sm" style="color: #00686C; flex: none;">Ongedaan maken</span>
+      <span class="x"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round"><path d="M5.5 5.5 14.5 14.5M14.5 5.5 5.5 14.5"/></svg></span>
+    </div>
+    <div class="toast">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="m3.2 9.8 13.6-6.4-3.6 13.2-3.8-4.6z"/><path d="m9.4 12 7.4-8.6"/></svg>
+      <span style="flex-grow: 1;">Factuur <span class="num" style="font-weight: 600;">2026-0192</span> verstuurd naar facturen@devries.nl.</span>
+      <span class="x"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round"><path d="M5.5 5.5 14.5 14.5M14.5 5.5 5.5 14.5"/></svg></span>
+    </div>
+    <div class="toast attention">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#814A39" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M10 3.4 17.6 16.6H2.4z"/><path d="M10 8.2v3.4"/><path d="M10 14.2h.01"/></svg>
+      <span style="flex-grow: 1;">Uw sessie is verlopen. Log opnieuw in; uw concept is bewaard.</span>
+      <span class="btn quiet sm" style="color: #00686C; flex: none;">Inloggen</span>
+    </div>
+  </div>
+
+  <!-- 9. Skeleton -->
+  <div class="tile">
+    <span class="cap">9 · Laden: skelet in de vorm van de inhoud</span>
+    <div class="panel" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 999px;"></div><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 14px; width: 62%;"></div><div class="sk" style="height: 11px; width: 38%;"></div></div><div class="sk" style="width: 84px; height: 16px;"></div></div>
+      <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 999px;"></div><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 14px; width: 48%;"></div><div class="sk" style="height: 11px; width: 30%;"></div></div><div class="sk" style="width: 84px; height: 16px;"></div></div>
+      <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 999px;"></div><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 14px; width: 70%;"></div><div class="sk" style="height: 11px; width: 26%;"></div></div><div class="sk" style="width: 84px; height: 16px;"></div></div>
+      <span style="font-size: 13px; color: #6E685F;">Pas na 300 ms zichtbaar; geen spinner; vervangt zichzelf zonder verspringen. Schittering stopt bij “minder beweging”.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

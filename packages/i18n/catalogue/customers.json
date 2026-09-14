@@ -1,0 +1,237 @@
+{
+  "namespace": "customers",
+  "note": "The customer master (FR-AR-006, FR-ONB-003). 'Klant' here is the administration's own customer — not to be confused with a firm's client administration, which client.json covers.",
+  "messages": {
+    "customers.list.title": {
+      "nl": "Klanten",
+      "en": "Customers"
+    },
+    "customers.list.count": {
+      "nl": { "one": "{count} klant", "other": "{count} klanten" },
+      "en": { "one": "{count} customer", "other": "{count} customers" }
+    },
+    "customers.list.new": {
+      "nl": "Nieuwe klant",
+      "en": "New customer"
+    },
+    "customers.list.search": {
+      "nl": "Zoeken",
+      "en": "Search"
+    },
+    "customers.list.search_placeholder": {
+      "nl": "Naam, handelsnaam of plaats…",
+      "en": "Name, trade name or city…"
+    },
+    "customers.list.include_archived": {
+      "nl": "Ook gearchiveerde klanten tonen",
+      "en": "Also show archived customers"
+    },
+    "customers.list.no_matches_title": {
+      "nl": "Geen klanten gevonden voor “{query}”",
+      "en": "No customers match “{query}”"
+    },
+    "customers.list.no_matches_body": {
+      "nl": "Controleer de spelling, of maak de klant aan als die nog niet bestaat.",
+      "en": "Check the spelling, or create the customer if they do not exist yet."
+    },
+    "customers.list.clear_search": {
+      "nl": "Zoekopdracht wissen",
+      "en": "Clear search"
+    },
+    "customers.list.empty_title": {
+      "nl": "Nog geen klanten",
+      "en": "No customers yet"
+    },
+    "customers.list.empty_body": {
+      "note": "FR-UX-004: what belongs here and why it pays to add one.",
+      "nl": "Een klant hier opslaan scheelt overtypen bij elke factuur, en het BTW-nummer wordt voor u gecontroleerd. Voeg uw eerste klant toe.",
+      "en": "Saving a customer here saves retyping on every invoice, and their BTW number is checked for you. Add your first customer."
+    },
+    "customers.new.title": {
+      "nl": "Nieuwe klant",
+      "en": "New customer"
+    },
+    "customers.edit.title": {
+      "nl": "Klant bewerken",
+      "en": "Edit customer"
+    },
+    "customers.field.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "customers.field.trade_name": {
+      "nl": "Handelsnaam",
+      "en": "Trade name"
+    },
+    "customers.field.address_line1": {
+      "nl": "Straat en huisnummer",
+      "en": "Street and number"
+    },
+    "customers.field.address_hint": {
+      "note": "FR-AR-003: an invoice needs street, postcode and city; a half-known customer may still be saved.",
+      "nl": "Voor een factuur zijn straat, postcode en plaats verplicht. U mag de klant ook nu al opslaan en dit later aanvullen.",
+      "en": "An invoice needs street, postcode and city. You can save the customer now and add these later."
+    },
+    "customers.field.address_line2": {
+      "nl": "Adresregel 2",
+      "en": "Address line 2"
+    },
+    "customers.field.postal_code": {
+      "note": "Identical in both: 'postcode' is the ordinary word in British English too, and it is what a Dutch address actually carries — 'ZIP code' would be wrong for the format (1234 AB) the field validates.",
+      "identical": true,
+      "nl": "Postcode",
+      "en": "Postcode"
+    },
+    "customers.field.city": {
+      "nl": "Plaats",
+      "en": "City"
+    },
+    "customers.field.country": {
+      "nl": "Land",
+      "en": "Country"
+    },
+    "customers.field.country_hint": {
+      "nl": "Landcode van twee letters, bijvoorbeeld NL of DE.",
+      "en": "Two-letter country code, for example NL or DE."
+    },
+    "customers.field.kvk_number": {
+      "nl": "KvK-nummer",
+      "en": "KvK number"
+    },
+    "customers.field.vat_number": {
+      "nl": "BTW-nummer",
+      "en": "BTW number"
+    },
+    "customers.field.vat_number_hint": {
+      "note": "FR-ONB-003: VIES decides, not this form.",
+      "nl": "Wordt na het opslaan gecontroleerd bij VIES, het EU-register.",
+      "en": "Checked against VIES, the EU register, after saving."
+    },
+    "customers.field.vat_number_malformed": {
+      "nl": "Dit ziet er niet uit als een BTW-nummer. Nederlandse nummers zijn NL, negen cijfers, B en twee cijfers.",
+      "en": "This does not look like a BTW number. Dutch numbers are NL, nine digits, B and two digits."
+    },
+    "customers.field.invoice_email": {
+      "nl": "E-mailadres voor facturen",
+      "en": "Email address for invoices"
+    },
+    "customers.field.delivery_channel": {
+      "nl": "Verzendkanaal",
+      "en": "Delivery channel"
+    },
+    "customers.field.payment_terms_days": {
+      "nl": "Betaaltermijn (dagen)",
+      "en": "Payment terms (days)"
+    },
+    "customers.field.credit_limit": {
+      "nl": "Kredietlimiet",
+      "en": "Credit limit"
+    },
+    "customers.field.credit_limit_hint": {
+      "nl": "Leeg laten betekent geen limiet.",
+      "en": "Leave empty for no limit."
+    },
+    "customers.field.language": {
+      "nl": "Taal van de factuur",
+      "en": "Invoice language"
+    },
+    "customers.field.language_hint": {
+      "nl": "De taal waarin deze klant facturen en e-mails ontvangt.",
+      "en": "The language this customer receives invoices and emails in."
+    },
+    "customers.field.notes": {
+      "nl": "Notities",
+      "en": "Notes"
+    },
+    "customers.delivery_channel.email": {
+      "nl": "E-mail",
+      "en": "Email"
+    },
+    "customers.delivery_channel.peppol": {
+      "identical": true,
+      "nl": "Peppol",
+      "en": "Peppol"
+    },
+    "customers.vat_status.unchecked": {
+      "nl": "Nog niet gecontroleerd",
+      "en": "Not checked yet"
+    },
+    "customers.vat_status.valid": {
+      "nl": "Geldig",
+      "en": "Valid"
+    },
+    "customers.vat_status.invalid": {
+      "nl": "Onbekend bij VIES",
+      "en": "Unknown to VIES"
+    },
+    "customers.vat_status.unavailable": {
+      "nl": "VIES niet bereikbaar",
+      "en": "VIES unavailable"
+    },
+    "customers.status.archived": {
+      "nl": "Gearchiveerd",
+      "en": "Archived"
+    },
+    "customers.status.erased": {
+      "nl": "Gewist",
+      "en": "Erased"
+    },
+    "customers.detail.title": {
+      "nl": "Klant",
+      "en": "Customer"
+    },
+    "customers.detail.back": {
+      "nl": "Terug naar klanten",
+      "en": "Back to customers"
+    },
+    "customers.detail.new_invoice": {
+      "nl": "Factuur maken",
+      "en": "Create invoice"
+    },
+    "customers.detail.address_incomplete": {
+      "nl": "Adres niet compleet: vul straat, postcode en plaats aan voordat u factureert.",
+      "en": "Address incomplete: add street, postcode and city before invoicing."
+    },
+    "customers.detail.vat_checked_at": {
+      "nl": "Gecontroleerd op {date}",
+      "en": "Checked on {date}"
+    },
+    "customers.detail.vat_unavailable_hint": {
+      "nl": "VIES kon het nummer niet controleren. Het nummer is bewaard; probeer de controle later opnieuw.",
+      "en": "VIES could not check the number. The number has been saved; try the check again later."
+    },
+    "customers.detail.vat_check": {
+      "nl": "BTW-nummer opnieuw controleren",
+      "en": "Check BTW number again"
+    },
+    "customers.detail.vat_checking": {
+      "nl": "Bezig met controleren…",
+      "en": "Checking…"
+    },
+    "customers.detail.days": {
+      "nl": { "one": "{count} dag", "other": "{count} dagen" },
+      "en": { "one": "{count} day", "other": "{count} days" }
+    },
+    "customers.detail.no_credit_limit": {
+      "nl": "Geen limiet",
+      "en": "No limit"
+    },
+    "customers.detail.archive": {
+      "nl": "Archiveren",
+      "en": "Archive"
+    },
+    "customers.detail.archive_hint": {
+      "note": "No delete exists (CMP-001: invoices point at this record for seven years). Says what archiving does instead.",
+      "nl": "Verdwijnt uit keuzelijsten; bestaande facturen blijven ongewijzigd. U kunt de klant altijd terugzetten.",
+      "en": "Disappears from pickers; existing invoices stay as they are. You can always restore the customer."
+    },
+    "customers.detail.restore": {
+      "nl": "Terugzetten",
+      "en": "Restore"
+    },
+    "customers.detail.restore_hint": {
+      "nl": "Deze klant is gearchiveerd. Terugzetten maakt factureren weer mogelijk.",
+      "en": "This customer is archived. Restoring makes invoicing possible again."
+    }
+  }
+}
