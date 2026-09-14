@@ -320,6 +320,21 @@ revoke all on idempotency_key from public;
 grant select, insert, update, delete on idempotency_key to ledgr_app;
 grant select on idempotency_key to ledgr_ops;
 
+-- PostgreSQL grants EXECUTE on a new function to PUBLIC by default, unlike
+-- tables (0001, 0002 and 0046 already revoke it for their own functions;
+-- this file did not, which the very isolation test the next line's comment
+-- describes eventually caught - any authenticated role, not only ledgr_ops,
+-- could call the ops-only purge until this revoke existed). Blanket revoke,
+-- then name each function's real caller explicitly.
+revoke all on function app.claim_idempotency_key(
+    uuid, uuid, text, text, text, text, timestamptz
+) from public;
+revoke all on function app.complete_idempotency_key(
+    uuid, uuid, text, text, text, smallint, bytea, jsonb
+) from public;
+revoke all on function app.release_idempotency_key(uuid, uuid, text, text, text) from public;
+revoke all on function app.purge_expired_idempotency_keys() from public;
+
 grant execute on function app.claim_idempotency_key(
     uuid, uuid, text, text, text, text, timestamptz
 ) to ledgr_app;

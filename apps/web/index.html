@@ -16,13 +16,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LEDGR</title>
+
+    <!--
+      THEME, BEFORE FIRST PAINT (ADR-055).
+
+      This runs synchronously in <head>, ahead of the stylesheet and the module
+      bundle, because anything later is too late: the browser would paint one
+      frame of the light ground before React mounted and stamped the choice,
+      which is the white flash every dark-mode user recognises and resents.
+
+      It is a hand-written copy of `readThemePreference` + `applyTheme` from
+      @ledgr/design-tokens/src/theme.ts, and it has to be — a module import
+      cannot run before paint. `theme.test.ts` asserts this copy still agrees
+      with that module, so the duplication cannot silently drift.
+
+      "system" deliberately stamps NOTHING, leaving the `prefers-color-scheme`
+      media query in tokens.css to decide and to keep following the OS if it
+      changes while the tab is open.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("ledgr.theme.v1");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.setAttribute("data-theme", stored);
+          }
+        } catch (e) {
+          /* Private windows and blocked site data throw here. The media query
+             in tokens.css is a complete fallback, so there is nothing to do. */
+        }
+      })();
+    </script>
+
+    <!--
+      `media`/`onload` so the two <meta name="theme-color"> rules below are
+      evaluated by the browser rather than by script: the address bar on
+      Android and the title bar of an installed PWA cannot read a CSS custom
+      property, so these are the one place a resolved colour has to be
+      written literally. Values are `surface-ground` from each theme —
+      the chrome should continue the page, not announce the brand.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f0e9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15120e" />
+
+    <!--
+      Source Sans 3 and Source Serif 4 — the pairing the design system is
+      built on. The serif carries monetary figures and page titles; no other
+      Dutch bookkeeping product sets amounts in a serif, and it is the
+      cheapest thing that makes a LEDGR screenshot recognisable.
+
+      `display=swap` so text is readable in the fallback immediately rather
+      than invisible while the webfont loads — on a phone in a car park
+      (FR-EXP-001) that matters more than the first frame being perfect.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+    />
+
     <!--
       §5.2/MOB-002: "the cheapest route is an installable PWA with camera
       access". The manifest and icons are placeholders pending real design
       assets - see docs/decisions/ADR-046-mobile-pwa.md.
     -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#4f46e5" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   </head>

@@ -22,6 +22,29 @@
       "identical": true,
       "nl": "English",
       "en": "English"
+    },
+    "common.skip_to_content": {
+      "note": "WCAG 2.2 SC 2.4.1 (Bypass Blocks). The first focusable element on the page, visible only while focused - it lets a keyboard user step over the header and navigation straight to the screen's content.",
+      "nl": "Naar de inhoud",
+      "en": "Skip to content"
+    },
+    "common.theme.label": {
+      "note": "Accessible name of the light/dark control (ADR-055). A radiogroup of three, so the group needs its own name separate from the three option labels below.",
+      "nl": "Weergave",
+      "en": "Appearance"
+    },
+    "common.theme.system": {
+      "note": "The default: follow whatever the device is set to, including when the device changes it at sunset. Not the same as explicitly picking the theme the device happens to be in right now.",
+      "nl": "Systeem",
+      "en": "System"
+    },
+    "common.theme.light": {
+      "nl": "Licht",
+      "en": "Light"
+    },
+    "common.theme.dark": {
+      "nl": "Donker",
+      "en": "Dark"
     }
   }
 }

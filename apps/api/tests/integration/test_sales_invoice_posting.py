@@ -551,9 +551,9 @@ async def _document(tenants: SeededTenants, world: dict[str, uuid.UUID]) -> uuid
         tenants,
         "INSERT INTO document (organization_id, administration_id, fiscal_year_id, "
         "  storage_key, content_hash, byte_size, content_type, retention_basis, "
-        "  scan_status) "
+        "  scan_status, scanned_at, scanner) "
         "VALUES (:org, :admin, :year, :key, decode(repeat('ab', 32), 'hex'), 1024, "
-        "  'application/pdf', 'standard', 'clean') RETURNING id",
+        "  'application/pdf', 'standard', 'clean', now(), 'test') RETURNING id",
         org=str(tenants.org_a),
         admin=str(tenants.admin_a),
         year=str(world["year"]),

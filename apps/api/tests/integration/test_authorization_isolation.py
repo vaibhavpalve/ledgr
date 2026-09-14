@@ -70,7 +70,12 @@ async def _as_org(
             text("SELECT set_config('app.current_org_id', :org_id, true)"),
             {"org_id": str(org_id)},
         )
-        return list((await conn.execute(text(sql), params or {})).all())
+        result = await conn.execute(text(sql), params or {})
+        # Most callers here are UPDATE/INSERT/DELETE with no RETURNING -
+        # `.all()` on a result that carries no row description raises
+        # ResourceClosedError rather than an empty list, so it can only be
+        # called when the statement actually produced rows.
+        return list(result.all()) if result.returns_rows else []
 
 
 # --- the seeded catalogue matches the matrix --------------------------------
@@ -386,7 +391,11 @@ async def test_composition_cannot_be_edited_after_the_fact(
         {"id": str(role_id)},
     )
 
-    with pytest.raises(DBAPIError, match="immutable"):
+    # ledgr_app holds no UPDATE grant on role_component at all (the same
+    # append-only discipline CLAUDE.md's ledger tables use) - stronger than
+    # a trigger, and the reason this never reaches whatever an "immutable"
+    # trigger might additionally say: the privilege check refuses it first.
+    with pytest.raises(DBAPIError, match="permission denied"):
         await _as_org(
             two_organizations.org_a,
             "UPDATE role_component SET component_role_id = :other WHERE role_id = :id",
@@ -742,7 +751,10 @@ async def test_a_published_profile_version_is_immutable(
         {"pid": str(rows[0][0])},
     )
 
-    with pytest.raises(DBAPIError, match="immutable"):
+    # Same as role_component's own immutability test: ledgr_app holds no
+    # UPDATE grant on client_access_profile_version at all, so the privilege
+    # check refuses this before any "immutable" trigger would.
+    with pytest.raises(DBAPIError, match="permission denied"):
         await _as_org(
             two_organizations.org_b,
             "UPDATE client_access_profile_version SET summary = 'rewritten' WHERE id = :id",
@@ -1128,10 +1140,35 @@ class _NullNotifier:
 # --- IAM-107 / IAM-108 at the database --------------------------------------
 
 
-async def _engage(firm_org: uuid.UUID, administration_id: uuid.UUID) -> None:
+async def _engage(
+    firm_org: uuid.UUID, administration_id: uuid.UUID, *, client_org: uuid.UUID
+) -> None:
     """An active firm_engagement, created through the same transition the
     application uses: the firm proposes, the client accepts.
+
+    `two_organizations` (tests/support/seed.py) creates both organizations
+    as `kind='business'` - a plain, self-managed tenant, which is deliberate
+    for the isolation tests that use them as two look-alike ordinary
+    tenants. A firm_engagement row requires its firm_organization_id to
+    genuinely be `kind='firm'` (a trigger enforces it), so every caller of
+    this helper needs its `firm_org` flipped first - done here, once,
+    rather than in each of this file's three callers.
+
+    `client_org` is a parameter rather than derived by looking up
+    `administration_id`'s owner while still impersonating the FIRM: with no
+    engagement active yet, the firm's own RLS policies on `administration`
+    do not make the client's row visible at all (the same ordering
+    test_a_firm_cannot_grant_staff_access_without_an_engagement's docstring
+    explains), so that lookup returned nothing rather than the owner it was
+    after. Every caller already has the client's org id at hand (it is
+    `two_organizations.org_a`), so asking for it is simpler than working
+    around a visibility gate this helper's whole job is to close.
     """
+    await _as_org(
+        firm_org,
+        "UPDATE organization SET kind = 'firm' WHERE id = :id",
+        {"id": str(firm_org)},
+    )
     await _as_org(
         firm_org,
         "INSERT INTO firm_engagement "
@@ -1139,15 +1176,8 @@ async def _engage(firm_org: uuid.UUID, administration_id: uuid.UUID) -> None:
         "VALUES (:firm, :admin, 'pending', 'firm')",
         {"firm": str(firm_org), "admin": str(administration_id)},
     )
-    owner_org = (
-        await _as_org(
-            firm_org,
-            "SELECT organization_id FROM administration WHERE id = :id",
-            {"id": str(administration_id)},
-        )
-    )[0][0]
     await _as_org(
-        owner_org,
+        client_org,
         "UPDATE firm_engagement SET status = 'active' "
         "WHERE firm_organization_id = :firm AND administration_id = :admin",
         {"firm": str(firm_org), "admin": str(administration_id)},
@@ -1190,10 +1220,20 @@ async def test_a_firm_cannot_grant_staff_access_without_an_engagement(
 ) -> None:
     """IAM-107: firm staff access flows through the engagement the client
     agreed to. org B plays the firm and has none on org A's administration.
+
+    The refusal actually arrives as "not a visible administration", not the
+    trigger's own "no active engagement" message - the same
+    RLS-is-the-first-line-of-defense ordering as
+    test_a_document_cannot_anchor_to_another_administrations_year in
+    test_document_archive.py: with no engagement, org B's RLS policies on
+    `administration` never make admin_a visible at all, so the INSERT's own
+    scope_id lookup fails before role_assignment_firm_staff_guard_trg's more
+    specific engagement check ever runs. This test asserts the property
+    (refused, and for an access reason), not which layer caught it first.
     """
     firm_user = await seed_user(app_engine, email=f"fs+{uuid.uuid4().hex[:8]}@example.com")
 
-    with pytest.raises(DBAPIError, match="no active engagement"):
+    with pytest.raises(DBAPIError, match="not a visible administration"):
         await _as_org(
             two_organizations.org_b,
             "INSERT INTO role_assignment "
@@ -1210,7 +1250,9 @@ async def test_a_firm_with_an_engagement_can_grant_staff_access(
     """The positive case, and it also proves the engagement is what the
     trigger checks rather than something incidental.
     """
-    await _engage(two_organizations.org_b, two_organizations.admin_a)
+    await _engage(
+        two_organizations.org_b, two_organizations.admin_a, client_org=two_organizations.org_a
+    )
     firm_user = await seed_user(app_engine, email=f"fs+{uuid.uuid4().hex[:8]}@example.com")
 
     await _as_org(
@@ -1261,7 +1303,9 @@ async def test_a_new_firm_employee_reaches_no_client_administration(
     administration and its new employee holds the firm's most powerful
     organization-scoped role. They still reach nothing.
     """
-    await _engage(two_organizations.org_b, two_organizations.admin_a)
+    await _engage(
+        two_organizations.org_b, two_organizations.admin_a, client_org=two_organizations.org_a
+    )
     employee = await seed_user(app_engine, email=f"new+{uuid.uuid4().hex[:8]}@example.com")
     await grant_role(
         app_engine,
@@ -1301,7 +1345,9 @@ async def test_the_access_register_is_readable_by_the_client_without_the_firms_h
     context can read an access row written by a firm user - no firm
     involvement, nothing to request.
     """
-    await _engage(two_organizations.org_b, two_organizations.admin_a)
+    await _engage(
+        two_organizations.org_b, two_organizations.admin_a, client_org=two_organizations.org_a
+    )
     firm_user = await seed_user(app_engine, email=f"fs+{uuid.uuid4().hex[:8]}@example.com")
 
     # Written from the FIRM's context, as it would be during a real request.

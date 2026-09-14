@@ -246,6 +246,27 @@
       "nl": "Vraagt uw aandacht",
       "en": "Needs your attention"
     },
+    "mobile.home.figures_heading": {
+      "note": "Heading over the three summary figures, which sit BELOW the attention list (ADR-055): they are lagging indicators nobody can act on, so they no longer open the screen.",
+      "nl": "Stand van zaken",
+      "en": "Where things stand"
+    },
+    "mobile.home.items_empty_title": {
+      "note": "FR-UX-004: the empty state's headline. Said positively - this is the good outcome, not a missing list.",
+      "nl": "U bent bij",
+      "en": "You are all caught up"
+    },
+    "mobile.home.item_count": {
+      "note": "Count beside the attention heading, so the size of the job is visible before the list is read. {count} drives the plural. Dutch uses 'punt/punten' rather than the loanword 'item' - it is what a Dutch bookkeeper calls an entry on a list of things to deal with.",
+      "nl": {
+        "one": "{count} punt",
+        "other": "{count} punten"
+      },
+      "en": {
+        "one": "{count} item",
+        "other": "{count} items"
+      }
+    },
     "mobile.home.items_empty": {
       "note": "FR-UX-004: an empty state teaches rather than just showing nothing. Said positively - nothing is overdue or incomplete right now.",
       "nl": "Niets vraagt op dit moment uw aandacht. Openstaande facturen en onvolledige declaraties verschijnen hier.",

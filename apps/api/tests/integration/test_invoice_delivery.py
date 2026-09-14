@@ -52,10 +52,24 @@ async def _invoice(
 
     # `as_org` as well as the `:org` binding: seeding org B's invoice needs
     # org B's tenant context, or RLS refuses the insert.
+    #
+    # ON CONFLICT DO UPDATE, not a plain INSERT: fiscal_year_unique_start
+    # (0001) is (administration_id, start_date), and every call here uses
+    # the same hardcoded 2026-01-01 - fine the one time _invoice() is called
+    # per administration, but test_undelivered_invoices_lists_what_never_
+    # went_out calls it twice for the SAME admin_a (one invoice sent, one
+    # not - the whole point of that test), and a second plain INSERT there
+    # collided with the first. Real usage is exactly this: one fiscal year,
+    # many invoices inside it, so reusing the existing row - the DO UPDATE
+    # is a no-op that only exists to make RETURNING id work on the conflict
+    # path too - is the correct shape, not a workaround.
     result = await _exec(
         tenants,
         "INSERT INTO fiscal_year (organization_id, administration_id, start_date, end_date) "
-        "VALUES (:org, :admin, '2026-01-01', '2026-12-31') RETURNING id",
+        "VALUES (:org, :admin, '2026-01-01', '2026-12-31') "
+        "ON CONFLICT ON CONSTRAINT fiscal_year_unique_start "
+        "DO UPDATE SET end_date = excluded.end_date "
+        "RETURNING id",
         as_org=org,
         org=str(org),
         admin=str(admin),

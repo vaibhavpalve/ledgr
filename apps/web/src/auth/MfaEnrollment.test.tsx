@@ -71,6 +71,40 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
     expect(mfaTotpEnrollConfirm).toHaveBeenCalledWith("JBSWY3DPEHPK3PXP", "123456");
   });
 
+  it("TOTP: renders a real scannable QR code, not just the raw secret", async () => {
+    const mfaTotpEnrollBegin = vi.fn(async () => ({
+      secret: "JBSWY3DPEHPK3PXP",
+      provisioningUri: "otpauth://totp/LEDGR:a@example.com?secret=JBSWY3DPEHPK3PXP",
+    }));
+    const onVerified = vi.fn();
+
+    render(
+      <MfaEnrollment
+        api={api({ mfaTotpEnrollBegin })}
+        enrollment={nothingEnrolled}
+        onVerified={onVerified}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("mfa-totp-begin"));
+
+    // Generation is a real async call into the `qrcode` package (not
+    // mocked) - waiting for the <svg> to actually land is what tells apart
+    // "renders a QR code" from "renders a container that would have one".
+    await waitFor(() => {
+      const container = screen.getByTestId("mfa-totp-qr");
+      expect(container.querySelector("svg")).not.toBeNull();
+    });
+
+    // The QR is decorative (the manual key beside it carries the same
+    // information for anyone who can't use it visually), so it must not
+    // duplicate an accessible announcement of the encoded secret.
+    expect(screen.getByTestId("mfa-totp-qr").getAttribute("aria-hidden")).toBe("true");
+
+    // The "don't have an app" guidance this whole change exists to add.
+    expect(screen.getByTestId("mfa-totp-no-app").textContent).toContain("Google Authenticator");
+  });
+
   it("TOTP: an already-enrolled factor goes straight to a code prompt (step-up, not enrolment)", async () => {
     const mfaTotpVerify = vi.fn(async () => verified);
     const onVerified = vi.fn();

@@ -361,7 +361,13 @@ create trigger expense_same_tenant_as_item_trg
 create or replace function expenses.review_list(p_session_id uuid)
 returns table (
     item_id          uuid,
-    position         integer,
+    -- Quoted: POSITION is one of the SQL-standard function-name keywords
+    -- (POSITION(substring IN string)) - fine as a bare CREATE TABLE column
+    -- (capture_item.position above), but a RETURNS TABLE column list uses
+    -- the same, narrower name grammar a function's own parameters do, which
+    -- rejects it unquoted. The identifier itself is unchanged: an unquoted
+    -- `position` and this `"position"` both name the same lowercase column.
+    "position"       integer,
     expense_id       uuid,
     page_count       bigint,
     content_types    text[],

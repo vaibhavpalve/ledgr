@@ -31,7 +31,8 @@ async def _as_org(org_id: uuid.UUID, sql: str, params: dict[str, object] | None 
             text("SELECT set_config('app.current_org_id', :org_id, true)"),
             {"org_id": str(org_id)},
         )
-        return list((await conn.execute(text(sql), params or {})).all())
+        result = await conn.execute(text(sql), params or {})
+        return list(result.all()) if result.returns_rows else []
 
 
 async def _seed_entries(tenants: SeededTenants, count: int = 3) -> None:

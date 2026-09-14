@@ -141,9 +141,24 @@ create table invoice_delivery (
     sent_at             timestamptz,
     settled_at          timestamptz,
 
-    -- A dispatch that has been accepted has a moment at which that happened.
+    -- A dispatch that has been accepted has a moment at which that
+    -- happened - required for 'sent'/'delivered', forbidden for 'queued'/
+    -- 'failed' (never handed over), and deliberately UNCONSTRAINED for
+    -- 'bounced': invoice_delivery_transition_is_forward below allows
+    -- 'bounced' from either 'sent' (the provider accepted it, then later
+    -- reported it did not arrive - sent_at is already set and stays set)
+    -- or straight from 'queued' (a synchronous rejection the provider never
+    -- accepted at all - sent_at is and stays null). A plain biconditional
+    -- across a fixed status list cannot express "constrained one way, free
+    -- the other" for the same status, which is what a single `= (sent_at is
+    -- not null)` here originally tried to do and why the first, sent-then-
+    -- bounced case failed this very check against a real Postgres: sent_at
+    -- is never cleared going forward, so 'bounced' after 'sent' always kept
+    -- a non-null sent_at that the original (status in ('sent','delivered'))
+    -- left unaccounted for.
     constraint invoice_delivery_sent_is_dated check (
-        (status in ('sent', 'delivered')) = (sent_at is not null)
+        (status not in ('sent', 'delivered') or sent_at is not null)
+        and (status in ('sent', 'delivered', 'bounced') or sent_at is null)
     ),
 
     -- A settled dispatch is one nothing further will happen to.

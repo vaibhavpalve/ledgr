@@ -1,6 +1,12 @@
 # Env
 .env
 
+# Local dev infrastructure (native Postgres/Azurite installed in place of
+# Docker, which is absent on this machine — see the "local dev stack" memory
+# note). Binaries, a real database cluster, and generated credentials; none
+# of it belongs in the repo.
+.devtools/
+
 # Node
 node_modules/
 dist/
@@ -25,3 +31,10 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Build artefacts of tsc -b / vitest
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts
+apps/api/pytest_debug.txt
+

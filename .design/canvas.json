@@ -1,0 +1,39 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 900, "title": "Start — vraagt uw aandacht" },
+    { "file": "ReviewStack.dc.html", "x": 1560, "y": 0, "w": 1440, "h": 900, "title": "Review Stack — triage" },
+    { "file": "LedgerTable.dc.html", "x": 0, "y": 1060, "w": 1440, "h": 900, "title": "Grootboek — inspectie" },
+    { "file": "ClientSwitch.dc.html", "x": 1560, "y": 1060, "w": 1440, "h": 900, "title": "Klantwissel + palet" }
+  ],
+  "annotations": [
+    {
+      "id": "note-frame",
+      "x": -470,
+      "y": 0,
+      "w": 390,
+      "text": "ONE HUE THROUGH THE WHOLE NEUTRAL RAMP\n\nThe first pass had cool inks (blue-leaning greys) over warm papers. That hue flip is what makes mid-greys look dirty. Every neutral now sits on hue 80 in OKLCH, from #26221C ink to #FBF8F4 paper — warm all the way down.\n\nThree text greys, and all three clear 4.5:1 on all three grounds. The old #9AA0A7 I used for the ledger's \"—\" placeholders measured 2.57:1 and is gone."
+    },
+    {
+      "id": "note-colour",
+      "x": -470,
+      "y": 380,
+      "w": 390,
+      "text": "FOUR SEMANTICS, ONE LIGHTNESS, ONE CHROMA\n\nL 0.47, C 0.08, hue is the only variable: accent 200, positive 148, caution 75, attention 38. 0.08 is the highest chroma all four hues can actually hold in sRGB — above it two of them clip and the set stops being uniform, which is what happened in the first pass.\n\nattention #814A39 is spent on STATE only: the row edge, the icon, the \"Te laat\" label. The reminder button went back to the accent — a routine action should never wear the alarm colour."
+    },
+    {
+      "id": "note-ledger",
+      "x": -470,
+      "y": 1060,
+      "w": 390,
+      "text": "ICONS: ONE GRID, ONE OPTICAL WEIGHT\n\nEvery icon is drawn on a 20-unit box with round caps and joins. Stroke-width is scaled per render size so the painted line is 1.5px everywhere: 22px→1.36, 20px→1.5, 18px→1.67, 16px→1.88. The first pass mixed 1.6 through 2.0 at eight different sizes, which reads as ragged.\n\nAnd the per-row padlocks are gone. Everything in the grootboek is posted, so a lock on every row said nothing. The marker column now carries exceptions only — here, the reversing entry."
+    },
+    {
+      "id": "note-tenancy",
+      "x": -470,
+      "y": 1480,
+      "w": 390,
+      "text": "TEN CLIENT COLOURS, HONESTLY MEASURED\n\nL 0.55, C 0.07 — lighter and quieter than the semantics on purpose. Ten hues over a 300-degree arc with a 30-degree dead zone either side of the accent, so no client is ever mistaken for the UI's own colour (the old palette had a client literally equal to the accent).\n\nThe second strip on that artboard is the honest part: simulated deuteranopia collapses the ten to about five, and amber/lime become identical. Initials and name are load-bearing, not decoration.\n\nMarker initials are pure #FFFFFF — the off-white paper tone only reaches 4.42:1 on the darkest client colour."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

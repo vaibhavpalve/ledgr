@@ -1,0 +1,144 @@
+/*
+ * The home screen (FR-UX-005 / MOB-006).
+ *
+ * The layout carries the same argument the component's docstring makes: the
+ * attention list is the hero and the figures are context. That shows up here
+ * as size — list rows are full-width and body-sized, figures sit in a compact
+ * auto-fit grid at caption size — rather than as order alone.
+ */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-5);
+}
+
+.home__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+}
+
+.home__section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+}
+
+/* ==========================================================================
+ * ATTENTION LIST
+ * ==========================================================================
+ */
+
+/*
+ * The icon sits in a tinted disc so the row has an anchor at its left edge and
+ * the eye can run down the column of kinds without reading. Neutral by
+ * default — see the component's `ItemIcon` docstring for why only an overdue
+ * invoice earns the attention colour.
+ */
+.home__item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--ledgr-radius-pill);
+
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+}
+
+.home__item-icon--overdue_invoice {
+  background-color: var(--ledgr-attention-wash);
+  color: var(--ledgr-attention);
+}
+
+.home__item-icon--draft_expense,
+.home__item-icon--draft_invoice {
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+}
+
+.home__item-chevron {
+  flex: none;
+  color: var(--ledgr-text-muted);
+}
+
+/*
+ * The chevron slides a little on hover — the one micro-interaction on this
+ * screen, and it is doing a job: it says the row goes somewhere, which is
+ * otherwise only implied by the cursor. Zeroed under prefers-reduced-motion by
+ * tokens.css.
+ */
+.list__row:hover .home__item-chevron {
+  color: var(--ledgr-accent);
+  transform: translateX(2px);
+}
+
+.home__item-chevron {
+  transition:
+    transform var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+/* ==========================================================================
+ * FIGURES
+ * ==========================================================================
+ *
+ * `auto-fit` with a minimum rather than a fixed column count: one column on a
+ * phone, three across a laptop, and — the part a fixed count gets wrong — it
+ * never leaves a single figure stranded alone on a second row.
+ */
+
+.home__figures {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--ledgr-space-3);
+}
+
+.home__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+
+  padding: var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.home__figure dd {
+  margin: 0;
+}
+
+/*
+ * The serif, at section size rather than the display size these had when they
+ * opened the screen. Still unmistakably the figure in its card; no longer the
+ * largest thing on the page, because it is no longer the most important.
+ */
+.home__figure-value {
+  font-size: var(--ledgr-type-section);
+  color: var(--ledgr-text-primary);
+}
+
+/* ==========================================================================
+ * LOADING
+ * ==========================================================================
+ *
+ * Three rows at the height of a real list row, so the skeleton occupies the
+ * space the content will and nothing shifts when it arrives.
+ */
+
+.home__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+
+.home__loading-row {
+  height: 3.5rem;
+  border-radius: var(--ledgr-radius-panel);
+}

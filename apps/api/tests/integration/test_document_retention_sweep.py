@@ -19,6 +19,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import engine as app_engine
+from api.db import get_ops_engine
 from api.documents.retention_job import DocumentRetentionSweepJob
 from api.documents.retention_repository import SqlDocumentRetentionRepository
 from tests.support.seed import SeededTenants
@@ -48,7 +49,7 @@ async def _insert_document(
     administration_id: uuid.UUID, organization_id: uuid.UUID, fiscal_year_id: uuid.UUID
 ) -> uuid.UUID:
     """`retention_until` is sent as 'epoch' and immediately overwritten by
-    `document_set_retention_trg` from the fiscal year - the same convention
+    `document_derive_retention_trg` from the fiscal year - the same convention
     tests/integration/test_document_archive.py uses, so a stopped trigger
     would fail loudly rather than pass on a coincidentally-past date.
     """
@@ -102,14 +103,22 @@ async def test_an_unlinked_expired_document_is_removed_by_the_sweep(
     )
     document_id = await _insert_document(two_organizations.admin_a, two_organizations.org_a, year)
 
-    async with app_engine.connect() as conn:
-        await conn.execute(
-            text("SELECT set_config('app.current_org_id', :org, true)"),
-            {"org": str(two_organizations.org_a)},
-        )
-        job = DocumentRetentionSweepJob(SqlDocumentRetentionRepository(AsyncSession(bind=conn)))
-        report = await job.run(administration_id=two_organizations.admin_a)
-        await conn.commit()
+    # ledgr_ops, not app_engine: migration 0031 grants DELETE on `document`
+    # to ledgr_ops alone (FR-DOC-002's "not deletable by users" is exactly
+    # that withheld grant, which test_document_archive.py's
+    # test_the_application_role_cannot_delete_a_document asserts directly) -
+    # a ledgr_app connection can select the sweep's candidates but can never
+    # complete the delete, the same production shape
+    # scripts/enforce_document_retention.py runs (there is no ledgr_app mode
+    # there either, for the same reason).
+    ops_engine = get_ops_engine()
+    try:
+        async with ops_engine.connect() as conn:
+            job = DocumentRetentionSweepJob(SqlDocumentRetentionRepository(AsyncSession(bind=conn)))
+            report = await job.run(administration_id=two_organizations.admin_a)
+            await conn.commit()
+    finally:
+        await ops_engine.dispose()
 
     assert document_id in report.deleted
     assert report.exceptions == ()
@@ -150,18 +159,26 @@ async def test_the_sweep_does_not_cross_administrations(
     document_a = await _insert_document(two_organizations.admin_a, two_organizations.org_a, year_a)
     document_b = await _insert_document(two_organizations.admin_b, two_organizations.org_b, year_b)
 
-    async with app_engine.connect() as conn:
-        await conn.execute(
-            text("SELECT set_config('app.current_org_id', :org, true)"),
-            {"org": str(two_organizations.org_a)},
-        )
-        job = DocumentRetentionSweepJob(SqlDocumentRetentionRepository(AsyncSession(bind=conn)))
-        report = await job.run(administration_id=two_organizations.admin_a)
-        await conn.commit()
+    # ledgr_ops (BYPASSRLS) - see test_an_unlinked_expired_document_is_removed_
+    # by_the_sweep above for why. Scoping to admin_a here is the
+    # `administration_id` argument, not RLS: an ops connection can see every
+    # tenant, and documents.expired()/the DELETE both take that parameter as
+    # their only filter.
+    ops_engine = get_ops_engine()
+    try:
+        async with ops_engine.connect() as conn:
+            job = DocumentRetentionSweepJob(SqlDocumentRetentionRepository(AsyncSession(bind=conn)))
+            report = await job.run(administration_id=two_organizations.admin_a)
+            await conn.commit()
+    finally:
+        await ops_engine.dispose()
 
     assert document_a in report.deleted
     assert not await _document_still_exists(document_a, two_organizations.org_a)
-    # RLS scoped this run to org A; org B's equally-expired document is
-    # untouched, and unreachable from this connection to even check by id -
-    # confirmed from B's own tenant context instead.
+    # org B's equally-expired document is untouched: the sweep above was
+    # scoped to admin_a by argument, not by RLS, so this is proving the
+    # parameter is honoured rather than proving isolation the connection
+    # itself provided. Confirmed from B's own tenant context (ledgr_app,
+    # RLS-scoped) via _document_still_exists, which is a different
+    # connection from the one the sweep ran on.
     assert await _document_still_exists(document_b, two_organizations.org_b)

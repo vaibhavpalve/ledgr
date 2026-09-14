@@ -30,21 +30,39 @@ export function SignOutConfirm({
   useModalFocus(true, dialogRef);
 
   return (
-    <div
-      ref={dialogRef}
-      role="alertdialog"
-      aria-modal="true"
-      aria-label={t("auth.sign_out.confirm_heading")}
-      data-testid="sign-out-confirm"
-    >
-      <p>{t("auth.sign_out.confirm_heading")}</p>
-      <p>{t("auth.sign_out.confirm_body", { count })}</p>
-      <button type="button" data-testid="sign-out-confirm-cancel" onClick={onCancel}>
-        {t("auth.sign_out.confirm_cancel")}
-      </button>
-      <button type="button" data-testid="sign-out-confirm-anyway" onClick={onConfirm}>
-        {t("auth.sign_out.confirm_anyway")}
-      </button>
+    // The backdrop is a sibling concern to the dialog itself: it dims the page
+    // and, on a phone, pins the dialog to the bottom where a thumb reaches
+    // (see .dialog-backdrop in app.css). The focus trap stays on the dialog.
+    <div className="dialog-backdrop">
+      <div
+        ref={dialogRef}
+        className="dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label={t("auth.sign_out.confirm_heading")}
+        data-testid="sign-out-confirm"
+      >
+        <h2>{t("auth.sign_out.confirm_heading")}</h2>
+        <p>{t("auth.sign_out.confirm_body", { count })}</p>
+        <div className="dialog__actions">
+          {/* Safe option first in DOM order, so it is also first under a
+              screen reader and first for a keyboard user tabbing in. The
+              destructive one is an outline, never a filled button — attention
+              is reserved for state, and an action wearing the alarm colour is
+              how people learn to click past alarms. */}
+          <button type="button" data-testid="sign-out-confirm-cancel" onClick={onCancel}>
+            {t("auth.sign_out.confirm_cancel")}
+          </button>
+          <button
+            type="button"
+            className="button--danger"
+            data-testid="sign-out-confirm-anyway"
+            onClick={onConfirm}
+          >
+            {t("auth.sign_out.confirm_anyway")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

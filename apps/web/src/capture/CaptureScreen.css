@@ -1,100 +1,243 @@
 /*
- * The capture screen's styling — FR-EXP-001's "single tap from the home
- * screen", for someone standing in a car park with a receipt in one hand
- * (ADR-047).
+ * The capture screen — FR-EXP-001's "single tap from the home screen", for
+ * someone standing in a car park with a receipt in one hand (ADR-047).
  *
- * This is the first stylesheet in this codebase (confirmed: no .css file
- * existed anywhere in apps/web/src before this task) and it stays narrowly
- * scoped to what that scenario needs — one prominent primary action, reachable
- * one-handed, and everything else visually out of its way. It is not a design
- * system: no palette, no tokens, no framework (this app has none as a
- * dependency — see package.json).
+ * This is the product's most photographed screen and its highest moment of
+ * brand contact: it is what a demo shows and what a review screenshots. It
+ * used to be a Google-blue disc on white with browser-default type, because it
+ * predated any design system. It now reads from tokens like everything else
+ * (ADR-055) — which, on top of looking like the product, is what gives it a
+ * dark theme for free.
+ *
+ * The scenario still sets every decision here: one prominent action, reachable
+ * one-handed, everything else visibly out of its way.
  */
 
 .capture {
   position: relative;
-  box-sizing: border-box;
-  /* Room at the bottom for the fixed shutter button so it never overlaps the
-     review list or the finalise button beneath it. */
-  padding: 1rem 1rem calc(7rem + env(safe-area-inset-bottom, 0px));
-}
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
 
-.capture__drop {
-  box-sizing: border-box;
-  border: 2px dashed #9aa0a6;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 0.75rem 0;
-  color: #444444;
-  text-align: center;
+  /* Room at the bottom for the fixed shutter so it never covers the review
+     list or the finalise button beneath it. */
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
 }
 
 /*
- * The shutter — the ONE tap this screen exists to make possible. Fixed near
- * the bottom of the viewport, centered, and generously larger than MOB-013's
- * 44x44pt/48x48dp minimum: cold hands, possibly gloved, not looking closely.
+ * The drop target. Dashed, because a dashed edge means "not filled yet" —
+ * the same vocabulary the design canvas uses for a draft register. Solid
+ * borders are for things that exist.
+ */
+.capture__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ledgr-space-1);
+
+  padding: var(--ledgr-space-5) var(--ledgr-space-4);
+  border: 2px dashed var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-panel);
+
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-small);
+  text-align: center;
+
+  transition:
+    border-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    background-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+.capture__drop:hover {
+  border-color: var(--ledgr-accent);
+  background-color: var(--ledgr-accent-wash);
+}
+
+/*
+ * THE SHUTTER — the one tap this screen exists to make possible.
+ *
+ * Fixed near the bottom, centred, and far larger than MOB-013's 44pt/48dp
+ * minimum: cold hands, possibly gloved, not looking closely. The size is the
+ * requirement being met generously on purpose, not a decorative choice.
+ *
+ * Centred rather than thumb-side because this app has both left- and
+ * right-handed users and no setting to tell them apart; the centre is the only
+ * position that is not actively wrong for half of them.
  */
 .capture__shutter {
   position: fixed;
   left: 50%;
-  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 30;
 
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 4px solid #ffffff;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 0;
+  border-radius: var(--ledgr-radius-pill);
 
-  background-color: #0b57d0;
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.15;
+  background-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+  /* A ring in the page's own surface colour, so the disc reads as separate
+     from whatever it is currently floating over. */
+  border: 4px solid var(--ledgr-surface-paper);
+
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-bold);
+  line-height: var(--ledgr-leading-tight);
   text-align: center;
 
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
+  box-shadow: var(--ledgr-shadow-lg);
+  transition: transform var(--ledgr-duration-fast) var(--ledgr-ease-spring);
 }
 
+.capture__shutter:hover:not(:disabled) {
+  background-color: var(--ledgr-accent);
+  transform: translateX(-50%) scale(1.03);
+}
+
+/*
+ * A real press, not a colour change: on a phone the finger is covering the
+ * button, so a tint under it is invisible. Scale is the only feedback that
+ * shows around the edge of a fingertip.
+ */
 .capture__shutter:active {
-  background-color: #08409e;
+  background-color: var(--ledgr-accent-hover);
+  transform: translateX(-50%) scale(0.96);
 }
 
+/*
+ * Once the shutter is fixed, the ring is no longer inside any scrolling
+ * container, so the ring can sit outside the disc without being clipped.
+ */
 .capture__shutter:focus-visible {
-  outline: 3px solid #0b57d0;
-  outline-offset: 3px;
+  outline: 3px solid var(--ledgr-border-focus);
+  outline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  .capture__shutter {
+    border: 2px solid ButtonText;
+  }
 }
 
 /*
  * Every secondary action — choose files, add a page, next receipt, finalise.
  * Still a full 48px touch target (MOB-013), but visibly not the one thing a
- * person standing in a car park is here to do.
+ * person standing in a car park is here to do: no fill, quieter type, and
+ * they sit in the flow rather than floating.
  */
 .capture__secondary {
-  box-sizing: border-box;
-  min-height: 48px;
-  min-width: 48px;
-  padding: 0.5rem 0.9rem;
-  margin: 0.35rem 0.4rem 0 0;
-
-  border: 1px solid #c7c7c7;
-  border-radius: 8px;
-  background-color: #f1f3f4;
-  color: #1a1a1a;
-  font-size: 0.9rem;
+  min-height: var(--ledgr-touch-min);
+  font-weight: var(--ledgr-weight-medium);
 }
 
-.capture__secondary:disabled {
-  color: #8a8a8a;
-  background-color: #f7f7f7;
+/*
+ * `aria-pressed` is a real toggle on two of these ("add a page" vs "new
+ * receipt"), so the selected one is styled from that attribute rather than a
+ * parallel class — the announced state and the visible state stay one fact.
+ */
+.capture__secondary[aria-pressed="true"] {
+  background-color: var(--ledgr-accent-wash);
+  border-color: var(--ledgr-accent);
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
 }
 
-/* WCAG 2.2 SC 2.4.7 — matches .capture__shutter:focus-visible above rather
-   than leaving every secondary button relying on the browser default. */
-.capture__secondary:focus-visible {
-  outline: 3px solid #0b57d0;
-  outline-offset: 2px;
+/* ==========================================================================
+ * QUEUE (MOB-002 — working without signal)
+ * ==========================================================================
+ *
+ * Being able to photograph receipts with no bars is a feature, not a failure
+ * mode, so the queue is given a calm, designed panel rather than a red warning
+ * line. The offline notice uses caution, never attention: nothing is wrong.
+ */
+
+.capture-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+
+  padding: var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.capture-queue__offline {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+  border-radius: var(--ledgr-radius-control);
+  border-left: 3px solid var(--ledgr-caution);
+
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-medium);
+}
+
+.capture-queue__storage {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.capture-queue__item-name {
+  font-weight: var(--ledgr-weight-semibold);
+  font-size: var(--ledgr-type-small);
+}
+
+.capture-queue__item-state {
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ledgr-text-muted);
+}
+
+.capture-queue__item-attempts,
+.capture-queue__item-reason {
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-caution);
+}
+
+/* ==========================================================================
+ * EXPENSE FORM
+ * ==========================================================================
+ */
+
+.expense-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+
+  padding: var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+/*
+ * Two columns once there is room for both to stay a comfortable width. On a
+ * phone they stack, which is the only sensible reading of a form this dense on
+ * a 360px screen.
+ */
+@media (min-width: 40rem) {
+  .expense-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ledgr-space-4);
+  }
+
+  /* A form's own heading and its submit row are never half-width. */
+  .expense-form > h2,
+  .expense-form > fieldset,
+  .expense-form > [role="alert"],
+  .expense-form > button {
+    grid-column: 1 / -1;
+  }
 }

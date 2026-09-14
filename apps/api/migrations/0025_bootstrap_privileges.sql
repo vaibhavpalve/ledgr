@@ -89,6 +89,43 @@ grant insert on administration_encryption_key to ledgr_bootstrap;
 -- NFR-032: expiry. SELECT because the WHERE clause reads expires_at.
 grant select, delete on idempotency_key to ledgr_bootstrap;
 
+-- FR-MDL-004 again, a third instance of the same shape of gap: inserting
+-- into administration fires administration_assign_colour_trg (0018), which
+-- is plain plpgsql with no SECURITY DEFINER of its own - so for the
+-- duration of create_firm_client_administration's call it runs as this
+-- function's owner too, and needs its own SELECT on client_colour rather
+-- than borrowing ledgr_app's (0018 grants that to ledgr_app alone; every
+-- direct application insert into administration goes through ledgr_app, so
+-- nothing before this exercised the bootstrap path's own trigger firing).
+grant select on client_colour to ledgr_bootstrap;
+
+-- FR-MDL-004: the same gap this migration's own docstring describes, found
+-- the same way (a real Postgres, not a read of the migration) - the one
+-- table/schema kind neither the table-privilege audit above nor a code
+-- review would think to check. create_firm_client_administration calls
+-- app.current_org_id() from inside its own SECURITY DEFINER body (it needs
+-- the calling firm's org id to check `kind = 'firm'`) - unlike
+-- signup_self_managed_organization/signup_firm_organization, which run
+-- before any tenant context exists and never reach into `app` at all, and
+-- unlike purge_expired_idempotency_keys, whose DELETE never does either.
+-- Owning objects IN a schema (ledgr_bootstrap owns all three bootstrap
+-- functions) does not imply USAGE ON that schema - two separate grants -
+-- and nothing before this migration ever gave ledgr_bootstrap the second
+-- one. The result: every OTHER call in create_firm_client_administration's
+-- body would have worked, and only the one line calling app.current_org_id()
+-- failed, with "permission denied for schema app" - which does not name the
+-- function, the table, or even hint that ownership already covers
+-- everything else it touches.
+grant usage on schema app to ledgr_bootstrap;
+
+-- NFR-032, the same gap: app.purge_expired_idempotency_keys() is granted
+-- EXECUTE to ledgr_ops (0022) but calling a schema-qualified function also
+-- needs USAGE on the schema it lives in, which nothing ever granted ledgr_ops
+-- for `app` (only for `ledger`, in 0020) - "permission denied for schema
+-- app" the first time the purge job actually ran as ledgr_ops rather than
+-- being read off the grant list.
+grant usage on schema app to ledgr_ops;
+
 -- ---------------------------------------------------------------------------
 -- The check that would have caught this
 -- ---------------------------------------------------------------------------

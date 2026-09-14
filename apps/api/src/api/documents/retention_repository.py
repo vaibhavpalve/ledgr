@@ -1,10 +1,15 @@
 """SQL behind `DocumentRetentionRepository` - `documents.expired()`
 (migration 0045) and the DELETE that removes an expired row.
 
-Runs on whichever connection it is given - `ledgr_app` (RLS-scoped, one
-administration) for an on-demand run, `ledgr_ops` (BYPASSRLS) for the nightly
-cross-tenant sweep - the same division `api.ledger.integrity_repository.
-SqlIntegrityRepository` documents for its own two reads.
+Unlike `api.ledger.integrity_repository.SqlIntegrityRepository` (read-only,
+so either role can run it), `delete()` below only ever works as `ledgr_ops`:
+migration 0031 grants DELETE on `document` to ledgr_ops alone and explicitly
+withholds it from ledgr_app - "FR-DOC-002's 'not deletable by users' is this
+line: the application role ... has no way to express the statement" - so a
+connection authenticated as ledgr_app fails this with permission denied
+regardless of how expired the row is. `expired()` (SELECT) would work as
+either, but there is no on-demand ledgr_app mode here to support it for; see
+scripts/enforce_document_retention.py.
 """
 
 from __future__ import annotations

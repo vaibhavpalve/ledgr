@@ -17,12 +17,16 @@ scripts/verify_ledger_integrity.py, which this mirrors).
     uv run python scripts/enforce_document_retention.py \\
         --administration 0f8c... --json
 
-    # through the application role, scoped to one tenant by RLS
-    uv run python scripts/enforce_document_retention.py \\
-        --app-connection --organization 0f8c...
-
     make enforce-document-retention
     make enforce-document-retention ARGS="--administration 0f8c... --json"
+
+There is no ledgr_app / RLS-scoped mode, unlike verify_ledger_integrity.py's
+--app-connection: that job only reads; this one deletes, and migration 0031
+grants DELETE on `document` to ledgr_ops alone - ledgr_app cannot express the
+statement at all (FR-DOC-002's "not deletable by users"), so a ledgr_app
+connection would fail every deletion with permission denied regardless of
+how expired the row is. --administration scopes an ops-connected run to one
+tenant without needing a second, weaker connection mode to do it.
 
 --- Exit codes ---
 
@@ -50,7 +54,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession  # noqa: E402
 
 from api.documents.retention_job import (  # noqa: E402
@@ -69,7 +72,6 @@ async def run_sweep(
     engine: AsyncEngine,
     *,
     administration_id: uuid.UUID | None,
-    organization_id: uuid.UUID | None,
 ) -> RetentionSweepReport:
     """One connection, one transaction, committed at the end.
 
@@ -81,11 +83,6 @@ async def run_sweep(
     """
     async with engine.connect() as conn:
         session = AsyncSession(bind=conn)
-        if organization_id is not None:
-            await session.execute(
-                text("SELECT set_config('app.current_org_id', :org, true)"),
-                {"org": str(organization_id)},
-            )
         job = DocumentRetentionSweepJob(
             SqlDocumentRetentionRepository(session), LoggingRetentionSweepAlerter()
         )
@@ -109,14 +106,9 @@ def render(report: RetentionSweepReport) -> str:
     return "\n".join(lines)
 
 
-def _engine(use_app_connection: bool) -> AsyncEngine:
-    from api.db import engine as app_engine
+async def main() -> int:
     from api.db import get_ops_engine
 
-    return app_engine if use_app_connection else get_ops_engine()
-
-
-async def main() -> int:
     parser = argparse.ArgumentParser(
         description="Enforce document retention (PRIV-030).",
         epilog="Exit codes: 0 clean, 1 exceptions found, 2 could not run.",
@@ -127,52 +119,21 @@ async def main() -> int:
         default=None,
         help="sweep one administration instead of everything visible",
     )
-    parser.add_argument(
-        "--organization",
-        type=uuid.UUID,
-        default=None,
-        help=(
-            "set tenant context for the run. Required with --app-connection: "
-            "RLS fails closed without it and the sweep would examine nothing."
-        ),
-    )
-    parser.add_argument(
-        "--app-connection",
-        action="store_true",
-        help=(
-            "connect through DATABASE_URL as ledgr_app (RLS-scoped) instead of "
-            "OPS_DATABASE_URL as ledgr_ops (cross-tenant)"
-        ),
-    )
     parser.add_argument("--json", action="store_true", help="emit the report as JSON")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    if args.app_connection and args.organization is None:
-        print(
-            "--app-connection needs --organization: as ledgr_app, row-level "
-            "security returns nothing without tenant context, so the sweep "
-            "would examine nothing.",
-            file=sys.stderr,
-        )
-        return EXIT_CANNOT_RUN
-
     try:
-        engine = _engine(args.app_connection)
+        engine = get_ops_engine()
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return EXIT_CANNOT_RUN
 
     try:
-        report = await run_sweep(
-            engine,
-            administration_id=args.administration,
-            organization_id=args.organization,
-        )
+        report = await run_sweep(engine, administration_id=args.administration)
     finally:
-        if not args.app_connection:
-            await engine.dispose()
+        await engine.dispose()
 
     print(json.dumps(report.as_dict(), indent=2) if args.json else render(report))
     return EXIT_EXCEPTIONS if report.exceptions else EXIT_CLEAN

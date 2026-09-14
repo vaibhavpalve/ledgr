@@ -42,10 +42,13 @@ create schema if not exists app;
 --                     at the privilege level, so no policy bug could ever
 --                     make a delete succeed.
 --   ledgr_bootstrap - NOLOGIN. Cannot be connected to directly, by anyone,
---                     ever. Owns exactly two SECURITY DEFINER functions
---                     (below) and is the only role in the system with
+--                     ever. Owns the two SECURITY DEFINER functions below
+--                     plus a third added later (login's home-organization
+--                     lookup — see 0048_login_home_organization_lookup.sql
+--                     for why a read needed this too, not only the writes
+--                     below) and is the only role in the system with
 --                     BYPASSRLS. That makes the bypass surface exactly the
---                     bodies of those two functions — not a role, not a
+--                     bodies of those functions — not a role, not a
 --                     connection string, not a config flag anyone could
 --                     flip by accident.
 do $$
@@ -419,6 +422,23 @@ create policy period_update on period
 -- kind = 'firm', and an organization cannot be "engaged" with an
 -- administration it already owns. Both require a cross-table lookup, which
 -- a check constraint cannot express.
+--
+-- SECURITY DEFINER, owned by ledgr_bootstrap (BYPASSRLS) below - not
+-- optional here the way it is for most triggers. ADR-002 designs
+-- acceptance as something the CLIENT does (`accepted_at`, "whether the
+-- client accepted"): the client's own UPDATE fires this trigger under the
+-- client's tenant context, and organization_select (this file) only shows
+-- a firm's row to a client once an engagement between them is already
+-- active - which is exactly the row this UPDATE is trying to create. Under
+-- the client's own RLS view the firm is invisible, firm_kind comes back
+-- null, and a client accepting a real firm's invitation was refused with
+-- "is not a firm organization" - caught by
+-- tests/integration/test_authorization_isolation.py exercising the actual
+-- accepting party for the first time, not the firm side this bug is
+-- invisible from. This function only ever answers true/false to the guard
+-- below and returns NEW unchanged; it does not expose organization.kind or
+-- any other row to the caller, so bypassing RLS for this one read does not
+-- widen what a client session can see.
 create or replace function firm_engagement_guard() returns trigger as $$
 declare
     firm_kind text;
@@ -439,7 +459,9 @@ begin
 
     return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql
+security definer
+set search_path = public, app, pg_temp;
 
 create trigger firm_engagement_guard_trg
     before insert or update on firm_engagement
@@ -616,6 +638,9 @@ alter function app.signup_self_managed_organization(text, text)
     owner to ledgr_bootstrap;
 alter function app.create_firm_client_administration(text, text, text, text, uuid)
     owner to ledgr_bootstrap;
+-- See firm_engagement_guard()'s own comment above for why this one, alone
+-- among the triggers in this file, needs to run as ledgr_bootstrap too.
+alter function firm_engagement_guard() owner to ledgr_bootstrap;
 
 revoke all on function app.signup_self_managed_organization(text, text) from public;
 revoke all on function app.create_firm_client_administration(text, text, text, text, uuid) from public;

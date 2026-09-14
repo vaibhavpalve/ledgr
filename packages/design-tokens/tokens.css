@@ -1,0 +1,419 @@
+/*
+ * LEDGR design tokens — the stylesheet the browser actually applies.
+ *
+ * `src/tokens.ts` is the typed mirror of this file and `src/tokens.test.ts`
+ * asserts the two agree, token for token, in both themes. Edit them together
+ * or the suite fails, which is the point: the same enforcement
+ * `shared-types` already applies between its TypeScript and migration 0018.
+ *
+ * ============================================================================
+ * THE THREE THEME STATES
+ * ============================================================================
+ *
+ * A viewer is in one of THREE states, not two, and getting this wrong is the
+ * classic unreadable-UI bug:
+ *
+ *   1. No choice made (the default). Nothing is stamped on <html>. Only
+ *      `prefers-color-scheme` separates light from dark.
+ *   2. Explicit light. `<html data-theme="light">`.
+ *   3. Explicit dark.  `<html data-theme="dark">`.
+ *
+ * So the cascade below is:
+ *
+ *   :root                                     complete light palette
+ *   @media (dark) :root:not([data-theme=light])   dark, unless light was chosen
+ *   :root[data-theme="dark"]                  dark, beating a light OS
+ *
+ * Every token is DECLARED in the bare `:root` block before any media query or
+ * attribute selector redefines it. A token whose only definition sits inside
+ * one of those blocks is undefined in state 1 — that is how a page ends up
+ * rendering one theme's text on the other theme's ground.
+ *
+ * Components must never read a colour from inside a media or [data-theme]
+ * block. They reference the token; this file decides what it means.
+ */
+
+:root {
+  /*
+   * Tells the user agent which palette to give native controls it paints
+   * itself — scrollbars, form widgets, the overscroll gutter. Without it a
+   * dark page still gets a white scrollbar and a light-mode date picker.
+   */
+  color-scheme: light;
+
+  /* ---- Surfaces, back to front ---------------------------------------- */
+  --ledgr-surface-ground: #f5f0e9;
+  --ledgr-surface-paper: #fbf8f4;
+  --ledgr-surface-raised: #efeae2;
+  --ledgr-surface-sunken: #e3ded5;
+  --ledgr-surface-input: #fffefb;
+
+  /* ---- Lines ----------------------------------------------------------- */
+  /*
+   * `border-subtle` draws dividers and table rules — decoration, no contrast
+   * floor. `border-strong` draws the boundary of a CONTROL and therefore
+   * clears 3:1 against its background (WCAG SC 1.4.11); it is darker than the
+   * design canvas's hairline because contrast.test.ts measured that hairline
+   * at about 1.6:1. Use subtle for lines, strong for edges you can click.
+   */
+  --ledgr-border-subtle: #dcd9d3;
+  --ledgr-border-strong: #8f8878;
+  --ledgr-border-focus: #00686c;
+
+  /* ---- Text ------------------------------------------------------------ */
+  --ledgr-text-primary: #26221c;
+  --ledgr-text-secondary: #5f5a52;
+  --ledgr-text-muted: #6e685f;
+  --ledgr-text-on-accent: #ffffff;
+  --ledgr-text-on-marker: #ffffff;
+
+  /* ---- Status ---------------------------------------------------------- */
+  --ledgr-accent: #00686c;
+  --ledgr-accent-hover: #004f52;
+  --ledgr-accent-wash: #d8f4f6;
+  --ledgr-positive: #396741;
+  --ledgr-positive-wash: #e0efe2;
+  --ledgr-caution: #755421;
+  --ledgr-caution-wash: #faebd8;
+  --ledgr-attention: #814a39;
+  --ledgr-attention-wash: #fee8e1;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --ledgr-shadow-sm: 0 1px 2px rgba(38, 34, 28, 0.06);
+  --ledgr-shadow-md: 0 2px 4px rgba(38, 34, 28, 0.06), 0 8px 20px -10px rgba(38, 34, 28, 0.18);
+  --ledgr-shadow-lg: 0 4px 8px rgba(38, 34, 28, 0.08), 0 24px 48px -20px rgba(38, 34, 28, 0.32);
+
+  /*
+   * ---- Client markers — THEME-INDEPENDENT -----------------------------
+   *
+   * Declared once, outside every theme block, and never redefined below. A
+   * client's colour is that client's identity (FR-FRM-000a); one that looked
+   * different at night would defeat the signal it exists to carry.
+   */
+  --ledgr-client-indigo: #59739b;
+  --ledgr-client-amber: #8e6944;
+  --ledgr-client-teal: #477f68;
+  --ledgr-client-rose: #936071;
+  --ledgr-client-lime: #7c7241;
+  --ledgr-client-violet: #736a97;
+  --ledgr-client-cyan: #407a91;
+  --ledgr-client-orange: #966258;
+  --ledgr-client-emerald: #617b50;
+  --ledgr-client-fuchsia: #876388;
+
+  /* ---- Type ------------------------------------------------------------ */
+  --ledgr-type-micro: 0.75rem;
+  --ledgr-type-caption: 0.8125rem;
+  --ledgr-type-small: 0.9375rem;
+  --ledgr-type-body: 1.0625rem;
+  --ledgr-type-section: 1.25rem;
+  --ledgr-type-page: clamp(1.5rem, 1.3rem + 1vw, 1.625rem);
+  --ledgr-type-display: clamp(1.75rem, 1.35rem + 2vw, 2.0625rem);
+
+  --ledgr-leading-tight: 1.2;
+  --ledgr-leading-snug: 1.35;
+  --ledgr-leading-normal: 1.55;
+
+  --ledgr-weight-regular: 400;
+  --ledgr-weight-medium: 500;
+  --ledgr-weight-semibold: 600;
+  --ledgr-weight-bold: 700;
+
+  --ledgr-font-sans: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ledgr-font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --ledgr-font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+
+  /* ---- Spacing — a 4px grid -------------------------------------------- */
+  --ledgr-space-1: 0.25rem;
+  --ledgr-space-2: 0.5rem;
+  --ledgr-space-3: 0.75rem;
+  --ledgr-space-4: 1rem;
+  --ledgr-space-5: 1.5rem;
+  --ledgr-space-6: 2rem;
+  --ledgr-space-7: 3rem;
+
+  /* ---- Radii, by role --------------------------------------------------- */
+  --ledgr-radius-chip: 6px;
+  --ledgr-radius-control: 10px;
+  --ledgr-radius-panel: 14px;
+  --ledgr-radius-pill: 999px;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --ledgr-duration-fast: 120ms;
+  --ledgr-duration-base: 200ms;
+  --ledgr-duration-slow: 320ms;
+  --ledgr-ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ledgr-ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.1);
+
+  /* ---- Touch (MOB-013) -------------------------------------------------- */
+  --ledgr-touch-min: 48px;
+}
+
+/*
+ * State 1: no explicit choice, OS says dark.
+ * Guarded with :not([data-theme="light"]) so an explicit light choice wins
+ * over a dark operating system.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --ledgr-surface-ground: #15120e;
+    --ledgr-surface-paper: #201c17;
+    --ledgr-surface-raised: #2a251f;
+    --ledgr-surface-sunken: #100d0a;
+    --ledgr-surface-input: #1a1712;
+
+    --ledgr-border-subtle: #3d372f;
+    --ledgr-border-strong: #756d5f;
+    --ledgr-border-focus: #4fbcc0;
+
+    --ledgr-text-primary: #f2ece3;
+    --ledgr-text-secondary: #c3bbae;
+    --ledgr-text-muted: #9a9285;
+    --ledgr-text-on-accent: #0a1f20;
+    --ledgr-text-on-marker: #ffffff;
+
+    --ledgr-accent: #4fbcc0;
+    --ledgr-accent-hover: #7fd4d7;
+    --ledgr-accent-wash: #10312f;
+    --ledgr-positive: #9cc6a1;
+    --ledgr-positive-wash: #1b2e1d;
+    --ledgr-caution: #d9b47c;
+    --ledgr-caution-wash: #33270f;
+    --ledgr-attention: #e0a18c;
+    --ledgr-attention-wash: #3a241c;
+
+    --ledgr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --ledgr-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px -10px rgba(0, 0, 0, 0.6);
+    --ledgr-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.75);
+  }
+}
+
+/*
+ * State 3: explicit dark. Identical values to the block above, so a user who
+ * chose dark on a light OS gets exactly the same rendering as one whose OS
+ * chose it for them.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ledgr-surface-ground: #15120e;
+  --ledgr-surface-paper: #201c17;
+  --ledgr-surface-raised: #2a251f;
+  --ledgr-surface-sunken: #100d0a;
+  --ledgr-surface-input: #1a1712;
+
+  --ledgr-border-subtle: #3d372f;
+  --ledgr-border-strong: #756d5f;
+  --ledgr-border-focus: #4fbcc0;
+
+  --ledgr-text-primary: #f2ece3;
+  --ledgr-text-secondary: #c3bbae;
+  --ledgr-text-muted: #9a9285;
+  --ledgr-text-on-accent: #0a1f20;
+  --ledgr-text-on-marker: #ffffff;
+
+  --ledgr-accent: #4fbcc0;
+  --ledgr-accent-hover: #7fd4d7;
+  --ledgr-accent-wash: #10312f;
+  --ledgr-positive: #9cc6a1;
+  --ledgr-positive-wash: #1b2e1d;
+  --ledgr-caution: #d9b47c;
+  --ledgr-caution-wash: #33270f;
+  --ledgr-attention: #e0a18c;
+  --ledgr-attention-wash: #3a241c;
+
+  --ledgr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ledgr-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px -10px rgba(0, 0, 0, 0.6);
+  --ledgr-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.75);
+}
+
+/* ==========================================================================
+ * BASE
+ * ==========================================================================
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /*
+   * `data-theme` is stamped here by the no-flash script in index.html before
+   * first paint. Painting the ground on <html> as well as <body> means the
+   * overscroll area and the gap above a short page are the theme's colour
+   * rather than white.
+   */
+  background-color: var(--ledgr-surface-ground);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--ledgr-surface-ground);
+  color: var(--ledgr-text-primary);
+  font-family: var(--ledgr-font-sans);
+  font-size: var(--ledgr-type-body);
+  font-weight: var(--ledgr-weight-regular);
+  line-height: var(--ledgr-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Figures line up in columns all over this product — a dashboard, a ledger, an
+ * invoice. Proportional digits make a column of amounts ragged, so lining
+ * tabular numerals are the default everywhere rather than a class somebody has
+ * to remember to add.
+ */
+.ledgr-num,
+table,
+dd,
+output {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
+}
+
+/* Monetary figures and page titles — the serif that makes LEDGR recognisable. */
+.ledgr-figure {
+  font-family: var(--ledgr-font-serif);
+  font-weight: var(--ledgr-weight-semibold);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+  line-height: var(--ledgr-leading-tight);
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+svg {
+  display: block;
+}
+
+/* ==========================================================================
+ * FOCUS — WCAG 2.2 SC 2.4.7
+ * ==========================================================================
+ *
+ * One rule, every interactive element, rather than the two hand-placed rings
+ * the app had before (which covered the tab bar and the shutter and nothing
+ * else — not rows, not links, not the client switcher).
+ *
+ * `:focus-visible` rather than `:focus` so a mouse click on a button does not
+ * leave a ring behind, while every keyboard arrival does.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--ledgr-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ledgr-radius-chip);
+}
+
+/*
+ * A focusable region — the `<main>` the mobile shell moves focus into on a tab
+ * change — takes the ring INSIDE its own bounds, because an outset ring on a
+ * full-width container is clipped by the viewport and reads as a stray line.
+ */
+:where(main, [role="region"], [role="dialog"]):focus-visible {
+  outline: 3px solid var(--ledgr-border-focus);
+  outline-offset: -3px;
+}
+
+/* ==========================================================================
+ * FORCED COLORS (Windows high contrast)
+ * ==========================================================================
+ *
+ * Dutch SMB is a heavily Windows market, so this will be hit. In forced-colors
+ * mode the user agent replaces every colour, which silently drops any state
+ * carried ONLY by a background or a shadow — a selected row, a focus ring made
+ * of box-shadow. Anything whose meaning depends on colour therefore also needs
+ * a border or an outline, which survives.
+ */
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /*
+   * `forced-color-adjust: none` on the client marker only. Everywhere else the
+   * user's palette must win; here the colour IS the data (FR-FRM-000a), and
+   * ten markers forced to the same system colour would make the one signal
+   * this component exists to carry disappear. The initials and name beside it
+   * still carry identification, so nothing is lost if a user overrides this.
+   */
+  .ledgr-client-marker {
+    forced-color-adjust: none;
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ==========================================================================
+ * MOTION
+ * ==========================================================================
+ *
+ * Everything that moves in this product is a state transition, never
+ * decoration — a theme swap, a panel opening, a client colour sweeping to the
+ * next client. All of it is off for anyone who asked for less motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+ * UTILITIES
+ * ==========================================================================
+ */
+
+/*
+ * Present in the accessibility tree, absent from the visual one.
+ * `display: none` would remove it from both.
+ */
+.ledgr-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Skip link — the first focusable thing on the page, invisible until focused.
+ * WCAG 2.2 SC 2.4.1.
+ */
+.ledgr-skip-link {
+  position: absolute;
+  top: var(--ledgr-space-2);
+  left: var(--ledgr-space-2);
+  z-index: 100;
+  padding: var(--ledgr-space-2) var(--ledgr-space-4);
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-accent);
+  border: 1px solid var(--ledgr-border-focus);
+  border-radius: var(--ledgr-radius-control);
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-semibold);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.ledgr-skip-link:focus-visible {
+  transform: translateY(0);
+}

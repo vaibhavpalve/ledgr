@@ -65,7 +65,15 @@ async def _insert_document(
     fiscal_year_id: uuid.UUID,
     *,
     basis: str = "standard",
-    retention_until_value: str = "epoch",
+    # An obviously-wrong placeholder: this test's whole point is that the
+    # trigger derives the real value from the fiscal year and overwrites
+    # whatever the caller supplied. A real `date`, not the string "epoch" -
+    # asyncpg coerces a bound parameter by Python type before the SQL-side
+    # `cast(:until as date)` ever runs, and only understands the 'epoch'
+    # keyword as a literal written directly into SQL text (as
+    # test_document_retention_sweep.py's own insert does), not as a bound
+    # value.
+    retention_until_value: date = date(1970, 1, 1),
 ) -> uuid.UUID:
     async with app_engine.begin() as conn:
         await conn.execute(
@@ -187,10 +195,24 @@ async def test_a_document_cannot_anchor_to_another_administrations_year(
     """A document retained against another administration's fiscal year would
     expire on that administration's schedule - a tenancy defect wearing a
     retention defect's clothes.
+
+    The refusal actually arrives as "fiscal year ... does not exist", not
+    the trigger's own explicit FR-DOC-002 message - CLAUDE.md's "RLS is the
+    first line of defense, the application-layer check is the second, never
+    the only line" in action: document_set_retention() runs as ledgr_app
+    (no SECURITY DEFINER), so its own `select ... from fiscal_year` is
+    already RLS-scoped to org_a and never sees org_b's row at all - the
+    explicit `v_admin is distinct from new.administration_id` check a few
+    lines later never gets a chance to fire, because RLS already hid the
+    row it would need to compare against. That check still earns its place
+    as defense-in-depth for a caller that reached this function some other
+    way RLS does not cover (a SECURITY DEFINER path, for instance) - this
+    test asserts the property (refused, and for a tenancy reason), not
+    which of the two layers happened to catch it first.
     """
     foreign_year = await _open_year(two_organizations.admin_b, two_organizations.org_b)
 
-    with pytest.raises((DBAPIError, SQLAlchemyError), match="FR-DOC-002"):
+    with pytest.raises((DBAPIError, SQLAlchemyError), match="fiscal year"):
         await _insert_document(two_organizations.admin_a, two_organizations.org_a, foreign_year)
 
 

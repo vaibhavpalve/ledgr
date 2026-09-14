@@ -296,14 +296,23 @@ async def _home_organization_id(session: AsyncSession, user_id: uuid.UUID) -> uu
     see docs/decisions/ADR-054-signup-and-login.md for why this is the
     right question to ask at login rather than "every scope this user can
     reach."
+
+    Every caller of this helper (login, login_passkey_finish,
+    login_google_callback) runs on api.db.get_bootstrap_db_session -
+    deliberately the session with no app.current_org_id set, because
+    finding that value is this function's whole job. role_assignment's own
+    RLS policy reads `scope_id = app.current_org_id()`, which is `scope_id
+    = NULL` on that session and therefore false for every row, for every
+    caller, always - a plain SELECT here could never see the row it is
+    looking for, no matter whose it was. See
+    0048_login_home_organization_lookup.sql for the bug this was (found by
+    running the login flow against a real Postgres for the first time) and
+    why a SECURITY DEFINER function, not a raw query, is the fix: the same
+    RLS-bootstrap problem 0001_tenancy_core.sql already solved for
+    signup's writes, here on the read side.
     """
     result = await session.execute(
-        text(
-            "SELECT scope_id FROM role_assignment "
-            "WHERE user_id = :user_id AND scope_type = 'organization' "
-            "AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now()) "
-            "ORDER BY created_at ASC LIMIT 1"
-        ),
+        text("SELECT app.user_home_organization_id(:user_id)"),
         {"user_id": str(user_id)},
     )
     return result.scalar_one_or_none()
@@ -461,8 +470,21 @@ async def login(
         request=request,
         set_org_context=True,
     )
-    await session.commit()
+    # A pure read with no dependency on anything just written in this
+    # transaction, so it runs BEFORE the commit below rather than after.
+    # get_bootstrap_db_session opens this session as `session.begin()`
+    # (api.db) - calling session.commit() inside that block ends the
+    # transaction the context manager is holding open, and any further
+    # query on the same session then fails with SQLAlchemy's own
+    # "Can't operate on closed transaction inside context manager" rather
+    # than the query's own error. This success path was unreachable before
+    # 0048_login_home_organization_lookup.sql (organization_id was always
+    # None, so login() always took the 403 branch above and commit() was
+    # always the last thing that happened) - found the same way that bug
+    # was, by running login all the way through against a real Postgres for
+    # the first time.
     enrollment = await _enrollment_status(session, user.id) if not mfa_verified else None
+    await session.commit()
     return _auth_response(token=token, mfa_verified=mfa_verified, enrollment=enrollment)
 
 
@@ -930,8 +952,14 @@ async def login_google_callback(
         request=request,
         set_org_context=True,
     )
-    await session.commit()
+    # Read before commit, not after - see login()'s identical comment above
+    # for why: this is the same commit-then-query pattern, on a session
+    # opened the same way (get_bootstrap_db_session), and was equally
+    # unreachable before 0048 for the equivalent reason (organization_id
+    # was never non-None here either, on a returning user's Google
+    # sign-in).
     enrollment = await _enrollment_status(session, outcome.id) if not effective_mfa else None
+    await session.commit()
     return _auth_response(token=token, mfa_verified=effective_mfa, enrollment=enrollment)
 
 
@@ -969,9 +997,7 @@ async def signup_google(
         # reads, and users are never deleted (status is set instead) - see
         # migration 0003. Fails closed rather than assuming, the same
         # posture api.tenancy.get_tenant_context takes for the same reason.
-        raise problem(
-            request, 410, "errors.ceremony_not_found", reason="ceremony_not_found"
-        )
+        raise problem(request, 410, "errors.ceremony_not_found", reason="ceremony_not_found")
 
     breach_checker = build_breach_checker(settings.breach_checker_provider)
     service = SignupService(session, breach_checker)

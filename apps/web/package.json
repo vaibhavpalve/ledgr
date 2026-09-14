@@ -15,14 +15,17 @@
     "test:a11y": "vitest run -t \"CMP-012/FR-LOC-004\""
   },
   "dependencies": {
+    "@ledgr/design-tokens": "workspace:*",
     "@ledgr/i18n": "workspace:*",
     "@ledgr/offline-queue": "workspace:*",
     "@ledgr/shared-types": "workspace:*",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@testing-library/react": "^16.0.1",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",

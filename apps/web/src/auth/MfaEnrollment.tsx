@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import { useI18n } from "@ledgr/i18n";
 
 import type { AuthApi, AuthResult, MfaEnrollmentStatus } from "./api";
@@ -61,9 +62,38 @@ function TotpSection({
   const { t } = useI18n();
   const [secret, setSecret] = useState<string | null>(null);
   const [provisioningUri, setProvisioningUri] = useState<string | null>(null);
+  const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+
+  // Generated client-side from the SAME provisioning URI the manual key and
+  // the "open in app" link below already carry — nothing extra is sent
+  // anywhere, and nothing about the secret leaves this browser tab any more
+  // than it already did. SVG string output rather than a canvas render: it
+  // needs no <canvas> 2D context (unavailable in some locked-down/managed
+  // browser setups, and in this component's own test environment), so the
+  // same code path renders in a real browser and under jsdom alike.
+  useEffect(() => {
+    if (provisioningUri === null) {
+      setQrSvg(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toString(provisioningUri, { type: "svg", margin: 1, width: 220 })
+      .then((svg) => {
+        if (!cancelled) setQrSvg(svg);
+      })
+      .catch(() => {
+        // Degraded, not blocking (auth.mfa.totp.qr_unavailable) - the
+        // manual key rendered alongside it is a complete, independent path
+        // to the same secret.
+        if (!cancelled) setQrSvg(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [provisioningUri]);
 
   const beginEnrollment = async () => {
     setBusy(true);
@@ -133,14 +163,47 @@ function TotpSection({
       ) : (
         <>
           <p>{t("auth.mfa.totp.instructions")}</p>
-          <p data-testid="mfa-totp-secret">
-            <code>{secret}</code>
-          </p>
+
+          {qrSvg !== null ? (
+            // Decorative: the QR code is a visual shortcut to the SAME
+            // secret already rendered as text below it, which is what a
+            // screen reader user (or anyone who can't scan) uses instead —
+            // announcing the encoded URI a second time here would be noise,
+            // not a second way to reach it.
+            <div
+              className="mfa-totp-qr"
+              data-testid="mfa-totp-qr"
+              aria-hidden="true"
+              // The markup rendered here is this component's OWN SVG output
+              // from the `qrcode` package, built from a provisioning URI
+              // this same browser just requested from our API — not
+              // third-party or user-supplied content.
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
+          ) : provisioningUri !== null ? (
+            <p className="caption" data-testid="mfa-totp-qr-unavailable">
+              {t("auth.mfa.totp.qr_unavailable")}
+            </p>
+          ) : null}
+
           {provisioningUri ? (
-            <a href={provisioningUri} data-testid="mfa-totp-uri">
-              {provisioningUri}
+            <a href={provisioningUri} className="mfa-totp-open-link" data-testid="mfa-totp-uri">
+              {t("auth.mfa.totp.open_in_app")}
             </a>
           ) : null}
+
+          <div className="mfa-totp-no-app" data-testid="mfa-totp-no-app">
+            <p className="label">{t("auth.mfa.totp.no_app_heading")}</p>
+            <p className="caption">{t("auth.mfa.totp.no_app_body")}</p>
+          </div>
+
+          <div className="mfa-totp-manual">
+            <p className="label">{t("auth.mfa.totp.manual_entry_heading")}</p>
+            <p data-testid="mfa-totp-secret">
+              <code>{secret}</code>
+            </p>
+          </div>
+
           <label>
             {t("auth.mfa.totp.code_label")}
             <input
@@ -154,6 +217,7 @@ function TotpSection({
           </label>
           <button
             type="button"
+            className="button--primary"
             data-testid="mfa-totp-confirm"
             disabled={busy || code.length === 0}
             onClick={() => void submitCode()}

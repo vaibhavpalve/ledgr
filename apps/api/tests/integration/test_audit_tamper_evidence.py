@@ -91,6 +91,32 @@ async def admin_engine() -> AsyncEngine:
         await engine.dispose()
 
 
+@pytest_asyncio.fixture
+async def migrator_engine() -> AsyncEngine:
+    """A REAL ledgr_migrator login (bootstrap_test_db.py's test-only
+    password, the same bridge ledgr_app's own login already needed), not
+    admin_engine + SET ROLE ledgr_migrator.
+
+    That proxy works for GRANT/ALTER/DROP, which Postgres checks against
+    current_role - but not for the one statement this role list also needs
+    to try, `SET ROLE ledgr_audit`: SET ROLE's own membership check is made
+    against session_user, and session_user here is still the postgres
+    superuser regardless of any SET ROLE already issued in the same
+    session, which is superuser-privileged to change to any role, so the
+    proxy would report success for an escalation ledgr_migrator can never
+    actually perform, and a real login is the only way to ask this specific
+    question honestly.
+    """
+    url = os.environ.get("TEST_MIGRATOR_DATABASE_URL", "")
+    if not url:
+        pytest.skip("TEST_MIGRATOR_DATABASE_URL is not set")
+    engine = create_async_engine(url)
+    try:
+        yield engine
+    finally:
+        await engine.dispose()
+
+
 # ---------------------------------------------------------------------------
 # Harness
 # ---------------------------------------------------------------------------
@@ -303,7 +329,9 @@ _APP_STATEMENTS: list[tuple[str, str]] = [
     ("drop the update guard", "DROP TRIGGER audit_log_no_update_trg ON audit_log"),
     ("drop the table", "DROP TABLE audit_log"),
     ("take ownership", "ALTER TABLE audit_log OWNER TO ledgr_app"),
-    ("grant itself UPDATE", "GRANT UPDATE ON audit_log TO ledgr_app"),
+    # "grant itself UPDATE" is deliberately NOT here - see
+    # test_a_self_grant_of_update_gives_the_application_role_nothing below,
+    # which needs a different assertion than attempt_tamper can make.
     # A rule rewriting UPDATE to a no-op would silently swallow tampering.
     (
         "install a rewrite rule",
@@ -335,6 +363,48 @@ async def test_the_application_role_cannot_tamper(
     )
 
     assert outcome is TamperOutcome.PREVENTED, f"{name} was not prevented"
+
+
+async def test_a_self_grant_of_update_gives_the_application_role_nothing(
+    two_organizations: SeededTenants,
+) -> None:
+    """`GRANT UPDATE ON audit_log TO ledgr_app`, run as ledgr_app, does not
+    fit attempt_tamper's PREVENTED/DETECTED/UNDETECTED model: PostgreSQL's
+    GRANT does not raise when the grantor holds no grant-option privilege on
+    the object - it emits a WARNING ("no privileges were granted for
+    'audit_log'") and completes normally, because ledgr_app already holds
+    SOME privilege on audit_log (select+insert, from 0019) even though not
+    the one being granted. (ledgr_migrator's equivalent attempt DOES raise
+    permission-denied, and stays in _MIGRATOR_STATEMENTS below - it starts
+    from zero privileges on this table, which is the case PostgreSQL does
+    hard-error on.) A WARNING is not a DBAPIError, so attempt_tamper's
+    try/except never fires, and since nothing was actually granted,
+    audit_log's own chain state does not move either - both of
+    attempt_tamper's signals report "nothing happened" even though nothing
+    SHOULD have happened, which is a different thing from it correctly
+    reporting no escalation occurred. Checking has_table_privilege directly,
+    before and after, tests the actual property this case cares about.
+    """
+    await seed_entries(two_organizations.org_a, two_organizations.owner_a, count=3)
+
+    async def can_update() -> bool:
+        async with app_engine.begin() as conn:
+            result = await conn.execute(
+                text("SELECT has_table_privilege('ledgr_app', 'audit_log', 'UPDATE')")
+            )
+            return bool(result.scalar_one())
+
+    assert not await can_update(), "ledgr_app already had UPDATE before the attempt"
+
+    await _as(
+        app_engine,
+        None,
+        "GRANT UPDATE ON audit_log TO ledgr_app",
+        two_organizations.org_a,
+        org=str(two_organizations.org_a),
+    )()
+
+    assert not await can_update(), "the self-grant actually gave ledgr_app UPDATE"
 
 
 async def test_cascading_a_truncate_from_a_referencing_table_is_prevented(
@@ -460,7 +530,7 @@ _MIGRATOR_STATEMENTS: list[tuple[str, str]] = [
     ("name", "statement"), _MIGRATOR_STATEMENTS, ids=[n for n, _ in _MIGRATOR_STATEMENTS]
 )
 async def test_the_migration_role_cannot_tamper(
-    admin_engine: AsyncEngine, two_organizations: SeededTenants, name: str, statement: str
+    migrator_engine: AsyncEngine, two_organizations: SeededTenants, name: str, statement: str
 ) -> None:
     """ledgr_migrator owns every other table in this schema, and Postgres
     does not privilege-check a table's owner - so ownership is what had to be
@@ -470,7 +540,7 @@ async def test_the_migration_role_cannot_tamper(
 
     outcome = await attempt_tamper(
         two_organizations.org_a,
-        run=_as(admin_engine, "ledgr_migrator", statement, two_organizations.org_a),
+        run=_as(migrator_engine, None, statement, two_organizations.org_a),
     )
 
     assert outcome is TamperOutcome.PREVENTED, f"{name} was not prevented"

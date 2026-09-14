@@ -1,21 +1,40 @@
 /*
- * The mobile shell's bottom tab bar — sized to the same MOB-013 touch-target
- * minimum as the capture screen's shutter button (see capture/CaptureScreen.css
- * for that one and ADR-047 for why both needed it: today's bare, unstyled
- * `<button>`s render far under 44x44pt/48x48dp in most browsers' default
- * button metrics).
+ * The application shell: the client header, the content column, and the
+ * navigation.
+ *
+ * --- One markup, two layouts ---
+ *
+ * The navigation is a bottom tab bar on a phone and a vertical rail on a wide
+ * screen, and it is the SAME DOM in both — the switch is entirely in this
+ * file. That is deliberate: a JavaScript breakpoint would mean two component
+ * trees, two sets of focus behaviour and two things to keep accessible, and
+ * `MobileShell.tsx` would have to know about viewport width, which is not its
+ * job. CSS already knows.
+ *
+ * The rail appears at 60rem, which is where a 5-item bottom bar starts to look
+ * marooned across a desktop window and where there is finally room for a
+ * persistent nav to cost nothing.
  */
 
-/*
- * FR-FRM-000a's ClientHeader — rendered once by MobileShell, above every
- * tab's content, and kept on screen (not just on mount) via `sticky`
- * positioning: it sits in normal flow, so no manual height/padding
- * compensation is needed on `.mobile-shell__content` below it the way the
- * FIXED tab bar needs on the content above it, and it re-sticks correctly
- * however tall its own content gets (e.g. the ambiguous-colour warning, or a
- * long legal name wrapping to a second line) rather than assuming one fixed
- * height. `z-index` is higher than the tab bar's, since a screen this task
- * makes newly persistent must never end up underneath something else.
+.mobile-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+ * CLIENT HEADER — FR-FRM-000a
+ * ==========================================================================
+ *
+ * The one piece of chrome that is never allowed to scroll away: "the active
+ * client is unmistakable at all times". Sticky rather than fixed so it sits in
+ * normal flow — no manual height compensation on the content below it, and it
+ * re-sticks correctly however tall it gets (a long legal name wrapping, the
+ * ambiguous-colour warning appearing).
+ *
+ * `z-index` above the nav, because a bar this task makes newly persistent must
+ * never end up underneath something else.
  */
 .client-header {
   position: sticky;
@@ -25,62 +44,194 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  box-sizing: border-box;
-  padding: 0.5rem 0.75rem;
+  gap: var(--ledgr-space-2) var(--ledgr-space-3);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
 
-  background-color: #ffffff;
-  border-bottom: 1px solid #dddddd;
+  background-color: var(--ledgr-surface-paper);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+/*
+ * The client's own colour, as a 3px rule under the whole header.
+ *
+ * This is the device that makes a client switch register peripherally — you
+ * see the band change before you read the name. It is set from the
+ * `data-colour` attribute the component already renders, so no new markup is
+ * needed, and it falls back to the subtle border when the colour is unknown.
+ */
+.client-header[data-state="active"] {
+  border-bottom-width: 3px;
+  border-bottom-color: var(--client-colour, var(--ledgr-border-subtle));
+  transition: border-bottom-color var(--ledgr-duration-base) var(--ledgr-ease-out);
+}
+
+.client-header[data-colour="indigo"] {
+  --client-colour: var(--ledgr-client-indigo);
+}
+.client-header[data-colour="amber"] {
+  --client-colour: var(--ledgr-client-amber);
+}
+.client-header[data-colour="teal"] {
+  --client-colour: var(--ledgr-client-teal);
+}
+.client-header[data-colour="rose"] {
+  --client-colour: var(--ledgr-client-rose);
+}
+.client-header[data-colour="lime"] {
+  --client-colour: var(--ledgr-client-lime);
+}
+.client-header[data-colour="violet"] {
+  --client-colour: var(--ledgr-client-violet);
+}
+.client-header[data-colour="cyan"] {
+  --client-colour: var(--ledgr-client-cyan);
+}
+.client-header[data-colour="orange"] {
+  --client-colour: var(--ledgr-client-orange);
+}
+.client-header[data-colour="emerald"] {
+  --client-colour: var(--ledgr-client-emerald);
+}
+.client-header[data-colour="fuchsia"] {
+  --client-colour: var(--ledgr-client-fuchsia);
 }
 
 .client-header--empty,
 .client-header--loading {
-  color: #666666;
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-small);
 }
 
 /*
- * The marker's actual per-colour appearance (mapping each `ClientColour`
- * token to a rendered colour) is not styled here: no CSS for
- * `.client-marker`/`.client-switcher`'s identical marker exists anywhere in
- * this app yet, on mobile or web — a pre-existing gap this task's explicit
- * scope (sticky positioning only) does not extend to. This rule is layout
- * only, so the marker is legible (via its initials) rather than invisible in
- * the meantime.
+ * The marker. Until now NO per-colour styling existed anywhere in this app —
+ * `MobileShell.css` said so in a comment and rendered every client grey, which
+ * meant the third of FR-FRM-000a's three redundant signals was simply missing.
+ * It is rendered here, in the same file as the header rule above, so the disc
+ * and the band can never disagree about what colour a client is.
+ *
+ * Initials stay white on all ten (contrast.test.ts asserts it), and the
+ * markers do not change between themes — a client's colour is that client's
+ * identity, not a surface.
  */
 .client-marker {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  min-height: 28px;
-  border-radius: 50%;
-  background-color: #dddddd;
-  color: #222222;
-  font-size: 0.7rem;
-  font-weight: 700;
+
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--ledgr-radius-pill);
+
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-bold);
+  letter-spacing: 0.02em;
+  font-variant-numeric: lining-nums;
+}
+
+.client-marker--indigo {
+  background-color: var(--ledgr-client-indigo);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--amber {
+  background-color: var(--ledgr-client-amber);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--teal {
+  background-color: var(--ledgr-client-teal);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--rose {
+  background-color: var(--ledgr-client-rose);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--lime {
+  background-color: var(--ledgr-client-lime);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--violet {
+  background-color: var(--ledgr-client-violet);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--cyan {
+  background-color: var(--ledgr-client-cyan);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--orange {
+  background-color: var(--ledgr-client-orange);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--emerald {
+  background-color: var(--ledgr-client-emerald);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--fuchsia {
+  background-color: var(--ledgr-client-fuchsia);
+  color: var(--ledgr-text-on-marker);
 }
 
 .client-header__name {
-  font-weight: 700;
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-snug);
 }
 
 .client-header__legal-name {
-  font-size: 0.75rem;
-  color: #666666;
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
 }
 
+/*
+ * The ambiguous-colour warning takes a full row of its own (`flex-basis:
+ * 100%`) rather than squeezing in beside the name: it is a sentence, and a
+ * sentence wrapped into a 60px column is not read.
+ */
 .client-header__ambiguous {
   flex-basis: 100%;
-  font-size: 0.75rem;
-  color: #a15c00;
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+
+  padding: var(--ledgr-space-1) var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-chip);
+
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-medium);
+  line-height: var(--ledgr-leading-snug);
 }
 
+/* ==========================================================================
+ * CONTENT
+ * ==========================================================================
+ */
+
 .mobile-shell__content {
-  /* Room for the fixed-height tab bar below, so the last few pixels of
-     scrollable content are not hidden behind it. */
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  flex-grow: 1;
+  padding: var(--ledgr-space-4);
+
+  /* Room for the fixed tab bar below, so the last rows of a list are not
+     hidden behind it. Removed once the bar becomes a side rail. */
+  padding-bottom: calc(64px + var(--ledgr-space-4) + env(safe-area-inset-bottom, 0px));
 }
+
+/*
+ * A readable measure on a wide screen. Without this, a list of expenses on a
+ * 27-inch monitor runs the full width and every row becomes a scan across
+ * empty space — the most common way a mobile-first layout fails when it
+ * finally meets a desktop.
+ */
+.mobile-shell__content > * {
+  max-width: 72rem;
+}
+
+/* ==========================================================================
+ * NAVIGATION
+ * ==========================================================================
+ */
 
 .mobile-shell__tabs {
   position: fixed;
@@ -90,46 +241,156 @@
   z-index: 10;
 
   display: flex;
-  box-sizing: border-box;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 
-  background-color: #ffffff;
-  border-top: 1px solid #dddddd;
+  background-color: var(--ledgr-surface-paper);
+  border-top: 1px solid var(--ledgr-border-subtle);
 }
 
 .mobile-shell__tabs button {
   flex: 1 1 0;
-  box-sizing: border-box;
-  min-height: 56px;
-  min-width: 48px;
-  padding: 0.4rem 0.25rem;
 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  /* Above MOB-013's 48px floor: this is the control people hit one-handed,
+     walking, and a tab bar at exactly the minimum feels like a trap. */
+  min-height: 64px;
+  min-width: 48px;
+  padding: var(--ledgr-space-2) var(--ledgr-space-1);
+
+  background-color: transparent;
   border: none;
-  background: none;
-  color: #444444;
-  font-size: 0.75rem;
+  border-radius: 0;
+
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-medium);
+  line-height: var(--ledgr-leading-tight);
+  text-align: center;
 }
 
-.mobile-shell__tabs button[aria-current="page"] {
-  color: #0b57d0;
-  font-weight: 700;
+.mobile-shell__tabs button:hover {
+  background-color: var(--ledgr-surface-raised);
 }
 
 /*
- * WCAG 2.2 SC 2.4.7 (Focus Visible). The browser default outline would
- * satisfy the letter of it here (nothing suppresses `outline`), but it is
- * inconsistent across browsers and absent from every other interactive
- * element in this file — an explicit, consistently-coloured ring matches
- * `.capture__shutter:focus-visible` (CaptureScreen.css) rather than leaving
- * this the one place in the app that looks unstyled specifically when
- * focused.
+ * The current tab. `aria-current` drives it — the same attribute a screen
+ * reader announces — so the visual state and the announced state are one fact,
+ * not two that can drift.
+ *
+ * Colour is not alone: the weight changes and a 2px bar appears at the top
+ * edge, which is what survives forced-colors and what a colour-blind user
+ * reads.
  */
-.mobile-shell__tabs button:focus-visible {
-  outline: 3px solid #0b57d0;
-  outline-offset: -3px;
+.mobile-shell__tabs button[aria-current="page"] {
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+  box-shadow: inset 0 2px 0 var(--ledgr-accent);
 }
 
-.mobile-shell__content:focus-visible {
-  outline: 3px solid #0b57d0;
-  outline-offset: -3px;
+.mobile-shell__tabs button[aria-current="page"] .mobile-shell__tab-icon {
+  /* A filled wash behind the icon only — the phone-app idiom, and it keeps
+     the indicator legible at a glance without colouring the whole cell. */
+  background-color: var(--ledgr-accent-wash);
+}
+
+.mobile-shell__tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 1.5rem;
+  border-radius: var(--ledgr-radius-pill);
+  transition: background-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+@media (forced-colors: active) {
+  .mobile-shell__tabs button[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* ==========================================================================
+ * WIDE: the bar becomes a rail
+ * ==========================================================================
+ */
+
+@media (min-width: 60rem) {
+  .mobile-shell {
+    /*
+     * Rail beside content, client header spanning both. `min-height: 0` on the
+     * content column so a long list scrolls inside it rather than stretching
+     * the grid — the classic flex/grid overflow trap.
+     */
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "nav content";
+    align-items: start;
+  }
+
+  .client-header {
+    grid-area: header;
+  }
+
+  .mobile-shell__tabs {
+    grid-area: nav;
+
+    position: sticky;
+    /* Below the sticky client header, not under it. */
+    top: 4rem;
+    left: auto;
+    right: auto;
+    bottom: auto;
+
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--ledgr-space-3);
+
+    background-color: transparent;
+    border-top: none;
+  }
+
+  .mobile-shell__tabs button {
+    flex: none;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--ledgr-space-3);
+
+    min-height: var(--ledgr-touch-min);
+    padding: var(--ledgr-space-2) var(--ledgr-space-3);
+
+    border-radius: var(--ledgr-radius-control);
+    font-size: var(--ledgr-type-small);
+    text-align: left;
+  }
+
+  /* The rail's current item reads as a filled pill rather than a top bar —
+     a bar along the top edge of a horizontal row points at nothing. */
+  .mobile-shell__tabs button[aria-current="page"] {
+    background-color: var(--ledgr-accent-wash);
+    box-shadow: none;
+  }
+
+  .mobile-shell__tabs button[aria-current="page"] .mobile-shell__tab-icon {
+    background-color: transparent;
+  }
+
+  .mobile-shell__tab-icon {
+    width: auto;
+    height: auto;
+  }
+
+  .mobile-shell__content {
+    grid-area: content;
+    padding: var(--ledgr-space-5);
+    /* The fixed bar is gone, so the reserved space goes with it. */
+    padding-bottom: var(--ledgr-space-6);
+  }
 }

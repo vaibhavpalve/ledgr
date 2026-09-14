@@ -46,6 +46,18 @@ def _headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}", "Idempotency-Key": f"test-{uuid.uuid4().hex}"}
 
 
+async def _token(org_id: uuid.UUID, user_id: uuid.UUID) -> str:
+    """A token bound to a REAL session row, not just make_token's bare
+    org_id/sub claims: api.auth.routes._require_user (every handler in this
+    file's target, via MFA_EXEMPT_PATHS) additionally requires a `sid` claim
+    - `tenant.session_id is None` alone is enough to fail it with
+    errors.not_authenticated, regardless of user_id being present. Every
+    endpoint under test here needs this, not only logout.
+    """
+    session_id = await seed_session(app_engine, user_id=user_id)
+    return make_token(org_id, user_id=user_id, session_id=session_id)
+
+
 async def _totp_credential_count(user_id: uuid.UUID) -> int:
     async with app_engine.begin() as conn:
         result = await conn.execute(
@@ -168,9 +180,7 @@ async def test_totp_enroll_begin_leaks_nothing_about_another_tenant(
             as_org=two_organizations.org_a,
             as_user=two_organizations.owner_a,
             foreign_record_ids=[two_organizations.owner_b, two_organizations.org_b],
-            headers=_headers(
-                make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
-            ),
+            headers=_headers(await _token(two_organizations.org_a, two_organizations.owner_a)),
         )
         body = response.json()
         assert "secret" in body
@@ -187,11 +197,11 @@ async def test_totp_enroll_confirm_only_creates_a_credential_for_the_caller(
         # own - the "look-alike data" discipline from the language
         # isolation tests: the assertion below has to distinguish "untouched"
         # from "never existed."
-        token_b = make_token(two_organizations.org_b, user_id=two_organizations.owner_b)
+        token_b = await _token(two_organizations.org_b, two_organizations.owner_b)
         await _enroll_totp(client, token_b)
         assert await _totp_credential_count(two_organizations.owner_b) == 1
 
-        token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        token_a = await _token(two_organizations.org_a, two_organizations.owner_a)
         begin = await client.post("/v1/auth/mfa/totp/enroll/begin", headers=_headers(token_a))
         secret = begin.json()["secret"]
         response = await client.post(
@@ -221,11 +231,11 @@ async def test_totp_verify_does_not_touch_another_users_credential(
 ) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        token_b = make_token(two_organizations.org_b, user_id=two_organizations.owner_b)
+        token_b = await _token(two_organizations.org_b, two_organizations.owner_b)
         await _enroll_totp(client, token_b)
         before_b = await _last_used_step(two_organizations.owner_b)
 
-        token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        token_a = await _token(two_organizations.org_a, two_organizations.owner_a)
         _secret_a, code_a = await _enroll_totp(client, token_a)
 
         # Re-submitting the code that just confirmed enrolment is a replay
@@ -261,9 +271,7 @@ async def test_passkey_enroll_begin_leaks_nothing_about_another_tenant(
             as_org=two_organizations.org_a,
             as_user=two_organizations.owner_a,
             foreign_record_ids=[two_organizations.owner_b, two_organizations.org_b],
-            headers=_headers(
-                make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
-            ),
+            headers=_headers(await _token(two_organizations.org_a, two_organizations.owner_a)),
         )
         body = response.json()
         assert "ceremony_id" in body
@@ -276,12 +284,12 @@ async def test_passkey_enroll_finish_only_registers_a_credential_for_the_caller(
 ) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        token_b = make_token(two_organizations.org_b, user_id=two_organizations.owner_b)
+        token_b = await _token(two_organizations.org_b, two_organizations.owner_b)
         await _enroll_passkey(client, token_b)
         existing_b = await _passkey_row(two_organizations.owner_b)
         assert existing_b is not None
 
-        token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        token_a = await _token(two_organizations.org_a, two_organizations.owner_a)
         await _enroll_passkey(client, token_a)
 
     assert await _passkey_row(two_organizations.owner_a) is not None
@@ -294,7 +302,7 @@ async def test_passkey_verify_begin_leaks_nothing_about_another_tenant(
 ) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        token_a = await _token(two_organizations.org_a, two_organizations.owner_a)
         await _enroll_passkey(client, token_a)
 
         response = await assert_tenant_isolated(
@@ -329,10 +337,10 @@ async def test_passkey_verify_finish_cannot_be_completed_with_another_users_cere
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        token_a = await _token(two_organizations.org_a, two_organizations.owner_a)
         authenticator_a = await _enroll_passkey(client, token_a)
 
-        token_b = make_token(two_organizations.org_b, user_id=two_organizations.owner_b)
+        token_b = await _token(two_organizations.org_b, two_organizations.owner_b)
         await _enroll_passkey(client, token_b)
         existing_b = await _passkey_row(two_organizations.owner_b)
 

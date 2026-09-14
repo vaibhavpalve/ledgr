@@ -19,6 +19,22 @@ import { ViewList } from "./view/ViewList";
 export type MobileTab = "home" | "capture" | "approve" | "view" | "invoice";
 
 /**
+ * The five sections, in the order they appear. One list, so a tab cannot be
+ * added to the navigation without a label, or given a different shape from its
+ * neighbours.
+ *
+ * `home` is first and is the landing tab (FR-UX-005): someone opening the app
+ * meets a prioritised summary, not a menu of tasks.
+ */
+const TABS: ReadonlyArray<{ id: MobileTab; labelKey: string }> = [
+  { id: "home", labelKey: "mobile.shell.tab.home" },
+  { id: "capture", labelKey: "mobile.shell.tab.capture" },
+  { id: "approve", labelKey: "mobile.shell.tab.approve" },
+  { id: "view", labelKey: "mobile.shell.tab.view" },
+  { id: "invoice", labelKey: "mobile.shell.tab.send_invoice" },
+];
+
+/**
  * The P0 mobile experience — §5.2, §7.4, MOB-002/004/005 — plus FR-UX-005/
  * MOB-006's home screen, added as a fifth section by this task.
  *
@@ -129,6 +145,11 @@ export function MobileShell({
 
       <main
         ref={mainRef}
+        // The skip link in App.tsx targets this (WCAG 2.2 SC 2.4.1). It is the
+        // same element the tab-change effect above moves focus to, which is
+        // deliberate: "the content" is one place, whether you arrive by
+        // skipping the chrome or by switching section.
+        id="main-content"
         className="mobile-shell__content"
         tabIndex={-1}
         data-testid="mobile-shell-content"
@@ -165,57 +186,105 @@ export function MobileShell({
       </main>
 
       {/*
-        A bottom tab bar — the mobile convention — with exactly five tabs,
-        deliberately narrower than a full desktop nav (§7.4). `aria-current`
-        rather than only a visual style, so the current section is announced
-        to a screen reader and not merely coloured.
+        Five tabs, rendered from one list rather than five hand-written
+        buttons: they are the same object repeated, and writing them out five
+        times is how one of them quietly ends up without an `aria-current` or
+        with a different padding.
+
+        The same markup is a bottom tab bar on a phone and a vertical rail on a
+        wide screen — that switch lives entirely in MobileShell.css, so this
+        component never has to know the viewport width (§7.4).
+
+        `aria-current` rather than only a visual style, so the current section
+        is announced to a screen reader and not merely coloured.
       */}
       <nav
         aria-label={t("mobile.shell.nav_label")}
         className="mobile-shell__tabs"
         data-testid="mobile-shell-tabs"
       >
-        <button
-          type="button"
-          aria-current={tab === "home" ? "page" : undefined}
-          data-testid="mobile-tab-home"
-          onClick={() => setTab("home")}
-        >
-          {t("mobile.shell.tab.home")}
-        </button>
-        <button
-          type="button"
-          aria-current={tab === "capture" ? "page" : undefined}
-          data-testid="mobile-tab-capture"
-          onClick={() => setTab("capture")}
-        >
-          {t("mobile.shell.tab.capture")}
-        </button>
-        <button
-          type="button"
-          aria-current={tab === "approve" ? "page" : undefined}
-          data-testid="mobile-tab-approve"
-          onClick={() => setTab("approve")}
-        >
-          {t("mobile.shell.tab.approve")}
-        </button>
-        <button
-          type="button"
-          aria-current={tab === "view" ? "page" : undefined}
-          data-testid="mobile-tab-view"
-          onClick={() => setTab("view")}
-        >
-          {t("mobile.shell.tab.view")}
-        </button>
-        <button
-          type="button"
-          aria-current={tab === "invoice" ? "page" : undefined}
-          data-testid="mobile-tab-invoice"
-          onClick={() => setTab("invoice")}
-        >
-          {t("mobile.shell.tab.send_invoice")}
-        </button>
+        {TABS.map(({ id, labelKey }) => (
+          <button
+            key={id}
+            type="button"
+            aria-current={tab === id ? "page" : undefined}
+            data-testid={`mobile-tab-${id}`}
+            onClick={() => setTab(id)}
+          >
+            {/* Decorative: the label beside it is the accessible name, and an
+                announced "camera, Capture" is noise. */}
+            <span className="mobile-shell__tab-icon" aria-hidden="true">
+              <TabIcon tab={id} />
+            </span>
+            <span>{t(labelKey)}</span>
+          </button>
+        ))}
       </nav>
     </div>
   );
+}
+
+/**
+ * The tab icons.
+ *
+ * One 20-unit grid, round caps and joins, and a stroke width chosen so the
+ * PAINTED line is 1.5px at the 20px render size these are used at. The design
+ * canvas mixed 1.6 through 2.0 across eight sizes, which reads as ragged when
+ * five of them sit in a row — here they are always the same size, so the width
+ * is a constant.
+ *
+ * Inline rather than an icon package: five glyphs do not justify a dependency,
+ * and `currentColor` means they follow the tab's own state and the theme
+ * without a single extra rule.
+ */
+function TabIcon({ tab }: { tab: MobileTab }) {
+  const shared = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 20 20",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  } as const;
+
+  switch (tab) {
+    case "home":
+      return (
+        <svg {...shared}>
+          <path d="M3 9.5 10 3.5l7 6" />
+          <path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5" />
+        </svg>
+      );
+    case "capture":
+      return (
+        <svg {...shared}>
+          <path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z" />
+          <circle cx="10" cy="11" r="2.8" />
+        </svg>
+      );
+    case "approve":
+      return (
+        <svg {...shared}>
+          <circle cx="10" cy="10" r="7.3" />
+          <path d="m6.6 10.2 2.4 2.4 4.5-5" />
+        </svg>
+      );
+    case "view":
+      return (
+        <svg {...shared}>
+          <path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h6" />
+          <path d="M3.8 5.5h.01M3.8 10h.01M3.8 14.5h.01" />
+        </svg>
+      );
+    case "invoice":
+      return (
+        <svg {...shared}>
+          <path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z" />
+          <path d="M11 2.8v4h4" />
+          <path d="M7 11.5h6M7 14.3h4" />
+        </svg>
+      );
+  }
 }

@@ -25,14 +25,26 @@
 -- The function is re-created, not edited
 -- ===========================================================================
 --
--- `ledger.post_entry` below is 0020's definition with two lines added: the
--- column in the INSERT and the value from the line's JSON. It is reproduced in
--- full because `create or replace` has no other form, and it was extracted
--- from 0020 mechanically rather than retyped - a hand-copied 128-line function
--- is a transcription error waiting to be found by an unbalanced entry.
+-- `ledger.post_entry` below is 0021's definition (the current one - it added
+-- `p_suppletie_id`, not 0020's original) with two lines added: the column in
+-- the INSERT and the value from the line's JSON. It is reproduced in full
+-- because `create or replace` has no other form, and it was extracted
+-- mechanically rather than retyped - a hand-copied 128-line function is a
+-- transcription error waiting to be found by an unbalanced entry.
 --
--- The SIGNATURE is unchanged, so every grant issued in 0020, 0024, 0028 and
--- 0029 still names this function and no privilege is disturbed.
+-- The SIGNATURE is unchanged from 0021's (12 parameters, `p_suppletie_id`
+-- last) - a correction: an earlier version of this migration reproduced
+-- 0020's 11-parameter signature instead of 0021's 12-parameter one, which
+-- `create or replace` treats as a DIFFERENT overload rather than a
+-- replacement (matched by argument types, not by name) - 0021's version was
+-- explicit about exactly this risk ("two overloads of the ledger's only
+-- write function is exactly the ambiguity this schema cannot afford") and
+-- this migration briefly reintroduced it anyway, silently, discovered only
+-- once this migration set was applied against a real Postgres and
+-- `ledger.post_entry(...)` started raising `AmbiguousFunctionError`. Every
+-- grant issued in 0020, 0021, 0024, 0028 and 0029 still names this function
+-- and no privilege is disturbed - true now that the signature genuinely is
+-- unchanged.
 
 begin;
 
@@ -59,7 +71,8 @@ create or replace function ledger.post_entry(
     p_source_system      text,
     p_lines              jsonb,
     p_reverses_entry_id  uuid default null,
-    p_idempotency_key    text default null
+    p_idempotency_key    text default null,
+    p_suppletie_id       uuid default null
 )
 returns journal_entry
 language plpgsql
@@ -96,7 +109,8 @@ begin
     insert into journal_entry (
         organization_id, administration_id, fiscal_year_id, period_id,
         journal_id, entry_number, entry_date, description, document_reference,
-        posted_by_user_id, source_system, reverses_entry_id, idempotency_key
+        posted_by_user_id, source_system, reverses_entry_id, idempotency_key,
+        suppletie_id
     )
     values (
         -- organization_id, fiscal_year_id and entry_number are all overwritten
@@ -115,7 +129,8 @@ begin
         p_posted_by_user_id,
         p_source_system,
         p_reverses_entry_id,
-        p_idempotency_key
+        p_idempotency_key,
+        p_suppletie_id
     )
     returning * into v_entry;
 

@@ -73,7 +73,12 @@ const mobileContext: SittingContext = {
 describe("App", () => {
   it("renders without crashing", () => {
     render(<App />);
-    expect(screen.getByText("LEDGR")).toBeDefined();
+    // Two, not one: PreAuthScreen (ADR-057) renders a wordmark in the task
+    // panel AND in the marketing rail, toggled by viewport width via CSS
+    // rather than JS — jsdom does not evaluate that media query, so both are
+    // genuinely present in the DOM regardless of which one a real browser
+    // would currently be showing.
+    expect(screen.getAllByText("LEDGR")).toHaveLength(2);
   });
 
   it("authenticated with no mobile context renders today's bare header only — the pre-existing, documented gap", () => {

@@ -102,11 +102,19 @@ async def test_the_application_role_cannot_insert_into_a_posting_table(
     )
 
 
+#: journal_sequence has no `id` column at all (its primary key is the
+#: composite (journal_id, fiscal_year_id) - see migration 0020) - a no-op
+#: self-assignment against a column every OTHER posting table happens to
+#: have, so it needs its own.
+_NO_OP_COLUMN = {"journal_sequence": "next_number"}
+
+
 @pytest.mark.parametrize("table", POSTING_TABLES)
 async def test_the_application_role_cannot_update_a_posting_table(
     table: str, two_organizations: SeededTenants
 ) -> None:
-    message = await _refused(f"UPDATE {table} SET id = id")
+    column = _NO_OP_COLUMN.get(table, "id")
+    message = await _refused(f"UPDATE {table} SET {column} = {column}")
     assert "permission denied" in message.lower(), message
 
 
@@ -199,13 +207,30 @@ async def test_the_application_role_cannot_grant_itself_the_privilege_back(
     """The obvious escalation, and the reason ownership sits with a NOLOGIN
     role. Postgres does not privilege-check a table's owner, so if ledgr_app
     owned these it could simply GRANT INSERT to itself.
+
+    Not `_refused`: ledgr_app already holds SELECT on journal_entry (0020),
+    just not INSERT, and PostgreSQL's GRANT does not raise when the grantor
+    lacks grant option on the specific privilege being granted while already
+    holding some OTHER privilege on the same object - it emits a WARNING
+    ("no privileges were granted for 'journal_entry'") and completes
+    normally (the same behaviour
+    test_audit_tamper_evidence.test_a_self_grant_of_update_gives_the_
+    application_role_nothing documents and works around for audit_log's
+    otherwise-identical case). A WARNING is not a DBAPIError, so `_refused`
+    would report this statement as unrefused even though it grants nothing -
+    checking has_table_privilege directly, before and after, tests the
+    actual property this case cares about.
     """
-    message = await _refused("GRANT INSERT ON journal_entry TO ledgr_app")
-    assert (
-        "permission denied" in message.lower()
-        or "must be owner" in message.lower()
-        or "grant options" in message.lower()
-    ), f"a self-grant was refused for an unexpected reason: {message}"
+
+    async def can_insert() -> bool:
+        result = await _as_app("SELECT has_table_privilege('ledgr_app', 'journal_entry', 'INSERT')")
+        return bool(result[0][0])
+
+    assert not await can_insert(), "ledgr_app already had INSERT before the attempt"
+
+    await _as_app("GRANT INSERT ON journal_entry TO ledgr_app")
+
+    assert not await can_insert(), "the self-grant actually gave ledgr_app INSERT"
 
 
 async def test_the_application_role_cannot_disarm_the_immutability_triggers(
@@ -315,6 +340,11 @@ async def test_support_tooling_holds_no_write_function(
     assert read_only <= {
         "chart_of_accounts",
         "control_account_reconciliation",
+        # FR-ONB-006 (0029). derive_fiscal_periods is `immutable` and touches
+        # no table at all (pure date arithmetic); fiscal_year_coverage_deviations
+        # is `stable`, a SELECT-only diagnostic report. Neither writes.
+        "derive_fiscal_periods",
+        "fiscal_year_coverage_deviations",
         "integrity_balance",
         "integrity_control_accounts",
         "integrity_findings",

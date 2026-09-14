@@ -1,0 +1,314 @@
+/*
+ * The frame every pre-authenticated screen renders inside — login, signup,
+ * and ADR-054's MFA gate. ADR-057 turned this from a single bare card into a
+ * two-region layout: a dark marketing rail carrying the product's own pitch,
+ * beside the actual task. This is the first screen anyone ever sees of
+ * LEDGR and, per ADR-057, the closest thing the product has to a front
+ * page — it earns real design investment, not the minimum a door needs.
+ *
+ * --- Two regions, `grid-template-areas`, DOM order != visual order ---
+ *
+ * `.pre-auth__panel` is FIRST in the markup (PreAuthScreen.tsx) so a
+ * keyboard/screen-reader user reaches the actual form before the marketing
+ * copy; grid-template-areas below is what puts the rail on the LEFT
+ * visually regardless of that DOM order, matching the two products this
+ * layout took its structure from (see ADR-057) without copying their
+ * palette — every colour here is LEDGR's own.
+ *
+ * Below 64rem the rail drops out of the grid entirely: a marketing pitch
+ * competing with the sign-in form for a 390px-wide screen is a worse
+ * screen, not a smaller version of a better one, and dropping it is what
+ * both reference products actually do at that width too.
+ */
+
+.pre-auth {
+  min-height: 100dvh;
+  background-color: var(--ledgr-surface-ground);
+
+  display: grid;
+  grid-template-areas: "panel";
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .pre-auth {
+    grid-template-areas: "marketing panel";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* ==========================================================================
+ * THE TASK PANEL
+ * ==========================================================================
+ */
+
+.pre-auth__panel {
+  grid-area: panel;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ledgr-space-5);
+
+  padding: var(--ledgr-space-6) var(--ledgr-space-4);
+}
+
+/*
+ * A quiet wash behind the panel, anchored top-centre. It is the one
+ * decorative gesture on this side and it is doing a job: it separates the
+ * sign-in card from the ground on a large monitor, where a flat panel on a
+ * flat background reads as unfinished. `color-mix` keeps it derived from the
+ * accent rather than a fourth hardcoded colour, so it follows the theme.
+ */
+.pre-auth__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    50rem 26rem at 50% -10%,
+    color-mix(in srgb, var(--ledgr-accent) 10%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.pre-auth__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  text-align: center;
+}
+
+/*
+ * The panel's own wordmark is the narrow-viewport fallback (matching one of
+ * the two reference layouts ADR-057 drew from — a single card, wordmark
+ * included, once there is no room for a separate rail). Once the rail
+ * appears at 64rem it carries the ONE wordmark this screen shows — two
+ * "LEDGR"s on one screen reads as a mistake, not confidence, so this is
+ * hidden rather than left to double up.
+ */
+@media (min-width: 64rem) {
+  .pre-auth__header .wordmark {
+    display: none;
+  }
+}
+
+.pre-auth__heading {
+  font-family: var(--ledgr-font-serif);
+  font-size: var(--ledgr-type-display);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: -0.012em;
+  line-height: var(--ledgr-leading-tight);
+  text-wrap: balance;
+}
+
+/*
+ * The card. This is one of the two places elevation is spent on this side
+ * (the other is a dialog) — here it is what makes the form read as the
+ * object on the page rather than as a region of it.
+ */
+.pre-auth__body {
+  width: 100%;
+  max-width: 26rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+
+  padding: var(--ledgr-space-5);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-md);
+}
+
+/*
+ * Forms inside the card: every field is a stacked label/control pair with the
+ * same rhythm, and the submit button is full width because on this screen
+ * there is exactly one thing to do.
+ */
+.pre-auth__body form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.pre-auth__body form > div,
+.pre-auth__body form > p {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+}
+
+.pre-auth__body form button {
+  width: 100%;
+}
+
+/*
+ * The "switch to signup / switch to login" link sits below the card's own
+ * actions and must not look like a second primary action — it is a different
+ * journey, not a different button.
+ */
+.pre-auth__body button.button--quiet {
+  width: 100%;
+  font-weight: var(--ledgr-weight-medium);
+}
+
+/* ==========================================================================
+ * PRESENTATION CONTROLS (IAM-010g)
+ * ==========================================================================
+ *
+ * Language and appearance, after the form in the DOM so a keyboard user
+ * reaches what they came for first — and still on the screen, a Tab away.
+ *
+ * The hint says what happens to the choice, because a person choosing before
+ * they have an account has no way to know whether it survives, and on a shared
+ * machine has a reason to care.
+ */
+
+.pre-auth__language {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  text-align: center;
+}
+
+.pre-auth__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ledgr-space-2);
+}
+
+.pre-auth__language-hint {
+  max-width: 34ch;
+  font-size: var(--ledgr-type-caption);
+  color: var(--ledgr-text-muted);
+  text-wrap: pretty;
+}
+
+/* ==========================================================================
+ * THE MARKETING RAIL (ADR-057)
+ * ==========================================================================
+ *
+ * Fixed dark colours, deliberately — literals, not `var(--ledgr-*)` tokens.
+ * The same reasoning tokens.css already documents for client markers
+ * applies here: this is a brand statement, not a themed surface, and it
+ * must read the same way whether the viewer is on light or dark mode. The
+ * values are LEDGR's own dark-theme palette (the same hue-80 ramp, same
+ * accent), used as constants rather than as the swappable tokens they are
+ * everywhere else in the product.
+ */
+
+.pre-auth__marketing {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .pre-auth__marketing {
+    grid-area: marketing;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ledgr-space-6);
+
+    padding: var(--ledgr-space-7) var(--ledgr-space-6);
+    background-color: #15120e;
+    color: #f2ece3;
+    overflow-y: auto;
+  }
+}
+
+.pre-auth__marketing-brand .wordmark {
+  color: #f2ece3;
+}
+
+.pre-auth__marketing-brand .wordmark__mark {
+  color: #4fbcc0;
+}
+
+.pre-auth__marketing-headline {
+  max-width: 22ch;
+  font-family: var(--ledgr-font-serif);
+  font-size: var(--ledgr-type-display);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: -0.012em;
+  line-height: var(--ledgr-leading-tight);
+  text-wrap: balance;
+}
+
+.pre-auth__marketing-subhead {
+  max-width: 42ch;
+  font-size: var(--ledgr-type-body);
+  line-height: var(--ledgr-leading-snug);
+  color: #c3bbae;
+  text-wrap: pretty;
+}
+
+.pre-auth__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.pre-auth__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ledgr-space-3);
+}
+
+.pre-auth__feature-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+
+  border-radius: var(--ledgr-radius-control);
+  background-color: rgba(79, 188, 192, 0.14);
+  color: #4fbcc0;
+}
+
+.pre-auth__feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pre-auth__feature-title {
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-semibold);
+  color: #f2ece3;
+}
+
+.pre-auth__feature-body {
+  font-size: var(--ledgr-type-caption);
+  line-height: var(--ledgr-leading-snug);
+  color: #9a9285;
+  text-wrap: pretty;
+}
+
+/*
+ * Windows high-contrast replaces every author colour with a system one,
+ * including this rail's fixed dark background and accent — which would
+ * leave it either illegible or indistinguishable from the panel beside it.
+ * The same exception `.ledgr-client-marker` already carries (tokens.css):
+ * the colour here IS the content (a deliberate brand statement), not a
+ * themeable surface, so it opts out rather than getting overridden.
+ */
+@media (forced-colors: active) {
+  .pre-auth__marketing {
+    forced-color-adjust: none;
+    border-right: 1px solid CanvasText;
+  }
+}

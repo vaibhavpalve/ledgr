@@ -138,7 +138,14 @@ export function SignupForm({
         {t("auth.sign_up.submit")}
       </button>
 
-      <button type="button" data-testid="switch-to-login" onClick={onSwitchToLogin}>
+      {/* A different journey, not a second primary action — so it never wears
+          a filled button beside the one the screen exists for. */}
+      <button
+        type="button"
+        className="button--quiet"
+        data-testid="switch-to-login"
+        onClick={onSwitchToLogin}
+      >
         {t("auth.sign_up.switch_to_login")}
       </button>
     </form>

@@ -5,7 +5,12 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "strict": true,
+    // Every other tsconfig in this workspace sets this; this one did not, so
+    // `tsc -b` type-checked vitest's own .d.ts chain and failed on chai
+    // shipping no types. Third-party declaration files are not this repo's to
+    // fix, and checking them is what the flag exists to skip.
+    "skipLibCheck": true
   },
   "include": ["vite.config.ts"]
 }

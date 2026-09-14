@@ -24,8 +24,11 @@ Two levels of test:
 
 from __future__ import annotations
 
+import contextlib
+import os
 import time
 import uuid
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
@@ -35,6 +38,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
 import api.auth.routes as auth_routes
 from api.auth.google_oidc import GoogleOidcClient
@@ -45,6 +49,8 @@ _CLIENT_ID = "test-client-id.apps.googleusercontent.com"
 _REDIRECT_URI = "https://ledgr.test/auth/google/callback"
 _PRIVATE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 _PUBLIC_KEY = _PRIVATE_KEY.public_key()
+
+_ADMIN_URL = os.environ.get("TEST_DATABASE_ADMIN_URL", "")
 
 
 class _StaticSigningKeyResolver:
@@ -102,6 +108,17 @@ def _install_fake_google(
     return pending
 
 
+def _unique_email(local_part: str) -> str:
+    """A fresh address per call, the same reason
+    tests/support/seed.py's own helpers suffix with a random hex fragment
+    rather than a fixed string: these tests run against a real, persistent
+    Postgres (not a schema reset per test), so a fixed email collides with
+    users.email's UNIQUE constraint on a second run - locally, or if this
+    file is ever re-run without a fresh bootstrap between runs.
+    """
+    return f"{local_part}+{uuid.uuid4().hex[:8]}@example.com"
+
+
 async def _seed_bare_google_user(*, email: str) -> uuid.UUID:
     """The exact row shape GoogleSignInService.sign_in's third branch
     produces for a first-seen identity (a bare `users` row, no
@@ -131,8 +148,41 @@ async def _seed_google_signup_ceremony(*, user_id: uuid.UUID) -> uuid.UUID:
         return ticket_id
 
 
+@contextlib.asynccontextmanager
+async def _admin_conn() -> AsyncIterator[AsyncConnection]:
+    """A connection as the postgres superuser, for reads that need to cross
+    tenant boundaries before this module even knows which tenant it created:
+    role_assignment's own SELECT policy only shows a row whose
+    scope_id = app.current_org_id() (migration 0009), and which organization
+    that even is is the very thing these reads exist to discover, so there
+    is no tenant context to set first.
+
+    `SET ROLE ledgr_ops` (the pattern test_ledger_immutability.py and
+    test_idempotency.py use for their own cross-tenant reads) does not work
+    here: ledgr_ops's BYPASSRLS only exempts it from row-level security
+    POLICIES, not from table-level GRANTs, and 0009 grants
+    select/insert/update on role_assignment to ledgr_app alone - nothing
+    ever grants ledgr_ops SELECT on this particular table (unlike
+    journal_entry/idempotency_key, which it does hold). Connecting as the
+    postgres superuser via TEST_DATABASE_ADMIN_URL (the same admin_engine
+    pattern test_effective_dated_rules.py and
+    test_referenced_table_privileges.py use) bypasses both layers at once,
+    test-only.
+    """
+    if not _ADMIN_URL:
+        pytest.skip("TEST_DATABASE_ADMIN_URL is not set")
+    admin_engine = create_async_engine(
+        _ADMIN_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+    )
+    try:
+        async with admin_engine.begin() as conn:
+            yield conn
+    finally:
+        await admin_engine.dispose()
+
+
 async def _has_organization(user_id: uuid.UUID) -> bool:
-    async with app_engine.begin() as conn:
+    async with _admin_conn() as conn:
         result = await conn.execute(
             text(
                 "SELECT count(*) FROM role_assignment "
@@ -149,7 +199,7 @@ async def _has_organization(user_id: uuid.UUID) -> bool:
 
 
 async def test_signup_google_creates_organization_and_grants_founding_owner() -> None:
-    user_id = await _seed_bare_google_user(email="new.google.user+1@example.com")
+    user_id = await _seed_bare_google_user(email=_unique_email("new.google.user"))
     ticket = await _seed_google_signup_ceremony(user_id=user_id)
 
     transport = ASGITransport(app=app)
@@ -173,7 +223,7 @@ async def test_signup_google_creates_organization_and_grants_founding_owner() ->
 
 
 async def test_signup_google_with_firm_account_model_and_kvk_number() -> None:
-    user_id = await _seed_bare_google_user(email="new.google.user+2@example.com")
+    user_id = await _seed_bare_google_user(email=_unique_email("new.google.user"))
     ticket = await _seed_google_signup_ceremony(user_id=user_id)
 
     transport = ASGITransport(app=app)
@@ -190,7 +240,7 @@ async def test_signup_google_with_firm_account_model_and_kvk_number() -> None:
 
     assert response.status_code == 200, response.text
 
-    async with app_engine.begin() as conn:
+    async with _admin_conn() as conn:
         row = (
             await conn.execute(
                 text(
@@ -206,7 +256,7 @@ async def test_signup_google_with_firm_account_model_and_kvk_number() -> None:
 
 
 async def test_signup_google_ticket_is_single_use() -> None:
-    user_id = await _seed_bare_google_user(email="new.google.user+3@example.com")
+    user_id = await _seed_bare_google_user(email=_unique_email("new.google.user"))
     ticket = await _seed_google_signup_ceremony(user_id=user_id)
     body = {
         "ticket": str(ticket),
@@ -248,7 +298,7 @@ async def test_signup_google_rejects_a_ceremony_of_the_wrong_kind() -> None:
     because both live in the same table - consume_google_signup_ceremony
     filters by kind, so this is refused the same way an unknown id is.
     """
-    user_id = await _seed_bare_google_user(email="new.google.user+4@example.com")
+    user_id = await _seed_bare_google_user(email=_unique_email("new.google.user"))
     async with app_engine.begin() as conn:
         result = await conn.execute(
             text(
@@ -282,8 +332,8 @@ async def test_signup_google_does_not_touch_another_pending_users_ticket() -> No
     to consume each other's ticket, and completing one must not create an
     organization for the other.
     """
-    user_a = await _seed_bare_google_user(email="new.google.user+5a@example.com")
-    user_b = await _seed_bare_google_user(email="new.google.user+5b@example.com")
+    user_a = await _seed_bare_google_user(email=_unique_email("new.google.user.a"))
+    user_b = await _seed_bare_google_user(email=_unique_email("new.google.user.b"))
     ticket_a = await _seed_google_signup_ceremony(user_id=user_a)
     await _seed_google_signup_ceremony(user_id=user_b)
 
@@ -312,9 +362,9 @@ async def test_signup_google_does_not_touch_another_pending_users_ticket() -> No
 async def test_full_round_trip_from_google_redirect_to_a_provisioned_account(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    pending = _install_fake_google(
-        monkeypatch, subject="google-sub-brand-new", email="brand.new@example.com"
-    )
+    subject = f"google-sub-{uuid.uuid4().hex[:8]}"
+    email = _unique_email("brand.new")
+    pending = _install_fake_google(monkeypatch, subject=subject, email=email)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -330,7 +380,7 @@ async def test_full_round_trip_from_google_redirect_to_a_provisioned_account(
         assert callback.status_code == 200, callback.text
         callback_body = callback.json()
         assert callback_body["status"] == "signup_required"
-        assert callback_body["email"] == "brand.new@example.com"
+        assert callback_body["email"] == email
 
         finish = await client.post(
             "/v1/auth/signup/google",
@@ -351,7 +401,7 @@ async def test_full_round_trip_from_google_redirect_to_a_provisioned_account(
         user_id = (
             await conn.execute(
                 text("SELECT id FROM users WHERE email = :email"),
-                {"email": "brand.new@example.com"},
+                {"email": email},
             )
         ).scalar_one()
         linked = (
@@ -360,5 +410,5 @@ async def test_full_round_trip_from_google_redirect_to_a_provisioned_account(
                 {"user_id": str(user_id)},
             )
         ).scalar_one()
-    assert linked == "google-sub-brand-new"
+    assert linked == subject
     assert await _has_organization(user_id)

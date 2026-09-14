@@ -124,10 +124,12 @@ class RetentionSweepReport:
 class DocumentRetentionRepository(Protocol):
     """`documents.expired()` and the one statement that removes a row.
 
-    Both run on the caller's own connection, so tenant scope is RLS's:
-    `ledgr_app` sees one administration, `ledgr_ops` (BYPASSRLS) sees every
-    one and needs no per-tenant loop - the same division `api.ledger.
-    integrity.IntegrityRepository` documents for its own two reads.
+    Both run on the caller's own connection - but unlike `api.ledger.
+    integrity.IntegrityRepository`'s two reads, only one connection can
+    actually complete a run here: `delete()` needs ledgr_ops (migration 0031
+    grants DELETE on `document` to ledgr_ops alone, not to ledgr_app - see
+    api.documents.retention_repository's module docstring). `expired()`
+    would work read-only as ledgr_app, but nothing calls this job that way.
     """
 
     async def expired(
@@ -167,10 +169,12 @@ class LoggingRetentionSweepAlerter:
 
 
 class DocumentRetentionSweepJob:
-    """PRIV-030, runnable nightly (`scripts/enforce_document_retention.py`) or
-    on demand. Stateless: running it twice against the same state produces
-    the same report, and a document already removed simply is not a
-    candidate the second time.
+    """PRIV-030, runnable nightly or on demand
+    (`scripts/enforce_document_retention.py`, always as ledgr_ops - see
+    DocumentRetentionRepository above for why there is no ledgr_app mode).
+    Stateless: running it twice against the same state produces the same
+    report, and a document already removed simply is not a candidate the
+    second time.
     """
 
     def __init__(

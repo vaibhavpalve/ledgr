@@ -1,0 +1,747 @@
+/*
+ * The shared component layer — buttons, fields, panels, chips, headings.
+ *
+ * Every value here is a `var(--ledgr-*)` from @ledgr/design-tokens. There are
+ * no literal colours, sizes or radii in this file, and there must not be: a
+ * literal is a value that cannot follow the theme, and the dark palette is
+ * exactly where those show up as white-on-white.
+ *
+ * --- Why element selectors, not a class for everything ---
+ *
+ * The screens in this app are written as semantic HTML — `<dl>`, `<section>`,
+ * `<button>`, `<h1>` — and several were built before any stylesheet existed.
+ * Styling the elements means those screens pick up the design system without
+ * being rewritten, and it keeps the markup readable as the document structure
+ * that the accessibility work (ADR-053) depends on.
+ *
+ * Classes are added only where an element cannot say enough on its own: which
+ * KIND of button this is, which state a row is in.
+ *
+ * --- Specificity ---
+ *
+ * Everything here is one class or one element deep, and the base/element rules
+ * are wrapped in `:where()` so they carry zero specificity. A screen's own
+ * stylesheet therefore always wins over this file without needing `!important`
+ * or a longer selector — the cascade collision that makes shared stylesheets
+ * unmaintainable.
+ */
+
+/* ==========================================================================
+ * APP SHELL
+ * ==========================================================================
+ */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--ledgr-surface-ground);
+}
+
+/*
+ * The global bar: identity, then the controls that are genuinely global.
+ *
+ * The density toggle that the design canvas put here is deliberately NOT
+ * here — a view preference belongs in settings, not in persistent chrome that
+ * every screen pays for in vertical space.
+ */
+.app__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+
+  background-color: var(--ledgr-surface-paper);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+.app__bar-spacer {
+  flex-grow: 1;
+}
+
+/* ==========================================================================
+ * TYPOGRAPHY
+ * ==========================================================================
+ *
+ * Seven sizes, and headings step through them rather than each picking their
+ * own. `text-wrap: balance` on headings and `pretty` on prose are the two
+ * cheapest typographic wins available — they cost nothing and remove the
+ * single-word last line that makes a heading look accidental.
+ */
+
+:where(h1, h2, h3, h4) {
+  margin: 0;
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-tight);
+  text-wrap: balance;
+}
+
+:where(h1) {
+  font-family: var(--ledgr-font-serif);
+  font-size: var(--ledgr-type-page);
+  letter-spacing: -0.006em;
+}
+
+:where(h2) {
+  font-size: var(--ledgr-type-section);
+}
+
+:where(h3, h4) {
+  font-size: var(--ledgr-type-body);
+}
+
+:where(p) {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+:where(a) {
+  color: var(--ledgr-accent);
+  text-decoration-color: color-mix(in srgb, var(--ledgr-accent) 40%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+:where(a):hover {
+  color: var(--ledgr-accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* An uppercase micro label — a section eyebrow, a column head. */
+.label {
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ledgr-text-muted);
+}
+
+.caption {
+  font-size: var(--ledgr-type-caption);
+  line-height: var(--ledgr-leading-snug);
+  color: var(--ledgr-text-muted);
+  text-wrap: pretty;
+}
+
+/* ==========================================================================
+ * BUTTONS
+ * ==========================================================================
+ *
+ * MOB-013's 48px minimum is the FLOOR for every button in the product, not
+ * something the capture screen opts into — that was the old stylesheet's
+ * mistake, and it is why an unstyled `<button>` elsewhere rendered at roughly
+ * 21px high.
+ */
+
+:where(button) {
+  font: inherit;
+  color: inherit;
+}
+
+:where(button:not(:disabled)) {
+  cursor: pointer;
+}
+
+/*
+ * The default shape every button in this app takes. Screens opt into a ROLE
+ * (`.button--primary`) rather than opting into being a button at all.
+ */
+:where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ledgr-space-2);
+
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-4);
+
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-text-primary);
+  border: 1px solid var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-control);
+
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-tight);
+
+  transition:
+    background-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    border-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+:where(button):hover:not(:disabled) {
+  background-color: var(--ledgr-surface-raised);
+}
+
+:where(button):disabled {
+  color: var(--ledgr-text-muted);
+  background-color: var(--ledgr-surface-raised);
+  border-color: var(--ledgr-border-subtle);
+  cursor: not-allowed;
+}
+
+/*
+ * A form's submit button IS that form's primary action, so it takes the
+ * primary treatment from its type rather than from a class every form has to
+ * remember to add. `:where()` keeps the specificity at zero, so a form that
+ * genuinely needs something else can still override it with a plain class.
+ */
+:where(button[type="submit"]) {
+  background-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+  border-color: var(--ledgr-accent);
+}
+
+:where(button[type="submit"]):hover:not(:disabled) {
+  background-color: var(--ledgr-accent-hover);
+  border-color: var(--ledgr-accent-hover);
+}
+
+/* The one action a screen exists for. At most one per view. */
+.button--primary {
+  background-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+  border-color: var(--ledgr-accent);
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: var(--ledgr-accent-hover);
+  border-color: var(--ledgr-accent-hover);
+}
+
+/* Looks like a link, behaves like a button. For "cancel", "back", "skip". */
+.button--quiet {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--ledgr-text-secondary);
+}
+
+.button--quiet:hover:not(:disabled) {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-primary);
+}
+
+/*
+ * A destructive action never gets a filled button. Attention is reserved for
+ * STATE (see tokens.css); an action wearing the alarm colour trains people to
+ * ignore the alarm. The outline says "this one is different" without shouting.
+ */
+.button--danger {
+  color: var(--ledgr-attention);
+  border-color: var(--ledgr-attention);
+  background-color: transparent;
+}
+
+.button--danger:hover:not(:disabled) {
+  background-color: var(--ledgr-attention-wash);
+}
+
+/* ==========================================================================
+ * SEGMENTED CONTROLS — language, theme
+ * ==========================================================================
+ */
+
+.language-switcher,
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--ledgr-surface-raised);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-control);
+}
+
+.language-switcher button,
+.theme-toggle__option {
+  /* Inside a segmented control the 48px floor applies to the GROUP, which is
+     what the finger lands on; the segments themselves are deliberately
+     compact so the control does not dominate the bar it sits in. */
+  min-height: 34px;
+  padding: var(--ledgr-space-1) var(--ledgr-space-3);
+
+  background-color: transparent;
+  border: none;
+  border-radius: var(--ledgr-radius-chip);
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-medium);
+}
+
+.language-switcher button:hover,
+.theme-toggle__option:hover {
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-text-primary);
+}
+
+/*
+ * The selected segment. `aria-pressed` drives the styling rather than a
+ * parallel class, so the visual state and the announced state cannot disagree
+ * — they are the same attribute.
+ */
+.language-switcher button[aria-pressed="true"],
+.theme-toggle__option[aria-pressed="true"] {
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-accent);
+  font-weight: var(--ledgr-weight-semibold);
+  box-shadow: var(--ledgr-shadow-sm);
+}
+
+/*
+ * Forced colors drops both the background and the shadow above, which is the
+ * entire selected state. An outline survives, so the selection does too.
+ */
+@media (forced-colors: active) {
+  .language-switcher button[aria-pressed="true"],
+  .theme-toggle__option[aria-pressed="true"] {
+    outline: 2px solid ButtonText;
+    outline-offset: -2px;
+  }
+}
+
+/* On a narrow bar the theme labels go; the icons carry it. */
+@media (max-width: 32rem) {
+  .theme-toggle__option span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .theme-toggle__option {
+    padding: var(--ledgr-space-1) var(--ledgr-space-2);
+  }
+}
+
+/* ==========================================================================
+ * PANELS
+ * ==========================================================================
+ *
+ * Not everything is a card. A panel is a hairline border and a radius — no
+ * shadow, because a shadow says "floating above the page" and a list of
+ * expenses is not floating. Elevation is spent on things that genuinely
+ * overlay: dialogs, the sign-out confirmation.
+ */
+
+.panel {
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-4);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+.panel__body {
+  padding: var(--ledgr-space-4);
+}
+
+/* ==========================================================================
+ * CHIPS — a status, in a word
+ * ==========================================================================
+ */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-1);
+  padding: 2px var(--ledgr-space-2);
+
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.chip--accent {
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent);
+}
+.chip--positive {
+  background-color: var(--ledgr-positive-wash);
+  color: var(--ledgr-positive);
+}
+.chip--caution {
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+}
+.chip--attention {
+  background-color: var(--ledgr-attention-wash);
+  color: var(--ledgr-attention);
+}
+
+/*
+ * A chip's meaning is carried entirely by colour + text. The text survives
+ * forced colors; the colour does not, so the border is what keeps it reading
+ * as a discrete object rather than as loose words.
+ */
+@media (forced-colors: active) {
+  .chip {
+    border: 1px solid currentColor;
+  }
+}
+
+/* ==========================================================================
+ * FORMS
+ * ==========================================================================
+ */
+
+:where(label) {
+  display: block;
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-semibold);
+  color: var(--ledgr-text-secondary);
+}
+
+:where(input, select, textarea) {
+  width: 100%;
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+
+  background-color: var(--ledgr-surface-input);
+  color: var(--ledgr-text-primary);
+  /* `border-strong`, which clears SC 1.4.11's 3:1 — a field whose edge cannot
+     be found is not a field. */
+  border: 1px solid var(--ledgr-border-strong);
+  border-radius: var(--ledgr-radius-control);
+
+  font: inherit;
+  font-size: var(--ledgr-type-body);
+}
+
+:where(input, select, textarea):disabled {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-muted);
+}
+
+:where(input, textarea)::placeholder {
+  color: var(--ledgr-text-muted);
+}
+
+/* Numeric input lines up under numeric output. */
+:where(input[type="number"], input[inputmode="decimal"], input[inputmode="numeric"]) {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/*
+ * `aria-invalid` rather than a class: the attribute a screen reader acts on
+ * and the attribute that colours the field are the same one, so a field can
+ * never look fine while announcing an error, or the reverse.
+ */
+:where(input, select, textarea)[aria-invalid="true"] {
+  border-color: var(--ledgr-attention);
+  border-width: 2px;
+}
+
+:where(fieldset) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A validation message, tied to its field by aria-describedby in the markup. */
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ledgr-space-2);
+  color: var(--ledgr-attention);
+  font-size: var(--ledgr-type-caption);
+  line-height: var(--ledgr-leading-snug);
+}
+
+/* ==========================================================================
+ * MFA — TOTP ENROLLMENT
+ * ==========================================================================
+ *
+ * The QR code sits in an explicitly WHITE panel regardless of theme: a QR
+ * scanner needs dark modules on a light ground to read reliably, and the
+ * `qrcode` package's own SVG output already draws that contrast — losing it
+ * to the surrounding dark-mode paper would make the one new thing this
+ * screen renders the one thing that stops working at night.
+ */
+.mfa-totp-qr {
+  align-self: center;
+  display: flex;
+  padding: var(--ledgr-space-4);
+  background-color: #ffffff;
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-sm);
+}
+
+.mfa-totp-qr svg {
+  width: 11rem;
+  height: 11rem;
+}
+
+.mfa-totp-open-link {
+  align-self: center;
+  font-size: var(--ledgr-type-caption);
+}
+
+.mfa-totp-no-app {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--ledgr-space-3);
+  background-color: var(--ledgr-surface-raised);
+  border-radius: var(--ledgr-radius-control);
+}
+
+.mfa-totp-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mfa-totp-manual code {
+  display: inline-block;
+  padding: var(--ledgr-space-1) var(--ledgr-space-2);
+  background-color: var(--ledgr-surface-raised);
+  border-radius: var(--ledgr-radius-chip);
+  font-family: var(--ledgr-font-mono);
+  font-size: var(--ledgr-type-small);
+  word-break: break-all;
+}
+
+/* ==========================================================================
+ * ALERTS
+ * ==========================================================================
+ */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+
+  border-radius: var(--ledgr-radius-control);
+  /* The state is carried by a 3px edge and by the text, never by the fill
+     alone — the fill is what forced-colors mode discards. */
+  border-left: 3px solid var(--ledgr-text-muted);
+  background-color: var(--ledgr-surface-raised);
+
+  font-size: var(--ledgr-type-small);
+  line-height: var(--ledgr-leading-snug);
+}
+
+.alert--attention {
+  border-left-color: var(--ledgr-attention);
+  background-color: var(--ledgr-attention-wash);
+  color: var(--ledgr-attention);
+}
+
+.alert--caution {
+  border-left-color: var(--ledgr-caution);
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+}
+
+.alert--positive {
+  border-left-color: var(--ledgr-positive);
+  background-color: var(--ledgr-positive-wash);
+  color: var(--ledgr-positive);
+}
+
+/* ==========================================================================
+ * EMPTY STATES
+ * ==========================================================================
+ *
+ * FR-UX-004: an empty state teaches rather than showing nothing. It is the
+ * first screen a trial user meets, so it is designed rather than left as a
+ * stray sentence — which is what every one of these was before.
+ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  padding: var(--ledgr-space-6) var(--ledgr-space-4);
+  text-align: center;
+}
+
+.empty-state__icon {
+  color: var(--ledgr-text-muted);
+  margin-bottom: var(--ledgr-space-1);
+}
+
+.empty-state__title {
+  font-size: var(--ledgr-type-body);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.empty-state__body {
+  max-width: 46ch;
+  font-size: var(--ledgr-type-small);
+  color: var(--ledgr-text-muted);
+  text-wrap: pretty;
+}
+
+/* ==========================================================================
+ * LOADING
+ * ==========================================================================
+ *
+ * A skeleton, not a spinner: it holds the space the content will occupy, so
+ * the page does not jump when the data lands. The shimmer is the one piece of
+ * ambient motion in the product, and it stops entirely under
+ * prefers-reduced-motion (tokens.css zeroes the duration).
+ */
+
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--ledgr-surface-raised) 0%,
+    var(--ledgr-surface-sunken) 50%,
+    var(--ledgr-surface-raised) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--ledgr-radius-chip);
+  animation: ledgr-skeleton 1.4s var(--ledgr-ease-out) infinite;
+}
+
+@keyframes ledgr-skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ==========================================================================
+ * LISTS
+ * ==========================================================================
+ */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list > li + li {
+  border-top: 1px solid var(--ledgr-border-subtle);
+}
+
+/*
+ * A whole row that is one target. `text-align: left` because a button centres
+ * its content by default and a row of prose must not be centred; `width: 100%`
+ * and `border: none` because this is a row, not a control with an edge.
+ */
+.list__row {
+  width: 100%;
+  min-height: var(--ledgr-touch-min);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  font-weight: var(--ledgr-weight-regular);
+  font-size: var(--ledgr-type-body);
+}
+
+.list__row:hover:not(:disabled) {
+  background-color: var(--ledgr-surface-raised);
+}
+
+.list__row-text {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.list__row-amount {
+  flex: none;
+  font-family: var(--ledgr-font-serif);
+  font-weight: var(--ledgr-weight-semibold);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ==========================================================================
+ * DIALOG
+ * ==========================================================================
+ *
+ * The one place elevation is spent, because this genuinely floats.
+ */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--ledgr-space-4);
+
+  background-color: color-mix(in srgb, var(--ledgr-surface-sunken) 72%, transparent);
+}
+
+@media (min-width: 40rem) {
+  .dialog-backdrop {
+    align-items: center;
+  }
+}
+
+.dialog {
+  width: 100%;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+  padding: var(--ledgr-space-5);
+
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-lg);
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+ * WORDMARK
+ * ==========================================================================
+ */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+
+  font-family: var(--ledgr-font-serif);
+  font-size: var(--ledgr-type-section);
+  font-weight: var(--ledgr-weight-semibold);
+  letter-spacing: 0.055em;
+  color: var(--ledgr-text-primary);
+}
+
+.wordmark__mark {
+  color: var(--ledgr-accent);
+}

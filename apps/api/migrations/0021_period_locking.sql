@@ -504,11 +504,20 @@ begin
             'entry % has already been reversed (FR-GL-003)', p_entry_id;
     end if;
 
+    -- A literal '.' here, not the locale-aware 'D': post_entry casts these
+    -- strings back with (v_line->>'debit')::numeric (0021/0035), and a
+    -- text-to-numeric cast always requires '.' regardless of server locale.
+    -- 'D' instead emits whatever lc_numeric's decimal separator is - a
+    -- comma on this database (English_Netherlands.1252, fitting for a Dutch
+    -- bookkeeping product but not what a numeric cast accepts) - so every
+    -- reversal failed with "invalid input syntax for type numeric: 0,00"
+    -- the first time this ran against a real server rather than the C
+    -- locale a fresh throwaway container defaults to.
     select jsonb_agg(
                jsonb_build_object(
                    'account_id', l.account_id,
-                   'debit', to_char(l.credit, 'FM9999999999999999990D00'),
-                   'credit', to_char(l.debit, 'FM9999999999999999990D00'),
+                   'debit', to_char(l.credit, 'FM9999999999999999990.00'),
+                   'credit', to_char(l.debit, 'FM9999999999999999990.00'),
                    'subledger_party_id', l.subledger_party_id,
                    'cost_centre_id', l.cost_centre_id,
                    'description', l.description

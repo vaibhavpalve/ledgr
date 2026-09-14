@@ -285,6 +285,12 @@ async def test_a_posting_account_cannot_name_another_tenants_account(
     lunch into another client's books - the wrong-client failure FR-FRM-000a
     calls the worst in this product, arriving through a configuration table.
     """
+    # ledger.create_account(), not a raw INSERT: ledger_account is a posting-
+    # context table (CLAUDE.md rule 1, "nothing writes to posting tables
+    # except the ledger service" - test_ledger_bounded_context.py's
+    # MASTER_DATA_TABLES), and ledgr_app - what app_engine connects as - has
+    # SELECT on it and nothing else. The SECURITY DEFINER function is the
+    # only path that can create one, the same one production code uses.
     async with app_engine.begin() as conn:
         await conn.execute(
             text("SELECT set_config('app.current_org_id', :org, true)"),
@@ -293,15 +299,10 @@ async def test_a_posting_account_cannot_name_another_tenants_account(
         foreign_account = (
             await conn.execute(
                 text(
-                    "INSERT INTO ledger_account ("
-                    "  organization_id, administration_id, code, name, type"
-                    ") VALUES (:org, :admin, '4000', 'Kantoorkosten', 'expense') "
-                    "RETURNING id"
+                    "SELECT (ledger.create_account(:admin, '4000', 'Kantoorkosten', "
+                    "  'expense')).id"
                 ),
-                {
-                    "org": str(two_organizations.org_b),
-                    "admin": str(two_organizations.admin_b),
-                },
+                {"admin": str(two_organizations.admin_b)},
             )
         ).scalar_one()
 

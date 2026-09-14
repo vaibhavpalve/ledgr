@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 17px;
+      line-height: 1.55;
+      color: #26221C;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: #00686C; text-decoration: none; }
+    a:hover { color: #004F52; }
+    .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+    svg { display: block; }
+  </style>
+</helmet>
+
+<div style="display: flex; width: 1440px; height: 900px; background: #F5F0E9; overflow: hidden;">
+
+  <!-- ============ LEFT RAIL ============ -->
+  <aside style="width: 240px; flex: none; background: #FBF8F4; border-right: 1px solid #DCD9D3; display: flex; flex-direction: column; gap: 26px; padding: 22px 14px 18px;">
+
+    <div style="display: flex; align-items: center; gap: 9px; padding: 0 8px;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#00686C" stroke-width="1.36" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.5v13h12"/><path d="M7 13V9M10.5 13V5.5M14 13v-2"/></svg>
+      <span style="font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: 0.055em; color: #26221C;">LEDGR</span>
+    </div>
+
+    <nav style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px;">Dagelijks werk</div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M5 8.5V16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8.5"/></svg>
+          <span>Start</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5h2.8l1.4-2h5.6l1.4 2H17a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="10" cy="11" r="2.8"/></svg>
+          <span>Vastleggen</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.3"/><path d="m6.6 10.2 2.4 2.4 4.5-5"/></svg>
+          <span style="flex-grow: 1;">Beoordelen</span>
+          <span class="num" style="font-size: 13px; font-weight: 700; color: #00686C; background: #D8F4F6; border-radius: 999px; padding: 1px 9px;">6</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h6"/><path d="M3.8 5.5h.01M3.8 10h.01M3.8 14.5h.01"/></svg>
+          <span>Overzicht</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/><path d="M7 11.5h6M7 14.3h4"/></svg>
+          <span>Verkoopfacturen</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: #6E685F; padding: 0 8px 6px;">De boeken</div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; background: #D8F4F6; color: #00686C; font-size: 16px; font-weight: 600;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.4A1.4 1.4 0 0 1 5.4 3H16v14H5.4A1.4 1.4 0 0 1 4 15.6z"/><path d="M4 14h12"/><path d="M7.5 6.5h5"/></svg>
+          <span>Grootboek</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 5 15"/><circle cx="6.6" cy="6.6" r="2.1"/><circle cx="13.4" cy="13.4" r="2.1"/></svg>
+          <span>BTW-aangifte</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: 9px; color: #26221C; font-size: 16px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.2v-4.4M10 16.2V4.4M15.5 16.2V9"/></svg>
+          <span>Rapportage</span>
+        </div>
+      </div>
+    </nav>
+
+    <div style="flex-grow: 1;"></div>
+
+    <div style="display: flex; align-items: center; gap: 11px; padding: 16px 8px 9px; border-radius: 9px; color: #5F5A52; font-size: 16px; border-top: 1px solid #DCD9D3;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.4"/><path d="M10 2.6v2.2M10 15.2v2.2M17.4 10h-2.2M4.8 10H2.6M15.23 4.77l-1.56 1.56M6.33 13.67l-1.56 1.56M15.23 15.23l-1.56-1.56M6.33 6.33 4.77 4.77"/></svg>
+      <span>Instellingen</span>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN COLUMN ============ -->
+  <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+
+    <header style="flex: none; background: #FBF8F4; border-bottom: 3px solid #59739B; display: flex; align-items: center; gap: 18px; padding: 0 26px; height: 66px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="num" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #59739B; color: #FFFFFF; font-size: 13px; font-weight: 700;">VD</span>
+        <div style="display: flex; flex-direction: column; line-height: 1.25;">
+          <span style="font-size: 16px; font-weight: 600;">Van Doorn Bouw B.V.</span>
+          <span class="num" style="font-size: 13px; color: #6E685F;">KvK 34281907</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+      </div>
+      <div style="width: 1px; height: 30px; background: #DCD9D3;"></div>
+      <div style="display: flex; align-items: center; gap: 7px; font-size: 15px;">
+        <span>Boekjaar 2026</span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+      </div>
+      <div style="flex-grow: 1; display: flex; align-items: center; gap: 9px; max-width: 380px; height: 38px; padding: 0 13px; border: 1px solid #C1BDB7; border-radius: 10px; background: #FFFEFB;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.2 3.2"/></svg>
+        <span style="flex-grow: 1; font-size: 15px; color: #6E685F;">Zoek in alles…</span>
+        <span style="font-size: 12px; font-weight: 600; color: #6E685F; border: 1px solid #C1BDB7; border-radius: 5px; padding: 1px 5px;">Ctrl K</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 3px; border: 1px solid #C1BDB7; border-radius: 9px; padding: 3px;">
+        <span style="font-size: 13px; color: #5F5A52; padding: 3px 10px;">Ruim</span>
+        <span style="font-size: 13px; font-weight: 600; color: #00686C; background: #D8F4F6; border-radius: 6px; padding: 3px 10px;">Compact</span>
+      </div>
+      <span class="num" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #EFEAE2; color: #5F5A52; font-size: 13px; font-weight: 700;">SB</span>
+    </header>
+
+    <main style="flex: 1; overflow: hidden; padding: 18px 26px 0; display: flex; flex-direction: column; gap: 14px;">
+
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: #6E685F;">
+          <span>Grootboek</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+          <span>Kosten</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m8 5.5 4.5 4.5L8 14.5"/></svg>
+          <span style="color: #26221C; font-weight: 600;">4300 — Onderhoud gebouwen</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 14px;">
+          <h1 style="margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 600;"><span class="num">4300</span> — Onderhoud gebouwen</h1>
+          <span style="font-size: 15px; color: #6E685F;">Kostenrekening · RGS WBedAdlAnk</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 13px; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px; font-size: 15px;">
+          <span class="num">1 jan 2026 — 14 sep 2026</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 13px; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px; font-size: 15px;">
+          <span>Alle dagboeken</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 13px; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px; font-size: 15px;">
+          <span>Inclusief tegenboekingen</span>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#6E685F" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="m5.5 8 4.5 4.5L14.5 8"/></svg>
+        </div>
+        <div style="flex-grow: 1;"></div>
+        <span style="display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 15px; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px; font-size: 15px; font-weight: 600; color: #00686C;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v9"/><path d="m6.4 8.6 3.6 3.6 3.6-3.6"/><path d="M3.8 15.4h12.4"/></svg>
+          <span>Exporteren</span>
+        </span>
+      </div>
+
+      <!-- THE LEDGER TABLE. Everything here is posted, so there is no per-row
+           "posted" glyph — the marker column carries EXCEPTIONS only. -->
+      <div style="flex-grow: 1; min-height: 0; background: #FBF8F4; border: 1px solid #DCD9D3; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;">
+
+        <div style="flex: none; display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 40px; background: #EFEAE2; border-bottom: 1px solid #C1BDB7; font-size: 13px; font-weight: 700; letter-spacing: 0.045em; text-transform: uppercase; color: #5F5A52;">
+          <span></span>
+          <span>Datum</span>
+          <span>Boekstuk</span>
+          <span>Omschrijving</span>
+          <span>Tegenrekening</span>
+          <span style="text-align: right;">Debet</span>
+          <span style="text-align: right;">Credit</span>
+          <span style="text-align: right;">Saldo</span>
+        </div>
+
+        <div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column;">
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">04-01-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-B-0007</span>
+            <span>Dakgoot vervangen</span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right;">1.240,00</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">1.240,00</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">19-02-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-B-0041</span>
+            <span style="display: flex; align-items: center; gap: 9px; min-width: 0;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Schilderwerk kantoor</span>
+              <span class="num" style="flex: none; font-size: 12px; font-weight: 600; color: #755421; background: #FAEBD8; border-radius: 5px; padding: 1px 7px;">Gecorrigeerd door 2026-M-0012</span>
+            </span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right;">865,50</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">2.105,50</span>
+          </div>
+
+          <!-- The reversing entry — the only kind of row that earns a marker -->
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3; background: #FEE8E1;">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#814A39" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 9.6h7.8a3.6 3.6 0 0 1 0 7.2H9.4"/><path d="m7.4 6.2-3 3.4 3 3.4"/></svg>
+            <span class="num">03-04-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-M-0012</span>
+            <span style="color: #814A39;">Tegenboeking van <span class="num" style="font-weight: 600;">2026-B-0041</span></span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; color: #814A39;">865,50</span>
+            <span class="num" style="text-align: right; font-weight: 600;">1.240,00</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">03-04-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-B-0058</span>
+            <span>Schilderwerk kantoor — gecorrigeerd bedrag</span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right;">658,50</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">1.898,50</span>
+          </div>
+
+          <!-- SELECTED -->
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; background: #D8F4F6; box-shadow: inset 3px 0 0 #00686C;">
+            <span></span>
+            <span class="num" style="font-weight: 600;">17-05-2026</span>
+            <span class="num" style="font-weight: 600; color: #00686C;">2026-B-0090</span>
+            <span style="font-weight: 600;">Onderhoud CV-installatie</span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right; font-weight: 600;">412,00</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">2.310,50</span>
+          </div>
+
+          <!-- SEALED DETAIL — no input chrome anywhere, and no delete affordance -->
+          <div style="background: #EFEAE2; border-top: 2px solid #00686C; border-bottom: 1px solid #C1BDB7; padding: 14px 16px 14px 50px; display: flex; gap: 26px; align-items: flex-start;">
+
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 9px;">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#5F5A52" stroke-width="1.88" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="8.8" width="10.8" height="7.4" rx="1.8"/><path d="M7.2 8.8V6.6a2.8 2.8 0 0 1 5.6 0v2.2"/></svg>
+                <span style="font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #5F5A52;">Geboekt — definitief</span>
+                <span class="num" style="font-size: 14px; color: #6E685F;">17-05-2026 09:12 · S. Bakker · periode 05-2026 gesloten</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px; overflow: hidden;">
+                <div style="display: grid; grid-template-columns: 148px minmax(0, 1fr) 120px 120px; padding: 5px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.045em; text-transform: uppercase; color: #6E685F; background: #F5F0E9;">
+                  <span>Rekening</span><span>Omschrijving</span><span style="text-align: right;">Debet</span><span style="text-align: right;">Credit</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 148px minmax(0, 1fr) 120px 120px; padding: 6px 14px; font-size: 15px; border-top: 1px solid #DCD9D3;">
+                  <span class="num">4300</span><span>Onderhoud gebouwen</span><span class="num" style="text-align: right;">412,00</span><span class="num" style="text-align: right; color: #6E685F;">—</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 148px minmax(0, 1fr) 120px 120px; padding: 6px 14px; font-size: 15px; border-top: 1px solid #DCD9D3;">
+                  <span class="num">1520</span><span>Te vorderen BTW hoog</span><span class="num" style="text-align: right;">86,52</span><span class="num" style="text-align: right; color: #6E685F;">—</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 148px minmax(0, 1fr) 120px 120px; padding: 6px 14px; font-size: 15px; border-top: 1px solid #DCD9D3;">
+                  <span class="num">1600</span><span>Crediteuren</span><span class="num" style="text-align: right; color: #6E685F;">—</span><span class="num" style="text-align: right;">498,52</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 148px minmax(0, 1fr) 120px 120px; padding: 6px 14px; font-size: 15px; font-weight: 700; border-top: 1px solid #C1BDB7; background: #F5F0E9;">
+                  <span></span><span style="color: #396741;">In balans</span><span class="num" style="text-align: right;">498,52</span><span class="num" style="text-align: right;">498,52</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="flex: none; width: 236px; display: flex; flex-direction: column; gap: 9px; padding-top: 26px;">
+              <span style="display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; font-size: 15px; font-weight: 600; color: #FFFFFF; background: #00686C; border-radius: 9px;">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 9.6h7.8a3.6 3.6 0 0 1 0 7.2H9.4"/><path d="m7.4 6.2-3 3.4 3 3.4"/></svg>
+                <span>Corrigeren met tegenboeking</span>
+              </span>
+              <span style="display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 42px; font-size: 15px; font-weight: 600; color: #26221C; background: #FBF8F4; border: 1px solid #C1BDB7; border-radius: 9px;">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z"/><path d="M11 2.8v4h4"/></svg>
+                <span>Brondocument</span>
+              </span>
+              <span style="font-size: 13px; line-height: 1.4; color: #6E685F; text-wrap: pretty;">Geboekte regels worden nooit gewijzigd of verwijderd. Een correctie is zelf een boeking.</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">22-06-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-K-0134</span>
+            <span>Tuinonderhoud terrein</span>
+            <span class="num" style="color: #5F5A52;">1100 Bank</span>
+            <span class="num" style="text-align: right;">275,00</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">2.585,50</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">08-08-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-B-0151</span>
+            <span>Reparatie roldeur werkplaats</span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right;">1.085,00</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">3.670,50</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 42px; font-size: 16px; border-bottom: 1px solid #DCD9D3;">
+            <span></span>
+            <span class="num">12-09-2026</span>
+            <span class="num" style="color: #5F5A52;">2026-D-0203</span>
+            <span>Schilderwerk schuur — project Kroon</span>
+            <span class="num" style="color: #5F5A52;">1600 Crediteuren</span>
+            <span class="num" style="text-align: right;">74,34</span>
+            <span class="num" style="text-align: right; color: #6E685F;">—</span>
+            <span class="num" style="text-align: right; font-weight: 600;">3.744,84</span>
+          </div>
+        </div>
+
+        <div style="flex: none; display: grid; grid-template-columns: 34px 100px 124px minmax(0, 1fr) 196px 124px 124px 132px; align-items: center; padding: 0 16px; height: 48px; background: #EFEAE2; border-top: 2px solid #C1BDB7; font-size: 16px; font-weight: 700;">
+          <span></span>
+          <span style="grid-column: span 3; color: #5F5A52;">Totaal — 8 boekingen, 1 tegenboeking</span>
+          <span></span>
+          <span class="num" style="text-align: right;">4.610,34</span>
+          <span class="num" style="text-align: right;">865,50</span>
+          <span class="num" style="text-align: right;">3.744,84</span>
+        </div>
+      </div>
+
+      <div style="flex: none; height: 16px;"></div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

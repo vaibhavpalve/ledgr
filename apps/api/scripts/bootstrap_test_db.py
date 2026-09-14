@@ -29,6 +29,15 @@ MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 async def main() -> None:
     admin_dsn = os.environ["TEST_DATABASE_ADMIN_URL"]
     app_password = os.environ["TEST_LEDGR_APP_PASSWORD"]
+    # Test-only, and optional: only test_audit_tamper_evidence.py's
+    # migrator-role battery needs a real login for ledgr_migrator (see its
+    # own comment on why admin+SET ROLE cannot stand in for one - a
+    # superuser session can SET ROLE to any role regardless of membership,
+    # which makes that proxy unable to test role-escalation attempts
+    # specifically). Falls back to app_password so an environment that never
+    # set this separately still gets a login rather than the KeyError
+    # TEST_LEDGR_APP_PASSWORD gets; both are throwaway test credentials.
+    migrator_password = os.environ.get("TEST_LEDGR_MIGRATOR_PASSWORD", app_password)
 
     conn = await asyncpg.connect(admin_dsn)
     try:
@@ -91,6 +100,38 @@ async def main() -> None:
         escaped_password = app_password.replace("'", "''")
         await conn.execute(f"ALTER ROLE ledgr_app WITH LOGIN PASSWORD '{escaped_password}'")
         print("ledgr_app password set", file=sys.stderr)
+
+        escaped_migrator_password = migrator_password.replace("'", "''")
+        await conn.execute(f"ALTER ROLE ledgr_migrator WITH PASSWORD '{escaped_migrator_password}'")
+        print("ledgr_migrator password set", file=sys.stderr)
+
+        # Test-only bridge, the same kind this script already is for
+        # ledgr_app's password: several integration tests exercise
+        # ledgr_ops-only code paths (BYPASSRLS reads, SECURITY DEFINER
+        # batch functions like app.purge_expired_idempotency_keys) by
+        # connecting once as ledgr_app (DATABASE_URL) and running
+        # `SET ROLE ledgr_ops` mid-session, rather than opening a second
+        # connection with its own credentials. `SET ROLE` to a non-superuser
+        # target requires the CURRENT role to already be a member of it -
+        # nothing in the migrations grants that (deliberately: ledgr_app
+        # gaining ledgr_ops's cross-tenant BYPASSRLS privileges in
+        # PRODUCTION would itself be a tenant-isolation defect), so it has
+        # to be granted here, exactly where the equivalent problem for
+        # ledgr_app's password is already solved.
+        #
+        # WITH INHERIT FALSE (PG16): membership alone is enough for SET
+        # ROLE, which only checks membership - but plain membership also
+        # auto-inherits the target's privileges with no SET ROLE at all,
+        # which let ledgr_app call app.purge_expired_idempotency_keys()
+        # directly and silently, defeating
+        # test_the_application_role_cannot_purge_other_tenants_keys (found
+        # by running that test against this grant for the first time - it
+        # expects that call to be denied to ledgr_app specifically). INHERIT
+        # FALSE keeps the SET ROLE bridge these tests need while closing
+        # that hole: ledgr_ops's privileges apply only for the duration of
+        # an explicit SET ROLE, never automatically.
+        await conn.execute("GRANT ledgr_ops TO ledgr_app WITH INHERIT FALSE")
+        print("ledgr_app may SET ROLE ledgr_ops (test-only, non-inheriting)", file=sys.stderr)
     finally:
         await conn.close()
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -109,7 +110,7 @@ async def grant_role(
                 "(user_id, role_id, scope_type, scope_id, conditions, "
                 " granted_by_user_id, expires_at) "
                 "SELECT :user_id, r.id, :scope_type, :scope_id, cast(:conditions as jsonb), "
-                "       :granted_by, cast(:expires_at as timestamptz) "
+                "       :granted_by, :expires_at "
                 'FROM "role" r WHERE r.is_system AND r.name = :role_name '
                 "RETURNING id"
             ),
@@ -120,7 +121,13 @@ async def grant_role(
                 "scope_id": str(scope_id),
                 "conditions": conditions,
                 "granted_by": str(granted_by or user_id),
-                "expires_at": expires_at,
+                # A real datetime, not the ISO string a caller passes in -
+                # asyncpg coerces a bound parameter by its Python type before
+                # any SQL-side cast runs, and only accepts a string for a
+                # timestamptz column when it is written as a literal directly
+                # in the SQL text, not bound (the same asyncpg behaviour
+                # documents.retention's own test helpers hit with 'epoch').
+                "expires_at": datetime.fromisoformat(expires_at) if expires_at else None,
             },
         )
         return result.scalar_one()  # type: ignore[no-any-return]

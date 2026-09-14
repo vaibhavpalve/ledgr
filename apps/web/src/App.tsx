@@ -5,6 +5,7 @@ import type { ClientBadge } from "@ledgr/shared-types";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { MobileShell } from "./MobileShell";
 import { SignOutConfirm } from "./SignOutConfirm";
+import { ThemeToggle } from "./theme/ThemeToggle";
 import { Wordmark } from "./Wordmark";
 import { AuthApi, type AuthResult, type MfaEnrollmentStatus } from "./auth/api";
 import { GoogleCallback } from "./auth/GoogleCallback";
@@ -275,10 +276,33 @@ function Shell({
 
   return (
     <div className="app">
+      {/*
+        WCAG 2.2 SC 2.4.1. First in the DOM so it is the first thing Tab
+        reaches, and invisible until focused (see .ledgr-skip-link in
+        tokens.css). Without it, every keyboard user crosses the whole bar and
+        the five-item navigation before reaching the screen they asked for.
+      */}
+      <a className="ledgr-skip-link" href="#main-content" data-testid="skip-to-content">
+        {t("common.skip_to_content")}
+      </a>
+
       <header className="app__bar">
         <Wordmark />
+        <div className="app__bar-spacer" />
+        {/*
+          Appearance and language sit together: both are "how this app is
+          presented to me", both persist per device, and neither is a task.
+          The density toggle the design canvas put in this bar is deliberately
+          absent — a view preference does not earn permanent chrome.
+        */}
+        <ThemeToggle />
         <LanguageSwitcher />
-        <button type="button" data-testid="sign-out" onClick={handleSignOutClick}>
+        <button
+          type="button"
+          className="button--quiet"
+          data-testid="sign-out"
+          onClick={handleSignOutClick}
+        >
           {t("auth.sign_out")}
         </button>
       </header>

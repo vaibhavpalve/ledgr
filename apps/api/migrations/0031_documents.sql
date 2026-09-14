@@ -246,7 +246,23 @@ $$ language plpgsql;
 -- immovable property recomputes 7 years into 10. That is the one legitimate
 -- way retention_until changes, and document_original_immutable() below permits
 -- exactly it.
-create trigger document_set_retention_trg
+--
+-- Named document_derive_* rather than document_set_* so it sorts, and
+-- therefore FIRES, before document_original_immutable_trg below: Postgres
+-- runs same-timing (BEFORE UPDATE, per-row) triggers on one table in
+-- trigger-name order, not declaration order (confirmed empirically, not
+-- assumed - see api.mfa_middleware's docstring for the same discipline
+-- applied to ASGI middleware ordering). This one has to run FIRST so
+-- new.retention_until already holds the freshly-derived value by the time
+-- the immutability trigger compares it against old.retention_until - reversed,
+-- a reclassification back to a shorter basis would recompute the shorter
+-- value AFTER the shortening check already passed it (new == old, since
+-- this trigger hadn't touched retention_until yet), silently defeating
+-- FR-DOC-002's "retention cannot be shortened" guarantee. This ordering
+-- dependency is real, not incidental - unlike 0016's role_assignment
+-- trigger, which documents relying on alphabetical order as harmless
+-- coincidence, getting this one backwards is a compliance bug.
+create trigger document_derive_retention_trg
     before insert or update of fiscal_year_id, retention_basis on document
     for each row execute function document_set_retention();
 
@@ -273,7 +289,11 @@ begin
     end if;
 
     -- Retention may only ever be EXTENDED. Shortening it is the deletion
-    -- FR-DOC-002 forbids, arriving by a quieter route than DELETE.
+    -- FR-DOC-002 forbids, arriving by a quieter route than DELETE. This has
+    -- to run AFTER document_derive_retention_trg has already recomputed
+    -- new.retention_until from the (possibly just-changed) retention_basis -
+    -- see that trigger's own comment on why its name makes that ordering
+    -- hold, deliberately, rather than by luck.
     if new.retention_until < old.retention_until then
         raise exception
             'retention cannot be shortened (FR-DOC-002): % is earlier than the '
