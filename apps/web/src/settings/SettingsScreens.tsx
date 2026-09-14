@@ -13,7 +13,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { PasskeySection, TotpSection } from "../auth/MfaEnrollment";
 import { storeSession } from "../auth/session";
 import { LanguageSwitcher } from "../LanguageSwitcher";
-import { localeKey } from "../onboarding/OnboardingWizard";
+import { FormattingLocaleField } from "../onboarding/OnboardingWizard";
 import { useSession } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
@@ -555,14 +555,15 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
           <input id={`${prefix}-vat`} type="text" value={vatNumber} data-testid="administration-vat-number" onChange={(e) => setVatNumber(e.target.value)} />
         </div>
         <div className="form__field">
-          <label htmlFor={`${prefix}-locale`}>{t("onboarding.company.formatting_locale")}</label>
-          <select id={`${prefix}-locale`} value={locale} data-testid="administration-locale" onChange={(e) => setLocale(e.target.value)}>
-            {["nl-NL", "en-GB"].map((option) => (
-              <option key={option} value={option}>
-                {t(localeKey(option))}
-              </option>
-            ))}
-          </select>
+          {/* Same list, same reason, one source: see FormattingLocaleField's
+              own docstring for the locale this screen used to offer and the
+              API refusal it earned. */}
+          <FormattingLocaleField
+            id={`${prefix}-locale`}
+            value={locale}
+            testId="administration-locale"
+            onChange={setLocale}
+          />
         </div>
       </div>
       <p className="caption ledgr-num">

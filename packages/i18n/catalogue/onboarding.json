@@ -140,10 +140,6 @@
       "nl": "Nederlands — € 1.234,56 · 14-09-2026",
       "en": "Dutch — € 1.234,56 · 14-09-2026"
     },
-    "onboarding.company.formatting_locale.en_gb": {
-      "nl": "Engels — €1,234.56 · 14/09/2026",
-      "en": "English — €1,234.56 · 14/09/2026"
-    },
     "onboarding.company.formatting_locale_hint": {
       "note": "FR-LOC-002: the administration's locale, not the reader's language.",
       "nl": "Geldt voor deze administratie, voor iedereen die erin werkt — los van de taal van de app.",

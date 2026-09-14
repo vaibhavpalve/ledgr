@@ -1,5 +1,10 @@
 import { useEffect, useId, useMemo, useState } from "react";
-import { useI18n } from "@ledgr/i18n";
+import {
+  DEFAULT_FORMATTING_LOCALE,
+  FORMATTING_LOCALES,
+  isFormattingLocale,
+  useI18n,
+} from "@ledgr/i18n";
 import {
   LEGAL_FORMS,
   PERIOD_SCHEMES,
@@ -83,11 +88,65 @@ export function initialDraft(today = new Date()): OnboardingDraft {
   };
 }
 
-const FORMATTING_LOCALES = ["nl-NL", "en-GB"] as const;
-
 /** `nl-NL` → `onboarding.company.formatting_locale.nl_nl`: catalogue keys are lower-case words. */
 export function localeKey(locale: string): string {
   return `onboarding.company.formatting_locale.${locale.replace("-", "_").toLowerCase()}`;
+}
+
+/**
+ * FR-LOC-002's choice, offered only where there is one to make.
+ *
+ * `FORMATTING_LOCALES` comes from `@ledgr/i18n` and holds exactly one entry
+ * today. It is NOT restated here: this file used to carry its own
+ * `["nl-NL", "en-GB"]`, and the second of those is a locale nothing in the
+ * product supports — not `api.i18n.formatting.LOCALES`, not the
+ * `administration_formatting_locale` CHECK in migration 0030, not the
+ * package this list belongs to. Choosing it got as far as the last step of
+ * onboarding and was then refused by the API, which is the worst possible
+ * place to discover it.
+ *
+ * With one supported locale the control is a statement, not a question
+ * (FR-UX-006: ask only what is needed). A second entry turns it back into a
+ * `<select>` with no further change here.
+ */
+export function FormattingLocaleField({
+  id,
+  value,
+  testId,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  testId: string;
+  onChange: (locale: string) => void;
+}) {
+  const { t } = useI18n();
+
+  if (FORMATTING_LOCALES.length === 1) {
+    return (
+      <>
+        <span className="label" id={`${id}-label`}>
+          {t("onboarding.company.formatting_locale")}
+        </span>
+        <p aria-labelledby={`${id}-label`} data-testid={testId} data-locale={value}>
+          {t(localeKey(value))}
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <label htmlFor={id}>{t("onboarding.company.formatting_locale")}</label>
+      <select id={id} value={value} data-testid={testId} onChange={(event) => onChange(event.target.value)}>
+        {FORMATTING_LOCALES.map((locale) => (
+          <option key={locale} value={locale}>
+            {t(localeKey(locale))}
+          </option>
+        ))}
+      </select>
+    </>
+  );
 }
 
 const STEP_KEYS = ["onboarding.step.company", "onboarding.step.fiscal_year", "onboarding.step.review"] as const;
@@ -109,7 +168,17 @@ export function OnboardingWizard({
   onCancel?: () => void;
 }) {
   const { t, date } = useI18n();
-  const [draft, setDraft] = useState<OnboardingDraft>(() => readDraft(storageKey) ?? initialDraft());
+  const [draft, setDraft] = useState<OnboardingDraft>(() => {
+    const restored = readDraft(storageKey) ?? initialDraft();
+    // A draft outlives a release. One saved while this screen still offered a
+    // locale the product does not support would otherwise be restored holding
+    // it, and `t(localeKey(...))` raises on a key that is no longer in the
+    // catalogue — a blank screen instead of a wizard. Anything unrecognised
+    // falls back to the default rather than being trusted.
+    return isFormattingLocale(restored.formattingLocale)
+      ? restored
+      : { ...restored, formattingLocale: DEFAULT_FORMATTING_LOCALE };
+  });
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [fieldProblem, setFieldProblem] = useState<string | null>(null);
@@ -260,19 +329,12 @@ export function OnboardingWizard({
               </p>
             </div>
             <div className="form__field">
-              <label htmlFor="onb-locale">{t("onboarding.company.formatting_locale")}</label>
-              <select
+              <FormattingLocaleField
                 id="onb-locale"
                 value={draft.formattingLocale}
-                data-testid="onboarding-locale"
-                onChange={(event) => update({ formattingLocale: event.target.value })}
-              >
-                {FORMATTING_LOCALES.map((locale) => (
-                  <option key={locale} value={locale}>
-                    {t(localeKey(locale))}
-                  </option>
-                ))}
-              </select>
+                testId="onboarding-locale"
+                onChange={(formattingLocale) => update({ formattingLocale })}
+              />
               <p className="form__hint">{t("onboarding.company.formatting_locale_hint")}</p>
             </div>
           </div>
