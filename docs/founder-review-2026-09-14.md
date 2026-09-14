@@ -1,5 +1,23 @@
 # Founder review and delivery plan — 14 September 2026
 
+> **Status, end of 14 September.** §3's golden path is reachable: a new customer signs up, enrols
+> MFA, confirms their e-mail, is taken through onboarding, and lands on a dashboard with their
+> chart of accounts seeded and their fiscal year open. Dashboard, capture, review, overview, sales
+> invoices, customers, grootboek, settings and the firm portfolio all render on a real account, at
+> 1440 and 390 px. Backend §4 is built and tested (2832 API tests); the web app is routed with one
+> URL per screen (454 tests, typecheck, lint and production build clean).
+>
+> **What is not done, and is the next block of work:**
+> - **The design pass in §5.2 never ran** — that agent was cut off before it produced anything. No
+>   new artboards, no `docs/design/system.md`, no brand assets. The app follows ADR-055's existing
+>   design system, which is why it looks coherent; it has not been through a designer.
+> - **PWA icons are still the ADR-046 placeholders** and the wordmark is the ADR-055 glyph.
+> - **The two QA waves in §5.1/§5.2 have not run**: no full keyboard pass, no axe sweep over the new
+>   screens, no Playwright golden path.
+> - **Google sign-in stays unavailable** until the founder creates an OAuth client (§6).
+> - Known gaps recorded in ADR-059: the audit-log tenancy widening a firm acting on a client's books
+>   will eventually need, and the single mid-request tenant-context switch that stands in for it.
+
 This document is the single brief for the two delivery teams (frontend + design, backend). It
 records what the product actually does today when a customer meets it, the gaps that stop a
 demo, the API contract both teams build against, and the working rules. Requirement IDs refer to
