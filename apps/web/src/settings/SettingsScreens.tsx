@@ -6,6 +6,7 @@ import type {
   InvoiceTemplateView,
   PasskeyView,
   SessionView,
+  TrustedDeviceView,
 } from "@ledgr/shared-types";
 
 import { describeError } from "../api/http";
@@ -180,6 +181,7 @@ export function SecuritySettings() {
 
       <PasskeysSection onVerified={onVerified} />
       <SessionsSection />
+      <TrustedDevicesSection />
     </div>
   );
 }
@@ -423,6 +425,90 @@ function SessionsSection() {
                     {t("settings.security.session_revoke")}
                   </button>
                 ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {revokeProblem !== null ? (
+          <p role="alert" className="alert alert--attention">
+            {revokeProblem}
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function TrustedDevicesSection() {
+  const { t, date } = useI18n();
+  const { account } = useServices();
+  const [devices, setDevices] = useState<readonly TrustedDeviceView[] | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [revokeProblem, setRevokeProblem] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDevices(null);
+    setProblem(null);
+    account
+      .listTrustedDevices()
+      .then((result) => {
+        if (!cancelled) setDevices(result);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setProblem(describeError(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account, attempt]);
+
+  const revoke = async (deviceTrust: TrustedDeviceView) => {
+    setRevokeProblem(null);
+    try {
+      await account.revokeTrustedDevice(deviceTrust.id);
+      setAttempt((n) => n + 1);
+    } catch (error) {
+      setRevokeProblem(describeError(error));
+    }
+  };
+
+  return (
+    <section
+      className="screen__section"
+      aria-label={t("settings.security.trusted_devices_title")}
+      data-testid="trusted-devices"
+    >
+      <h2>{t("settings.security.trusted_devices_title")}</h2>
+      <p className="caption">{t("settings.security.trusted_devices_hint")}</p>
+      <div className="panel">
+        {problem !== null ? <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} /> : null}
+        {devices === null && problem === null ? <LoadingSkeleton rows={2} /> : null}
+        {devices !== null && devices.length === 0 ? (
+          <p className="caption" data-testid="trusted-devices-empty">
+            {t("settings.security.trusted_devices_empty")}
+          </p>
+        ) : null}
+        {devices !== null && devices.length > 0 ? (
+          <ul className="list" data-testid="trusted-devices-list">
+            {devices.map((deviceTrust) => (
+              <li key={deviceTrust.id} className="list__row" data-testid="trusted-device-row">
+                <span className="list__row-text">
+                  <span>{deviceTrust.name ?? t("settings.security.trusted_devices_title")}</span>
+                  <span className="caption ledgr-num">
+                    {t("settings.security.trusted_device_added", { date: date(deviceTrust.created_at.slice(0, 10)) })}
+                    {` · ${t("settings.security.trusted_device_used", { date: date(deviceTrust.last_used_at.slice(0, 10)) })}`}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="button--danger"
+                  data-testid={`trusted-device-revoke-${deviceTrust.id}`}
+                  onClick={() => void revoke(deviceTrust)}
+                >
+                  {t("settings.security.trusted_device_revoke")}
+                </button>
               </li>
             ))}
           </ul>

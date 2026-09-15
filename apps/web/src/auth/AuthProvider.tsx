@@ -10,7 +10,7 @@ import {
 import { useI18n } from "@ledgr/i18n";
 
 import { AuthApi, type AuthResult, type MfaEnrollmentStatus } from "./api";
-import { clearSession, hasVerifiedStoredSession, storeSession } from "./session";
+import { clearSession, hasVerifiedStoredSession, storeSession, storeTrustedDeviceToken } from "./session";
 import { capturesAtRisk, purgeCaptureQueue } from "../capture/queue";
 import { createAuthenticatedFetch } from "../session/authenticatedFetch";
 import { SignOutConfirm } from "../SignOutConfirm";
@@ -128,6 +128,12 @@ export function AuthProvider({
   // sign-in, or a step-up verification), or the enrolment gate otherwise.
   const handleAuthResult = useCallback((result: AuthResult) => {
     storeSession({ accessToken: result.accessToken, mfaVerified: result.mfaVerified });
+    // ADR-061: present only when this MFA verification was asked to
+    // remember the device - see AuthResult.trustedDeviceToken's own
+    // docstring for why login()'s own responses never carry one.
+    if (result.trustedDeviceToken !== null) {
+      storeTrustedDeviceToken(result.trustedDeviceToken);
+    }
     ending.current = false;
     setNotice(null);
     if (result.mfaVerified) {

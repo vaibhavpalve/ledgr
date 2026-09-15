@@ -659,6 +659,15 @@ export interface PasskeyView {
   readonly last_used_at: string | null;
 }
 
+/** One row of `GET /v1/me/trusted-devices` (ADR-061) — `api.auth.trusted_devices.TrustedDevice`, minus the token hash. */
+export interface TrustedDeviceView {
+  readonly id: string;
+  readonly name: string | null;
+  readonly created_at: string;
+  readonly last_used_at: string;
+  readonly expires_at: string;
+}
+
 /* ==========================================================================
  * CUSTOMERS — `api.customers.routes._customer_json`, field for field
  * ==========================================================================

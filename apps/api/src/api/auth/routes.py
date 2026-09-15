@@ -113,6 +113,8 @@ from api.auth.totp import (
     TotpService,
 )
 from api.auth.totp_repository import SqlTotpRepository
+from api.auth.trusted_devices import TrustedDeviceService
+from api.auth.trusted_devices_repository import SqlTrustedDeviceRepository
 from api.config import settings
 from api.crypto.kms import build_kms
 from api.db import engine, get_bootstrap_db_session, get_db_session
@@ -354,8 +356,19 @@ async def _enrollment_status(session: AsyncSession, user_id: uuid.UUID) -> dict[
     return {"has_passkey": status.has_passkey, "has_totp": status.has_totp}
 
 
+def _trusted_device_service_for(session: AsyncSession) -> TrustedDeviceService:
+    return TrustedDeviceService(
+        SqlTrustedDeviceRepository(session),
+        lifetime_days=settings.trusted_device_lifetime_days,
+    )
+
+
 def _auth_response(
-    *, token: str, mfa_verified: bool, enrollment: dict[str, bool] | None = None
+    *,
+    token: str,
+    mfa_verified: bool,
+    enrollment: dict[str, bool] | None = None,
+    trusted_device_token: str | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "access_token": token,
@@ -364,6 +377,12 @@ def _auth_response(
     }
     if not mfa_verified:
         body["mfa"] = enrollment or {"has_passkey": False, "has_totp": False}
+    # ADR-061: present only on the response to the MFA-verification call
+    # that just issued it (mfa_totp_verify, mfa_passkey_verify_finish) when
+    # the caller asked to be remembered - never on login()'s response, which
+    # only ever CONSUMES an existing trusted-device token, never mints one.
+    if trusted_device_token is not None:
+        body["trusted_device_token"] = trusted_device_token
     return body
 
 
@@ -562,6 +581,12 @@ async def resend_verification_email(
 class LoginBody(BaseModel):
     email: str
     password: str
+    # ADR-061: a token this same browser was handed after a PRIOR session
+    # already cleared MFA and asked to be remembered (mfa_totp_verify's or
+    # mfa_passkey_verify_finish's `remember_device`). Optional and, when
+    # absent or no longer valid, changes nothing about this flow - IAM-011
+    # is still enforced the ordinary way below.
+    trusted_device_token: str | None = None
 
 
 async def login(
@@ -606,8 +631,22 @@ async def login(
         await session.commit()
         raise problem(request, 403, "errors.no_organization", reason="no_organization")
 
+    # ADR-061: a valid, unexpired, unrevoked trusted-device token for THIS
+    # user is the only thing that can start this new session pre-verified -
+    # see TrustedDeviceService.check's own docstring for why an invalid one
+    # fails silently into the ordinary MFA prompt rather than erroring.
+    trusted_device = False
+    if body.trusted_device_token:
+        trusted_device = await _trusted_device_service_for(session).check(
+            user_id=user.id, raw_token=body.trusted_device_token
+        )
+
     token, mfa_verified = await _issue_post_authentication_token(
-        session, user=user, organization_id=organization_id, source_ip=source_ip
+        session,
+        user=user,
+        organization_id=organization_id,
+        source_ip=source_ip,
+        mfa_verified=trusted_device,
     )
     await _record_authentication_event(
         session,
@@ -755,6 +794,22 @@ async def mfa_totp_enroll_confirm(
 
 class TotpVerifyBody(BaseModel):
     code: str
+    # ADR-061: "remember this device for 7 days" - issues a trusted-device
+    # token this response carries back, for login() to present next time.
+    # Defaults to False: being remembered is opt-IN per verification, never
+    # assumed.
+    remember_device: bool = False
+
+
+async def _remember_device_if_requested(
+    session: AsyncSession, *, user_id: uuid.UUID, request: Request, remember_device: bool
+) -> str | None:
+    if not remember_device:
+        return None
+    _, raw_token = await _trusted_device_service_for(session).issue(
+        user_id=user_id, name=request.headers.get("user-agent")
+    )
+    return raw_token
 
 
 async def mfa_totp_verify(
@@ -773,6 +828,9 @@ async def mfa_totp_verify(
         raise problem(request, 422, "errors.invalid_totp_code", reason="invalid_code") from exc
 
     token = await _reissue_verified_token(session, tenant=tenant, user_id=user_id)
+    trusted_device_token = await _remember_device_if_requested(
+        session, user_id=user_id, request=request, remember_device=body.remember_device
+    )
     await _record_authentication_event(
         session,
         organization_id=tenant.organization_id,
@@ -781,13 +839,17 @@ async def mfa_totp_verify(
         request=request,
     )
     await session.commit()
-    return _auth_response(token=token, mfa_verified=True)
+    return _auth_response(token=token, mfa_verified=True, trusted_device_token=trusted_device_token)
 
 
 class PasskeyFinishBody(BaseModel):
     ceremony_id: uuid.UUID
     name: str | None = None
     credential: dict[str, Any]
+    # ADR-061, only meaningful on mfa_passkey_verify_finish (enrollment
+    # already produces a full MFA factor - remembering the device on top of
+    # that adds nothing enroll would need). See TotpVerifyBody.remember_device.
+    remember_device: bool = False
 
 
 async def mfa_passkey_enroll_begin(
@@ -904,6 +966,9 @@ async def mfa_passkey_verify_finish(
         raise problem(request, 403, "errors.ceremony_not_found", reason="ceremony_wrong_user")
 
     token = await _reissue_verified_token(session, tenant=tenant, user_id=user_id)
+    trusted_device_token = await _remember_device_if_requested(
+        session, user_id=user_id, request=request, remember_device=body.remember_device
+    )
     await _record_authentication_event(
         session,
         organization_id=tenant.organization_id,
@@ -912,7 +977,7 @@ async def mfa_passkey_verify_finish(
         request=request,
     )
     await session.commit()
-    return _auth_response(token=token, mfa_verified=True)
+    return _auth_response(token=token, mfa_verified=True, trusted_device_token=trusted_device_token)
 
 
 # ---------------------------------------------------------------------------

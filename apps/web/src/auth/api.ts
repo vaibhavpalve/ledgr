@@ -23,7 +23,7 @@
 import type { Language } from "@ledgr/i18n";
 
 import { languageHeaders } from "../i18n";
-import { authHeaders } from "./session";
+import { authHeaders, readTrustedDeviceToken } from "./session";
 
 export class OfflineError extends Error {}
 
@@ -56,6 +56,12 @@ export interface AuthResult {
   /** Present only when `mfaVerified` is false - see `_auth_response` in
    * `api.auth.routes`. */
   enrollment: MfaEnrollmentStatus | null;
+  /** ADR-061: present only when this response is an MFA verification that
+   * was asked to remember the device (`remember_device: true`) - never on
+   * login()'s response, which only ever CONSUMES a stored token, never
+   * mints one. `./session`'s `storeTrustedDeviceToken` is where this ends
+   * up; `AuthProvider.handleAuthResult` is the one caller that does that. */
+  trustedDeviceToken: string | null;
 }
 
 export interface PasskeyChallenge {
@@ -77,6 +83,7 @@ interface AuthResponseJson {
   token_type: string;
   mfa_verified: boolean;
   mfa?: { has_passkey: boolean; has_totp: boolean };
+  trusted_device_token?: string;
 }
 
 function toAuthResult(raw: AuthResponseJson): AuthResult {
@@ -84,6 +91,7 @@ function toAuthResult(raw: AuthResponseJson): AuthResult {
     accessToken: raw.access_token,
     mfaVerified: raw.mfa_verified,
     enrollment: raw.mfa ? { hasPasskey: raw.mfa.has_passkey, hasTotp: raw.mfa.has_totp } : null,
+    trustedDeviceToken: raw.trusted_device_token ?? null,
   };
 }
 
@@ -107,9 +115,15 @@ export class AuthApi {
   }
 
   login(email: string, password: string): Promise<AuthResult> {
-    return this.call<AuthResponseJson>("POST", "/v1/auth/login", { email, password }).then(
-      toAuthResult,
-    );
+    // ADR-061: whatever this browser was last remembered on, if anything -
+    // login() itself decides (server-side) whether it is still valid, and
+    // silently ignores it otherwise, so there is no branching needed here.
+    const trustedDeviceToken = readTrustedDeviceToken();
+    return this.call<AuthResponseJson>("POST", "/v1/auth/login", {
+      email,
+      password,
+      ...(trustedDeviceToken ? { trusted_device_token: trustedDeviceToken } : {}),
+    }).then(toAuthResult);
   }
 
   logout(): Promise<void> {
@@ -189,11 +203,11 @@ export class AuthApi {
     ).then(toAuthResult);
   }
 
-  mfaTotpVerify(code: string): Promise<AuthResult> {
+  mfaTotpVerify(code: string, rememberDevice = false): Promise<AuthResult> {
     return this.call<AuthResponseJson>(
       "POST",
       "/v1/auth/mfa/totp/verify",
-      { code },
+      { code, remember_device: rememberDevice },
       { authenticated: true },
     ).then(toAuthResult);
   }
@@ -232,11 +246,12 @@ export class AuthApi {
   mfaPasskeyVerifyFinish(
     ceremonyId: string,
     credential: Record<string, unknown>,
+    rememberDevice = false,
   ): Promise<AuthResult> {
     return this.call<AuthResponseJson>(
       "POST",
       "/v1/auth/mfa/passkey/verify/finish",
-      { ceremony_id: ceremonyId, credential },
+      { ceremony_id: ceremonyId, credential, remember_device: rememberDevice },
       { authenticated: true },
     ).then(toAuthResult);
   }

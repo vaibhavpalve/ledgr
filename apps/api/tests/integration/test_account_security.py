@@ -38,6 +38,7 @@ from tests.support.seed import (
     grant_role,
     seed_administration,
     seed_session,
+    seed_trusted_device,
     seed_user,
     signup_organization,
 )
@@ -199,6 +200,172 @@ async def test_revoking_a_session_ends_it_and_cannot_reach_another_users(
 
     assert device_b in await _live_session_ids(two_organizations.owner_b)
     assert "session_revoke" in await _audit_actions(two_organizations.org_a)
+
+
+# ---------------------------------------------------------------------------
+# Trusted devices - ADR-061 (IAM-011 scoping)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.isolation("GET", "/v1/me/trusted-devices")
+async def test_listing_trusted_devices_shows_only_the_callers_own(
+    two_organizations: SeededTenants,
+) -> None:
+    extra_a = await seed_trusted_device(
+        app_engine, user_id=two_organizations.owner_a, name="A's phone"
+    )
+    extra_b = await seed_trusted_device(
+        app_engine, user_id=two_organizations.owner_b, name="B's phone"
+    )
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await assert_tenant_isolated(
+            client,
+            "GET",
+            "/v1/me/trusted-devices",
+            as_org=two_organizations.org_a,
+            as_user=two_organizations.owner_a,
+            foreign_record_ids=[extra_b, two_organizations.owner_b, "B's phone"],
+        )
+
+    devices = response.json()["trusted_devices"]
+    assert [d["id"] for d in devices] == [str(extra_a)]
+    assert devices[0]["name"] == "A's phone"
+    assert {"id", "name", "created_at", "last_used_at", "expires_at"} <= set(devices[0])
+
+
+@pytest.mark.isolation("DELETE", "/v1/me/trusted-devices/{device_id}")
+async def test_revoking_a_trusted_device_ends_it_and_cannot_reach_another_users(
+    two_organizations: SeededTenants,
+) -> None:
+    device_a = await seed_trusted_device(app_engine, user_id=two_organizations.owner_a)
+    device_b = await seed_trusted_device(app_engine, user_id=two_organizations.owner_b)
+    token_a = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Owner A cannot revoke owner B's trusted device - 404, indistinguishable
+        # from one that never existed.
+        foreign = await client.delete(
+            f"/v1/me/trusted-devices/{device_b}", headers=_headers(token_a)
+        )
+        assert foreign.status_code == 404
+        assert foreign.json()["detail"]["reason"] == "trusted_device_not_found"
+
+        revoked = await client.delete(
+            f"/v1/me/trusted-devices/{device_a}", headers=_headers(token_a)
+        )
+        assert revoked.status_code == 200, revoked.text
+
+        gone_again = await client.delete(
+            f"/v1/me/trusted-devices/{device_a}", headers=_headers(token_a)
+        )
+        assert gone_again.status_code == 404
+
+    async with app_engine.begin() as conn:
+        still_live = (
+            await conn.execute(
+                text("SELECT revoked_at IS NULL FROM trusted_device WHERE id = :id"),
+                {"id": str(device_b)},
+            )
+        ).scalar_one()
+    assert still_live is True
+    assert "trusted_device_revoke" in await _audit_actions(two_organizations.org_a)
+
+
+async def test_remembering_a_device_skips_mfa_on_the_next_login_until_revoked() -> None:
+    """The end-to-end point of ADR-061: TOTP verification with
+    remember_device=True hands back a token; login() accepts it exactly
+    once per device to start a NEW session pre-verified; revoking the
+    device (or an invalid/absent token) falls back to an ordinary MFA
+    prompt, never an error.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        account = await _signup(client)
+        begin = await client.post(
+            "/v1/auth/mfa/totp/enroll/begin", headers=_headers(account["token"])
+        )
+        secret = begin.json()["secret"]
+        confirm = await client.post(
+            "/v1/auth/mfa/totp/enroll/confirm",
+            json={"secret": secret, "code": pyotp.TOTP(secret).at(time.time())},
+            headers=_headers(account["token"]),
+        )
+        assert confirm.status_code == 200, confirm.text
+
+        # An ordinary login (no trusted-device token yet) still stops at MFA.
+        plain_login = await client.post(
+            "/v1/auth/login",
+            json={"email": account["email"], "password": _PASSWORD},
+            headers={"Idempotency-Key": f"test-{uuid.uuid4().hex}"},
+        )
+        assert plain_login.status_code == 200, plain_login.text
+        assert plain_login.json()["mfa_verified"] is False
+
+        # Verifying with remember_device=True on THIS session returns a
+        # trusted-device token.
+        remembered = await client.post(
+            "/v1/auth/mfa/totp/verify",
+            json={"code": pyotp.TOTP(secret).at(time.time() + 30), "remember_device": True},
+            headers=_headers(plain_login.json()["access_token"]),
+        )
+        assert remembered.status_code == 200, remembered.text
+        device_token = remembered.json()["trusted_device_token"]
+        assert device_token
+
+        # A brand-new login presenting that token starts pre-verified - no
+        # QR code, no device-name prompt, straight into the app.
+        trusted_login = await client.post(
+            "/v1/auth/login",
+            json={
+                "email": account["email"],
+                "password": _PASSWORD,
+                "trusted_device_token": device_token,
+            },
+            headers={"Idempotency-Key": f"test-{uuid.uuid4().hex}"},
+        )
+        assert trusted_login.status_code == 200, trusted_login.text
+        assert trusted_login.json()["mfa_verified"] is True
+        assert "mfa" not in trusted_login.json()
+
+        # Revoke it from the security settings list...
+        devices = await client.get(
+            "/v1/me/trusted-devices", headers=_headers(trusted_login.json()["access_token"])
+        )
+        device_id = devices.json()["trusted_devices"][0]["id"]
+        revoke = await client.delete(
+            f"/v1/me/trusted-devices/{device_id}",
+            headers=_headers(trusted_login.json()["access_token"]),
+        )
+        assert revoke.status_code == 200, revoke.text
+
+        # ...and the same token no longer skips MFA.
+        after_revoke = await client.post(
+            "/v1/auth/login",
+            json={
+                "email": account["email"],
+                "password": _PASSWORD,
+                "trusted_device_token": device_token,
+            },
+            headers={"Idempotency-Key": f"test-{uuid.uuid4().hex}"},
+        )
+        assert after_revoke.status_code == 200, after_revoke.text
+        assert after_revoke.json()["mfa_verified"] is False
+
+        # A garbage token is treated exactly like no token at all, never an error.
+        garbage = await client.post(
+            "/v1/auth/login",
+            json={
+                "email": account["email"],
+                "password": _PASSWORD,
+                "trusted_device_token": "not-a-real-token",
+            },
+            headers={"Idempotency-Key": f"test-{uuid.uuid4().hex}"},
+        )
+        assert garbage.status_code == 200, garbage.text
+        assert garbage.json()["mfa_verified"] is False
 
 
 # ---------------------------------------------------------------------------

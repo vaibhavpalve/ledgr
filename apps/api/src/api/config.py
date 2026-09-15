@@ -11,13 +11,32 @@ class Settings(BaseSettings):
 
     # --- Envelope encryption (SEC-022, IAM-004, SEC-023) ---
     # "local" is dev/test only: a KEK held in an env var rather than a real
-    # KMS. Production must run with "azure-key-vault" — see
-    # apps/api/src/api/crypto/kms.py and
-    # docs/decisions/ADR-004-envelope-encryption.md.
-    kms_provider: Literal["local", "azure-key-vault"] = "local"
+    # KMS. Production runs "gcp-kms" (ADR-062) — see
+    # apps/api/src/api/crypto/kms.py. "azure-key-vault" is kept selectable
+    # only until gcp-kms is live everywhere (ADR-062's own Consequences);
+    # do not stand up a new deployment on it.
+    kms_provider: Literal["local", "azure-key-vault", "gcp-kms"] = "local"
     local_dev_kek: str = "insecure-dev-kek-32-bytes-only!!"  # dev/test only, never production
     azure_key_vault_url: str | None = None
     azure_kek_name: str = "ledgr-tenant-dek-kek"
+    # The KEK's crypto-key resource name (no version segment), e.g.
+    # "projects/<project>/locations/europe-west4/keyRings/ledgr/cryptoKeys/
+    # tenant-dek-kek". Authentication is Application Default Credentials
+    # (a service-account JSON key via GOOGLE_APPLICATION_CREDENTIALS,
+    # matching how AzureKeyVaultKeyManagementService's DefaultAzureCredential
+    # reads ambient environment/managed-identity, not a value this Settings
+    # class holds itself).
+    gcp_kms_key_resource_name: str | None = None
+
+    # --- Document/attachment storage (FR-DOC-001/005, IAM-004, SEC-005) ---
+    # "in-memory" is dev/test only. Production runs "r2" (ADR-062,
+    # superseding PRD §13's Azure Blob choice) — see
+    # apps/api/src/api/documents/storage.py.
+    blob_provider: Literal["in-memory", "r2"] = "in-memory"
+    r2_account_id: str | None = None
+    r2_bucket: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
 
     # Connects as ledgr_ops (BYPASSRLS, narrowly scoped - see ADR-003 and
     # migrations/0002_encryption_keys.sql). Only used by the scheduled
@@ -33,6 +52,11 @@ class Settings(BaseSettings):
     geolocation_provider: Literal["local", "ip-api"] = "local"
     session_max_lifetime_hours: int = 12
     session_idle_timeout_minutes_privileged: int = 30
+    # ADR-061: how long a device that already cleared IAM-011's gate once may
+    # skip re-proving it. Independent of session_max_lifetime_hours - a
+    # trusted device still gets a fresh, ordinary session on each login, this
+    # only decides whether that new session starts pre-verified.
+    trusted_device_lifetime_days: int = 7
 
     # --- Google sign-in (IAM-010a, IAM-010b) ---
     # No default: unset means Google sign-in is unavailable rather than

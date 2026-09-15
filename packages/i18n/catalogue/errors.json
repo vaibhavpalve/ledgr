@@ -445,6 +445,11 @@
       "nl": "Deze passkey bestaat niet of is al verwijderd.",
       "en": "This passkey does not exist or has already been removed."
     },
+    "errors.trusted_device_not_found": {
+      "note": "DELETE /v1/me/trusted-devices/{id}: does not exist, already expired/revoked, or somebody else's - one answer for all three, same reasoning as errors.session_not_found.",
+      "nl": "Dit vertrouwde apparaat bestaat niet of is al verlopen.",
+      "en": "This trusted device does not exist or has already expired."
+    },
     "errors.last_mfa_factor": {
       "note": "IAM-011: MFA is mandatory with no opt-out, so the only second factor cannot be removed. An instruction rather than a refusal - it says the order to do it in (add the replacement first).",
       "nl": "Dit is uw enige tweede factor. Voeg eerst een andere passkey of authenticatie-app toe voordat u deze verwijdert.",

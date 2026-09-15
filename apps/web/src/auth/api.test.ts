@@ -48,6 +48,7 @@ describe("AuthApi.signup — ADR-054/FR-MDL-001", () => {
       accessToken: "tok",
       mfaVerified: false,
       enrollment: { hasPasskey: false, hasTotp: false },
+      trustedDeviceToken: null,
     });
     const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
@@ -115,7 +116,12 @@ describe("AuthApi.login", () => {
     });
 
     const result = await api(fetchImpl).login("a@example.com", "x");
-    expect(result).toEqual({ accessToken: "tok", mfaVerified: true, enrollment: null });
+    expect(result).toEqual({
+      accessToken: "tok",
+      mfaVerified: true,
+      enrollment: null,
+      trustedDeviceToken: null,
+    });
   });
 });
 
@@ -162,7 +168,12 @@ describe("AuthApi's authenticated calls — the MFA enrolment/verification surfa
 
     const result = await api(fetchImpl).mfaTotpEnrollConfirm("SECRET", "123456");
 
-    expect(result).toEqual({ accessToken: "tok2", mfaVerified: true, enrollment: null });
+    expect(result).toEqual({
+      accessToken: "tok2",
+      mfaVerified: true,
+      enrollment: null,
+      trustedDeviceToken: null,
+    });
     const [, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
       RequestInit,
@@ -183,7 +194,12 @@ describe("AuthApi.loginGoogleCallback — IAM-010c's link-required branch", () =
 
     expect(outcome).toEqual({
       kind: "signed_in",
-      result: { accessToken: "tok", mfaVerified: true, enrollment: null },
+      result: {
+        accessToken: "tok",
+        mfaVerified: true,
+        enrollment: null,
+        trustedDeviceToken: null,
+      },
     });
   });
 
@@ -238,6 +254,7 @@ describe("AuthApi.signupGoogle — FR-MDL-001's one question, post-Google", () =
       accessToken: "tok",
       mfaVerified: false,
       enrollment: { hasPasskey: false, hasTotp: false },
+      trustedDeviceToken: null,
     });
     const [url, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,

@@ -181,15 +181,17 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #                  tenant. /v1/auth/verify-email/resend needs a session but
 #                  acts only on the caller's own address, the /v1/me case.
 #   /v1/me/sessions, /v1/me/sessions/{id}, /v1/me/passkeys,
-#   /v1/me/passkeys/{id}, /v1/me/password, /v1/me/mfa/totp
+#   /v1/me/passkeys/{id}, /v1/me/password, /v1/me/mfa/totp,
+#   /v1/me/trusted-devices, /v1/me/trusted-devices/{id}
 #              IAM-017 and the account's own security settings
 #              (api.account.security_routes). The /v1/me/language argument
 #              exactly: every one of these reads or changes only rows the
 #              verified token's own user owns - their sessions, their
-#              passkeys, their password, their second factor - and no route
-#              names another user's. A person with no role assignment yet
-#              must still be able to see where they are signed in and revoke
-#              a device they no longer hold; a permission would only ever
+#              passkeys, their password, their second factor, their
+#              remembered devices (ADR-061) - and no route names another
+#              user's. A person with no role assignment yet must still be
+#              able to see where they are signed in and revoke a device
+#              they no longer hold; a permission would only ever
 #              stand between them and their own account. Each mutation is
 #              recorded via AuditTrail.authentication from its handler (see
 #              tests/test_audit_coverage.py for that list) and still carries
@@ -215,6 +217,8 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/me/passkeys/{passkey_id}",
         "/v1/me/password",
         "/v1/me/mfa/totp",
+        "/v1/me/trusted-devices",
+        "/v1/me/trusted-devices/{device_id}",
         "/v1/fiscal-years/preview",
         "/v1/auth/signup",
         "/v1/auth/signup/google",

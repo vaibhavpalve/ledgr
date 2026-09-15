@@ -20,7 +20,12 @@ function api(overrides: Partial<AuthApi> = {}) {
   } as unknown as AuthApi;
 }
 
-const verified: AuthResult = { accessToken: "tok", mfaVerified: true, enrollment: null };
+const verified: AuthResult = {
+  accessToken: "tok",
+  mfaVerified: true,
+  enrollment: null,
+  trustedDeviceToken: null,
+};
 
 describe("LoginForm — IAM-010's password path", () => {
   it("submits email/password and reports the result", async () => {

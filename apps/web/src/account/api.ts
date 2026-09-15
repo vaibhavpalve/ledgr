@@ -8,6 +8,8 @@
  *   DELETE /v1/me/sessions/{id}
  *   GET    /v1/me/passkeys
  *   DELETE /v1/me/passkeys/{id}        IAM-010f's continuity guard applies
+ *   GET    /v1/me/trusted-devices      ADR-061
+ *   DELETE /v1/me/trusted-devices/{id}
  *   POST   /v1/me/password             re-authenticates, breach-checked
  *   POST   /v1/auth/verify-email       IAM-010b, `{ token }`
  *   POST   /v1/auth/verify-email/resend
@@ -19,7 +21,7 @@
  * two seams already reserved for that.
  */
 
-import type { MeView, PasskeyView, SessionView } from "@ledgr/shared-types";
+import type { MeView, PasskeyView, SessionView, TrustedDeviceView } from "@ledgr/shared-types";
 
 import { callJson, pathOf, unwrapList, type ApiOptions } from "../api/http";
 
@@ -57,6 +59,17 @@ export class AccountApi {
 
   removePasskey(passkeyId: string): Promise<void> {
     return callJson<void>(this.options, "DELETE", pathOf("v1", "me", "passkeys", passkeyId));
+  }
+
+  async listTrustedDevices(): Promise<TrustedDeviceView[]> {
+    const raw = await callJson<
+      readonly TrustedDeviceView[] | { trusted_devices: readonly TrustedDeviceView[] }
+    >(this.options, "GET", "/v1/me/trusted-devices");
+    return unwrapList<TrustedDeviceView>(raw, "trusted_devices");
+  }
+
+  revokeTrustedDevice(deviceId: string): Promise<void> {
+    return callJson<void>(this.options, "DELETE", pathOf("v1", "me", "trusted-devices", deviceId));
   }
 
   changePassword(currentPassword: string, newPassword: string): Promise<void> {

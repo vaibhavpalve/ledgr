@@ -133,6 +133,24 @@ async def seed_session(
         return result.scalar_one()  # type: ignore[no-any-return]
 
 
+async def seed_trusted_device(
+    engine: AsyncEngine, *, user_id: uuid.UUID, name: str | None = None
+) -> uuid.UUID:
+    """A live trusted_device row (ADR-061) - carries no tenant column (users
+    are global - 0003), same as seed_session above.
+    """
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text(
+                "INSERT INTO trusted_device (user_id, token_hash, name, expires_at) "
+                "VALUES (:user_id, :token_hash, :name, now() + interval '7 days') "
+                "RETURNING id"
+            ),
+            {"user_id": str(user_id), "token_hash": f"test-{uuid.uuid4().hex}", "name": name},
+        )
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+
 async def grant_role(
     engine: AsyncEngine,
     *,

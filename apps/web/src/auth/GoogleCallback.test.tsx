@@ -20,7 +20,12 @@ function api(
   } as unknown as AuthApi;
 }
 
-const signedIn: AuthResult = { accessToken: "tok", mfaVerified: true, enrollment: null };
+const signedIn: AuthResult = {
+  accessToken: "tok",
+  mfaVerified: true,
+  enrollment: null,
+  trustedDeviceToken: null,
+};
 
 describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () => {
   it("shows a pending state, then reports a signed-in result", async () => {

@@ -24,7 +24,12 @@ function api(overrides: Partial<AuthApi> = {}) {
 }
 
 const nothingEnrolled: MfaEnrollmentStatus = { hasPasskey: false, hasTotp: false };
-const verified: AuthResult = { accessToken: "tok2", mfaVerified: true, enrollment: null };
+const verified: AuthResult = {
+  accessToken: "tok2",
+  mfaVerified: true,
+  enrollment: null,
+  trustedDeviceToken: null,
+};
 
 function stubWebAuthn(credential: unknown) {
   vi.stubGlobal("navigator", {
@@ -122,7 +127,27 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
     fireEvent.click(screen.getByTestId("mfa-totp-verify"));
 
     await waitFor(() => expect(onVerified).toHaveBeenCalledWith(verified));
-    expect(mfaTotpVerify).toHaveBeenCalledWith("654321");
+    expect(mfaTotpVerify).toHaveBeenCalledWith("654321", false);
+  });
+
+  it("TOTP: checking \"remember this device\" is passed through to the verify call", async () => {
+    const mfaTotpVerify = vi.fn(async () => verified);
+    const onVerified = vi.fn();
+
+    render(
+      <MfaEnrollment
+        api={api({ mfaTotpVerify })}
+        enrollment={{ hasPasskey: false, hasTotp: true }}
+        onVerified={onVerified}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("mfa-totp-code"), { target: { value: "654321" } });
+    fireEvent.click(screen.getByTestId("mfa-totp-remember-device"));
+    fireEvent.click(screen.getByTestId("mfa-totp-verify"));
+
+    await waitFor(() => expect(onVerified).toHaveBeenCalledWith(verified));
+    expect(mfaTotpVerify).toHaveBeenCalledWith("654321", true);
   });
 
   it("TOTP: shows the server's refusal (e.g. an already-used code) without reporting success", async () => {
@@ -220,6 +245,7 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
     expect(mfaPasskeyVerifyFinish).toHaveBeenCalledWith(
       "cer-2",
       expect.objectContaining({ id: "cred-1" }),
+      false,
     );
   });
 

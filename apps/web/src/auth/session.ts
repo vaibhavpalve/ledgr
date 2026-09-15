@@ -21,6 +21,12 @@
  */
 
 const STORAGE_KEY = "ledgr.session.v1";
+// ADR-061: deliberately a SEPARATE key from STORAGE_KEY, and never cleared
+// by clearSession()/signing out - the whole point of "remember this device"
+// is that it survives the session it was issued in. It expires (or is
+// revoked from the security settings screen) on the server; this browser
+// just holds onto whatever it was last given.
+const TRUSTED_DEVICE_STORAGE_KEY = "ledgr.trusted_device.v1";
 
 export interface StoredSession {
   accessToken: string;
@@ -78,4 +84,43 @@ export function hasVerifiedStoredSession(): boolean {
 export function authHeaders(): Record<string, string> {
   const session = readStoredSession();
   return session === null ? {} : { Authorization: `Bearer ${session.accessToken}` };
+}
+
+/** What `login()` sends alongside the password, so a device this browser
+ * was already remembered on (ADR-061) can start pre-verified. `null` when
+ * nothing was ever stored, or storage is unavailable - login() treats an
+ * absent token exactly like an invalid one, so there is no special case
+ * here for "never enrolled" versus "storage blocked".
+ */
+export function readTrustedDeviceToken(): string | null {
+  try {
+    return localStorage.getItem(TRUSTED_DEVICE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Called when an MFA verification response carries a fresh
+ * `trusted_device_token` (only when the person checked "remember this
+ * device"). Overwrites whatever was stored before - one device only ever
+ * needs to remember its OWN most recent grant.
+ */
+export function storeTrustedDeviceToken(token: string): void {
+  try {
+    localStorage.setItem(TRUSTED_DEVICE_STORAGE_KEY, token);
+  } catch {
+    // See storeSession - a device simply will not be remembered next time.
+  }
+}
+
+/** Only called from the security settings screen, when a person revokes
+ * this device from their own trusted-device list - not from
+ * clearSession()/sign-out, which must leave this alone.
+ */
+export function clearTrustedDeviceToken(): void {
+  try {
+    localStorage.removeItem(TRUSTED_DEVICE_STORAGE_KEY);
+  } catch {
+    // See storeSession.
+  }
 }

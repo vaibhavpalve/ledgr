@@ -65,6 +65,7 @@ export function TotpSection({
   const [provisioningUri, setProvisioningUri] = useState<string | null>(null);
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [code, setCode] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -115,7 +116,7 @@ export function TotpSection({
     setProblem(null);
     try {
       const result = alreadyEnrolled
-        ? await api.mfaTotpVerify(code)
+        ? await api.mfaTotpVerify(code, rememberDevice)
         : await api.mfaTotpEnrollConfirm(secret ?? "", code);
       onVerified(result);
     } catch (error) {
@@ -142,6 +143,15 @@ export function TotpSection({
               value={code}
               onChange={(event) => setCode(event.target.value)}
             />
+          </label>
+          <label className="mfa-remember-device">
+            <input
+              type="checkbox"
+              data-testid="mfa-totp-remember-device"
+              checked={rememberDevice}
+              onChange={(event) => setRememberDevice(event.target.checked)}
+            />
+            {t("auth.mfa.remember_device")}
           </label>
           <button
             type="button"
@@ -249,6 +259,7 @@ export function PasskeySection({
 }) {
   const { t } = useI18n();
   const [name, setName] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const supported = typeof window !== "undefined" && "PublicKeyCredential" in window;
@@ -278,7 +289,7 @@ export function PasskeySection({
     try {
       const challenge = await api.mfaPasskeyVerifyBegin();
       const credential = await getPasskey(challenge.optionsJson);
-      const result = await api.mfaPasskeyVerifyFinish(challenge.ceremonyId, credential);
+      const result = await api.mfaPasskeyVerifyFinish(challenge.ceremonyId, credential, rememberDevice);
       onVerified(result);
     } catch (error) {
       setProblem(errorMessage(error));
@@ -294,14 +305,25 @@ export function PasskeySection({
       {!supported ? (
         <p data-testid="mfa-passkey-unavailable">{t("auth.mfa.unavailable")}</p>
       ) : alreadyEnrolled ? (
-        <button
-          type="button"
-          data-testid="mfa-passkey-verify"
-          disabled={busy}
-          onClick={() => void verify()}
-        >
-          {t("auth.mfa.passkey.verify_button")}
-        </button>
+        <>
+          <label className="mfa-remember-device">
+            <input
+              type="checkbox"
+              data-testid="mfa-passkey-remember-device"
+              checked={rememberDevice}
+              onChange={(event) => setRememberDevice(event.target.checked)}
+            />
+            {t("auth.mfa.remember_device")}
+          </label>
+          <button
+            type="button"
+            data-testid="mfa-passkey-verify"
+            disabled={busy}
+            onClick={() => void verify()}
+          >
+            {t("auth.mfa.passkey.verify_button")}
+          </button>
+        </>
       ) : (
         <>
           <label>

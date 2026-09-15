@@ -78,7 +78,8 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       verify_email() and resend_verification_email() via
 #       _record_authentication_event, and revoke_session(), revoke_passkey(),
 #       change_password() (including the DENIED entry for a wrong current
-#       password) and remove_totp() via api.account.security_routes._record.
+#       password), remove_totp() and revoke_trusted_device() (ADR-061) via
+#       api.account.security_routes._record.
 #       tests/integration/test_account_security.py asserts the entries land.
 #
 # A route that changes tenant data does not belong here. The bar is "this
@@ -90,6 +91,7 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
         "/v1/me/passkeys/{passkey_id}",
         "/v1/me/password",
         "/v1/me/mfa/totp",
+        "/v1/me/trusted-devices/{device_id}",
         "/v1/auth/signup",
         "/v1/auth/signup/google",
         "/v1/auth/login",

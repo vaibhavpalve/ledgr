@@ -18,6 +18,7 @@ const unverified: AuthResult = {
   accessToken: "tok",
   mfaVerified: false,
   enrollment: { hasPasskey: false, hasTotp: false },
+  trustedDeviceToken: null,
 };
 
 describe("SignupForm — FR-MDL-001's one question", () => {

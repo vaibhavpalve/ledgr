@@ -128,6 +128,31 @@
       "nl": "Intrekken",
       "en": "Revoke"
     },
+    "settings.security.trusted_devices_title": {
+      "note": "ADR-061. Distinct from sessions above: a trusted device is a 7-day grant that lets a NEW sign-in skip the MFA prompt, not a live sign-in itself.",
+      "nl": "Onthouden apparaten",
+      "en": "Remembered devices"
+    },
+    "settings.security.trusted_devices_hint": {
+      "nl": "Apparaten waarop u \"Onthoud dit apparaat\" heeft aangevinkt bij het invoeren van uw code. Op deze apparaten wordt tot 7 dagen niet opnieuw om een code gevraagd. Intrekken vraagt bij de volgende keer inloggen weer om een code.",
+      "en": "Devices where you checked \"Remember this device\" when entering your code. These skip the code prompt for up to 7 days. Revoking asks for a code again on the next sign-in."
+    },
+    "settings.security.trusted_devices_empty": {
+      "nl": "Geen apparaten onthouden.",
+      "en": "No devices remembered."
+    },
+    "settings.security.trusted_device_added": {
+      "nl": "Onthouden op {date}",
+      "en": "Remembered on {date}"
+    },
+    "settings.security.trusted_device_used": {
+      "nl": "laatst gebruikt op {date}",
+      "en": "last used on {date}"
+    },
+    "settings.security.trusted_device_revoke": {
+      "nl": "Intrekken",
+      "en": "Revoke"
+    },
     "settings.organization.title": {
       "nl": "Organisatie",
       "en": "Organization"

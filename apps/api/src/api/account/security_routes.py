@@ -66,6 +66,8 @@ from api.auth.service import AuthenticationService, InvalidCredentialsError
 from api.auth.sessions import SessionListing, SessionService
 from api.auth.totp import TotpNotEnrolledError, TotpService
 from api.auth.totp_repository import SqlTotpRepository
+from api.auth.trusted_devices import TrustedDevice, TrustedDeviceService
+from api.auth.trusted_devices_repository import SqlTrustedDeviceRepository
 from api.config import settings
 from api.crypto.kms import build_kms
 from api.db import get_db_session
@@ -94,6 +96,18 @@ def register(app: FastAPI) -> None:
         f"{_BASE}/password", change_password, methods=["POST"], name="change_my_password"
     )
     app.add_api_route(f"{_BASE}/mfa/totp", remove_totp, methods=["DELETE"], name="remove_my_totp")
+    app.add_api_route(
+        f"{_BASE}/trusted-devices",
+        list_trusted_devices,
+        methods=["GET"],
+        name="list_my_trusted_devices",
+    )
+    app.add_api_route(
+        f"{_BASE}/trusted-devices/{{device_id}}",
+        revoke_trusted_device,
+        methods=["DELETE"],
+        name="revoke_my_trusted_device",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +121,13 @@ def _session_service_for(session: AsyncSession) -> SessionService:
         max_lifetime_hours=settings.session_max_lifetime_hours,
         idle_timeout_minutes_privileged=settings.session_idle_timeout_minutes_privileged,
         geolocation=build_geolocation_resolver(settings.geolocation_provider),
+    )
+
+
+def _trusted_device_service_for(session: AsyncSession) -> TrustedDeviceService:
+    return TrustedDeviceService(
+        SqlTrustedDeviceRepository(session),
+        lifetime_days=settings.trusted_device_lifetime_days,
     )
 
 
@@ -474,3 +495,76 @@ async def remove_totp(
     await _record(session, request, tenant, action="totp_revoke")
     await session.commit()
     return {"status": "revoked"}
+
+
+# ---------------------------------------------------------------------------
+# Trusted devices - ADR-061 (IAM-011 scoping)
+# ---------------------------------------------------------------------------
+
+
+def _device_is_live(device: TrustedDevice, *, now: datetime) -> bool:
+    return device.revoked_at is None and device.expires_at > now
+
+
+def _trusted_device_json(device: TrustedDevice) -> dict[str, Any]:
+    return {
+        "id": str(device.id),
+        "name": device.name,
+        "created_at": device.created_at.isoformat(),
+        "last_used_at": device.last_used_at.isoformat(),
+        "expires_at": device.expires_at.isoformat(),
+    }
+
+
+async def list_trusted_devices(
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, Any]:
+    """The list a person checks before asking "which devices did I remember"
+    - live entries only, mirroring list_sessions: a revoked or expired one
+    is history, not something to act on here.
+    """
+    user_id = await _require_user(request, tenant)
+    now = _now()
+    devices = await _trusted_device_service_for(session).list_for_user(user_id)
+    return {
+        "trusted_devices": [
+            _trusted_device_json(device) for device in devices if _device_is_live(device, now=now)
+        ]
+    }
+
+
+async def revoke_trusted_device(
+    device_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, Any]:
+    """404 for a device that is not this user's, exactly as for one that
+    does not exist - trusted_device carries no RLS (users are global,
+    0003, same as sessions), so the ownership predicate is here, and it
+    must not become an oracle for which device ids exist. Revoking takes
+    effect on that device's very next login attempt (login() calls
+    TrustedDeviceService.check on every one), not retroactively on any
+    session it already helped start.
+    """
+    user_id = await _require_user(request, tenant)
+    service = _trusted_device_service_for(session)
+    devices = await service.list_for_user(user_id)
+    target = next((d for d in devices if d.id == device_id), None)
+    if target is None or not _device_is_live(target, now=_now()):
+        raise problem(
+            request, 404, "errors.trusted_device_not_found", reason="trusted_device_not_found"
+        )
+
+    await service.revoke(device_id)
+    await _record(
+        session,
+        request,
+        tenant,
+        action="trusted_device_revoke",
+        detail={"device_id": str(device_id)},
+    )
+    await session.commit()
+    return {"status": "revoked", "device_id": str(device_id)}
