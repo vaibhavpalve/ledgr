@@ -63,15 +63,16 @@ from api.documents.repository import SqlDocumentRepository
 from api.documents.retention import RetentionBasis
 from api.documents.scanning import build_scanner
 from api.documents.service import DocumentService
-from api.documents.storage import EncryptedBlobStore, InMemoryBlobStore
+from api.documents.storage import EncryptedBlobStore, build_blob_store
 from api.i18n.http import problem
 from api.tenancy import TenantContext, get_tenant_context
 
-#: Process-wide blob store for local development. Production wires the Azure
-#: adapter here; this is named for what it is so that finding it in a
-#: production configuration is obviously wrong, the same posture
-#: api.crypto.kms and api.auth.breach_check take for their own stand-ins.
-_local_blobs = InMemoryBlobStore()
+#: Process-wide blob store, selected by settings.blob_provider (ADR-062) -
+#: "in-memory" for local dev/tests, "r2" in production. Built once per
+#: process, like api.mail.outbox's collecting sender, rather than per
+#: request - a fresh R2BlobStore per request would open a new client for no
+#: benefit, since R2BlobStore itself opens a connection per call already.
+_blobs = build_blob_store()
 
 
 def register(app: FastAPI) -> None:
@@ -142,7 +143,7 @@ async def get_document_service(
     encryption = EnvelopeEncryptionService(build_kms(), SqlAdministrationKeyRepository(session))
     return DocumentService(
         repository=SqlDocumentRepository(session),
-        blobs=EncryptedBlobStore(_local_blobs, encryption, administration_id),
+        blobs=EncryptedBlobStore(_blobs, encryption, administration_id),
         scanner=build_scanner(settings.malware_scanner_provider),
         authorization=authorization,
         audit_log=AuditLog(SqlAuditRepository(session)),

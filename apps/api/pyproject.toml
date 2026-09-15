@@ -13,6 +13,12 @@ dependencies = [
   "cryptography>=43.0.0",
   "azure-keyvault-keys>=4.9.0",
   "azure-identity>=1.19.0",
+  # ADR-062: production KMS (Google Cloud KMS) and blob storage (Cloudflare
+  # R2, spoken via its S3-compatible API - R2 has no native SDK) adapters.
+  # azure-keyvault-keys/azure-identity above stay until gcp-kms is selected
+  # in every non-local environment, per that ADR's own Consequences.
+  "google-cloud-kms>=2.24.0",
+  "aioboto3>=13.0.0",
   "argon2-cffi>=23.1.0",
   "httpx>=0.27.2",
   "webauthn>=3.0.0",
@@ -92,6 +98,16 @@ extend-immutable-calls = [
 python_version = "3.12"
 strict = true
 mypy_path = "src"
+
+# aioboto3 (ADR-062's R2 adapter, api.documents.storage.R2BlobStore) ships no
+# stubs and no py.typed marker - its client is generated dynamically from
+# botocore's service model at runtime, so there is no first-party fix akin to
+# "wait for the library to add types". Scoped narrowly to this one module
+# rather than a blanket ignore_missing_imports, so a future untyped import
+# elsewhere still fails loudly.
+[[tool.mypy.overrides]]
+module = "aioboto3.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

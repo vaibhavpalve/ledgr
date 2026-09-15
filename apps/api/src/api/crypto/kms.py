@@ -2,21 +2,29 @@
 
 A KeyManagementService wraps and unwraps per-tenant data encryption keys
 (DEKs) against a key-encryption key (KEK) that never leaves the KMS/HSM.
-Two implementations exist so the rest of the system depends only on this
+Three implementations exist so the rest of the system depends only on this
 Protocol - CLAUDE.md's fourth architectural non-negotiable: integrations
 sit behind adapters, so a provider can be replaced without touching domain
 logic.
 
-- AzureKeyVaultKeyManagementService: production. The KEK lives in Azure Key
-  Vault as an HSM-backed RSA key; wrap/unwrap are Key Vault API calls. The
-  raw KEK material never leaves the vault boundary - it is never fetched,
-  held, or logged here, only referenced by its versioned key id.
+- GcpKmsKeyManagementService: production (ADR-062). The KEK lives in Google
+  Cloud KMS as an HSM-backed RSA key; unwrap is a KMS asymmetric_decrypt RPC,
+  wrap encrypts locally against the key's PUBLIC portion (not secret - see
+  the class docstring for why that is still "never leaves the HSM boundary").
+- AzureKeyVaultKeyManagementService: the PRE-ADR-062 production adapter,
+  kept in-tree until GcpKmsKeyManagementService is actually selected in
+  every non-local environment (ADR-062's own Consequences say so
+  explicitly) rather than deleted the moment its replacement is written.
+  The KEK lives in Azure Key Vault as an HSM-backed RSA key; wrap/unwrap are
+  Key Vault API calls. The raw KEK material never leaves the vault boundary
+  - it is never fetched, held, or logged here, only referenced by its
+  versioned key id.
 - LocalDevKeyManagementService: local development and tests only. Holds KEK
   material directly (derived from settings.local_dev_kek) and performs
-  RFC 3394 AES key wrap. There is no official local emulator for Key Vault
-  the way Azurite emulates Blob Storage, so this hand-rolled stand-in fills
-  that role. Selecting kms_provider="local" outside local dev or CI is a
-  deployment misconfiguration, not a supported mode - see
+  RFC 3394 AES key wrap. There is no official local emulator for either
+  cloud KMS the way Azurite emulates Blob Storage, so this hand-rolled
+  stand-in fills that role. Selecting kms_provider="local" outside local
+  dev or CI is a deployment misconfiguration, not a supported mode - see
   docs/decisions/ADR-004-envelope-encryption.md.
 """
 
@@ -30,7 +38,10 @@ from azure.identity.aio import DefaultAzureCredential
 from azure.keyvault.keys.aio import KeyClient
 from azure.keyvault.keys.crypto import KeyWrapAlgorithm
 from azure.keyvault.keys.crypto.aio import CryptographyClient
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.keywrap import aes_key_unwrap, aes_key_wrap
+from google.cloud import kms_v1
 
 from api.config import settings
 
@@ -157,6 +168,77 @@ class AzureKeyVaultKeyManagementService:
         return bytes(result.key)
 
 
+class GcpKmsKeyManagementService:
+    """Production KMS adapter (ADR-062): the KEK is an HSM-backed asymmetric
+    RSA key in Google Cloud KMS, purpose RSA_DECRYPT_OAEP with a 2048+ bit
+    key and SHA-256. Deliberately uses the SAME 'RSA-OAEP-256' algorithm tag
+    AzureKeyVaultKeyManagementService does, so this adapter needed no schema
+    change - administration_encryption_key.wrap_algorithm's CHECK constraint
+    (migrations/0002_encryption_keys.sql:60) already permits it.
+
+    Cloud KMS has no server-side "wrap" RPC for an asymmetric key the way Key
+    Vault does; only asymmetric_decrypt is a KMS operation. wrap_key instead
+    fetches the key's PUBLIC portion (via get_public_key) and encrypts with
+    it locally, using this process's own `cryptography` library. That is
+    still "the private key never leaves the HSM boundary": a public key is,
+    by definition, not secret - revealing it lets anyone encrypt FOR the key,
+    never decrypt anything wrapped under it. Only unwrap_key - the operation
+    that needs the private half - ever calls out to KMS.
+
+    Public keys are cached per key-VERSION id (the same string current_kek_id
+    returns), not per crypto key, so a KEK rotation that changes the current
+    version transparently fetches and caches the new version's public key on
+    its first use, while an already-wrapped DEK under an older version still
+    resolves (for decrypt) against that older version's identity - the cache
+    key never needs invalidating on rotation, only growing.
+    """
+
+    _ALGORITHM = "RSA-OAEP-256"
+
+    def __init__(self, *, key_resource_name: str) -> None:
+        # The CRYPTO KEY's resource name, with no version segment - e.g.
+        # "projects/<p>/locations/europe-west4/keyRings/ledgr/cryptoKeys/
+        # tenant-dek-kek". current_kek_id() resolves this to its current
+        # PRIMARY VERSION's own (longer) resource name, which is what
+        # actually gets stored as kek_key_id and passed to KMS RPCs.
+        self._key_resource_name = key_resource_name
+        self._client = kms_v1.KeyManagementServiceAsyncClient()
+        self._public_keys: dict[str, rsa.RSAPublicKey] = {}
+
+    async def current_kek_id(self) -> str:
+        key = await self._client.get_crypto_key(name=self._key_resource_name)
+        assert key.primary is not None and key.primary.name
+        return key.primary.name
+
+    async def _public_key_for(self, kek_key_id: str) -> rsa.RSAPublicKey:
+        if kek_key_id not in self._public_keys:
+            response = await self._client.get_public_key(name=kek_key_id)
+            public_key = serialization.load_pem_public_key(response.pem.encode("ascii"))
+            if not isinstance(public_key, rsa.RSAPublicKey):
+                raise ValueError(f"KEK {kek_key_id!r} is not an RSA key")
+            self._public_keys[kek_key_id] = public_key
+        return self._public_keys[kek_key_id]
+
+    async def wrap_key(self, key_material: bytes) -> WrappedKey:
+        kek_key_id = await self.current_kek_id()
+        public_key = await self._public_key_for(kek_key_id)
+        ciphertext = public_key.encrypt(
+            key_material,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        return WrappedKey(ciphertext=ciphertext, algorithm=self._ALGORITHM, kek_key_id=kek_key_id)
+
+    async def unwrap_key(self, wrapped: WrappedKey) -> bytes:
+        response = await self._client.asymmetric_decrypt(
+            name=wrapped.kek_key_id, ciphertext=wrapped.ciphertext
+        )
+        return bytes(response.plaintext)
+
+
 def build_kms() -> KeyManagementService:
     """Selects the KMS adapter from settings.kms_provider. This is the one
     place that decision gets made - everything downstream depends only on
@@ -175,4 +257,8 @@ def build_kms() -> KeyManagementService:
         return AzureKeyVaultKeyManagementService(
             vault_url=settings.azure_key_vault_url, key_name=settings.azure_kek_name
         )
+    if settings.kms_provider == "gcp-kms":
+        if not settings.gcp_kms_key_resource_name:
+            raise RuntimeError("kms_provider is 'gcp-kms' but GCP_KMS_KEY_RESOURCE_NAME is not set")
+        return GcpKmsKeyManagementService(key_resource_name=settings.gcp_kms_key_resource_name)
     raise ValueError(f"unknown kms_provider: {settings.kms_provider!r}")

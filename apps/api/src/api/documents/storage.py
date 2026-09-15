@@ -5,13 +5,13 @@
 
 --- "Outside the web root" is a property of the design, not a path ---
 
-There is no web root to be outside of: originals go to Azure Blob (PRD §13),
-which is not a filesystem the API serves from and has no path an HTTP request
-can reach. That is a stronger form of the control than a directory outside
-`static/`, and the way to keep it strong is to make it structural - so this
-module's Protocol has no operation that returns a filesystem path or a URL the
-application would serve directly. A caller can put bytes in and get bytes out,
-and that is all.
+There is no web root to be outside of: originals go to Cloudflare R2 (ADR-062,
+superseding PRD §13's Azure Blob choice), which is not a filesystem the API
+serves from and has no path an HTTP request can reach. That is a stronger form
+of the control than a directory outside `static/`, and the way to keep it
+strong is to make it structural - so this module's Protocol has no operation
+that returns a filesystem path or a URL the application would serve directly.
+A caller can put bytes in and get bytes out, and that is all.
 
 The other half of SEC-005 - the separate origin and the attachment disposition
 - belongs to the download endpoint, which is the only thing that turns stored
@@ -20,16 +20,21 @@ bytes into a response. See `api.main.download_document`.
 --- Encrypted under the administration's own key ---
 
 CLAUDE.md's non-negotiable #4 puts integrations behind adapters so a provider
-can be replaced without touching domain logic, and `BlobStore` is that seam for
-Azure Blob. But the encryption is NOT the provider's: `EncryptedBlobStore`
-wraps any store and encrypts with `EnvelopeEncryptionService`, so the bytes are
+can be replaced without touching domain logic, and `BlobStore` is that seam
+for R2. But the encryption is NOT the provider's: `EncryptedBlobStore` wraps
+any store and encrypts with `EnvelopeEncryptionService`, so the bytes are
 already ciphertext before the provider sees them.
 
 That ordering is deliberate. Provider-side encryption would make IAM-004's
-per-tenant key isolation a property of Azure's configuration - true until
-somebody changes a setting, and not true at all for a different provider.
-Encrypting here makes it a property of this code path, and a stored blob is
-useless to anyone who obtains it without also holding the administration's DEK.
+per-tenant key isolation a property of the provider's own configuration - true
+until somebody changes a setting, and not true at all for a different
+provider. Encrypting here makes it a property of this code path, and a stored
+blob is useless to anyone who obtains it without also holding the
+administration's DEK. It's also what made ADR-062's provider swap (Azure Blob
+-> R2) a one-class change instead of a re-encryption project: `R2BlobStore`
+only ever sees ciphertext, so it did not need to inherit or replicate
+anything about how the previous, never-built Azure adapter would have handled
+encryption.
 
 --- Keys are opaque and tenant-scoped ---
 
@@ -43,8 +48,11 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from typing import Protocol
+from typing import Any, Protocol
 
+import aioboto3
+
+from api.config import settings
 from api.crypto.envelope import EncryptedPayload, EnvelopeEncryptionService
 
 
@@ -74,7 +82,8 @@ def new_storage_key(administration_id: uuid.UUID) -> str:
 
 
 class BlobStore(Protocol):
-    """The provider seam. Azure Blob in production, in-memory in tests.
+    """The provider seam. Cloudflare R2 in production (ADR-062), in-memory
+    in tests and local dev.
 
     Deliberately has no `list`, no `url_for` and no `path_for`. A store that
     could hand out a URL would invite something to serve it directly, and
@@ -95,7 +104,8 @@ class BlobStore(Protocol):
 
 
 class InMemoryBlobStore:
-    """For tests and for `make dev-up` before Azurite is reachable.
+    """For tests and for local development, before real R2 credentials
+    (or an S3-compatible local stand-in) are configured.
 
     Not a fake in the sense of being simplified: it has the same failure modes
     the Protocol declares, so a test can exercise the missing-blob path without
@@ -119,6 +129,98 @@ class InMemoryBlobStore:
 
     def __len__(self) -> int:
         return len(self._blobs)
+
+
+class R2BlobStore:
+    """Production adapter (ADR-062): Cloudflare R2, spoken through its
+    S3-compatible API via `aioboto3` - R2 has no native Python SDK, only
+    S3-API compatibility, so this is written as an S3 client pointed at R2's
+    endpoint rather than a Cloudflare-specific library.
+
+    A fresh client is opened per call rather than held across the store's
+    lifetime: `aioboto3`'s client is an async context manager tied to one
+    underlying `aiohttp` session, and this store (like `EncryptedBlobStore`
+    it's wrapped by) is built once per process and reused across many
+    requests - holding one open session for the process's whole lifetime
+    risks it going stale under a store that outlives it. The cost is a
+    connection-setup round trip per call; revisit with a pooled/shared
+    client if that becomes a measurable bottleneck.
+    """
+
+    def __init__(
+        self, *, account_id: str, bucket: str, access_key_id: str, secret_access_key: str
+    ) -> None:
+        self._bucket = bucket
+        self._access_key_id = access_key_id
+        self._secret_access_key = secret_access_key
+        # R2's S3-compatible endpoint is account-scoped, not region-scoped -
+        # "auto" is what R2 documents as the region_name for its API calls,
+        # since R2 itself has no AWS-style regions to select between.
+        self._endpoint_url = f"https://{account_id}.r2.cloudflarestorage.com"
+        self._session = aioboto3.Session()
+
+    def _client(self) -> Any:
+        # aioboto3/aiobotocore build the S3 client dynamically from botocore's
+        # service model at runtime, so its concrete type isn't a class this
+        # code can name - Any is the honest annotation here, not a stand-in
+        # for one this project forgot to write (unlike types-aiobotocore's
+        # generated stubs, which this project's dependencies deliberately
+        # skip pulling in just for one adapter).
+        return self._session.client(
+            "s3",
+            endpoint_url=self._endpoint_url,
+            aws_access_key_id=self._access_key_id,
+            aws_secret_access_key=self._secret_access_key,
+            region_name="auto",
+        )
+
+    async def put(self, key: str, data: bytes) -> None:
+        async with self._client() as client:
+            await client.put_object(Bucket=self._bucket, Key=key, Body=data)
+
+    async def get(self, key: str) -> bytes:
+        async with self._client() as client:
+            try:
+                response = await client.get_object(Bucket=self._bucket, Key=key)
+            except client.exceptions.NoSuchKey as exc:
+                raise BlobNotFoundError(f"no blob at {key!r}") from exc
+            async with response["Body"] as body:
+                return bytes(await body.read())
+
+    async def delete(self, key: str) -> None:
+        async with self._client() as client:
+            await client.delete_object(Bucket=self._bucket, Key=key)
+
+
+def build_blob_store() -> BlobStore:
+    """Selects the blob-store adapter from settings.blob_provider - the same
+    "one place this decision gets made" pattern api.crypto.kms.build_kms
+    uses for the KMS provider.
+    """
+    if settings.blob_provider == "in-memory":
+        return InMemoryBlobStore()
+    if settings.blob_provider == "r2":
+        missing = [
+            name
+            for name, value in (
+                ("R2_ACCOUNT_ID", settings.r2_account_id),
+                ("R2_BUCKET", settings.r2_bucket),
+                ("R2_ACCESS_KEY_ID", settings.r2_access_key_id),
+                ("R2_SECRET_ACCESS_KEY", settings.r2_secret_access_key),
+            )
+            if not value
+        ]
+        if missing:
+            raise RuntimeError(f"blob_provider is 'r2' but {', '.join(missing)} is not set")
+        assert settings.r2_account_id and settings.r2_bucket
+        assert settings.r2_access_key_id and settings.r2_secret_access_key
+        return R2BlobStore(
+            account_id=settings.r2_account_id,
+            bucket=settings.r2_bucket,
+            access_key_id=settings.r2_access_key_id,
+            secret_access_key=settings.r2_secret_access_key,
+        )
+    raise ValueError(f"unknown blob_provider: {settings.blob_provider!r}")
 
 
 class EncryptedBlobStore:

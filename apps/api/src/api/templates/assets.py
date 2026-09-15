@@ -59,7 +59,7 @@ from api.crypto.envelope import EnvelopeEncryptionService
 from api.crypto.kms import build_kms
 from api.crypto.repository import SqlAdministrationKeyRepository
 from api.documents.scanning import MalwareScanner, ScanStatus
-from api.documents.storage import BlobStore, EncryptedBlobStore, InMemoryBlobStore, new_storage_key
+from api.documents.storage import BlobStore, EncryptedBlobStore, build_blob_store, new_storage_key
 from api.invoicing.model import NotAuthorizedToInvoice
 from api.invoicing.pdf import Image, ImageError, load_image
 from api.invoicing.service import CREATE_INVOICE
@@ -95,14 +95,18 @@ __all__ = [
 #: inside `sanitize_svg` itself) while bounding the worst case.
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
-#: Process-wide blob store for local development - the same "named for what
-#: it is" posture `api.documents.routes._local_blobs` takes for its own.
-#: Deliberately a SEPARATE instance from that one: template assets and
-#: documents are different bounded stores (0042's `template_asset` is not
-#: `document`, per that migration's own header comment), and sharing one
-#: in-memory dict would blur a distinction this codebase otherwise keeps
-#: carefully. Production wires a real Azure Blob adapter here instead.
-_local_blobs = InMemoryBlobStore()
+#: Process-wide blob store, selected by settings.blob_provider (ADR-062) -
+#: the same `api.documents.storage.build_blob_store` factory
+#: `api.documents.routes` calls for its own. Deliberately a SEPARATE call
+#: (not an import of that module's instance): template assets and documents
+#: are different bounded stores (0042's `template_asset` is not `document`,
+#: per that migration's own header comment). In "in-memory" mode this
+#: naturally yields two independent dicts, since each call to
+#: build_blob_store() constructs a fresh InMemoryBlobStore; in "r2" mode
+#: both point at the same bucket, distinguished only by their own
+#: `new_storage_key`-derived prefixes - the two tables' isolation from each
+#: other was never about which Python object or bucket held the bytes.
+_local_blobs = build_blob_store()
 
 
 @dataclass(frozen=True, slots=True)
