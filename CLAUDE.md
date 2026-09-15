@@ -14,17 +14,22 @@ iOS app, Android app and public API, all running against one API with no client-
 4. **Integrations (banks, Peppol, Digipoort, PSPs) sit behind adapters**, so a provider can be
    replaced without touching domain logic.
 
-Confirmed stack: Azure/West Europe, **FastAPI (Python)** REST+OpenAPI, PostgreSQL with row-level
-security, append-only ledger tables (no UPDATE/DELETE grants on committed rows), Azure Blob with
-per-tenant keys, React/TypeScript web, React Native mobile.
+Confirmed stack: Railway (EU region, Amsterdam/europe-west4), **FastAPI (Python)** REST+OpenAPI,
+PostgreSQL with row-level security, append-only ledger tables (no UPDATE/DELETE grants on committed
+rows), Cloudflare R2 (EU jurisdictional restriction) with per-tenant keys wrapped by Google Cloud
+KMS (europe-west4), React/TypeScript web, React Native mobile.
 
-Two deviations from the PRD §13 table, confirmed deliberately rather than defaults:
+Three deviations from the PRD §13 table, confirmed deliberately rather than defaults:
 - **API**: FastAPI only, not "FastAPI or .NET" — one language across API and async workers keeps
   the integration-adapter surface (non-negotiable #4) smaller, and the document-AI/OCR pipeline
   is Python-native anyway.
 - **Search**: Postgres full-text search (`pg_trgm`) instead of OpenSearch. NFR-008 only requires
   <2s search over a 7-year archive, which Postgres FTS on the already-RLS-partitioned tables
   satisfies without a second tenant-partitioned datastore to secure and operate.
+- **Cloud/hosting/secrets**: Railway + Cloudflare R2 + Google Cloud KMS, not Azure. PRIV-010 only
+  requires EU data residency, not Azure specifically; at pre-revenue stage the cost difference is
+  material and each replacement satisfies the same requirement Azure was chosen for — see
+  [ADR-062](docs/decisions/ADR-062-railway-hosting-and-non-azure-cloud-services.md).
 
 The rest of the PRD §13 table stands as proposed. Any further deviation must still satisfy the
 requirement each choice was made to serve.
