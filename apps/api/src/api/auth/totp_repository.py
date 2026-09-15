@@ -41,8 +41,16 @@ class SqlTotpRepository:
         self._session = session
 
     async def get_for_user(self, user_id: uuid.UUID) -> TotpCredential | None:
+        # revoked_at IS NULL matches user_totp_credential_one_active_idx
+        # (migrations/0006_mfa.sql): at most one active row can exist per
+        # user, but revoked rows persist for history, so without this
+        # filter an unordered SELECT can return a stale revoked credential
+        # for a user who reset their authenticator and re-enrolled.
         result = await self._session.execute(
-            text(f"SELECT {_SELECT_COLUMNS} FROM user_totp_credential WHERE user_id = :user_id"),
+            text(
+                f"SELECT {_SELECT_COLUMNS} FROM user_totp_credential "
+                "WHERE user_id = :user_id AND revoked_at IS NULL"
+            ),
             {"user_id": str(user_id)},
         )
         row = result.first()

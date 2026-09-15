@@ -92,6 +92,43 @@ async def test_enrollment_checker_ignores_revoked_passkeys() -> None:
     assert status.is_enrolled is False
 
 
+async def test_enrollment_checker_sees_totp_reenrolled_after_revocation() -> None:
+    """Regression test: a user who resets their authenticator (revoke, then
+    re-enroll) must be reported as still enrolled, not sent through fresh
+    QR-code enrollment on their next login. This previously failed because
+    TotpRepository.get_for_user could return the stale revoked row instead
+    of the new active one - see totp_repository.py.
+    """
+    totp = InMemoryTotpRepository()
+    user_id = uuid.uuid4()
+    first = await totp.create(
+        user_id=user_id,
+        wrapped_secret=b"secret-1",
+        secret_nonce=b"nonce-1",
+        wrapped_dek=b"dek-1",
+        wrap_algorithm="test",
+        kek_key_id="test-kek",
+        confirmed_at=datetime.now(UTC),
+        last_used_step=1,
+    )
+    await totp.revoke(first.id, at=datetime.now(UTC))
+    await totp.create(
+        user_id=user_id,
+        wrapped_secret=b"secret-2",
+        secret_nonce=b"nonce-2",
+        wrapped_dek=b"dek-2",
+        wrap_algorithm="test",
+        kek_key_id="test-kek",
+        confirmed_at=datetime.now(UTC),
+        last_used_step=1,
+    )
+
+    status = await MfaEnrollmentChecker(InMemoryPasskeyRepository(), totp).check(user_id)
+
+    assert status.has_totp is True
+    assert status.is_enrolled is True
+
+
 # --- MfaPolicyService.evaluate: the four outcomes --------------------------
 
 

@@ -19,7 +19,14 @@ class InMemoryTotpRepository:
         self._credentials: dict[uuid.UUID, TotpCredential] = {}
 
     async def get_for_user(self, user_id: uuid.UUID) -> TotpCredential | None:
-        return next((c for c in self._credentials.values() if c.user_id == user_id), None)
+        return next(
+            (
+                c
+                for c in self._credentials.values()
+                if c.user_id == user_id and c.revoked_at is None
+            ),
+            None,
+        )
 
     async def create(
         self,
