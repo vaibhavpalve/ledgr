@@ -157,5 +157,17 @@ class Settings(BaseSettings):
     # something a normal run needs to set.
     message_catalogue_dir: str | None = None
 
+    # --- Single-origin SPA serving (ADR-063, api.spa) ---
+    # Where the built apps/web/dist lives. Unset resolves it automatically to
+    # the checkout path five directories up from api/spa.py - correct for
+    # local development, where nothing installs this package into another
+    # tree. NOT resolved the way message_catalogue_dir's packaged-copy
+    # fallback is: apps/web/dist is a BUILD ARTIFACT, absent from a plain
+    # checkout, so force-including it into the wheel would make `uv sync`
+    # fail in every CI job that never builds the web app. The Dockerfile's
+    # web-build stage instead copies it to a fixed path and sets this
+    # variable to point there - see apps/api/Dockerfile.
+    web_dist_dir: str | None = None
+
 
 settings = Settings()

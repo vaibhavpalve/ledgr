@@ -40,6 +40,7 @@ from api.mfa_middleware import MfaEnforcementMiddleware
 from api.onboarding import routes as onboarding_routes
 from api.security.csrf import CsrfProtectionMiddleware
 from api.security.headers import SecurityHeadersMiddleware
+from api.spa import register as register_spa
 from api.templates import routes as template_routes
 from api.tenancy import TenantContext, TenantContextMiddleware, get_tenant_context
 
@@ -76,6 +77,17 @@ app = FastAPI(title="LEDGR API")
 # way out) and CsrfProtectionMiddleware the layer just inside it - before
 # tenant context is even resolved, since the check depends only on cookies
 # and the request method. See api.security.headers and api.security.csrf.
+#
+# SpaMiddleware (ADR-063's remaining work: the API serves the built React
+# SPA) is added between the two, so it runs AFTER SecurityHeadersMiddleware
+# has generated request.state.csp_nonce but BEFORE CsrfProtectionMiddleware,
+# TenantContextMiddleware, AuditMiddleware, MfaEnforcementMiddleware,
+# IdempotencyMiddleware or AuthorizationEnforcementMiddleware ever run for a
+# non-API path: it never calls call_next for one, so those six layers never
+# see an SPA asset or page request at all - the same way they never see a
+# request Starlette itself couldn't route. See api.spa's module docstring for
+# why this had to be middleware, not a route, and why the CSP required an
+# actual nonce-injecting implementation rather than a static file serve.
 #
 # PRD §6.10's archive. Added directly to the app rather than as an included
 # router: this FastAPI version hides an included router's routes behind an
@@ -125,6 +137,7 @@ app.add_middleware(MfaEnforcementMiddleware)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(TenantContextMiddleware)
 app.add_middleware(CsrfProtectionMiddleware)
+register_spa(app)
 app.add_middleware(SecurityHeadersMiddleware)
 
 

@@ -1,0 +1,11 @@
+# Every stage of apps/api/Dockerfile COPYs specific paths, never the whole
+# context - but the context itself is still packed and sent to the builder
+# in full first (this is what railway up's "Uploading..." step does), so an
+# unfiltered node_modules or local venv here means a slow, multi-hundred-MB
+# upload of files no COPY instruction ever reads. Excluded here instead.
+node_modules
+**/node_modules
+apps/web/dist
+apps/api/.venv-check
+.devtools
+.git
