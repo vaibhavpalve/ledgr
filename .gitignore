@@ -7,6 +7,15 @@
 # of it belongs in the repo.
 .devtools/
 
+# Agent skills installed with `npx skills add`. These configure whoever is
+# working on the repo, not the repo itself — a different person may want a
+# different set, and they run with full agent permissions, so they are not
+# something to inherit silently by cloning. `.claude/skills/` rather than
+# `.claude/`, so project-level Claude settings can still be tracked later.
+.agents/
+.claude/skills/
+skills-lock.json
+
 # Node
 node_modules/
 dist/
