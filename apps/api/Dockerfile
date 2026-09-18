@@ -71,4 +71,9 @@ EXPOSE 8000
 # strings, not files, so GCP_SERVICE_ACCOUNT_JSON carries the key's JSON
 # content instead and gets written out here before the app starts. Optional:
 # unset in kms_provider=local/azure-key-vault deployments.
-CMD ["sh", "-c", "if [ -n \"$GCP_SERVICE_ACCOUNT_JSON\" ]; then printf '%s' \"$GCP_SERVICE_ACCOUNT_JSON\" > /tmp/gcp-service-account.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-service-account.json; fi; uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+#
+# scripts/write_gcp_credentials.py, not a shell `printf > file` one-liner:
+# see that script's docstring for the production bug (a Windows-sourced
+# JSON value's leading UTF-8 BOM, which json.load rejects outright) that
+# made a dedicated script the right fix over another shell quoting layer.
+CMD ["sh", "-c", "if [ -n \"$GCP_SERVICE_ACCOUNT_JSON\" ]; then uv run python scripts/write_gcp_credentials.py /tmp/gcp-service-account.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-service-account.json; fi; uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
