@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { SUPPORTED_LANGUAGES, useI18n } from "@ledgr/i18n";
-import { DELIVERY_CHANNELS, type CustomerView, type DeliveryChannel } from "@ledgr/shared-types";
+import {
+  COUNTRY_CODES,
+  DELIVERY_CHANNELS,
+  type CountryCode,
+  type CustomerView,
+  type DeliveryChannel,
+} from "@ledgr/shared-types";
 
 import { ApiError, describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
@@ -111,7 +117,7 @@ export function bodyOf(draft: Draft): CustomerBody {
 }
 
 export function CustomerFormScreen() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const navigate = useNavigate();
   const { customerId } = useParams();
   const [params] = useSearchParams();
@@ -143,9 +149,27 @@ export function CustomerFormScreen() {
   }, [customers, administration.id, customerId]);
 
   const vatProblem = useMemo(
-    () => (draft === null || draft.vat_number.trim() === "" ? null : vatNumberFormatProblem(draft.vat_number)),
+    () =>
+      draft === null || draft.vat_number.trim() === ""
+        ? null
+        : vatNumberFormatProblem(draft.vat_number),
     [draft],
   );
+
+  // Intl.DisplayNames, not a hand-translated catalogue entry per country:
+  // it's a standard, ICU-backed browser API that resolves a code to its
+  // name in whichever language the caller asks for, correctly - see
+  // packages/shared-types/src/countries.ts for why hand-authoring 249
+  // names × every supported language would itself be an accuracy risk for
+  // data that feeds real invoices and VAT numbers. Sorted by the
+  // LOCALISED name (not by code) so the list reads naturally either
+  // language it's shown in.
+  const countryOptions = useMemo(() => {
+    const names = new Intl.DisplayNames([language], { type: "region" });
+    return COUNTRY_CODES.map((code) => ({ code, name: names.of(code) ?? code })).sort((a, b) =>
+      a.name.localeCompare(b.name, language),
+    );
+  }, [language]);
 
   if (loadProblem !== null) {
     return (
@@ -166,7 +190,8 @@ export function CustomerFormScreen() {
     );
   }
 
-  const update = (patch: Partial<Draft>) => setDraft((current) => (current === null ? current : { ...current, ...patch }));
+  const update = (patch: Partial<Draft>) =>
+    setDraft((current) => (current === null ? current : { ...current, ...patch }));
 
   const submit = async () => {
     if (vatProblem !== null || draft.name.trim() === "") return;
@@ -191,7 +216,11 @@ export function CustomerFormScreen() {
   const invalid = (field: string) => (problemField === field ? true : undefined);
 
   return (
-    <section className="screen" aria-label={editing ? t("customers.edit.title") : t("customers.new.title")} data-testid="customer-form">
+    <section
+      className="screen"
+      aria-label={editing ? t("customers.edit.title") : t("customers.new.title")}
+      data-testid="customer-form"
+    >
       <PageHeader title={editing ? t("customers.edit.title") : t("customers.new.title")} />
       <form
         className="form panel panel__body"
@@ -204,37 +233,99 @@ export function CustomerFormScreen() {
         <div className="form__grid">
           <div className="form__field">
             <label htmlFor="cust-name">{t("customers.field.name")}</label>
-            <input id="cust-name" type="text" required value={draft.name} aria-invalid={invalid("name")} data-testid="customer-name" onChange={(e) => update({ name: e.target.value })} />
+            <input
+              id="cust-name"
+              type="text"
+              required
+              value={draft.name}
+              aria-invalid={invalid("name")}
+              data-testid="customer-name"
+              onChange={(e) => update({ name: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-trade">{t("customers.field.trade_name")}</label>
-            <input id="cust-trade" type="text" value={draft.trade_name} data-testid="customer-trade-name" onChange={(e) => update({ trade_name: e.target.value })} />
+            <input
+              id="cust-trade"
+              type="text"
+              value={draft.trade_name}
+              data-testid="customer-trade-name"
+              onChange={(e) => update({ trade_name: e.target.value })}
+            />
           </div>
           <div className="form__field form__span">
             <label htmlFor="cust-addr1">{t("customers.field.address_line1")}</label>
-            <input id="cust-addr1" type="text" autoComplete="street-address" value={draft.address_line1} aria-invalid={invalid("address_line1")} data-testid="customer-address1" onChange={(e) => update({ address_line1: e.target.value })} />
+            <input
+              id="cust-addr1"
+              type="text"
+              autoComplete="street-address"
+              value={draft.address_line1}
+              aria-invalid={invalid("address_line1")}
+              data-testid="customer-address1"
+              onChange={(e) => update({ address_line1: e.target.value })}
+            />
             <p className="form__hint">{t("customers.field.address_hint")}</p>
           </div>
           <div className="form__field form__span">
             <label htmlFor="cust-addr2">{t("customers.field.address_line2")}</label>
-            <input id="cust-addr2" type="text" value={draft.address_line2} data-testid="customer-address2" onChange={(e) => update({ address_line2: e.target.value })} />
+            <input
+              id="cust-addr2"
+              type="text"
+              value={draft.address_line2}
+              data-testid="customer-address2"
+              onChange={(e) => update({ address_line2: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-postal">{t("customers.field.postal_code")}</label>
-            <input id="cust-postal" type="text" autoComplete="postal-code" value={draft.postal_code} aria-invalid={invalid("postal_code")} data-testid="customer-postal-code" onChange={(e) => update({ postal_code: e.target.value })} />
+            <input
+              id="cust-postal"
+              type="text"
+              autoComplete="postal-code"
+              value={draft.postal_code}
+              aria-invalid={invalid("postal_code")}
+              data-testid="customer-postal-code"
+              onChange={(e) => update({ postal_code: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-city">{t("customers.field.city")}</label>
-            <input id="cust-city" type="text" value={draft.city} aria-invalid={invalid("city")} data-testid="customer-city" onChange={(e) => update({ city: e.target.value })} />
+            <input
+              id="cust-city"
+              type="text"
+              value={draft.city}
+              aria-invalid={invalid("city")}
+              data-testid="customer-city"
+              onChange={(e) => update({ city: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-country">{t("customers.field.country")}</label>
-            <input id="cust-country" type="text" maxLength={2} value={draft.country} aria-invalid={invalid("country")} data-testid="customer-country" onChange={(e) => update({ country: e.target.value })} />
-            <p className="form__hint">{t("customers.field.country_hint")}</p>
+            <select
+              id="cust-country"
+              value={draft.country}
+              aria-invalid={invalid("country")}
+              data-testid="customer-country"
+              onChange={(e) => update({ country: e.target.value as CountryCode })}
+            >
+              {countryOptions.map(({ code, name }) => (
+                <option key={code} value={code}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="form__field">
             <label htmlFor="cust-kvk">{t("customers.field.kvk_number")}</label>
-            <input id="cust-kvk" type="text" inputMode="numeric" value={draft.kvk_number} aria-invalid={invalid("kvk_number")} data-testid="customer-kvk" onChange={(e) => update({ kvk_number: e.target.value })} />
+            <input
+              id="cust-kvk"
+              type="text"
+              inputMode="numeric"
+              value={draft.kvk_number}
+              aria-invalid={invalid("kvk_number")}
+              data-testid="customer-kvk"
+              onChange={(e) => update({ kvk_number: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-vat">{t("customers.field.vat_number")}</label>
@@ -247,17 +338,36 @@ export function CustomerFormScreen() {
               data-testid="customer-vat"
               onChange={(e) => update({ vat_number: e.target.value })}
             />
-            <p id="cust-vat-hint" className={vatProblem !== null ? "field-error" : "form__hint"} data-testid="customer-vat-hint">
-              {vatProblem !== null ? t("customers.field.vat_number_malformed") : t("customers.field.vat_number_hint")}
+            <p
+              id="cust-vat-hint"
+              className={vatProblem !== null ? "field-error" : "form__hint"}
+              data-testid="customer-vat-hint"
+            >
+              {vatProblem !== null
+                ? t("customers.field.vat_number_malformed")
+                : t("customers.field.vat_number_hint")}
             </p>
           </div>
           <div className="form__field">
             <label htmlFor="cust-email">{t("customers.field.invoice_email")}</label>
-            <input id="cust-email" type="email" autoComplete="email" value={draft.invoice_email} aria-invalid={invalid("invoice_email")} data-testid="customer-email" onChange={(e) => update({ invoice_email: e.target.value })} />
+            <input
+              id="cust-email"
+              type="email"
+              autoComplete="email"
+              value={draft.invoice_email}
+              aria-invalid={invalid("invoice_email")}
+              data-testid="customer-email"
+              onChange={(e) => update({ invoice_email: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-channel">{t("customers.field.delivery_channel")}</label>
-            <select id="cust-channel" value={draft.delivery_channel} data-testid="customer-channel" onChange={(e) => update({ delivery_channel: e.target.value as DeliveryChannel })}>
+            <select
+              id="cust-channel"
+              value={draft.delivery_channel}
+              data-testid="customer-channel"
+              onChange={(e) => update({ delivery_channel: e.target.value as DeliveryChannel })}
+            >
               {DELIVERY_CHANNELS.map((channel) => (
                 <option key={channel} value={channel}>
                   {t(`customers.delivery_channel.${channel}`)}
@@ -267,16 +377,38 @@ export function CustomerFormScreen() {
           </div>
           <div className="form__field">
             <label htmlFor="cust-terms">{t("customers.field.payment_terms_days")}</label>
-            <input id="cust-terms" type="number" min={0} max={365} value={draft.payment_terms_days} aria-invalid={invalid("payment_terms_days")} data-testid="customer-terms" onChange={(e) => update({ payment_terms_days: e.target.value })} />
+            <input
+              id="cust-terms"
+              type="number"
+              min={0}
+              max={365}
+              value={draft.payment_terms_days}
+              aria-invalid={invalid("payment_terms_days")}
+              data-testid="customer-terms"
+              onChange={(e) => update({ payment_terms_days: e.target.value })}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="cust-credit">{t("customers.field.credit_limit")}</label>
-            <input id="cust-credit" type="text" inputMode="decimal" value={draft.credit_limit} aria-invalid={invalid("credit_limit")} data-testid="customer-credit-limit" onChange={(e) => update({ credit_limit: e.target.value })} />
+            <input
+              id="cust-credit"
+              type="text"
+              inputMode="decimal"
+              value={draft.credit_limit}
+              aria-invalid={invalid("credit_limit")}
+              data-testid="customer-credit-limit"
+              onChange={(e) => update({ credit_limit: e.target.value })}
+            />
             <p className="form__hint">{t("customers.field.credit_limit_hint")}</p>
           </div>
           <div className="form__field">
             <label htmlFor="cust-language">{t("customers.field.language")}</label>
-            <select id="cust-language" value={draft.language} data-testid="customer-language" onChange={(e) => update({ language: e.target.value })}>
+            <select
+              id="cust-language"
+              value={draft.language}
+              data-testid="customer-language"
+              onChange={(e) => update({ language: e.target.value })}
+            >
               {SUPPORTED_LANGUAGES.map((language) => (
                 <option key={language} value={language}>
                   {t(`common.language.name.${language}`)}
@@ -287,7 +419,13 @@ export function CustomerFormScreen() {
           </div>
           <div className="form__field form__span">
             <label htmlFor="cust-notes">{t("customers.field.notes")}</label>
-            <textarea id="cust-notes" rows={3} value={draft.notes} data-testid="customer-notes" onChange={(e) => update({ notes: e.target.value })} />
+            <textarea
+              id="cust-notes"
+              rows={3}
+              value={draft.notes}
+              data-testid="customer-notes"
+              onChange={(e) => update({ notes: e.target.value })}
+            />
           </div>
         </div>
 
@@ -298,10 +436,22 @@ export function CustomerFormScreen() {
         ) : null}
 
         <div className="form__actions">
-          <button type="submit" disabled={saving || vatProblem !== null} data-testid="customer-save">
+          <button
+            type="submit"
+            disabled={saving || vatProblem !== null}
+            data-testid="customer-save"
+          >
             {saving ? t("common.action.saving") : t("common.action.save")}
           </button>
-          <Link to={returnTo ?? (customerId === undefined ? "/customers" : `/customers/${encodeURIComponent(customerId)}`)} className="button-link button-link--quiet">
+          <Link
+            to={
+              returnTo ??
+              (customerId === undefined
+                ? "/customers"
+                : `/customers/${encodeURIComponent(customerId)}`)
+            }
+            className="button-link button-link--quiet"
+          >
             {t("common.action.cancel")}
           </Link>
         </div>

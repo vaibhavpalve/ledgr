@@ -90,10 +90,6 @@
       "nl": "Land",
       "en": "Country"
     },
-    "customers.field.country_hint": {
-      "nl": "Landcode van twee letters, bijvoorbeeld NL of DE.",
-      "en": "Two-letter country code, for example NL or DE."
-    },
     "customers.field.kvk_number": {
       "nl": "KvK-nummer",
       "en": "KvK number"

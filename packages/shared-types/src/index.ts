@@ -1,5 +1,10 @@
 // Shared types consumed by the web app and (via generated clients) the API.
 
+// ISO 3166-1 alpha-2 country codes - kept in their own file (249 entries)
+// rather than inlined here, the same way DELIVERY_CHANNELS below is small
+// enough to just be a line in this file and this isn't.
+export { COUNTRY_CODES, type CountryCode } from "./countries";
+
 /**
  * FR-FRM-000a: the identity of a client, as every surface renders it.
  *
