@@ -79,8 +79,8 @@ export const lightTheme: ThemeTokens = {
   "surface-raised": NEUTRAL_LIGHT.raised,
   "surface-sunken": NEUTRAL_LIGHT.sunken,
   "surface-input": NEUTRAL_LIGHT.input,
-  /* Warm ink (NEUTRAL_LIGHT.ink) at 48%: dimmed paper, not a grey film. */
-  "surface-scrim": "rgba(38, 34, 28, 0.48)",
+  /* NEUTRAL_LIGHT.ink at 48%: dimmed paper, not a grey film. */
+  "surface-scrim": "rgba(24, 24, 27, 0.48)",
 
   "border-subtle": NEUTRAL_LIGHT.rule,
   "border-strong": NEUTRAL_LIGHT.ruleStrong,
@@ -102,9 +102,9 @@ export const lightTheme: ThemeTokens = {
   attention: STATUS_LIGHT.attention,
   "attention-wash": STATUS_LIGHT.attentionWash,
 
-  "shadow-sm": "0 1px 2px rgba(38, 34, 28, 0.06)",
-  "shadow-md": "0 2px 4px rgba(38, 34, 28, 0.06), 0 8px 20px -10px rgba(38, 34, 28, 0.18)",
-  "shadow-lg": "0 4px 8px rgba(38, 34, 28, 0.08), 0 24px 48px -20px rgba(38, 34, 28, 0.32)",
+  "shadow-sm": "0 1px 2px rgba(24, 24, 27, 0.06)",
+  "shadow-md": "0 2px 4px rgba(24, 24, 27, 0.05), 0 8px 20px -10px rgba(24, 24, 27, 0.16)",
+  "shadow-lg": "0 4px 8px rgba(24, 24, 27, 0.06), 0 24px 48px -20px rgba(24, 24, 27, 0.28)",
 };
 
 export const darkTheme: ThemeTokens = {
@@ -113,8 +113,8 @@ export const darkTheme: ThemeTokens = {
   "surface-raised": NEUTRAL_DARK.raised,
   "surface-sunken": NEUTRAL_DARK.sunken,
   "surface-input": NEUTRAL_DARK.input,
-  /* Black, like the dark shadows: a warm scrim over a warm dark ground goes
-     muddy rather than reading as depth. */
+  /* Pure black rather than NEUTRAL_DARK.ink: a scrim this large reads as
+     depth better without picking up the ramp's own (slight) tint. */
   "surface-scrim": "rgba(0, 0, 0, 0.6)",
 
   "border-subtle": NEUTRAL_DARK.rule,
@@ -137,8 +137,8 @@ export const darkTheme: ThemeTokens = {
   attention: STATUS_DARK.attention,
   "attention-wash": STATUS_DARK.attentionWash,
 
-  /* Black, not the warm ink: a warm shadow over a warm dark ground turns
-     muddy brown rather than reading as depth. */
+  /* Black rather than NEUTRAL_DARK.ink, for the same reason as the scrim
+     above: depth reads better than a hue-matched tint at this size. */
   "shadow-sm": "0 1px 2px rgba(0, 0, 0, 0.4)",
   "shadow-md": "0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px -10px rgba(0, 0, 0, 0.6)",
   "shadow-lg": "0 4px 8px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.75)",
@@ -173,14 +173,17 @@ export const clientTokens = CLIENT;
  * information it could not carry while every value was taken.
  */
 export const scaleTokens = {
-  /* Type. `--ledgr-type-*`. */
+  /* Type. `--ledgr-type-*`. ADR-065 moved body/small down to the 14/16px
+     convention most current dashboards read as "designed", and gave the two
+     fluid steps more presence — a bigger jump reads as more confident, not
+     just bigger. */
   "type-micro": "0.75rem" /* 12px — uppercase labels, keycaps */,
   "type-caption": "0.8125rem" /* 13px — captions, helper text */,
-  "type-small": "0.9375rem" /* 15px — secondary UI, table meta */,
-  "type-body": "1.0625rem" /* 17px — body and default UI */,
+  "type-small": "0.875rem" /* 14px — secondary UI, table meta */,
+  "type-body": "1rem" /* 16px — body and default UI */,
   "type-section": "1.25rem" /* 20px — section headings */,
-  "type-page": "clamp(1.5rem, 1.3rem + 1vw, 1.625rem)" /* 24→26px */,
-  "type-display": "clamp(1.75rem, 1.35rem + 2vw, 2.0625rem)" /* 28→33px */,
+  "type-page": "clamp(1.75rem, 1.5rem + 1vw, 2rem)" /* 28→32px */,
+  "type-display": "clamp(2rem, 1.5rem + 2.5vw, 2.75rem)" /* 32→44px */,
 
   /* Line heights, by role rather than by size. */
   "leading-tight": "1.2",
@@ -201,19 +204,22 @@ export const scaleTokens = {
   "font-serif": "'Source Serif 4', Georgia, 'Times New Roman', serif",
   "font-mono": "ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace",
 
-  /* Spacing — a 4px grid. */
+  /* Spacing — a 4px grid. The two largest steps (page-level gaps, empty-state
+     padding) grew under ADR-065: whitespace is one of the cheapest signals
+     of "premium", and it costs nothing at the component level below. */
   "space-1": "0.25rem" /* 4 */,
   "space-2": "0.5rem" /* 8 */,
   "space-3": "0.75rem" /* 12 */,
   "space-4": "1rem" /* 16 */,
   "space-5": "1.5rem" /* 24 */,
-  "space-6": "2rem" /* 32 */,
-  "space-7": "3rem" /* 48 */,
+  "space-6": "2.5rem" /* 40 */,
+  "space-7": "4rem" /* 64 */,
 
-  /* Radii, by role. */
+  /* Radii, by role. Tighter than ADR-055's under ADR-065 — a crisper corner
+     reads as more precise on a numbers-first product than a soft one does. */
   "radius-chip": "6px",
-  "radius-control": "10px",
-  "radius-panel": "14px",
+  "radius-control": "8px",
+  "radius-panel": "12px",
   "radius-pill": "999px",
 
   /* Motion. A ledger should move almost not at all; what does move must be

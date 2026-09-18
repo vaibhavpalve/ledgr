@@ -148,8 +148,8 @@ describe("the pre-paint script in index.html", () => {
   it("declares a theme-color for each theme, matching the tokens", () => {
     // These cannot be custom properties — the address bar cannot read CSS —
     // so they are literals, and literals are exactly what drifts.
-    expect(INDEX_HTML).toContain('content="#f5f0e9"');
-    expect(INDEX_HTML).toContain('content="#15120e"');
+    expect(INDEX_HTML).toContain('content="#fafafa"');
+    expect(INDEX_HTML).toContain('content="#09090b"');
   });
 });
 

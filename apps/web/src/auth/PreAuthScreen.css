@@ -201,9 +201,9 @@
  * The same reasoning tokens.css already documents for client markers
  * applies here: this is a brand statement, not a themed surface, and it
  * must read the same way whether the viewer is on light or dark mode. The
- * values are LEDGR's own dark-theme palette (the same hue-80 ramp, same
- * accent), used as constants rather than as the swappable tokens they are
- * everywhere else in the product.
+ * values are LEDGR's own dark-theme palette (ADR-065's graphite ramp, same
+ * teal accent), used as constants rather than as the swappable tokens they
+ * are everywhere else in the product.
  */
 
 .pre-auth__marketing {
@@ -218,18 +218,18 @@
     gap: var(--ledgr-space-6);
 
     padding: var(--ledgr-space-7) var(--ledgr-space-6);
-    background-color: #15120e;
-    color: #f2ece3;
+    background-color: #09090b;
+    color: #fafafa;
     overflow-y: auto;
   }
 }
 
 .pre-auth__marketing-brand .wordmark {
-  color: #f2ece3;
+  color: #fafafa;
 }
 
 .pre-auth__marketing-brand .wordmark__mark {
-  color: #4fbcc0;
+  color: #2dd4bf;
 }
 
 .pre-auth__marketing-headline {
@@ -246,7 +246,7 @@
   max-width: 42ch;
   font-size: var(--ledgr-type-body);
   line-height: var(--ledgr-leading-snug);
-  color: #c3bbae;
+  color: #c7c7cc;
   text-wrap: pretty;
 }
 
@@ -274,8 +274,8 @@
   height: 2.25rem;
 
   border-radius: var(--ledgr-radius-control);
-  background-color: rgba(79, 188, 192, 0.14);
-  color: #4fbcc0;
+  background-color: rgba(45, 212, 191, 0.14);
+  color: #2dd4bf;
 }
 
 .pre-auth__feature-text {
@@ -288,13 +288,13 @@
 .pre-auth__feature-title {
   font-size: var(--ledgr-type-small);
   font-weight: var(--ledgr-weight-semibold);
-  color: #f2ece3;
+  color: #fafafa;
 }
 
 .pre-auth__feature-body {
   font-size: var(--ledgr-type-caption);
   line-height: var(--ledgr-leading-snug);
-  color: #9a9285;
+  color: #9a9aa2;
   text-wrap: pretty;
 }
 

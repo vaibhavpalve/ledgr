@@ -165,11 +165,23 @@
 
   transition:
     background-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
-    border-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+    border-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    transform var(--ledgr-duration-fast) var(--ledgr-ease-out);
 }
 
 :where(button):hover:not(:disabled) {
   background-color: var(--ledgr-surface-raised);
+}
+
+/*
+ * The one piece of press feedback every button in the product gets: a small
+ * scale-down that reads as "this physically depressed" rather than "nothing
+ * happened yet, wait for the response". `transform`, never `top`/`width`, so
+ * it is GPU-composited and costs nothing on the low-end Android devices
+ * MOB-013 already has to account for.
+ */
+:where(button):active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 :where(button):disabled {
@@ -194,6 +206,7 @@
 :where(button[type="submit"]):hover:not(:disabled) {
   background-color: var(--ledgr-accent-hover);
   border-color: var(--ledgr-accent-hover);
+  box-shadow: var(--ledgr-shadow-sm);
 }
 
 /* The one action a screen exists for. At most one per view. */
@@ -206,6 +219,7 @@
 .button--primary:hover:not(:disabled) {
   background-color: var(--ledgr-accent-hover);
   border-color: var(--ledgr-accent-hover);
+  box-shadow: var(--ledgr-shadow-sm);
 }
 
 /* Looks like a link, behaves like a button. For "cancel", "back", "skip". */
@@ -256,6 +270,11 @@
   font-weight: var(--ledgr-weight-semibold);
   line-height: var(--ledgr-leading-tight);
   text-decoration: none;
+
+  transition:
+    background-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    border-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    box-shadow var(--ledgr-duration-fast) var(--ledgr-ease-out);
 }
 
 .button-link:hover {
@@ -273,6 +292,7 @@
   background-color: var(--ledgr-accent-hover);
   border-color: var(--ledgr-accent-hover);
   color: var(--ledgr-text-on-accent);
+  box-shadow: var(--ledgr-shadow-sm);
 }
 
 .button-link--quiet {

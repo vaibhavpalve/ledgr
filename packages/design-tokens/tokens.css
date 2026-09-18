@@ -89,79 +89,79 @@
   color-scheme: light;
 
   /* ---- Surfaces, back to front ---------------------------------------- */
-  --ledgr-surface-ground: #f5f0e9;
-  --ledgr-surface-paper: #fbf8f4;
-  --ledgr-surface-raised: #efeae2;
-  --ledgr-surface-sunken: #e3ded5;
-  --ledgr-surface-input: #fffefb;
+  --ledgr-surface-ground: #fafafa;
+  --ledgr-surface-paper: #ffffff;
+  --ledgr-surface-raised: #f4f4f5;
+  --ledgr-surface-sunken: #e4e4e7;
+  --ledgr-surface-input: #ffffff;
   /*
-   * The backdrop behind a dialog or a drawer. Warm ink at 48% rather than a
-   * cool black, so the page behind reads as dimmed paper, not as a grey film
-   * (the design canvas's ClientSwitch scrim).
+   * The backdrop behind a dialog or a drawer. Ink at 48%, so the page behind
+   * reads as dimmed paper rather than a flat grey film.
    */
-  --ledgr-surface-scrim: rgba(38, 34, 28, 0.48);
+  --ledgr-surface-scrim: rgba(24, 24, 27, 0.48);
 
   /* ---- Lines ----------------------------------------------------------- */
   /*
    * `border-subtle` draws dividers and table rules — decoration, no contrast
    * floor. `border-strong` draws the boundary of a CONTROL and therefore
-   * clears 3:1 against its background (WCAG SC 1.4.11); it is darker than the
-   * design canvas's hairline because contrast.test.ts measured that hairline
-   * at about 1.6:1. Use subtle for lines, strong for edges you can click.
+   * clears 3:1 against its background (WCAG SC 1.4.11). Use subtle for
+   * lines, strong for edges you can click.
    */
-  --ledgr-border-subtle: #dcd9d3;
-  --ledgr-border-strong: #8f8878;
-  --ledgr-border-focus: #00686c;
+  --ledgr-border-subtle: #e4e4e7;
+  --ledgr-border-strong: #8b8b93;
+  --ledgr-border-focus: #0f766e;
 
   /* ---- Text ------------------------------------------------------------ */
-  --ledgr-text-primary: #26221c;
-  --ledgr-text-secondary: #5f5a52;
-  --ledgr-text-muted: #6e685f;
+  --ledgr-text-primary: #18181b;
+  --ledgr-text-secondary: #3f3f46;
+  --ledgr-text-muted: #6b6b74;
   --ledgr-text-on-accent: #ffffff;
   --ledgr-text-on-marker: #ffffff;
 
   /* ---- Status ---------------------------------------------------------- */
-  --ledgr-accent: #00686c;
-  --ledgr-accent-hover: #004f52;
-  --ledgr-accent-wash: #d8f4f6;
-  --ledgr-positive: #396741;
-  --ledgr-positive-wash: #e0efe2;
-  --ledgr-caution: #755421;
-  --ledgr-caution-wash: #faebd8;
-  --ledgr-attention: #814a39;
-  --ledgr-attention-wash: #fee8e1;
+  --ledgr-accent: #0f766e;
+  --ledgr-accent-hover: #0c5a54;
+  --ledgr-accent-wash: #ccfbf1;
+  --ledgr-positive: #15803d;
+  --ledgr-positive-wash: #dcfce7;
+  --ledgr-caution: #a3540c;
+  --ledgr-caution-wash: #fef3c7;
+  --ledgr-attention: #b91c1c;
+  --ledgr-attention-wash: #fee2e2;
 
   /* ---- Elevation ------------------------------------------------------- */
-  --ledgr-shadow-sm: 0 1px 2px rgba(38, 34, 28, 0.06);
-  --ledgr-shadow-md: 0 2px 4px rgba(38, 34, 28, 0.06), 0 8px 20px -10px rgba(38, 34, 28, 0.18);
-  --ledgr-shadow-lg: 0 4px 8px rgba(38, 34, 28, 0.08), 0 24px 48px -20px rgba(38, 34, 28, 0.32);
+  --ledgr-shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --ledgr-shadow-md: 0 2px 4px rgba(24, 24, 27, 0.05), 0 8px 20px -10px rgba(24, 24, 27, 0.16);
+  --ledgr-shadow-lg: 0 4px 8px rgba(24, 24, 27, 0.06), 0 24px 48px -20px rgba(24, 24, 27, 0.28);
 
   /*
    * ---- Client markers — THEME-INDEPENDENT -----------------------------
    *
    * Declared once, outside every theme block, and never redefined below. A
    * client's colour is that client's identity (FR-FRM-000a); one that looked
-   * different at night would defeat the signal it exists to carry.
+   * different at night would defeat the signal it exists to carry. These ten
+   * NAMES are stored as data (migration 0018) and cannot be renamed; only the
+   * hex each one maps to changed under ADR-065.
    */
-  --ledgr-client-indigo: #59739b;
-  --ledgr-client-amber: #8e6944;
-  --ledgr-client-teal: #477f68;
-  --ledgr-client-rose: #936071;
-  --ledgr-client-lime: #7c7241;
-  --ledgr-client-violet: #736a97;
-  --ledgr-client-cyan: #407a91;
-  --ledgr-client-orange: #966258;
-  --ledgr-client-emerald: #617b50;
-  --ledgr-client-fuchsia: #876388;
+  --ledgr-client-indigo: #6f68c1;
+  --ledgr-client-amber: #857136;
+  --ledgr-client-teal: #347f60;
+  --ledgr-client-rose: #b85263;
+  --ledgr-client-lime: #4d7e34;
+  --ledgr-client-violet: #9956ba;
+  --ledgr-client-cyan: #3e7997;
+  --ledgr-client-orange: #a36342;
+  --ledgr-client-emerald: #34814e;
+  --ledgr-client-fuchsia: #b54b92;
 
   /* ---- Type ------------------------------------------------------------ */
   --ledgr-type-micro: 0.75rem;
   --ledgr-type-caption: 0.8125rem;
-  --ledgr-type-small: 0.9375rem;
-  --ledgr-type-body: 1.0625rem;
+  --ledgr-type-small: 0.875rem;
+  --ledgr-type-body: 1rem;
   --ledgr-type-section: 1.25rem;
-  --ledgr-type-page: clamp(1.5rem, 1.3rem + 1vw, 1.625rem);
-  --ledgr-type-display: clamp(1.75rem, 1.35rem + 2vw, 2.0625rem);
+  --ledgr-type-page: clamp(1.75rem, 1.5rem + 1vw, 2rem);
+  --ledgr-type-display: clamp(2rem, 1.5rem + 2.5vw, 2.75rem);
 
   --ledgr-leading-tight: 1.2;
   --ledgr-leading-snug: 1.35;
@@ -182,13 +182,13 @@
   --ledgr-space-3: 0.75rem;
   --ledgr-space-4: 1rem;
   --ledgr-space-5: 1.5rem;
-  --ledgr-space-6: 2rem;
-  --ledgr-space-7: 3rem;
+  --ledgr-space-6: 2.5rem;
+  --ledgr-space-7: 4rem;
 
   /* ---- Radii, by role --------------------------------------------------- */
   --ledgr-radius-chip: 6px;
-  --ledgr-radius-control: 10px;
-  --ledgr-radius-panel: 14px;
+  --ledgr-radius-control: 8px;
+  --ledgr-radius-panel: 12px;
   --ledgr-radius-pill: 999px;
 
   /* ---- Motion ---------------------------------------------------------- */
@@ -256,32 +256,32 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --ledgr-surface-ground: #15120e;
-    --ledgr-surface-paper: #201c17;
-    --ledgr-surface-raised: #2a251f;
-    --ledgr-surface-sunken: #100d0a;
-    --ledgr-surface-input: #1a1712;
+    --ledgr-surface-ground: #09090b;
+    --ledgr-surface-paper: #18181b;
+    --ledgr-surface-raised: #27272a;
+    --ledgr-surface-sunken: #050506;
+    --ledgr-surface-input: #1c1c1f;
     --ledgr-surface-scrim: rgba(0, 0, 0, 0.6);
 
-    --ledgr-border-subtle: #3d372f;
-    --ledgr-border-strong: #756d5f;
-    --ledgr-border-focus: #4fbcc0;
+    --ledgr-border-subtle: #2c2c30;
+    --ledgr-border-strong: #6f6f78;
+    --ledgr-border-focus: #2dd4bf;
 
-    --ledgr-text-primary: #f2ece3;
-    --ledgr-text-secondary: #c3bbae;
-    --ledgr-text-muted: #9a9285;
-    --ledgr-text-on-accent: #0a1f20;
+    --ledgr-text-primary: #fafafa;
+    --ledgr-text-secondary: #c7c7cc;
+    --ledgr-text-muted: #9a9aa2;
+    --ledgr-text-on-accent: #052e2b;
     --ledgr-text-on-marker: #ffffff;
 
-    --ledgr-accent: #4fbcc0;
-    --ledgr-accent-hover: #7fd4d7;
-    --ledgr-accent-wash: #10312f;
-    --ledgr-positive: #9cc6a1;
-    --ledgr-positive-wash: #1b2e1d;
-    --ledgr-caution: #d9b47c;
-    --ledgr-caution-wash: #33270f;
-    --ledgr-attention: #e0a18c;
-    --ledgr-attention-wash: #3a241c;
+    --ledgr-accent: #2dd4bf;
+    --ledgr-accent-hover: #5eead4;
+    --ledgr-accent-wash: #0f2e2c;
+    --ledgr-positive: #4ade80;
+    --ledgr-positive-wash: #14251a;
+    --ledgr-caution: #fbbf24;
+    --ledgr-caution-wash: #2c2108;
+    --ledgr-attention: #f87171;
+    --ledgr-attention-wash: #331717;
 
     --ledgr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --ledgr-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px -10px rgba(0, 0, 0, 0.6);
@@ -297,32 +297,32 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --ledgr-surface-ground: #15120e;
-  --ledgr-surface-paper: #201c17;
-  --ledgr-surface-raised: #2a251f;
-  --ledgr-surface-sunken: #100d0a;
-  --ledgr-surface-input: #1a1712;
+  --ledgr-surface-ground: #09090b;
+  --ledgr-surface-paper: #18181b;
+  --ledgr-surface-raised: #27272a;
+  --ledgr-surface-sunken: #050506;
+  --ledgr-surface-input: #1c1c1f;
   --ledgr-surface-scrim: rgba(0, 0, 0, 0.6);
 
-  --ledgr-border-subtle: #3d372f;
-  --ledgr-border-strong: #756d5f;
-  --ledgr-border-focus: #4fbcc0;
+  --ledgr-border-subtle: #2c2c30;
+  --ledgr-border-strong: #6f6f78;
+  --ledgr-border-focus: #2dd4bf;
 
-  --ledgr-text-primary: #f2ece3;
-  --ledgr-text-secondary: #c3bbae;
-  --ledgr-text-muted: #9a9285;
-  --ledgr-text-on-accent: #0a1f20;
+  --ledgr-text-primary: #fafafa;
+  --ledgr-text-secondary: #c7c7cc;
+  --ledgr-text-muted: #9a9aa2;
+  --ledgr-text-on-accent: #052e2b;
   --ledgr-text-on-marker: #ffffff;
 
-  --ledgr-accent: #4fbcc0;
-  --ledgr-accent-hover: #7fd4d7;
-  --ledgr-accent-wash: #10312f;
-  --ledgr-positive: #9cc6a1;
-  --ledgr-positive-wash: #1b2e1d;
-  --ledgr-caution: #d9b47c;
-  --ledgr-caution-wash: #33270f;
-  --ledgr-attention: #e0a18c;
-  --ledgr-attention-wash: #3a241c;
+  --ledgr-accent: #2dd4bf;
+  --ledgr-accent-hover: #5eead4;
+  --ledgr-accent-wash: #0f2e2c;
+  --ledgr-positive: #4ade80;
+  --ledgr-positive-wash: #14251a;
+  --ledgr-caution: #fbbf24;
+  --ledgr-caution-wash: #2c2108;
+  --ledgr-attention: #f87171;
+  --ledgr-attention-wash: #331717;
 
   --ledgr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ledgr-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px -10px rgba(0, 0, 0, 0.6);

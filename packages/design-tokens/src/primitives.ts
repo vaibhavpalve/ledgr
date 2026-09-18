@@ -7,148 +7,143 @@
  * a primitive answers "what colour is this", a semantic token answers "what is
  * this colour FOR", and only the second one survives a theme switch.
  *
- * --- One hue through the entire neutral ramp ---
+ * --- ADR-065: a cool graphite ramp, not the warm hue-80 ramp ADR-055 shipped ---
  *
- * Every neutral below sits on OKLCH hue 80 — warm, all the way down, from
- * `INK` to `PAPER`. This is deliberate and it is the product's signature: the
- * common failure in finance UIs is a cool-leaning grey (blue ink) over a warm
- * ground, and that hue flip is exactly what makes mid-greys read as dirty.
- * Holding one hue costs nothing and is visible on every screen.
+ * The neutral ramp is now a near-zero-chroma cool grey (the "graphite" family
+ * most current SaaS dashboards use — Linear, Vercel, Stripe's own console),
+ * replacing ADR-055's warm OKLCH-80 ramp. This is a deliberate visual reset,
+ * not a correction: ADR-055's warm ramp was itself a considered choice. Every
+ * value below is still picked the same way ADR-055's were — against
+ * `contrast.test.ts`, not by eye — so the discipline carries over even though
+ * the palette does not.
  *
- * The dark ramp is the SAME hue at inverted lightness, which is why it was
- * cheap to add: it is not a second palette, it is the same ramp read from the
- * other end.
+ * --- Status colours: one lightness band per theme, hue is what differs ---
  *
- * --- Semantics: one lightness, one chroma, hue is the only variable ---
+ * As before, the four status colours (accent/positive/caution/attention) are
+ * chosen so each clears AA body-text contrast (4.5:1) against all three
+ * grounds in its own theme — not just the most common one. The light values
+ * sit in the L 0.30–0.45 relative-luminance band; the dark values are lifted
+ * into the L 0.55–0.75 band, because a mid-lightness hue that reads clearly on
+ * white disappears against a near-black ground.
  *
- * The four status colours sit at L 0.47 / C 0.08 in the light theme and differ
- * only in hue: accent 200, positive 148, caution 75, attention 38. C 0.08 is
- * the highest chroma all four hues can hold inside sRGB — above it two of them
- * clip and the set stops being uniform, so one status would read as louder
- * than another for a reason that carries no meaning.
+ * --- Client colours: a fixed luminance band that works on BOTH themes' paper ---
  *
- * --- Client colours do not change with the theme ---
+ * `CLIENT`'s ten keys and their ORDER are the `client_colour.position` order
+ * from migration 0018 (see `apps/api/migrations/0018_client_switcher.sql`) —
+ * the API stores and returns the NAME ("amber"), never a hex value, so the
+ * ten keys themselves cannot be renamed or reordered without a migration.
+ * Only the hex each name maps to changes here.
  *
- * `CLIENT` is one set, used in both themes, and that is a correctness decision
- * rather than an oversight: a client's marker colour is that client's
- * identity (FR-FRM-000a), and an identity that looked different at night
- * would defeat the signal it exists to carry. The ten sit at L 0.55 / C 0.07 —
- * deliberately quieter than the semantics above, so a client marker never
- * shouts louder than a status, and mid-toned enough to hold white initials on
- * either ground.
+ * A marker has to clear 3:1 against white AND against near-black at once,
+ * which is a narrow relative-luminance band (roughly 0.14–0.20) regardless of
+ * hue — bright hues like yellow-green reach that luminance at a much lower
+ * HSL lightness than blue-violet does, so each of the ten was solved for its
+ * own hue rather than sharing one lightness value.
  */
 
-/** Warm neutral ramp, OKLCH hue 80. Light theme reads this top-down. */
+/** Cool graphite neutral ramp. Light theme reads this top-down. */
 export const NEUTRAL_LIGHT = {
-  ink: "#26221C",
-  inkSecondary: "#5F5A52",
-  inkMuted: "#6E685F",
+  ink: "#18181B",
+  inkSecondary: "#3F3F46",
+  inkMuted: "#6B6B74",
   /*
-   * Darker than the design canvas's #C1BDB7, and the change was forced by
-   * `contrast.test.ts` rather than chosen: this is the border of an INPUT, and
-   * WCAG SC 1.4.11 wants the visual boundary of a control to clear 3:1 against
-   * its background. #C1BDB7 managed about 1.6:1 on paper — a boundary a
-   * low-vision user cannot find. Dividers and table rules are not controls and
-   * keep using `rule` below, so nothing gets heavier except the things you are
-   * meant to be able to click.
+   * The boundary of a CONTROL (an input, a button's outline) — WCAG SC 1.4.11
+   * wants 3:1 here. `rule` below is for dividers and table rules, which are
+   * not controls and can stay closer to the ground.
    */
-  ruleStrong: "#8F8878",
-  rule: "#DCD9D3",
-  sunken: "#E3DED5",
-  raised: "#EFEAE2",
-  ground: "#F5F0E9",
-  paper: "#FBF8F4",
-  input: "#FFFEFB",
+  ruleStrong: "#8B8B93",
+  rule: "#E4E4E7",
+  sunken: "#E4E4E7",
+  raised: "#F4F4F5",
+  ground: "#FAFAFA",
+  paper: "#FFFFFF",
+  input: "#FFFFFF",
 } as const;
 
-/** The same hue 80 ramp, inverted. Not a second palette — the same one. */
+/** The dark graphite ramp — not an inversion of the light one; see status
+ * colours below for why that shortcut does not survive contact with
+ * `contrast.test.ts`. */
 export const NEUTRAL_DARK = {
-  ink: "#F2ECE3",
-  inkSecondary: "#C3BBAE",
-  inkMuted: "#9A9285",
-  /* Same SC 1.4.11 reasoning as the light ramp's `ruleStrong`, measured
-     against the dark paper rather than the light one. */
-  ruleStrong: "#756D5F",
-  rule: "#3D372F",
-  sunken: "#100D0A",
-  raised: "#2A251F",
-  ground: "#15120E",
-  paper: "#201C17",
-  input: "#1A1712",
+  ink: "#FAFAFA",
+  inkSecondary: "#C7C7CC",
+  inkMuted: "#9A9AA2",
+  ruleStrong: "#6F6F78",
+  rule: "#2C2C30",
+  sunken: "#050506",
+  raised: "#27272A",
+  ground: "#09090B",
+  paper: "#18181B",
+  input: "#1C1C1F",
 } as const;
 
 /**
- * Status colours, light theme. L 0.47 / C 0.08 — see this file's header for
- * why the chroma is pinned there rather than pushed higher.
+ * Status colours, light theme. A deep teal accent — not the indigo/violet
+ * that reads as the generic "AI product" gradient hue — paired with a true
+ * green for `positive` so the two are never mistaken for each other even
+ * though both sit on the cool side of the wheel.
  *
  * Each has a `wash`: the same hue at very high lightness, for the background
  * of a row or chip carrying that state. A wash is never a text colour and the
  * solid is never a large background — they are not interchangeable.
  */
 export const STATUS_LIGHT = {
-  accent: "#00686C",
-  accentHover: "#004F52",
-  accentWash: "#D8F4F6",
-  positive: "#396741",
-  positiveWash: "#E0EFE2",
-  caution: "#755421",
-  cautionWash: "#FAEBD8",
-  attention: "#814A39",
-  attentionWash: "#FEE8E1",
+  accent: "#0F766E",
+  accentHover: "#0C5A54",
+  accentWash: "#CCFBF1",
+  positive: "#15803D",
+  positiveWash: "#DCFCE7",
+  caution: "#A3540C",
+  cautionWash: "#FEF3C7",
+  attention: "#B91C1C",
+  attentionWash: "#FEE2E2",
 } as const;
 
 /**
- * Status colours, dark theme.
- *
- * These are NOT the light values inverted. On a dark ground a mid-lightness
- * hue loses contrast against the surface while gaining it against nothing
- * useful, so each solid is lifted to roughly L 0.78 and each wash dropped to
- * roughly L 0.22. `contrast.test.ts` asserts the result rather than trusting
- * this comment.
+ * Status colours, dark theme — lifted into a much higher lightness band than
+ * the light values, the same way ADR-055's did: a colour that clears 4.5:1 on
+ * white loses most of that margin against a near-black ground.
+ * `contrast.test.ts` asserts the result rather than trusting this comment.
  */
 export const STATUS_DARK = {
-  accent: "#4FBCC0",
-  accentHover: "#7FD4D7",
-  accentWash: "#10312F",
-  positive: "#9CC6A1",
-  positiveWash: "#1B2E1D",
-  caution: "#D9B47C",
-  cautionWash: "#33270F",
-  attention: "#E0A18C",
-  attentionWash: "#3A241C",
+  accent: "#2DD4BF",
+  accentHover: "#5EEAD4",
+  accentWash: "#0F2E2C",
+  positive: "#4ADE80",
+  positiveWash: "#14251A",
+  caution: "#FBBF24",
+  cautionWash: "#2C2108",
+  attention: "#F87171",
+  attentionWash: "#331717",
 } as const;
 
 /**
- * The ten client marker colours, in `CLIENT_COLOURS` order (shared-types),
- * which is `client_colour.position` order from migration 0018 — the tie-break
- * the allocation trigger uses, so this array's ORDER is load-bearing and
- * `tokens.test.ts` asserts it against the shared type.
+ * The ten client marker colours, in `CLIENT_COLOURS` order (shared-types) —
+ * see this file's header. Solved per-hue for a relative luminance around
+ * 0.17, which is what lets the same ten values clear 3:1 against both a white
+ * and a near-black paper.
  *
- * Ten hues over a 300-degree arc with a 30-degree dead zone either side of the
- * accent, so no client is ever mistaken for the interface's own colour.
- *
- * Ten is more than colour can actually carry: under deuteranopia these
- * collapse to about five, and amber/lime become literally identical. That is
- * why `ClientHeader` renders initials and name alongside the marker and never
- * the marker alone — colour does recognition here, never identification.
+ * Ten is more than colour can actually carry: under deuteranopia several of
+ * these collapse toward each other, which is why `ClientHeader` renders
+ * initials and name alongside the marker and never the marker alone — colour
+ * does recognition here, never identification.
  */
 export const CLIENT = {
-  indigo: "#59739B",
-  amber: "#8E6944",
-  teal: "#477F68",
-  rose: "#936071",
-  lime: "#7C7241",
-  violet: "#736A97",
-  cyan: "#407A91",
-  orange: "#966258",
-  emerald: "#617B50",
-  fuchsia: "#876388",
+  indigo: "#6F68C1",
+  amber: "#857136",
+  teal: "#347F60",
+  rose: "#B85263",
+  lime: "#4D7E34",
+  violet: "#9956BA",
+  cyan: "#3E7997",
+  orange: "#A36342",
+  emerald: "#34814E",
+  fuchsia: "#B54B92",
 } as const;
 
 /**
  * Initials on a client marker. Pure white in both themes, because the markers
- * themselves are theme-independent: the off-white `PAPER` tone only reaches
- * 4.42:1 on the darkest client colour, where white clears 4.5:1 on all ten.
+ * themselves are theme-independent, and every one of the ten above was solved
+ * to keep white legible on it (`contrast.test.ts`).
  */
 export const ON_CLIENT_MARKER = "#FFFFFF";
 
@@ -156,8 +151,8 @@ export const ON_CLIENT_MARKER = "#FFFFFF";
 export const ON_ACCENT_LIGHT = "#FFFFFF";
 
 /**
- * Dark theme's accent is light, so text on it must be dark. Near-black rather
- * than the ramp's `ground`, because this sits on a saturated teal and picks up
- * a green cast from a neutral that low in chroma.
+ * Dark theme's accent is a light teal, so text on it must be dark. A teal-
+ * tinted near-black rather than the ramp's plain `ground`, so it reads as
+ * ink sitting on that specific surface rather than a neutral cutout.
  */
-export const ON_ACCENT_DARK = "#0A1F20";
+export const ON_ACCENT_DARK = "#052E2B";
