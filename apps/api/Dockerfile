@@ -31,4 +31,10 @@ EXPOSE 8000
 # Railway injects $PORT and routes to it; defaulting to 8000 keeps this
 # image runnable identically outside Railway (`docker run -p 8000:8000 ...`
 # with no PORT set at all).
-CMD ["sh", "-c", "uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+#
+# GOOGLE_APPLICATION_CREDENTIALS (read by GcpKmsKeyManagementService's ADC
+# lookup, api/crypto/kms.py) has to be a file path - Railway variables are
+# strings, not files, so GCP_SERVICE_ACCOUNT_JSON carries the key's JSON
+# content instead and gets written out here before the app starts. Optional:
+# unset in kms_provider=local/azure-key-vault deployments.
+CMD ["sh", "-c", "if [ -n \"$GCP_SERVICE_ACCOUNT_JSON\" ]; then printf '%s' \"$GCP_SERVICE_ACCOUNT_JSON\" > /tmp/gcp-service-account.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-service-account.json; fi; uv run uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
