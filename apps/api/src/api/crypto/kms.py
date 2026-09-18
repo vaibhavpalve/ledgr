@@ -195,20 +195,55 @@ class GcpKmsKeyManagementService:
 
     _ALGORITHM = "RSA-OAEP-256"
 
-    def __init__(self, *, key_resource_name: str) -> None:
+    def __init__(
+        self,
+        *,
+        key_resource_name: str,
+        client: kms_v1.KeyManagementServiceAsyncClient | None = None,
+    ) -> None:
         # The CRYPTO KEY's resource name, with no version segment - e.g.
         # "projects/<p>/locations/europe-west4/keyRings/ledgr/cryptoKeys/
-        # tenant-dek-kek". current_kek_id() resolves this to its current
-        # PRIMARY VERSION's own (longer) resource name, which is what
-        # actually gets stored as kek_key_id and passed to KMS RPCs.
+        # tenant-dek-kek". current_kek_id() resolves this to a specific
+        # VERSION's own (longer) resource name, which is what actually gets
+        # stored as kek_key_id and passed to KMS RPCs.
         self._key_resource_name = key_resource_name
-        self._client = kms_v1.KeyManagementServiceAsyncClient()
+        # Injectable the same way api.tenancy.TenantContextMiddleware takes a
+        # session_validator: production builds the real client, a test hands
+        # in a fake that satisfies the same three methods this class calls
+        # (list_crypto_key_versions, get_public_key, asymmetric_decrypt)
+        # without a network call to Cloud KMS.
+        self._client = client or kms_v1.KeyManagementServiceAsyncClient()
         self._public_keys: dict[str, rsa.RSAPublicKey] = {}
 
     async def current_kek_id(self) -> str:
-        key = await self._client.get_crypto_key(name=self._key_resource_name)
-        assert key.primary is not None and key.primary.name
-        return key.primary.name
+        """The version new wraps use: the most recently created ENABLED
+        version of this crypto key.
+
+        NOT `get_crypto_key(...).primary` - that field only exists for
+        symmetric keys. Cloud KMS has no concept of a "primary version" for
+        an asymmetric key at all (confirmed against a real key: a version can
+        be ENABLED, 2048-bit RSA, correctly configured, and `primary` is
+        still unset), so an asymmetric adapter has to pick the current
+        version itself. "Most recent ENABLED, by creation time" is the
+        version SEC-023's rotation produces: `rotate_annual_keys.py` creates
+        a new version and leaves the old one ENABLED (so it can still decrypt
+        DEKs wrapped under it) rather than disabling it immediately, and the
+        newest one is the one new wraps should use.
+        """
+        enabled_versions = [
+            version
+            async for version in await self._client.list_crypto_key_versions(
+                parent=self._key_resource_name
+            )
+            if version.state == kms_v1.CryptoKeyVersion.CryptoKeyVersionState.ENABLED
+        ]
+        if not enabled_versions:
+            raise RuntimeError(
+                f"no ENABLED key version under {self._key_resource_name!r} - "
+                "the key needs at least one version before it can wrap or "
+                "unwrap anything"
+            )
+        return max(enabled_versions, key=lambda version: version.create_time).name
 
     async def _public_key_for(self, kek_key_id: str) -> rsa.RSAPublicKey:
         if kek_key_id not in self._public_keys:
