@@ -12,11 +12,12 @@ This script does neither: it refuses to run at all against a database that
 already has an `app` schema, rather than assuming it is safe to reset, and
 it never grants ledgr_ops to anything.
 
-There is no tracked, incremental migration runner yet - this script is
-first-time bootstrap only. Applying a NEW migration to an already-live
-production database is separate, not-yet-built tooling; running this
-script a second time against a bootstrapped database is refused rather
-than attempted.
+This script is first-time bootstrap only; running it a second time against
+a bootstrapped database is refused rather than attempted. Applying a NEW
+migration to an already-live database is `scripts/migrate.py`, which reads
+the `app.schema_migrations` ledger this script starts here - every file it
+applies is recorded, so the incremental runner works against a freshly
+bootstrapped database without adopting it first.
 
 Usage:
     DATABASE_ADMIN_URL=postgresql://postgres:<railway-supplied-password>@<host>:<port>/railway \
@@ -34,6 +35,7 @@ import sys
 from pathlib import Path
 
 import asyncpg
+from migrate import TRACKING_TABLE_DDL, checksum
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 
@@ -58,7 +60,8 @@ async def main() -> None:
             )
             sys.exit(1)
 
-        for migration in sorted(MIGRATIONS_DIR.glob("*.sql")):
+        migrations = sorted(MIGRATIONS_DIR.glob("*.sql"))
+        for migration in migrations:
             print(f"applying {migration.name}", file=sys.stderr)
             # utf-8-sig, not utf-8 - see bootstrap_test_db.py's identical
             # comment: a Windows editor's BOM turns into a Postgres syntax
@@ -66,6 +69,18 @@ async def main() -> None:
             # actually at fault.
             sql = migration.read_text(encoding="utf-8-sig")
             await conn.execute(sql)
+
+        # Recorded only once every file above succeeded: a bootstrap that died
+        # halfway should look untracked to scripts/migrate.py, not like a
+        # database that already has all 50.
+        await conn.execute(TRACKING_TABLE_DDL)
+        for migration in migrations:
+            await conn.execute(
+                "insert into app.schema_migrations (filename, checksum) values ($1, $2)",
+                migration.name,
+                checksum(migration),
+            )
+        print(f"recorded {len(migrations)} migration(s) in app.schema_migrations", file=sys.stderr)
 
         for role, password in (
             ("ledgr_app", app_password),
