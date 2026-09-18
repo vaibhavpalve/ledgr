@@ -1,36 +1,25 @@
 """The document archive's HTTP surface - FR-DOC-001..004, SEC-005.
 
-Registered on the app in `api.main`. A separate module rather than more of
-main.py because the download route carries response headers that are security
-controls in their own right, and they need the room to say why.
+Registered on the app in `api.main`.
 
---- SEC-005's last two clauses live here ---
+--- SEC-005's last two clauses ---
 
     SEC-005  ... stored outside the web root, served from a SEPARATE ORIGIN
              with `Content-Disposition: attachment`.
 
-Both are about what a browser does with bytes it did not write:
-
-  * `Content-Disposition: attachment` makes the browser save the file instead
-    of rendering it. A PDF rendered inline runs its own JavaScript in the
-    origin that served it; an HTML file mis-stored as an image renders as a
-    page. `attachment` removes the rendering step entirely.
-  * A separate origin means that even if something renders, it renders
-    somewhere with no session cookie, no same-origin access to the app, and
-    nothing worth stealing. Defence in depth, because the first control is one
-    header away from being forgotten.
-
-The separate origin is a deployment fact, so this module ENFORCES it rather
-than assuming it: `settings.document_origin` has to be configured and has to
-differ from the API's own origin, and the download route refuses to serve
-otherwise. A control that silently degrades to "same origin" in an environment
-somebody set up quickly is not a control.
+ADR-063 deviates from the separate-origin half deliberately: LEDGR serves
+one origin, and `Content-Security-Policy: sandbox` puts a rendered response
+in an opaque origin of its own, which is the property the separate origin
+was there to provide. What that ADR gives up is the second, independent
+layer - so the headers it leans on are not written out here. They live in
+`api.security.stored_files.stored_file_response`, which every route
+returning stored bytes goes through, precisely so a new route cannot be
+added without them.
 """
 
 from __future__ import annotations
 
 import uuid
-from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import Response
@@ -65,6 +54,7 @@ from api.documents.scanning import build_scanner
 from api.documents.service import DocumentService
 from api.documents.storage import EncryptedBlobStore, build_blob_store
 from api.i18n.http import problem
+from api.security.stored_files import stored_file_response
 from api.tenancy import TenantContext, get_tenant_context
 
 #: Process-wide blob store, selected by settings.blob_provider (ADR-062) -
@@ -304,7 +294,7 @@ async def get_document(
         )
     ),
 ) -> dict[str, object]:
-    """Metadata only. The bytes are a separate call, on a separate origin."""
+    """Metadata only. The bytes are a separate call."""
     if tenant.user_id is None:
         raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
     try:
@@ -339,26 +329,12 @@ async def download_document(
 ) -> Response:
     """The original bytes, unaltered - FR-DOC-001, SEC-005.
 
-    Every header below is a control rather than a convenience:
-
-      Content-Disposition: attachment
-          The browser saves rather than renders. A PDF rendered inline runs its
-          own scripts in the origin that served it.
-      X-Content-Type-Options: nosniff
-          Stops a browser second-guessing the type we verified from the bytes
-          and rendering it as something else - which would undo SEC-005's first
-          clause at the last possible moment.
-      Content-Security-Policy: sandbox; default-src 'none'
-          For anything that renders anyway. Nothing loads, nothing executes.
-      Cache-Control: private, no-store
-          A source document is financial evidence under a 7-year retention
-          policy; it does not belong in a shared cache, and `no-store` keeps it
-          off disk on the way through.
+    The response is built by `stored_file_response` rather than here, so the
+    headers SEC-005 turns on cannot be omitted by a route that forgets them -
+    see `api.security.stored_files` and ADR-063.
     """
     if tenant.user_id is None:
         raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
-
-    verify_separate_origin_configured()
 
     try:
         document, data = await service.original(
@@ -383,24 +359,13 @@ async def download_document(
             scan_status=exc.scan_status.value,
         ) from exc
 
-    return Response(
+    return stored_file_response(
         content=data,
-        media_type=document.content_type.value,
-        headers={
-            # The filename is quoted and the fallback is deliberate: a
-            # download must not depend on a client parsing a name that came
-            # from an upload. RFC 6266's `filename*` is not used because the
-            # stored name is untrusted input and this is not the place to
-            # start decoding it.
-            "Content-Disposition": "attachment",
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "sandbox; default-src 'none'",
-            "Cache-Control": "private, no-store",
-            # Not a security control - a convenience for a client verifying it
-            # got what the archive holds, and the same value the metadata
-            # endpoint returns.
-            "X-Content-SHA256": document.content_hash.hex(),
-        },
+        content_type=document.content_type.value,
+        # Not a security control - a convenience for a client verifying it got
+        # what the archive holds, and the same value the metadata endpoint
+        # returns.
+        extra_headers={"X-Content-SHA256": document.content_hash.hex()},
     )
 
 
@@ -442,40 +407,3 @@ async def request_document_erasure(
             request, 404, "errors.document_not_found", reason="document_not_found"
         ) from exc
     return decision.as_dict()
-
-
-def verify_separate_origin_configured() -> None:
-    """SEC-005's "served from a separate origin", enforced rather than assumed.
-
-    Checks the CONFIGURATION rather than the request's own hostname, and that
-    is deliberate. Comparing `request.url.hostname` looks stricter and is
-    weaker: behind a reverse proxy it reflects whatever the proxy passed
-    through, so the check would pass or fail for reasons unrelated to how the
-    deployment is actually set up, and would need a trusted-proxy story before
-    it meant anything (the caveat `api.rate_limit_middleware` already carries
-    about client IPs).
-
-    What can be checked exactly is that somebody made the decision: a document
-    origin exists, and it is not the API's. A deployment that skipped it would
-    otherwise serve documents from the origin holding the session cookie while
-    passing every header-level test, because those tests check the header and
-    not the host.
-    """
-    if not settings.document_origin:
-        raise RuntimeError(
-            "DOCUMENT_ORIGIN is not configured. SEC-005 requires documents to be "
-            "served from a separate origin, and there is deliberately no default: "
-            "serving them from the API's own origin would put untrusted bytes "
-            "where the session cookie is."
-        )
-    if _hostname_of(settings.document_origin) == _hostname_of(settings.api_origin):
-        raise RuntimeError(
-            f"DOCUMENT_ORIGIN ({settings.document_origin}) and API_ORIGIN "
-            f"({settings.api_origin}) resolve to the same host. SEC-005's separate "
-            f"origin is what keeps a rendered document away from the session "
-            f"cookie; one origin serving both is not it."
-        )
-
-
-def _hostname_of(origin: str) -> str:
-    return urlparse(origin).hostname or origin

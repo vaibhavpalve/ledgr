@@ -123,11 +123,10 @@ async def test_keys_are_unguessable_and_tenant_prefixed() -> None:
 
 
 def test_the_store_offers_no_way_to_hand_out_a_url() -> None:
-    """SEC-005's "served from a separate origin with Content-Disposition:
-    attachment" is enforceable only if every read goes through the download
-    endpoint. A store that could produce a URL or a path would invite
-    something to serve it directly, bypassing the scan gate, the audit entry
-    and every response header.
+    """SEC-005's `Content-Disposition: attachment` is enforceable only if every
+    read goes through the download endpoint. A store that could produce a URL
+    or a path would invite something to serve it directly, bypassing the scan
+    gate, the audit entry and every response header.
     """
     operations = {
         name

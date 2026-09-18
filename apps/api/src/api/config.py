@@ -93,14 +93,6 @@ class Settings(BaseSettings):
     webauthn_origin: str = "http://localhost:5173"
 
     # --- Document archive (FR-DOC, SEC-005) ---
-    # SEC-005: "served from a separate origin". Two origins, and they must
-    # differ - api.documents.routes.verify_separate_origin_configured refuses
-    # to serve otherwise. The defaults differ so `make dev-up` works; a
-    # deployment that points both at one host is refused rather than silently
-    # serving untrusted bytes from where the session cookie lives.
-    api_origin: str = "http://localhost:8000"
-    document_origin: str = "http://localhost:8001"
-
     # SEC-005: "malware-scanned". "local" is dev/test only - it detects the
     # EICAR test file and nothing else. Production must wire a real scanner;
     # see api.documents.scanning.build_scanner, which deliberately offers no

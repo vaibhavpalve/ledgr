@@ -11,8 +11,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Dev-only wiring to apps/api (api.config.Settings.api_origin's default,
-    // :8000). Proxied rather than CORS'd deliberately: WEBAUTHN_ORIGIN
+    // Dev-only wiring to apps/api on :8000. Proxied rather than CORS'd
+    // deliberately, and it is what production does too now that the API
+    // serves the built SPA itself (ADR-063): WEBAUTHN_ORIGIN
     // defaults to http://localhost:5173 (see apps/api/src/api/config.py) -
     // the browser must see every request as same-origin with the page that
     // ran navigator.credentials.create()/get(), which a proxy gives for

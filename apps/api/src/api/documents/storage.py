@@ -13,9 +13,11 @@ strong is to make it structural - so this module's Protocol has no operation
 that returns a filesystem path or a URL the application would serve directly.
 A caller can put bytes in and get bytes out, and that is all.
 
-The other half of SEC-005 - the separate origin and the attachment disposition
-- belongs to the download endpoint, which is the only thing that turns stored
-bytes into a response. See `api.main.download_document`.
+The other half of SEC-005 - what a browser is told to do with the bytes -
+belongs to whatever turns stored bytes into a response, which is
+`api.security.stored_files.stored_file_response` for every such route. ADR-063
+records why the attachment disposition and a CSP sandbox carry that on their
+own, with no separate origin behind them.
 
 --- Encrypted under the administration's own key ---
 
@@ -87,8 +89,10 @@ class BlobStore(Protocol):
 
     Deliberately has no `list`, no `url_for` and no `path_for`. A store that
     could hand out a URL would invite something to serve it directly, and
-    SEC-005's separate origin and attachment disposition would then depend on
-    every caller remembering to route through the download endpoint.
+    SEC-005's response headers would then depend on every caller remembering
+    to route through the download endpoint. That matters more since ADR-063,
+    not less: those headers are now the only control on what a browser does
+    with these bytes.
     """
 
     async def put(self, key: str, data: bytes) -> None: ...

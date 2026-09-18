@@ -12,9 +12,9 @@ An extension is a claim made by whoever uploaded the file, and the attack it
 enables is not subtle: `invoice.pdf` holding HTML renders as a page if anything
 ever serves it inline, and `receipt.jpg` holding an ELF binary is a payload
 waiting for something downstream to execute it. The defences SEC-005 lists work
-together - a separate origin and `Content-Disposition: attachment` mean a
-mis-typed file is downloaded rather than rendered - but the cheapest place to
-stop it is to decide the type from the bytes and store THAT.
+together - `Content-Disposition: attachment` under a CSP sandbox means a
+mis-typed file is downloaded rather than rendered (ADR-063) - but the cheapest
+place to stop it is to decide the type from the bytes and store THAT.
 
 So `sniff()` returns what the leading bytes say, and the caller records its
 answer. `api.documents.service` never passes a filename into this decision, and

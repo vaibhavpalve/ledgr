@@ -48,11 +48,11 @@ from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
 from api.config import settings
 from api.db import get_db_session
-from api.documents.routes import verify_separate_origin_configured
 from api.documents.scanning import build_scanner
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language, parse_language
 from api.invoicing.rendering import build_invoice_renderer
+from api.security.stored_files import stored_file_response
 from api.templates.asset_content_type import TemplateAssetContentTypeError
 from api.templates.assets import (
     MAX_UPLOAD_BYTES,
@@ -1011,12 +1011,9 @@ async def download_template_asset(
         )
     ),
 ) -> Response:
-    """The stored logo bytes - SEC-005's last two clauses, mirroring
-    `api.documents.routes.download_document` exactly: `Content-Disposition:
-    attachment` so a browser saves rather than renders, and the same
-    configured-separate-origin enforcement (see
-    `api.documents.routes.verify_separate_origin_configured`) rather than a
-    second, independently-drifting copy of that check.
+    """The stored logo bytes - SEC-005, through the same
+    `stored_file_response` every other route returning uploaded bytes uses,
+    rather than a second, independently-drifting copy of those headers.
 
     `TemplateDesigner.tsx` never points an `<img src>` at this URL directly -
     it calls this via `fetch()` and builds an object URL from the Blob, which
@@ -1024,7 +1021,6 @@ async def download_template_asset(
     rendering of the logo in the designer (see that component's docstring).
     """
     user_id = _require_authenticated(request, tenant)
-    verify_separate_origin_configured()
 
     try:
         asset, data = await service.download(
@@ -1038,13 +1034,4 @@ async def download_template_asset(
             reason="template_asset_not_found",
         ) from exc
 
-    return Response(
-        content=data,
-        media_type=asset.content_type.value,
-        headers={
-            "Content-Disposition": "attachment",
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "sandbox; default-src 'none'",
-            "Cache-Control": "private, no-store",
-        },
-    )
+    return stored_file_response(content=data, content_type=asset.content_type.value)
