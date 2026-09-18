@@ -115,6 +115,8 @@ export interface CreateInvoiceBody {
 export interface SendInvoiceBody {
   channel?: string | null;
   to?: string | null;
+  /** SI-01. A free-text note added to the covering e-mail, for this send only. */
+  message?: string | null;
 }
 
 export class SalesInvoiceApi {

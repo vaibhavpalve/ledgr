@@ -167,6 +167,11 @@
       "nl": "BTW",
       "en": "BTW"
     },
+    "mobile.invoice.custom_message": {
+      "note": "SI-01. Label for the optional free-text note added to the covering e-mail on send - shared between SendInvoiceForm and InvoiceDetailScreen, which is why it lives in the mobile.invoice namespace both already use for shared invoicing labels.",
+      "nl": "Persoonlijk bericht (optioneel)",
+      "en": "Personal note (optional)"
+    },
     "mobile.invoice.add_line": {
       "nl": "Regel toevoegen",
       "en": "Add line"

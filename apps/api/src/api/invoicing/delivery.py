@@ -209,6 +209,14 @@ class DeliveryRequest:
     #: know what kind of string this is.
     address: str
     artifacts: Mapping[ArtifactKind, DeliveryArtifact] = field(default_factory=dict)
+    #: SI-01: a free-text note from whoever pressed send, for THIS dispatch
+    #: only - never persisted, never reused on a resend. Generic on the
+    #: request rather than an EmailInvoiceChannel-only parameter, the same
+    #: reasoning `Recipient` carries every address a customer might have: a
+    #: channel that has no use for it (Peppol's structured e-invoice has
+    #: nowhere to put free text) simply ignores the field, and the service
+    #: stays free of `if channel is EMAIL`.
+    custom_message: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -391,7 +399,7 @@ class EmailInvoiceChannel:
         message = EmailMessage(
             to=request.address,
             subject=_subject(request.invoice, language),
-            body=_body(request.invoice, language),
+            body=_body(request.invoice, language, custom_message=request.custom_message),
             from_address=self._from_address,
             # The SUPPLIER's name, not LEDGR's: the customer is receiving an
             # invoice from their supplier, and a sender line naming the
@@ -438,7 +446,9 @@ def _subject(invoice: DeliverableInvoice, language: Language) -> str:
     return translate(key, language, reference=invoice.reference, supplier=invoice.supplier_name)
 
 
-def _body(invoice: DeliverableInvoice, language: Language) -> str:
+def _body(
+    invoice: DeliverableInvoice, language: Language, *, custom_message: str | None = None
+) -> str:
     """The covering message. Short, plain text, and in the recipient's language.
 
     Amounts and dates are formatted with the product's default locale rather
@@ -447,6 +457,14 @@ def _body(invoice: DeliverableInvoice, language: Language) -> str:
     `format_money`'s only locale is `nl-NL` today anyway (FR-LOC-005 is where a
     second one arrives). Recorded in ADR-040 so it is corrected with the rest
     rather than discovered.
+
+    `custom_message` (SI-01) is inserted as its OWN labelled paragraph, never
+    blended into the fixed sentences above or below it: the amount, due date
+    and "questions go to the supplier" lines are the facts a recipient needs
+    regardless of what the sender typed, and a label ("A note from <supplier>")
+    keeps the sender's own words visibly separate from LEDGR's fixed wording -
+    the recipient should never wonder which parts of this e-mail the business
+    actually wrote.
     """
     lines = [
         translate("invoice.email.greeting", language),
@@ -468,6 +486,18 @@ def _body(invoice: DeliverableInvoice, language: Language) -> str:
                 due_date=format_date(invoice.due_date),
                 amount=format_money(invoice.gross),
             )
+        )
+
+    stripped = custom_message.strip() if custom_message else ""
+    if stripped:
+        lines.extend(
+            [
+                "",
+                translate(
+                    "invoice.email.custom_message_label", language, supplier=invoice.supplier_name
+                ),
+                stripped,
+            ]
         )
 
     lines.extend(

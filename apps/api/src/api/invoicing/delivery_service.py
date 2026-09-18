@@ -220,6 +220,7 @@ class InvoiceDeliveryService:
         channel: DeliveryChannel | None = None,
         recipient_override: str | None = None,
         correlation_id: str | None = None,
+        custom_message: str | None = None,
     ) -> DeliveryRecord:
         """Send one invoice over one channel, and record what happened.
 
@@ -233,6 +234,10 @@ class InvoiceDeliveryService:
         who has no master record to hold an address, and "send this copy to
         their bookkeeper" - and it is recorded on the dispatch, so where a
         document actually went is never inferred.
+
+        `custom_message` (SI-01) is not persisted anywhere - it exists only
+        for the one adapter call below - so a resend never silently reuses
+        whatever somebody typed last time.
 
         Returns the record whatever happened. A provider outage leaves it
         `queued` with a retry time; it does not raise (NFR-026).
@@ -299,6 +304,7 @@ class InvoiceDeliveryService:
                 recipient=recipient,
                 address=address,
                 artifacts=artifacts,
+                custom_message=custom_message,
             )
         )
 
@@ -344,6 +350,12 @@ class InvoiceDeliveryService:
                 "document_id": (str(settled.document_id) if settled.document_id else None),
                 # Operator-facing; never rendered to a user (FR-UX-007).
                 "detail": outcome.detail,
+                # SI-01: whether a sender's own note went out with this
+                # dispatch. The CONTENT is never audited - it is not
+                # persisted anywhere at all (see dispatch's own docstring) -
+                # only the fact that one was included.
+                "custom_message_included": custom_message is not None
+                and custom_message.strip() != "",
             },
         )
         return settled

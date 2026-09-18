@@ -809,17 +809,22 @@ async def credit_invoice(
 
 
 class SendBody(BaseModel):
-    """Both fields are optional, and both are overrides.
+    """All three fields are optional, and all three are overrides.
 
     `channel` defaults to the customer's stated preference (FR-AR-006) and
     falls back to e-mail. `to` is the address to use instead of the customer's,
     interpreted by whichever channel is used - an e-mail address for e-mail, a
     participant id for Peppol. It exists for a one-off customer with no master
     record to hold an address, and for "send a copy to their bookkeeper".
+
+    `message` (SI-01) is a free-text note added to the covering e-mail,
+    never persisted - see `InvoiceDeliveryService.dispatch`'s docstring. The
+    length cap is a sanity bound on an e-mail body, not a business rule.
     """
 
     channel: str | None = None
     to: str | None = None
+    message: str | None = Field(default=None, max_length=2000)
 
 
 def _delivery_json(record: DeliveryRecord) -> dict[str, object]:
@@ -899,6 +904,7 @@ async def send_invoice(
             actor_user_id=tenant.user_id,
             channel=channel,
             recipient_override=body.to if body else None,
+            custom_message=body.message if body else None,
         )
     except InvoiceNotFound as exc:
         raise problem(

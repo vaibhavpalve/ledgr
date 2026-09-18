@@ -36,6 +36,11 @@ export function InvoiceDetailScreen() {
   const [attempt, setAttempt] = useState(0);
   const [sendState, setSendState] = useState<"idle" | "sending" | "sent" | "failed">("idle");
   const [sendProblem, setSendProblem] = useState<string | null>(null);
+  // SI-01: "Send" reveals this rather than sending immediately, so there is
+  // always a chance to add a note first - composeOpen closes again on a
+  // successful send or an explicit cancel, never on its own.
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -58,13 +63,19 @@ export function InvoiceDetailScreen() {
     setSendState("sending");
     setSendProblem(null);
     try {
-      await invoices.sendInvoice(administration.id, invoiceId);
+      const trimmed = message.trim();
+      if (trimmed === "") {
+        await invoices.sendInvoice(administration.id, invoiceId);
+      } else {
+        await invoices.sendInvoice(administration.id, invoiceId, { message: trimmed });
+      }
       setSendState("sent");
+      setComposeOpen(false);
     } catch (error) {
       setSendProblem(describeError(error));
       setSendState("failed");
     }
-  }, [invoices, administration.id, invoiceId]);
+  }, [invoices, administration.id, invoiceId, message]);
 
   if (problem !== null) {
     return (
@@ -97,14 +108,18 @@ export function InvoiceDetailScreen() {
             <button
               type="button"
               className="button--primary"
-              disabled={sendState === "sending"}
+              disabled={sendState === "sending" || composeOpen}
               data-testid="invoice-send"
-              onClick={() => void send()}
+              onClick={() => setComposeOpen(true)}
             >
               {sendState === "sending" ? t("mobile.invoice.sending") : t("invoice.detail.send")}
             </button>
           ) : (
-            <Link to="/invoices/new" className="button-link button-link--primary" data-testid="invoice-finish">
+            <Link
+              to="/invoices/new"
+              className="button-link button-link--primary"
+              data-testid="invoice-finish"
+            >
               {t("invoice.detail.finish_draft")}
             </Link>
           )
@@ -126,6 +141,45 @@ export function InvoiceDetailScreen() {
         <p role="alert" className="alert alert--attention" data-testid="invoice-send-problem">
           {sendProblem}
         </p>
+      ) : null}
+
+      {composeOpen ? (
+        <div className="panel panel__body form" data-testid="invoice-send-compose">
+          <div className="form__field">
+            <label htmlFor="invoice-detail-custom-message">
+              {t("mobile.invoice.custom_message")}
+            </label>
+            <textarea
+              id="invoice-detail-custom-message"
+              rows={3}
+              data-testid="invoice-detail-custom-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+            />
+          </div>
+          <div className="form__actions">
+            <button
+              type="button"
+              className="button--primary"
+              disabled={sendState === "sending"}
+              data-testid="invoice-send-confirm"
+              onClick={() => void send()}
+            >
+              {sendState === "sending" ? t("mobile.invoice.sending") : t("invoice.detail.send")}
+            </button>
+            <button
+              type="button"
+              className="button--quiet"
+              data-testid="invoice-send-cancel"
+              onClick={() => {
+                setComposeOpen(false);
+                setMessage("");
+              }}
+            >
+              {t("common.action.cancel")}
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {invoice.statutory_failures.length > 0 ? (
@@ -161,7 +215,10 @@ export function InvoiceDetailScreen() {
             {money(invoice.gross_amount)}
           </dd>
           <dd className="caption">
-            {t("invoice.detail.net_and_vat", { net: money(invoice.net_amount), vat: money(invoice.vat_amount) })}
+            {t("invoice.detail.net_and_vat", {
+              net: money(invoice.net_amount),
+              vat: money(invoice.vat_amount),
+            })}
           </dd>
         </div>
       </dl>
@@ -173,10 +230,16 @@ export function InvoiceDetailScreen() {
             <thead>
               <tr>
                 <th scope="col">{t("mobile.invoice.line_description")}</th>
-                <th scope="col" className="table__num">{t("mobile.invoice.line_quantity")}</th>
-                <th scope="col" className="table__num">{t("mobile.invoice.line_unit_price")}</th>
+                <th scope="col" className="table__num">
+                  {t("mobile.invoice.line_quantity")}
+                </th>
+                <th scope="col" className="table__num">
+                  {t("mobile.invoice.line_unit_price")}
+                </th>
                 <th scope="col">{t("mobile.invoice.line_vat_treatment")}</th>
-                <th scope="col" className="table__num">{t("invoice.detail.line_net")}</th>
+                <th scope="col" className="table__num">
+                  {t("invoice.detail.line_net")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -196,7 +259,10 @@ export function InvoiceDetailScreen() {
                   <td colSpan={4}>
                     {group.rate === null
                       ? t("invoice.detail.vat_group_no_rate", { treatment: group.vat_treatment })
-                      : t("invoice.detail.vat_group", { rate: group.rate, taxable: money(group.taxable_amount) })}
+                      : t("invoice.detail.vat_group", {
+                          rate: group.rate,
+                          taxable: money(group.taxable_amount),
+                        })}
                   </td>
                   <td className="table__num">{money(group.vat_amount)}</td>
                 </tr>
@@ -229,7 +295,9 @@ export function InvoiceDetailScreen() {
           ) : null}
           {invoice.journal_entry_id !== null ? (
             <li>
-              <span className="timeline__when">{invoice.issued_at === null ? "—" : date(invoice.issued_at.slice(0, 10))}</span>
+              <span className="timeline__when">
+                {invoice.issued_at === null ? "—" : date(invoice.issued_at.slice(0, 10))}
+              </span>
               <span>{t("invoice.detail.event.posted")}</span>
             </li>
           ) : null}
@@ -256,7 +324,13 @@ export function InvoiceDetailScreen() {
   );
 }
 
-function PdfPreview({ administrationId, documentId }: { administrationId: string; documentId: string }) {
+function PdfPreview({
+  administrationId,
+  documentId,
+}: {
+  administrationId: string;
+  documentId: string;
+}) {
   const { t } = useI18n();
   const { invoices } = useServices();
   const [url, setUrl] = useState<string | null>(null);
@@ -285,5 +359,12 @@ function PdfPreview({ administrationId, documentId }: { administrationId: string
 
   if (problem !== null) return <ErrorState message={problem} testId="invoice-pdf-error" />;
   if (url === null) return <LoadingSkeleton rows={1} testId="invoice-pdf-loading" />;
-  return <iframe className="document-frame" title={t("invoice.detail.pdf")} src={url} data-testid="invoice-pdf-frame" />;
+  return (
+    <iframe
+      className="document-frame"
+      title={t("invoice.detail.pdf")}
+      src={url}
+      data-testid="invoice-pdf-frame"
+    />
+  );
 }

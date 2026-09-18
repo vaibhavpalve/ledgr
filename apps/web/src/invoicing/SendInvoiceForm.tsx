@@ -89,6 +89,10 @@ export function SendInvoiceForm({
   const [customerVatNumber, setCustomerVatNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  // SI-01. Never sent to `create`/`issue` - only the final `send` call, and
+  // only if non-blank (an all-whitespace note is treated as none, both here
+  // and server-side).
+  const [customMessage, setCustomMessage] = useState("");
 
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -132,7 +136,14 @@ export function SendInvoiceForm({
       }));
       await api.setInvoiceLines(administrationId, id, lineBodies);
       await api.issueInvoice(administrationId, id);
-      await api.sendInvoice(administrationId, id);
+      const trimmedMessage = customMessage.trim();
+      // No third argument at all when there is no message - not an explicit
+      // `undefined` - so a plain send's call shape is unchanged.
+      if (trimmedMessage === "") {
+        await api.sendInvoice(administrationId, id);
+      } else {
+        await api.sendInvoice(administrationId, id, { message: trimmedMessage });
+      }
 
       setSent(true);
     } catch (error) {
@@ -154,6 +165,7 @@ export function SendInvoiceForm({
     customerAddress,
     customerCountry,
     customerId,
+    customMessage,
     customerName,
     customerVatNumber,
     fiscalYearId,
@@ -285,7 +297,9 @@ export function SendInvoiceForm({
             </div>
 
             <div className="form__field">
-              <label htmlFor="invoice-customer-address">{t("mobile.invoice.customer_address")}</label>
+              <label htmlFor="invoice-customer-address">
+                {t("mobile.invoice.customer_address")}
+              </label>
               <input
                 id="invoice-customer-address"
                 type="text"
@@ -300,7 +314,9 @@ export function SendInvoiceForm({
             </div>
 
             <div className="form__field">
-              <label htmlFor="invoice-customer-country">{t("mobile.invoice.customer_country")}</label>
+              <label htmlFor="invoice-customer-country">
+                {t("mobile.invoice.customer_country")}
+              </label>
               <input
                 id="invoice-customer-country"
                 type="text"
@@ -311,7 +327,9 @@ export function SendInvoiceForm({
             </div>
 
             <div className="form__field">
-              <label htmlFor="invoice-customer-vat">{t("mobile.invoice.customer_vat_number")}</label>
+              <label htmlFor="invoice-customer-vat">
+                {t("mobile.invoice.customer_vat_number")}
+              </label>
               <input
                 id="invoice-customer-vat"
                 type="text"
@@ -350,7 +368,11 @@ export function SendInvoiceForm({
         {lines.map((line, index) => {
           const position = index + 1;
           return (
-            <div key={line.key} className="form__grid invoice-line" data-testid={`invoice-line-${position}`}>
+            <div
+              key={line.key}
+              className="form__grid invoice-line"
+              data-testid={`invoice-line-${position}`}
+            >
               <label>
                 {t("mobile.invoice.line_description")}
                 <input
@@ -496,6 +518,17 @@ export function SendInvoiceForm({
           {problem}
         </p>
       ) : null}
+
+      <div className="form__field">
+        <label htmlFor="invoice-custom-message">{t("mobile.invoice.custom_message")}</label>
+        <textarea
+          id="invoice-custom-message"
+          rows={3}
+          data-testid="invoice-custom-message"
+          value={customMessage}
+          onChange={(event) => setCustomMessage(event.target.value)}
+        />
+      </div>
 
       <div className="form__actions">
         <button type="submit" disabled={sending} data-testid="invoice-submit">

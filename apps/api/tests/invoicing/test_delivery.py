@@ -611,6 +611,83 @@ async def test_the_available_channels_are_reported() -> None:
     assert h.service.channels == {DeliveryChannel.EMAIL}
 
 
+# --- SI-01: a custom message on send -------------------------------------------
+
+
+async def test_a_custom_message_is_included_in_the_email_body() -> None:
+    h = harness()
+    await send(h, custom_message="Thanks for the quick turnaround on this one!")
+
+    body = h.mail.sent[0].body
+    assert "Thanks for the quick turnaround on this one!" in body
+    # Labelled, not blended into the fixed sentences - the recipient should
+    # never have to guess which words the business actually typed.
+    assert "Een bericht van Bakker Consultancy B.V.:" in body
+
+
+async def test_no_custom_message_means_no_extra_paragraph() -> None:
+    h = harness()
+    await send(h)
+
+    assert "A note from" not in h.mail.sent[0].body
+
+
+async def test_a_blank_custom_message_is_treated_as_absent() -> None:
+    """Whitespace is not a message - the label would otherwise introduce an
+    empty, pointless paragraph.
+    """
+    h = harness()
+    await send(h, custom_message="   \n  ")
+
+    assert "A note from" not in h.mail.sent[0].body
+
+
+async def test_the_custom_message_is_written_in_the_recipients_language() -> None:
+    h = harness(
+        recipient=Recipient(name="X", language=Language.EN, email="facturen@devries.example")
+    )
+    await send(h, custom_message="See you next month.")
+
+    body = h.mail.sent[0].body
+    assert "A note from Bakker Consultancy B.V.:" in body
+    assert "See you next month." in body
+
+
+async def test_the_custom_message_is_never_persisted_on_the_record() -> None:
+    """dispatch's own docstring: it exists only for the one adapter call. A
+    resend must not be able to read back what somebody typed last time.
+    """
+    h = harness()
+    record = await send(h, custom_message="a private note")
+
+    assert not hasattr(record, "custom_message")
+    assert not hasattr(record, "message")
+
+
+async def test_a_dispatch_with_a_custom_message_records_that_fact_not_the_text() -> None:
+    """IAM-090 records what happened; it does not become a second copy of the
+    sender's own correspondence.
+    """
+    h = harness()
+    await send(h, custom_message="please pay before the holidays")
+
+    entries = await h.audit.search(organization_id=h.organization)
+    detail = next(e for e in entries if e.action == "send_sales_invoice").detail
+
+    assert detail["custom_message_included"] is True
+    assert "please pay before the holidays" not in str(detail)
+
+
+async def test_a_dispatch_with_no_custom_message_records_that_too() -> None:
+    h = harness()
+    await send(h)
+
+    entries = await h.audit.search(organization_id=h.organization)
+    detail = next(e for e in entries if e.action == "send_sales_invoice").detail
+
+    assert detail["custom_message_included"] is False
+
+
 # --- overrides and unreachable customers --------------------------------------
 
 

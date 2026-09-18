@@ -815,6 +815,11 @@
       "nl": "Wij verzoeken u het bedrag van {amount} uiterlijk {due_date} te voldoen.",
       "en": "Please pay {amount} by {due_date}."
     },
+    "invoice.email.custom_message_label": {
+      "note": "SI-01. Labels the sender's own free text so it reads as a distinct note, not as more of LEDGR's fixed wording - the recipient should never have to guess which sentences the business actually wrote.",
+      "nl": "Een bericht van {supplier}:",
+      "en": "A note from {supplier}:"
+    },
     "invoice.email.questions": {
       "note": "Points at the supplier rather than at LEDGR. The business issued the invoice; a question about it is theirs to answer, and directing the customer to the software vendor would be both wrong and unhelpful.",
       "nl": "Heeft u vragen over deze factuur? Neem dan contact op met {supplier}.",
