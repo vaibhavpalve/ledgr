@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { SUPPORTED_LANGUAGES, useI18n } from "@ledgr/i18n";
 import {
@@ -13,7 +13,7 @@ import { ApiError, describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
-import { vatNumberFormatProblem, type CustomerBody } from "./api";
+import { vatNumberFormatProblem, type CustomerBody, type KvkLookupResult } from "./api";
 
 /**
  * `/customers/new` and `/customers/:id/edit` — one form, `PUT` whole on
@@ -131,6 +131,12 @@ export function CustomerFormScreen() {
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [problemField, setProblemField] = useState<string | null>(null);
+  // SI-03. Not derived from `draft.kvk_number` changing, because typing a
+  // digit must not clear a result the person is still reading - only a new
+  // lookup, or a fresh number actually being submitted, does.
+  const [kvkLookup, setKvkLookup] = useState<KvkLookupResult["status"] | "idle" | "looking_up">(
+    "idle",
+  );
 
   useEffect(() => {
     if (customerId === undefined) return;
@@ -155,6 +161,41 @@ export function CustomerFormScreen() {
         : vatNumberFormatProblem(draft.vat_number),
     [draft],
   );
+
+  // SI-03. Fills in only BLANK fields - a person who already typed a trade
+  // name or address is never overwritten by a register lookup they asked
+  // for to save typing elsewhere, not to replace what they wrote.
+  const lookupKvk = useCallback(async () => {
+    if (draft === null) return;
+    setKvkLookup("looking_up");
+    try {
+      const result = await customers.lookupKvkNumber(administration.id, draft.kvk_number);
+      setKvkLookup(result.status);
+      if (result.status === "found") {
+        update({
+          name: draft.name.trim() === "" ? (result.legal_name ?? draft.name) : draft.name,
+          trade_name:
+            draft.trade_name.trim() === ""
+              ? (result.trade_name ?? draft.trade_name)
+              : draft.trade_name,
+          address_line1:
+            draft.address_line1.trim() === ""
+              ? (result.address_line1 ?? draft.address_line1)
+              : draft.address_line1,
+          postal_code:
+            draft.postal_code.trim() === ""
+              ? (result.postal_code ?? draft.postal_code)
+              : draft.postal_code,
+          city: draft.city.trim() === "" ? (result.city ?? draft.city) : draft.city,
+        });
+      }
+    } catch {
+      // A network/API failure, distinct from the register's own "unavailable"
+      // verdict - both read the same to a person filling in a form, so both
+      // get the same sentence.
+      setKvkLookup("unavailable");
+    }
+  }, [administration.id, customers, draft]);
 
   // Intl.DisplayNames, not a hand-translated catalogue entry per country:
   // it's a standard, ICU-backed browser API that resolves a code to its
@@ -323,9 +364,33 @@ export function CustomerFormScreen() {
               inputMode="numeric"
               value={draft.kvk_number}
               aria-invalid={invalid("kvk_number")}
+              aria-describedby="cust-kvk-lookup-status"
               data-testid="customer-kvk"
-              onChange={(e) => update({ kvk_number: e.target.value })}
+              onChange={(e) => {
+                update({ kvk_number: e.target.value });
+                setKvkLookup("idle");
+              }}
             />
+            <button
+              type="button"
+              className="button--quiet"
+              disabled={kvkLookup === "looking_up" || draft.kvk_number.trim() === ""}
+              data-testid="customer-kvk-lookup"
+              onClick={() => void lookupKvk()}
+            >
+              {kvkLookup === "looking_up"
+                ? t("customers.field.kvk_looking_up")
+                : t("customers.field.kvk_lookup_button")}
+            </button>
+            {kvkLookup !== "idle" && kvkLookup !== "looking_up" && kvkLookup !== "unchecked" ? (
+              <p
+                id="cust-kvk-lookup-status"
+                className={kvkLookup === "found" ? "form__hint" : "field-error"}
+                data-testid="customer-kvk-lookup-status"
+              >
+                {t(`customers.field.kvk_lookup_${kvkLookup}`)}
+              </p>
+            ) : null}
           </div>
           <div className="form__field">
             <label htmlFor="cust-vat">{t("customers.field.vat_number")}</label>

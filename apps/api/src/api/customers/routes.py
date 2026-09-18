@@ -39,6 +39,7 @@ from api.authz.dependencies import (
 from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
 from api.config import settings
+from api.customers.kvk import KvkLookupResult, KvkLookupService, build_kvk_lookup
 from api.customers.model import (
     Customer,
     CustomerIsArchived,
@@ -97,6 +98,13 @@ def register(app: FastAPI) -> None:
         discover_peppol_participant,
         methods=["POST"],
         name="discover_peppol_participant",
+    )
+    # SI-03. Bare `_BASE/kvk-lookup`, not `_BASE/{customer_id}/...` - there is
+    # no customer yet at this point, only a "new customer" form being filled
+    # in. Deliberately does not collide with GET/PUT _BASE/{customer_id}: it
+    # is POST-only, and neither of those is.
+    app.add_api_route(
+        f"{_BASE}/kvk-lookup", lookup_kvk_number, methods=["POST"], name="lookup_kvk_number"
     )
 
 
@@ -558,6 +566,59 @@ def _discovery_json(result: DiscoveryResult) -> dict[str, object]:
         ),
         "tried": [candidate.value for candidate in result.tried],
     }
+
+
+async def get_kvk_lookup_service() -> KvkLookupService:
+    """Built per request from configuration, the same reason
+    `get_customer_service` builds its VIES validator and Peppol directory
+    the same way rather than as a module-level singleton.
+    """
+    return build_kvk_lookup(settings.kvk_provider, api_key=settings.kvk_api_key)
+
+
+class KvkLookupBody(BaseModel):
+    kvk_number: str
+
+
+def _kvk_lookup_json(result: KvkLookupResult) -> dict[str, object]:
+    return {
+        "status": result.status.value,
+        "kvk_number": result.kvk_number,
+        "legal_name": result.legal_name,
+        "trade_name": result.trade_name,
+        "address_line1": result.address_line1,
+        "postal_code": result.postal_code,
+        "city": result.city,
+    }
+
+
+async def lookup_kvk_number(
+    administration_id: uuid.UUID,
+    body: KvkLookupBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    lookup: KvkLookupService = Depends(get_kvk_lookup_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "manage",
+            "customer",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """SI-03: auto-fill a NEW customer's name and address from the KvK
+    register, before anything is saved - nothing here is persisted (see
+    api.customers.kvk's module docstring).
+
+    Always 200, whatever the register said - including nothing. The same
+    reasoning `validate_customer_vat_number` documents: an unavailable
+    register is a verdict (NFR-026), and a 5xx would make a rate-limited
+    public register look like a broken API and invite a retry storm.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    result = await lookup.lookup(body.kvk_number)
+    return _kvk_lookup_json(result)
 
 
 async def discover_peppol_participant(

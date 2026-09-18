@@ -45,6 +45,21 @@ export interface CustomerBody {
   notes: string | null;
 }
 
+/**
+ * SI-03. `api.customers.routes._kvk_lookup_json` field for field. Nothing
+ * here is persisted server-side (see api.customers.kvk's module docstring)
+ * — a caller uses it to fill in blank form fields, once, locally.
+ */
+export interface KvkLookupResult {
+  status: "unchecked" | "syntax_invalid" | "found" | "not_found" | "unavailable";
+  kvk_number: string | null;
+  legal_name: string | null;
+  trade_name: string | null;
+  address_line1: string | null;
+  postal_code: string | null;
+  city: string | null;
+}
+
 export class CustomerApi {
   constructor(private readonly options: ApiOptions) {}
 
@@ -65,7 +80,11 @@ export class CustomerApi {
   }
 
   getCustomer(administrationId: string, customerId: string): Promise<CustomerView> {
-    return callJson<CustomerView>(this.options, "GET", this.customerPath(administrationId, customerId));
+    return callJson<CustomerView>(
+      this.options,
+      "GET",
+      this.customerPath(administrationId, customerId),
+    );
   }
 
   createCustomer(administrationId: string, body: CustomerBody): Promise<CustomerView> {
@@ -73,7 +92,11 @@ export class CustomerApi {
   }
 
   /** PUT: the customer is edited as one form and sent back whole. */
-  updateCustomer(administrationId: string, customerId: string, body: CustomerBody): Promise<CustomerView> {
+  updateCustomer(
+    administrationId: string,
+    customerId: string,
+    body: CustomerBody,
+  ): Promise<CustomerView> {
     return callJson<CustomerView>(
       this.options,
       "PUT",
@@ -104,6 +127,22 @@ export class CustomerApi {
       this.options,
       "POST",
       `${this.customerPath(administrationId, customerId)}/vat-number/validate`,
+    );
+  }
+
+  /**
+   * SI-03: before anything is saved. Always 200 — read `status` on the
+   * answer, the same convention `validateVatNumber` uses for the same
+   * reason (an unavailable register is a verdict, not a failed request).
+   */
+  lookupKvkNumber(administrationId: string, kvkNumber: string): Promise<KvkLookupResult> {
+    return callJson<KvkLookupResult>(
+      this.options,
+      "POST",
+      `${this.basePath(administrationId)}/kvk-lookup`,
+      {
+        kvk_number: kvkNumber,
+      },
     );
   }
 

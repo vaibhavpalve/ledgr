@@ -82,10 +82,19 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       api.account.security_routes._record.
 #       tests/integration/test_account_security.py asserts the entries land.
 #
+#   /v1/administrations/{administration_id}/customers/kvk-lookup (SI-03)
+#       Unlike validate_customer_vat_number (which writes a verdict onto an
+#       EXISTING customer row - vat_number_status, checked_at - and IS
+#       audited), this route acts before any customer record exists at all:
+#       it is a pure external lookup whose result a "new customer" form uses
+#       to pre-fill fields locally, and nothing here is written to any
+#       table. See api.customers.kvk's module docstring.
+#
 # A route that changes tenant data does not belong here. The bar is "this
 # changes nothing an auditor would ask about".
 AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
     {
+        "/v1/administrations/{administration_id}/customers/kvk-lookup",
         "/v1/me/language",
         "/v1/me/sessions/{session_id}",
         "/v1/me/passkeys/{passkey_id}",

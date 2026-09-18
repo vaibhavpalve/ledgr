@@ -143,6 +143,14 @@ class Settings(BaseSettings):
     # "off" setting.
     vies_provider: Literal["syntax-only", "vies-rest"] = "syntax-only"
 
+    # SI-03: KvK number lookup for auto-filling a new customer's name and
+    # address. "syntax-only" is dev/test only - see
+    # api.customers.kvk.build_kvk_lookup, whose own docstring flags that the
+    # real adapter's response parsing is unverified against a live KvK
+    # account. KVK_API_KEY is required once kvk_provider is "kvk-api".
+    kvk_provider: Literal["syntax-only", "kvk-api"] = "syntax-only"
+    kvk_api_key: str | None = None
+
     # FR-AR-006's "Peppol participant ID discovery". P2 (FR-AR-005), so "none"
     # is the only provider that exists and it returns `not_configured` rather
     # than pretending a customer is absent from the network. See

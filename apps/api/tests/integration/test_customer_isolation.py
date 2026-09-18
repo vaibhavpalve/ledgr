@@ -73,6 +73,26 @@ async def test_creating_a_customer_in_another_tenant_is_refused(
     assert response.status_code in REFUSED
 
 
+@pytest.mark.isolation("POST", "/v1/administrations/{administration_id}/customers/kvk-lookup")
+async def test_kvk_lookup_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    """SI-03. No customer exists yet at this route - only `administration_id`
+    is tenant-scoped - so the refusal has to come from the permission check
+    on that administration, not from a row RLS can filter out.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.post(
+            f"{_BASE.format(admin=two_organizations.admin_b)}/kvk-lookup",
+            headers=_headers(token),
+            json={"kvk_number": "12345678"},
+        )
+
+    assert response.status_code in REFUSED
+
+
 @pytest.mark.isolation("GET", "/v1/administrations/{administration_id}/customers")
 async def test_listing_another_tenants_customers_is_refused(
     two_organizations: SeededTenants,

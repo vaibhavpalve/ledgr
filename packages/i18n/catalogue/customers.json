@@ -94,6 +94,33 @@
       "nl": "KvK-nummer",
       "en": "KvK number"
     },
+    "customers.field.kvk_lookup_button": {
+      "note": "SI-03. Triggers POST .../customers/kvk-lookup and, on a found result, fills in whichever of name/trade name/address are still blank.",
+      "nl": "Opzoeken",
+      "en": "Look up"
+    },
+    "customers.field.kvk_looking_up": {
+      "nl": "Bezig met opzoeken…",
+      "en": "Looking up…"
+    },
+    "customers.field.kvk_lookup_found": {
+      "nl": "Ingevuld vanuit het KvK-register.",
+      "en": "Filled in from the KvK register."
+    },
+    "customers.field.kvk_lookup_not_found": {
+      "nl": "Geen bedrijf gevonden bij dit KvK-nummer.",
+      "en": "No company found for this KvK number."
+    },
+    "customers.field.kvk_lookup_unavailable": {
+      "note": "NFR-026: an outage is not an error, and the sentence says so rather than implying something is broken.",
+      "nl": "Kon dit nu niet opzoeken. U kunt de gegevens ook zelf invullen.",
+      "en": "Could not look this up right now. You can still fill in the details yourself."
+    },
+    "customers.field.kvk_lookup_syntax_invalid": {
+      "note": "The template literal in CustomerFormScreen is customers.field.kvk_lookup_${status} - this key name must match KvkLookupStatus.SYNTAX_INVALID's wire value ('syntax_invalid') exactly, not an abbreviation of it.",
+      "nl": "Een KvK-nummer bestaat uit 8 cijfers.",
+      "en": "A KvK number has 8 digits."
+    },
     "customers.field.vat_number": {
       "nl": "BTW-nummer",
       "en": "BTW number"
