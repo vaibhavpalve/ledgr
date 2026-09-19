@@ -858,6 +858,56 @@
       "nl": "Met vriendelijke groet,",
       "en": "Kind regards,"
     },
+    "invoice.recurring.error.no_fiscal_year": {
+      "note": "SI-07. A run's date falls in no fiscal year of this administration, so there is nowhere to put the invoice. Says how to fix it and that the run will be retried.",
+      "nl": "De factuurdatum valt in geen enkel boekjaar. Maak het boekjaar aan; het schema probeert het daarna opnieuw.",
+      "en": "The invoice date falls in no fiscal year. Create the fiscal year; the schedule will try again afterwards."
+    },
+    "invoice.recurring.error.customer_not_found": {
+      "note": "SI-07.",
+      "nl": "De klant van dit schema bestaat niet meer. Kies een andere klant voor het schema.",
+      "en": "This schedule's customer no longer exists. Choose another customer for the schedule."
+    },
+    "invoice.recurring.error.customer_archived": {
+      "note": "SI-07. An archived customer is not invoiced. Names both ways out.",
+      "nl": "De klant van dit schema is gearchiveerd, dus er wordt niet gefactureerd. Haal de klant uit het archief of beëindig het schema.",
+      "en": "This schedule's customer is archived, so nothing is invoiced. Restore the customer from the archive or end the schedule."
+    },
+    "invoice.recurring.error.customer_details_incomplete": {
+      "note": "SI-07. FR-AR-003 needs the customer's name and address on an invoice, at the moment it is put on one.",
+      "nl": "De gegevens van de klant zijn onvolledig, meestal het adres. Vul ze aan bij de klant; het schema probeert het daarna opnieuw.",
+      "en": "The customer's details are incomplete, usually the address. Complete them on the customer; the schedule will try again afterwards."
+    },
+    "invoice.recurring.issue_error.not_authorized_to_issue": {
+      "note": "SI-07. The schedule asked to issue its invoices but the person who ran it may not (issuing needs the send permission). The invoice was created as a draft.",
+      "nl": "Het schema is ingesteld om te versturen, maar jij mag facturen niet definitief maken. De factuur staat als concept klaar.",
+      "en": "The schedule is set to issue its invoices, but you may not issue them. The invoice was created as a draft."
+    },
+    "invoice.recurring.issue_error.not_statutory_compliant": {
+      "note": "SI-07 / FR-AR-003. The invoice lacks something the law requires (often the supplier's KvK or VAT number). Left as a draft so a person can complete it.",
+      "nl": "De factuur mist iets wat wettelijk verplicht is, bijvoorbeeld een KvK- of btw-nummer. Ze staat als concept klaar; vul het aan en maak haar dan definitief.",
+      "en": "The invoice lacks something the law requires, for example a KvK or VAT number. It was left as a draft; complete it, then issue it."
+    },
+    "invoice.recurring.issue_error.no_open_period": {
+      "note": "SI-07. The invoice date is in a locked or filed period. Left as a draft.",
+      "nl": "De factuurdatum valt in een gesloten periode. De factuur staat als concept klaar.",
+      "en": "The invoice date falls in a closed period. The invoice was left as a draft."
+    },
+    "invoice.recurring.issue_error.no_sales_journal": {
+      "note": "SI-07. FR-GL-002: the administration has no single active sales journal.",
+      "nl": "Er is geen verkoopjournaal ingericht. De factuur staat als concept klaar.",
+      "en": "No sales journal is set up. The invoice was left as a draft."
+    },
+    "invoice.recurring.issue_error.posting_unconfigured": {
+      "note": "SI-07. A revenue or VAT account is not mapped for this invoice's treatment. Left as a draft.",
+      "nl": "Er is geen omzet- of btw-rekening gekoppeld voor deze factuur. De factuur staat als concept klaar.",
+      "en": "No revenue or VAT account is mapped for this invoice. The invoice was left as a draft."
+    },
+    "invoice.recurring.issue_error.template_not_renderable": {
+      "note": "SI-07. The invoice template cannot be rendered (for example its logo). Left as a draft.",
+      "nl": "De factuursjabloon kan niet worden weergegeven, bijvoorbeeld door het logo. De factuur staat als concept klaar.",
+      "en": "The invoice template cannot be rendered, for example because of its logo. The invoice was left as a draft."
+    },
     "invoice.ageing.bucket.current": {
       "note": "SI-06 / FR-AR-012. Ageing is by days past the DUE date, the Dutch convention: an invoice on 60-day terms is not late at day 45. The due date itself is still 'current' - the customer has until the end of it.",
       "nl": "Nog niet vervallen",

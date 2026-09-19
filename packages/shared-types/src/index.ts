@@ -723,6 +723,71 @@ export interface InvoiceDeliveryView {
   readonly next_attempt_at: string | null;
 }
 
+/**
+ * SI-07 (ADR-074) - `api.invoicing.routes._recurring_json`. A schedule that generates sales
+ * invoices on a rhythm. A TEMPLATE: generating one goes through the same service a person's
+ * invoice does, so nothing here bypasses the statutory gate, numbering or posting.
+ */
+export interface RecurringInvoiceView {
+  readonly id: string;
+  readonly customer_id: string;
+  readonly name: string;
+  /** One of 1, 2, 3, 4, 6, 12. */
+  readonly interval_months: number;
+  readonly start_date: string;
+  /** The last date a run may fall on, inclusive. Whichever of this and `max_runs` comes first ends it. */
+  readonly end_date: string | null;
+  readonly max_runs: number | null;
+  /** Payment term in days; null means the customer's own terms. */
+  readonly due_days: number | null;
+  /** Annual price indexation, percent, compounding once per COMPLETED year. Decimal string. */
+  readonly indexation_percent: string;
+  /** Issue (number and post) each invoice, or leave it a draft. SENDING is never automatic. */
+  readonly auto_issue: boolean;
+  readonly notes: string | null;
+  readonly status: "active" | "paused" | "ended";
+  readonly runs_generated: number;
+  readonly next_run_on: string | null;
+  /** Why the last attempt failed, and its sentence in the reader's language. */
+  readonly last_error: "no_fiscal_year" | "customer_not_found" | "customer_archived" | "customer_details_incomplete" | null;
+  readonly last_error_message: string | null;
+  readonly lines: readonly {
+    readonly description: string;
+    readonly quantity: string;
+    /** What is AGREED - the base price, before indexation. */
+    readonly unit_price: string;
+    /** What the NEXT invoice will charge once indexation applies; null when ended. */
+    readonly next_unit_price: string | null;
+    readonly discount_percent: string;
+    readonly vat_treatment: string;
+  }[];
+}
+
+/** `POST .../recurring-invoices/run`. Always 200 with a per-run report. */
+export interface RecurringRunReportView {
+  readonly summary: {
+    readonly generated: number;
+    readonly already_generated: number;
+    readonly failed: number;
+    readonly issued: number;
+    /** Generated but not issued although the schedule asked to be: somebody must finish these. */
+    readonly left_as_draft: number;
+  };
+  readonly results: readonly {
+    readonly schedule_id: string;
+    readonly schedule_name: string;
+    /** Also the invoice date: a caught-up run is dated in its own month, not today. */
+    readonly run_date: string;
+    readonly status: "generated" | "already_generated" | "failed";
+    readonly invoice_id: string | null;
+    readonly issued: boolean;
+    readonly issue_error: string | null;
+    readonly issue_error_message: string | null;
+    readonly error: string | null;
+    readonly error_message: string | null;
+  }[];
+}
+
 /** Why an invoice was not attempted by a bulk chase (SI-11). */
 export type ChaseSkip =
   | "blocked"

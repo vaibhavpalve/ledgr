@@ -120,6 +120,17 @@ from api.invoicing.receivables_service import (
     ReceivablesService,
     StatementCustomerNotFound,
 )
+from api.invoicing.recurrence import DefinitionInvalid, RecurringLine, indexed_price
+from api.invoicing.recurring_repository import SqlRecurringRepository
+from api.invoicing.recurring_service import (
+    RecurringDefinition,
+    RecurringInvoice,
+    RecurringInvoiceService,
+    RecurringNotFound,
+    RunOutcome,
+    RunStatus,
+    ScheduleLocked,
+)
 from api.invoicing.rendering import build_invoice_renderer
 from api.invoicing.repository import SqlInvoiceRepository
 from api.invoicing.service import InvoicingService, NewLine
@@ -256,6 +267,49 @@ def register(app: FastAPI) -> None:
         chase_overdue,
         methods=["POST"],
         name="chase_overdue_invoices",
+    )
+    # SI-07 (ADR-074): recurring invoices.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices",
+        create_recurring_invoice,
+        methods=["POST"],
+        name="create_recurring_invoice",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices",
+        list_recurring_invoices,
+        methods=["GET"],
+        name="list_recurring_invoices",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices/run",
+        run_recurring_invoices,
+        methods=["POST"],
+        name="run_recurring_invoices",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices/{recurring_id}",
+        get_recurring_invoice,
+        methods=["GET"],
+        name="get_recurring_invoice",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices/{recurring_id}",
+        update_recurring_invoice,
+        methods=["PUT"],
+        name="update_recurring_invoice",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices/{recurring_id}/pause",
+        pause_recurring_invoice,
+        methods=["POST"],
+        name="pause_recurring_invoice",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/recurring-invoices/{recurring_id}/resume",
+        resume_recurring_invoice,
+        methods=["POST"],
+        name="resume_recurring_invoice",
     )
     # SI-06 (ADR-072): aged receivables and the customer statement.
     app.add_api_route(
@@ -2032,3 +2086,377 @@ async def chase_overdue(
     except Exception as exc:
         _raise_dunning(request, exc)
     return _chase_json(report, request_language(request))
+
+
+# -- SI-07: recurring invoices (ADR-074) --------------------------------------------------
+
+
+async def get_recurring_service(
+    administration_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+    # The same service `POST .../sales-invoices` uses, so a schedule's invoices are
+    # created, numbered and posted by exactly the code a person's are.
+    invoicing: InvoicingService = Depends(get_invoicing_service),
+) -> RecurringInvoiceService:
+    return RecurringInvoiceService(
+        repository=SqlRecurringRepository(session),
+        invoicing=invoicing,
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+class RecurringBody(BaseModel):
+    """Amounts are strings on the wire and Decimal here - see the module docstring."""
+
+    customer_id: uuid.UUID
+    name: str
+    interval_months: int
+    start_date: date
+    end_date: date | None = None
+    max_runs: int | None = None
+    due_days: int | None = None
+    indexation_percent: Decimal = Decimal(0)
+    auto_issue: bool = False
+    notes: str | None = None
+    lines: list[LineBody] = Field(default_factory=list)
+
+
+def _definition(body: RecurringBody) -> RecurringDefinition:
+    return RecurringDefinition(
+        customer_id=body.customer_id,
+        name=body.name,
+        interval_months=body.interval_months,
+        start_date=body.start_date,
+        end_date=body.end_date,
+        max_runs=body.max_runs,
+        due_days=body.due_days,
+        indexation_percent=body.indexation_percent,
+        auto_issue=body.auto_issue,
+        notes=body.notes,
+        lines=tuple(
+            RecurringLine(
+                description=line.description,
+                quantity=line.quantity,
+                unit_price=line.unit_price,
+                vat_treatment=line.vat_treatment,
+                discount_percent=line.discount_percent,
+            )
+            for line in body.lines
+        ),
+    )
+
+
+def _recurring_json(schedule: RecurringInvoice, language: Language) -> dict[str, object]:
+    definition = schedule.definition
+    upcoming = schedule.next_run_on
+    return {
+        "id": str(schedule.id),
+        "customer_id": str(definition.customer_id),
+        "name": definition.name,
+        "interval_months": definition.interval_months,
+        "start_date": definition.start_date.isoformat(),
+        "end_date": definition.end_date.isoformat() if definition.end_date else None,
+        "max_runs": definition.max_runs,
+        "due_days": definition.due_days,
+        "indexation_percent": str(definition.indexation_percent),
+        "auto_issue": definition.auto_issue,
+        "notes": definition.notes,
+        "status": schedule.status.value,
+        "runs_generated": schedule.runs_generated,
+        "next_run_on": upcoming.isoformat() if upcoming else None,
+        "last_error": schedule.last_error,
+        "last_error_message": (
+            translate(f"invoice.recurring.error.{schedule.last_error}", language)
+            if schedule.last_error
+            else None
+        ),
+        "lines": [
+            {
+                "description": line.description,
+                "quantity": str(line.quantity),
+                # What is AGREED (the base), and what the NEXT invoice will charge
+                # once indexation is applied - so a screen can show a coming increase
+                # before the customer is billed it.
+                "unit_price": str(line.unit_price),
+                "next_unit_price": (
+                    str(
+                        indexed_price(
+                            line.unit_price,
+                            definition.indexation_percent,
+                            definition.start_date,
+                            upcoming,
+                        )
+                    )
+                    if upcoming
+                    else None
+                ),
+                "discount_percent": str(line.discount_percent),
+                "vat_treatment": line.vat_treatment,
+            }
+            for line in definition.lines
+        ],
+    }
+
+
+def _outcome_json(outcome: RunOutcome, language: Language) -> dict[str, object]:
+    return {
+        "schedule_id": str(outcome.schedule_id),
+        "schedule_name": outcome.schedule_name,
+        "run_date": outcome.run_date.isoformat(),
+        "status": outcome.status.value,
+        "invoice_id": str(outcome.invoice_id) if outcome.invoice_id else None,
+        "issued": outcome.issued,
+        # Set when the schedule asked to issue and the invoice was left a draft.
+        "issue_error": outcome.issue_error,
+        "issue_error_message": (
+            translate(f"invoice.recurring.issue_error.{outcome.issue_error}", language)
+            if outcome.issue_error
+            else None
+        ),
+        "error": outcome.error,
+        "error_message": (
+            translate(f"invoice.recurring.error.{outcome.error}", language)
+            if outcome.error
+            else None
+        ),
+    }
+
+
+def _recurring_problem(request: Request, exc: Exception) -> Exception | None:
+    if isinstance(exc, RecurringNotFound):
+        return problem(request, 404, "errors.recurring_not_found", reason="recurring_not_found")
+    if isinstance(exc, CustomerNotFound):
+        return problem(request, 404, "errors.customer_not_found", reason="customer_not_found")
+    if isinstance(exc, DefinitionInvalid):
+        return problem(request, 422, "errors.recurring_invalid", reason="recurring_invalid")
+    if isinstance(exc, ScheduleLocked):
+        return problem(
+            request, 409, "errors.recurring_locked", reason="recurring_locked", field=exc.field
+        )
+    return None
+
+
+def _raise_recurring(request: Request, exc: Exception) -> NoReturn:
+    refusal = _recurring_problem(request, exc)
+    if refusal is None:
+        raise exc
+    raise refusal from exc
+
+
+async def create_recurring_invoice(
+    administration_id: uuid.UUID,
+    body: RecurringBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-008: a schedule that generates invoices on a rhythm. Validated when
+    saved - an unrunnable schedule is refused now, not on the first of the month."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        created = await service.create(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            definition=_definition(body),
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return _recurring_json(created, request_language(request))
+
+
+async def list_recurring_invoices(
+    administration_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> list[dict[str, object]]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    language = request_language(request)
+    schedules = await service.list(
+        administration_id=administration_id, actor_user_id=tenant.user_id
+    )
+    return [_recurring_json(schedule, language) for schedule in schedules]
+
+
+async def get_recurring_invoice(
+    administration_id: uuid.UUID,
+    recurring_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        schedule = await service.get(
+            administration_id=administration_id,
+            recurring_id=recurring_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return _recurring_json(schedule, request_language(request))
+
+
+async def update_recurring_invoice(
+    administration_id: uuid.UUID,
+    recurring_id: uuid.UUID,
+    body: RecurringBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Replace the definition. Applies to FUTURE runs only; the start date, interval
+    and customer are locked once the schedule has generated an invoice."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        updated = await service.update(
+            administration_id=administration_id,
+            recurring_id=recurring_id,
+            actor_user_id=tenant.user_id,
+            definition=_definition(body),
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return _recurring_json(updated, request_language(request))
+
+
+async def pause_recurring_invoice(
+    administration_id: uuid.UUID,
+    recurring_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Stop generating. Idempotent."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        schedule = await service.pause(
+            administration_id=administration_id,
+            recurring_id=recurring_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return _recurring_json(schedule, request_language(request))
+
+
+async def resume_recurring_invoice(
+    administration_id: uuid.UUID,
+    recurring_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Start again where it stood. Runs that fell due while paused are NOT skipped:
+    they are generated, each dated in its own month. A pause postpones billing; it
+    does not waive it."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        schedule = await service.resume(
+            administration_id=administration_id,
+            recurring_id=recurring_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return _recurring_json(schedule, request_language(request))
+
+
+async def run_recurring_invoices(
+    administration_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: RecurringInvoiceService = Depends(get_recurring_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+    # IAM-010b: a schedule with `auto_issue` posts to the ledger, the one action an
+    # unverified address cannot perform - the same gate `issue` carries.
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Generate every invoice that should exist by today and does not.
+
+    Idempotent: calling it twice generates each scheduled date once. Never sends
+    anything. Always 200 with a per-run report; a schedule whose run fails stops
+    there (later dates are not attempted out of order) and the others carry on.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    language = request_language(request)
+    try:
+        outcomes = await service.run_due(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_recurring(request, exc)
+    return {
+        "summary": {
+            "generated": sum(1 for o in outcomes if o.status is RunStatus.GENERATED),
+            "already_generated": sum(
+                1 for o in outcomes if o.status is RunStatus.ALREADY_GENERATED
+            ),
+            "failed": sum(1 for o in outcomes if o.status is RunStatus.FAILED),
+            "issued": sum(1 for o in outcomes if o.issued),
+            # Generated but not issued although the schedule asked to be: somebody
+            # needs to finish these.
+            "left_as_draft": sum(1 for o in outcomes if o.issue_error is not None),
+        },
+        "results": [_outcome_json(outcome, language) for outcome in outcomes],
+    }

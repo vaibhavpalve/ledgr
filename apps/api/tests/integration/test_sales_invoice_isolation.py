@@ -442,3 +442,91 @@ async def test_chasing_another_tenants_overdue_invoices_is_refused(
 
     assert everything.status_code in REFUSED
     assert chosen.status_code in REFUSED
+
+
+# -- SI-07: recurring invoices (ADR-074) --------------------------------------------------
+#
+# Seven routes, each asked as organization A's owner for something in organization B.
+# The run is the one that would raise (and possibly issue and post) invoices in another
+# tenant's books, so it is asked exactly as a real call would be.
+
+_RECURRING = "/v1/administrations/{administration_id}/recurring-invoices"
+
+
+def _recurring_body() -> dict[str, object]:
+    return {
+        "customer_id": str(uuid.uuid4()),
+        "name": "x",
+        "interval_months": 1,
+        "start_date": "2026-07-31",
+        "lines": [
+            {"description": "x", "quantity": "1", "unit_price": "1", "vat_treatment": "btw_21"}
+        ],
+    }
+
+
+async def _as_a(method: str, path: str, tenants: SeededTenants, json: object = None) -> int:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(tenants.org_a, user_id=tenants.owner_a)
+        response = await client.request(
+            method,
+            f"/v1/administrations/{tenants.admin_b}{path}",
+            headers=_headers(token),
+            json=json,
+        )
+    return response.status_code
+
+
+@pytest.mark.isolation("POST", _RECURRING)
+async def test_creating_a_recurring_invoice_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    status = await _as_a("POST", "/recurring-invoices", two_organizations, _recurring_body())
+    assert status in REFUSED
+
+
+@pytest.mark.isolation("GET", _RECURRING)
+async def test_listing_another_tenants_recurring_invoices_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", "/recurring-invoices", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _RECURRING + "/run")
+async def test_running_another_tenants_recurring_invoices_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("POST", "/recurring-invoices/run", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _RECURRING + "/{recurring_id}")
+async def test_reading_another_tenants_recurring_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/recurring-invoices/{uuid.uuid4()}"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("PUT", _RECURRING + "/{recurring_id}")
+async def test_editing_another_tenants_recurring_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/recurring-invoices/{uuid.uuid4()}"
+    assert await _as_a("PUT", path, two_organizations, _recurring_body()) in REFUSED
+
+
+@pytest.mark.isolation("POST", _RECURRING + "/{recurring_id}/pause")
+async def test_pausing_another_tenants_recurring_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/recurring-invoices/{uuid.uuid4()}/pause"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _RECURRING + "/{recurring_id}/resume")
+async def test_resuming_another_tenants_recurring_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/recurring-invoices/{uuid.uuid4()}/resume"
+    assert await _as_a("POST", path, two_organizations) in REFUSED

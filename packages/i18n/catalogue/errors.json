@@ -410,6 +410,21 @@
       "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
       "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
     },
+    "errors.recurring_not_found": {
+      "note": "SI-07. Indistinguishable from another tenant's schedule, on purpose - the same rule as errors.sales_invoice_not_found.",
+      "nl": "Dit terugkerende factuurschema bestaat niet. Vernieuw de pagina en kies een bestaand schema.",
+      "en": "This recurring invoice schedule does not exist. Refresh the page and choose an existing schedule."
+    },
+    "errors.recurring_invalid": {
+      "note": "SI-07. Every rule a schedule must satisfy in one sentence, because the specific one is an internal message (FR-UX-007).",
+      "nl": "Dit schema is ongeldig. Kies een interval van 1, 2, 3, 4, 6 of 12 maanden, een einddatum niet vóór de startdatum, minstens één regel met omschrijving, aantal en btw-behandeling, en een indexatie tussen 0 en 100%.",
+      "en": "This schedule is not valid. Choose an interval of 1, 2, 3, 4, 6 or 12 months, an end date not before the start date, at least one line with a description, quantity and VAT treatment, and indexation between 0 and 100%."
+    },
+    "errors.recurring_locked": {
+      "note": "SI-07. {field} is start_date, interval_months or customer_id as a machine field. Dates are derived from the start date and interval, so changing either after invoices exist would re-date the whole history. Names the way out.",
+      "nl": "Dit kan niet meer worden gewijzigd omdat het schema al facturen heeft aangemaakt ({field}). Wijzig de regels, de prijs of de einddatum, of beëindig dit schema en start een nieuw schema.",
+      "en": "This can no longer be changed because the schedule has already generated invoices ({field}). Change the lines, the price or the end date, or end this schedule and start a new one."
+    },
     "errors.report_period_invalid": {
       "note": "SI-06 / FR-AR-012. The statement period ends before it starts.",
       "nl": "De periode is ongeldig: de einddatum ligt vóór de begindatum. Kies een einddatum op of na de begindatum.",
