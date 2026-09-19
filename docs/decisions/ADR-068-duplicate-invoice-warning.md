@@ -99,9 +99,12 @@ already translated (FR-UX-007) and nothing gates the issue button on it.
 
 **Known gaps.**
 
-- **The SQL has never been executed.** As with every migration-adjacent query in this repo, there
-  is no Postgres on the development machine (no Docker). The pure rule and the service are
-  unit-tested; the pool query and its cross-tenant test are DB-gated and unrun locally.
+- **Verified against the native local Postgres** (`scripts/dev-stack.ps1`, no Docker), not only
+  unit-tested: `tests/integration/test_invoice_duplicate_isolation.py` runs the pool query as
+  `ledgr_app` under RLS - two tenants holding an identical invoice never see each other's, the
+  positive case returns lines and a net total summed from the generated `line_net`, and the
+  case-insensitive customer match works. Running it caught a bug in the test's own helper (a
+  parameter name clash) that a fake could not have.
 - **The pool's customer-name match is `lower(btrim(name))`**, narrower than the Python
   normalisation, which also strips edge punctuation. A name differing from an earlier invoice only
   by a trailing full stop is not fetched, so it is not warned about. The customer id path is exact.

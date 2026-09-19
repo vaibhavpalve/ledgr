@@ -93,10 +93,11 @@ problem, since a rule is append-only (CMP-014).
 
 **Known gaps.**
 
-- **The SQL path is unexecuted here** (no Postgres on the development machine). The pure function
-  and the service are tested against the *real shipped ruleset* through the in-memory rules
-  repository, and `_view_json`'s wire shape is asserted; `vat.rules_on` itself is covered by the
-  existing DB-gated `test_effective_dated_rules.py`.
+- **Verified end to end on the native local Postgres.** The pure function and the service are
+  tested against the *real shipped ruleset* through the in-memory rules repository, `_view_json`'s
+  wire shape is asserted, and `tests/integration/test_invoice_rubriek_preview_db.py` runs the one
+  production reader (`SqlInvoiceRepository.effective_rules_on`) as `ledgr_app` and feeds its result
+  to `preview`, so the database's shape and the function's expectation cannot drift apart unseen.
 - **The shipped ruleset is `provisional-subset`.** The preview is as authoritative as the ruleset
   loaded (FR-VAT-003); it is safe to show, not a basis for a filed return. The view does not yet
   carry that flag - the loaded rule set's `source` is not on `EffectiveRules`.

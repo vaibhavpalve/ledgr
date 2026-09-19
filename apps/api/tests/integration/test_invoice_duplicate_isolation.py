@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from decimal import Decimal
 
 import pytest
 from sqlalchemy import text
@@ -32,10 +33,11 @@ DAY = date(2026, 9, 9)
 CUSTOMER = "De Vries Holding B.V."
 
 
-async def _exec(org: uuid.UUID, sql: str, **params: object):  # type: ignore[no-untyped-def]
+async def _exec(as_org: uuid.UUID, sql: str, **params: object):  # type: ignore[no-untyped-def]
+    """Named `as_org`, not `org`: `org` is also a SQL bind parameter below."""
     async with app_engine.begin() as conn:
         await conn.execute(
-            text("SELECT set_config('app.current_org_id', :org, true)"), {"org": str(org)}
+            text("SELECT set_config('app.current_org_id', :org, true)"), {"org": str(as_org)}
         )
         return await conn.execute(text(sql), params)
 
@@ -122,6 +124,39 @@ async def test_the_candidate_pool_never_contains_another_tenants_invoice(
     # B has only the invoice it is asking about, so its own pool is empty - and
     # in particular contains neither of A's identical invoices.
     assert as_b == set()
+
+
+async def test_a_candidate_comes_back_with_its_lines_and_net_total(
+    two_organizations: SeededTenants,
+) -> None:
+    """The positive case, so the isolation tests above cannot pass merely
+    because the query returns nothing: what is found carries what the rule
+    compares - its lines, and a net total summed from the generated
+    `line_net` (10 x 95.00)."""
+    seeded = await _seed_invoice(two_organizations.org_a, two_organizations.admin_a)
+
+    async with app_engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org, true)"),
+            {"org": str(two_organizations.org_a)},
+        )
+        pool = await SqlInvoiceRepository(AsyncSession(bind=conn)).duplicate_candidates(
+            administration_id=two_organizations.admin_a,
+            exclude_invoice_id=uuid.uuid4(),
+            customer_id=None,
+            customer_name=CUSTOMER.upper(),  # the match is case-insensitive
+            since=date(2026, 8, 1),
+            until=date(2026, 10, 31),
+        )
+
+    (found,) = pool
+    assert found.invoice_id == seeded
+    assert found.status == "draft"
+    assert found.fingerprint.net_total == Decimal("950.00")
+    (only_line,) = found.fingerprint.lines
+    assert only_line.description == "Consultancy"
+    assert only_line.quantity == Decimal("10")
+    assert only_line.unit_price == Decimal("95.00")
 
 
 async def test_asking_as_one_tenant_about_anothers_administration_finds_nothing(
