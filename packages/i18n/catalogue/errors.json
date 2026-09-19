@@ -410,6 +410,36 @@
       "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
       "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
     },
+    "errors.quote_not_found": {
+      "note": "SI-08. Indistinguishable from another tenant's quote, on purpose - the same rule as errors.sales_invoice_not_found.",
+      "nl": "Deze offerte of orderbevestiging bestaat niet. Vernieuw de pagina en kies een bestaand document.",
+      "en": "This quote or order confirmation does not exist. Refresh the page and choose an existing document."
+    },
+    "errors.quote_invalid": {
+      "note": "SI-08. Every rule a quote must satisfy in one sentence, because the specific one is an internal message (FR-UX-007).",
+      "nl": "Deze offerte is ongeldig. Voeg minstens één regel toe met omschrijving, aantal en btw-behandeling, kies een geldigheidsdatum die niet in het verleden ligt en gebruik een korting tussen 0 en 100%.",
+      "en": "This quote is not valid. Add at least one line with a description, quantity and VAT treatment, choose a validity date that is not in the past, and use a discount between 0 and 100%."
+    },
+    "errors.quote_transition_invalid": {
+      "note": "SI-08. {current} and {target} are quote statuses as machine fields. A quote moves forward only: draft, sent, accepted, converted; declined and cancelled are final.",
+      "nl": "Deze actie kan niet bij een offerte met status '{current}'. Een offerte gaat alleen vooruit: concept, verstuurd, geaccepteerd, omgezet; afgewezen en geannuleerd zijn definitief.",
+      "en": "This action is not possible for a quote with status '{current}'. A quote only moves forward: draft, sent, accepted, converted; declined and cancelled are final."
+    },
+    "errors.quote_expired": {
+      "note": "SI-08. The offer no longer stands. Names the way out: extend the validity, which revives it.",
+      "nl": "Deze offerte is verlopen en kan niet meer worden verstuurd of geaccepteerd. Verleng de geldigheidsdatum als je haar nog wilt honoreren.",
+      "en": "This quote has expired and can no longer be sent or accepted. Extend the validity date if you still want to honour it."
+    },
+    "errors.quote_not_editable": {
+      "note": "SI-08. Once a quote has gone to a customer it is what they were told. Names the way out.",
+      "nl": "Deze offerte kan niet meer worden aangepast omdat ze al is verstuurd. Annuleer haar en maak een nieuwe, of verleng alleen de geldigheid.",
+      "en": "This quote can no longer be edited because it has already been sent. Cancel it and create a new one, or only extend its validity."
+    },
+    "errors.quote_conversion_failed": {
+      "note": "SI-08. {reason_text} is the specific sentence (invoice.quote.conversion_error.*), already translated; the machine code travels beside it as `code`.",
+      "nl": "De offerte kan niet in een factuur worden omgezet. {reason_text}",
+      "en": "The quote could not be converted into an invoice. {reason_text}"
+    },
     "errors.recurring_not_found": {
       "note": "SI-07. Indistinguishable from another tenant's schedule, on purpose - the same rule as errors.sales_invoice_not_found.",
       "nl": "Dit terugkerende factuurschema bestaat niet. Vernieuw de pagina en kies een bestaand schema.",

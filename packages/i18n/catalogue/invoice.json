@@ -858,6 +858,26 @@
       "nl": "Met vriendelijke groet,",
       "en": "Kind regards,"
     },
+    "invoice.quote.conversion_error.no_fiscal_year": {
+      "note": "SI-08. The invoice date falls in no fiscal year, so there is nowhere to put the invoice. The quote stays accepted and can be converted again.",
+      "nl": "De factuurdatum valt in geen enkel boekjaar. Maak het boekjaar aan of kies een andere factuurdatum; de offerte blijft geaccepteerd.",
+      "en": "The invoice date falls in no fiscal year. Create the fiscal year or choose another invoice date; the quote stays accepted."
+    },
+    "invoice.quote.conversion_error.customer_not_found": {
+      "note": "SI-08.",
+      "nl": "De klant van deze offerte bestaat niet meer. De offerte blijft geaccepteerd.",
+      "en": "This quote's customer no longer exists. The quote stays accepted."
+    },
+    "invoice.quote.conversion_error.customer_archived": {
+      "note": "SI-08. Names both ways out.",
+      "nl": "De klant van deze offerte is gearchiveerd, dus er wordt niet gefactureerd. Haal de klant uit het archief; de offerte blijft geaccepteerd.",
+      "en": "This quote's customer is archived, so nothing is invoiced. Restore the customer from the archive; the quote stays accepted."
+    },
+    "invoice.quote.conversion_error.customer_details_incomplete": {
+      "note": "SI-08 / FR-AR-003. The customer's name and address are needed on an invoice, at the moment they are put on one.",
+      "nl": "De gegevens van de klant zijn onvolledig, meestal het adres. Vul ze aan bij de klant en zet de offerte daarna opnieuw om.",
+      "en": "The customer's details are incomplete, usually the address. Complete them on the customer, then convert the quote again."
+    },
     "invoice.recurring.error.no_fiscal_year": {
       "note": "SI-07. A run's date falls in no fiscal year of this administration, so there is nowhere to put the invoice. Says how to fix it and that the run will be retried.",
       "nl": "De factuurdatum valt in geen enkel boekjaar. Maak het boekjaar aan; het schema probeert het daarna opnieuw.",

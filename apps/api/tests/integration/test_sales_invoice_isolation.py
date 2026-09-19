@@ -530,3 +530,100 @@ async def test_resuming_another_tenants_recurring_invoice_is_refused(
 ) -> None:
     path = f"/recurring-invoices/{uuid.uuid4()}/resume"
     assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+# -- SI-08: quotes and order confirmations (ADR-075) ----------------------------------------
+_QUOTES = "/v1/administrations/{administration_id}/quotes"
+
+
+def _quote_body() -> dict[str, object]:
+    return {
+        "kind": "quote",
+        "customer_id": str(uuid.uuid4()),
+        "lines": [
+            {
+                "description": "Advies",
+                "quantity": "1",
+                "unit_price": "100",
+                "vat_treatment": "btw_21",
+            }
+        ],
+    }
+
+
+@pytest.mark.isolation("POST", _QUOTES)
+async def test_creating_a_quote_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("POST", "/quotes", two_organizations, _quote_body()) in REFUSED
+
+
+@pytest.mark.isolation("GET", _QUOTES)
+async def test_listing_another_tenants_quotes_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", "/quotes", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _QUOTES + "/{quote_id}")
+async def test_reading_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", f"/quotes/{uuid.uuid4()}", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("PUT", _QUOTES + "/{quote_id}")
+async def test_editing_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}"
+    assert await _as_a("PUT", path, two_organizations, _quote_body()) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/sent")
+async def test_sending_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/sent"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/accept")
+async def test_accepting_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/accept"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/decline")
+async def test_declining_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/decline"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/cancel")
+async def test_cancelling_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/cancel"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/extend")
+async def test_extending_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/extend"
+    body = {"valid_until": "2099-01-01"}
+    assert await _as_a("POST", path, two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("POST", _QUOTES + "/{quote_id}/convert")
+async def test_converting_another_tenants_quote_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/quotes/{uuid.uuid4()}/convert"
+    assert await _as_a("POST", path, two_organizations) in REFUSED

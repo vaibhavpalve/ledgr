@@ -16,7 +16,7 @@ to `gross_amount`, applied here to quantities, prices and every total.
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import NoReturn
 
@@ -112,6 +112,25 @@ from api.invoicing.posting import (
     SalesPostingService,
 )
 from api.invoicing.posting_repository import SqlSalesPostingRepository
+from api.invoicing.quote_repository import SqlQuoteRepository
+from api.invoicing.quote_service import (
+    ConversionResult,
+    Quote,
+    QuoteConversionFailed,
+    QuoteDraft,
+    QuoteExpired,
+    QuoteNotEditable,
+    QuoteNotFound,
+    QuoteService,
+    QuoteTransitionInvalid,
+)
+from api.invoicing.quotes import (
+    QuoteInvalid,
+    QuoteKind,
+    QuoteLine,
+    QuoteStatus,
+    net_total,
+)
 from api.invoicing.receivables import AgeBucket, AgeingReport
 from api.invoicing.receivables_repository import SqlReceivablesRepository
 from api.invoicing.receivables_service import (
@@ -135,6 +154,7 @@ from api.invoicing.rendering import build_invoice_renderer
 from api.invoicing.repository import SqlInvoiceRepository
 from api.invoicing.service import InvoicingService, NewLine
 from api.invoicing.statutory import describe
+from api.invoicing.vat import line_net
 from api.ledger.service import build_ledger_service
 from api.mail.sender import build_email_sender
 from api.templates.assets import LogoNotRenderable, build_resolve_logo
@@ -311,6 +331,45 @@ def register(app: FastAPI) -> None:
         methods=["POST"],
         name="resume_recurring_invoice",
     )
+    # SI-08 (ADR-075): quotes and order confirmations, and their conversion.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/quotes",
+        create_quote,
+        methods=["POST"],
+        name="create_quote",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/quotes",
+        list_quotes,
+        methods=["GET"],
+        name="list_quotes",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/quotes/{quote_id}",
+        get_quote,
+        methods=["GET"],
+        name="get_quote",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/quotes/{quote_id}",
+        update_quote,
+        methods=["PUT"],
+        name="update_quote",
+    )
+    for _path, _handler, _name in (
+        ("sent", mark_quote_sent, "mark_quote_sent"),
+        ("accept", accept_quote, "accept_quote"),
+        ("decline", decline_quote, "decline_quote"),
+        ("cancel", cancel_quote, "cancel_quote"),
+        ("extend", extend_quote, "extend_quote"),
+        ("convert", convert_quote, "convert_quote"),
+    ):
+        app.add_api_route(
+            f"/v1/administrations/{{administration_id}}/quotes/{{quote_id}}/{_path}",
+            _handler,
+            methods=["POST"],
+            name=_name,
+        )
     # SI-06 (ADR-072): aged receivables and the customer statement.
     app.add_api_route(
         "/v1/administrations/{administration_id}/receivables/ageing",
@@ -2459,4 +2518,509 @@ async def run_recurring_invoices(
             "left_as_draft": sum(1 for o in outcomes if o.issue_error is not None),
         },
         "results": [_outcome_json(outcome, language) for outcome in outcomes],
+    }
+
+
+# -- SI-08: quotes and order confirmations (ADR-075) --------------------------------------
+
+
+async def get_quote_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+    # The same service `POST .../sales-invoices` uses: a converted quote becomes an
+    # ordinary draft invoice, raised by exactly the code a person's is.
+    invoicing: InvoicingService = Depends(get_invoicing_service),
+) -> QuoteService:
+    return QuoteService(
+        repository=SqlQuoteRepository(session),
+        invoicing=invoicing,
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+class QuoteBody(BaseModel):
+    kind: str = "quote"
+    customer_id: uuid.UUID
+    subject: str | None = None
+    valid_until: date | None = None
+    notes: str | None = None
+    lines: list[LineBody] = Field(default_factory=list)
+
+
+class AcceptBody(BaseModel):
+    #: Who accepted, on the customer's side, and their own reference (a purchase-order
+    #: number). Free text the customer supplied; both optional.
+    accepted_by_name: str | None = None
+    reference: str | None = None
+
+
+class DeclineBody(BaseModel):
+    reason: str | None = None
+
+
+class ExtendBody(BaseModel):
+    valid_until: date
+
+
+class ConvertBody(BaseModel):
+    #: Defaults to today.
+    invoice_date: date | None = None
+
+
+def _quote_draft(body: QuoteBody) -> QuoteDraft:
+    try:
+        kind = QuoteKind(body.kind)
+    except ValueError:
+        raise QuoteInvalid("the kind is quote or order_confirmation") from None
+    return QuoteDraft(
+        kind=kind,
+        customer_id=body.customer_id,
+        subject=body.subject.strip() if body.subject and body.subject.strip() else None,
+        valid_until=body.valid_until,
+        notes=body.notes,
+        lines=tuple(
+            QuoteLine(
+                description=line.description,
+                quantity=line.quantity,
+                unit_price=line.unit_price,
+                vat_treatment=line.vat_treatment,
+                discount_percent=line.discount_percent,
+            )
+            for line in body.lines
+        ),
+    )
+
+
+def _quote_json(quote: Quote, today: date) -> dict[str, object]:
+    def stamp(value: date | datetime | None) -> str | None:
+        return None if value is None else value.isoformat()
+
+    return {
+        "id": str(quote.id),
+        "kind": quote.kind.value,
+        "reference": quote.reference,
+        "customer_id": str(quote.customer_id),
+        "subject": quote.subject,
+        "valid_until": stamp(quote.valid_until),
+        "notes": quote.notes,
+        "status": quote.status.value,
+        # Derived, never stored: only a quote still OUT can expire.
+        "is_expired": quote.is_expired(today),
+        # NET only, deliberately: the VAT rate is the one in force on the INVOICE date
+        # (CMP-014), so a VAT figure here would be a promise about a rate that can change.
+        "net_amount": str(net_total(quote.lines)),
+        "sent_at": stamp(quote.sent_at),
+        "accepted_at": stamp(quote.accepted_at),
+        "accepted_by_name": quote.accepted_by_name,
+        "acceptance_reference": quote.acceptance_reference,
+        "declined_at": stamp(quote.declined_at),
+        "decline_reason": quote.decline_reason,
+        "cancelled_at": stamp(quote.cancelled_at),
+        "converted_at": stamp(quote.converted_at),
+        "converted_invoice_id": str(quote.converted_invoice_id)
+        if quote.converted_invoice_id
+        else None,
+        "lines": [
+            {
+                "description": line.description,
+                "quantity": str(line.quantity),
+                "unit_price": str(line.unit_price),
+                "discount_percent": str(line.discount_percent),
+                "vat_treatment": line.vat_treatment,
+                "line_net": str(
+                    line_net(
+                        quantity=line.quantity,
+                        unit_price=line.unit_price,
+                        discount_percent=line.discount_percent,
+                    )
+                ),
+            }
+            for line in quote.lines
+        ],
+    }
+
+
+def _quote_problem(request: Request, exc: Exception) -> Exception | None:
+    if isinstance(exc, QuoteNotFound):
+        return problem(request, 404, "errors.quote_not_found", reason="quote_not_found")
+    if isinstance(exc, CustomerNotFound):
+        return problem(request, 404, "errors.customer_not_found", reason="customer_not_found")
+    if isinstance(exc, QuoteInvalid):
+        return problem(request, 422, "errors.quote_invalid", reason="quote_invalid")
+    if isinstance(exc, QuoteTransitionInvalid):
+        return problem(
+            request,
+            409,
+            "errors.quote_transition_invalid",
+            reason="quote_transition_invalid",
+            current=exc.current.value,
+            target=exc.target.value,
+        )
+    if isinstance(exc, QuoteExpired):
+        return problem(request, 409, "errors.quote_expired", reason="quote_expired")
+    if isinstance(exc, QuoteNotEditable):
+        return problem(
+            request,
+            409,
+            "errors.quote_not_editable",
+            reason="quote_not_editable",
+            status=exc.status.value,
+        )
+    if isinstance(exc, QuoteConversionFailed):
+        return problem(
+            request,
+            409,
+            "errors.quote_conversion_failed",
+            reason="quote_conversion_failed",
+            code=exc.code,
+            reason_text=translate(
+                f"invoice.quote.conversion_error.{exc.code}", request_language(request)
+            ),
+        )
+    return None
+
+
+def _raise_quote(request: Request, exc: Exception) -> NoReturn:
+    refusal = _quote_problem(request, exc)
+    if refusal is None:
+        raise exc
+    raise refusal from exc
+
+
+async def create_quote(
+    administration_id: uuid.UUID,
+    body: QuoteBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-007: a numbered quote or order confirmation, as a draft. Asserts nothing
+    in the books - no invoice number, no posting, no VAT."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.create(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            draft=_quote_draft(body),
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def list_quotes(
+    administration_id: uuid.UUID,
+    request: Request,
+    status: str | None = Query(default=None),
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> list[dict[str, object]]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        wanted = QuoteStatus(status) if status else None
+    except ValueError:
+        raise problem(request, 422, "errors.quote_invalid", reason="quote_status_invalid") from None
+    quotes = await service.list(
+        administration_id=administration_id, actor_user_id=tenant.user_id, status=wanted
+    )
+    today = date.today()
+    return [_quote_json(quote, today) for quote in quotes]
+
+
+async def get_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.get(
+            administration_id=administration_id, quote_id=quote_id, actor_user_id=tenant.user_id
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def update_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    body: QuoteBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Replace a DRAFT. Once sent, a quote is what the customer was told: cancel it
+    and create a new one, or only extend its validity."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.update(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            draft=_quote_draft(body),
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def mark_quote_sent(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Record that the quote has gone to the customer. Does not send it: there is no
+    quote PDF or e-mail yet (ADR-075); it says a person did."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.mark_sent(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def accept_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    body: AcceptBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Record the customer's acceptance. Refused once the offer has expired."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.accept(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+            accepted_by_name=body.accepted_by_name if body else None,
+            acceptance_reference=body.reference if body else None,
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def decline_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    body: DeclineBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.decline(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+            reason=body.reason if body else None,
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def cancel_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Withdraw a quote that is still a draft, sent or accepted. A quote is cancelled,
+    never deleted: "we never offered that" must stay answerable."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.cancel(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def extend_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    body: ExtendBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Push out the validity of a quote that is still out - the one edit allowed after
+    sending, because it can only help the customer. Revives an expired quote."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        quote = await service.extend_validity(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            valid_until=body.valid_until,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return _quote_json(quote, date.today())
+
+
+async def convert_quote(
+    administration_id: uuid.UUID,
+    quote_id: uuid.UUID,
+    request: Request,
+    body: ConvertBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: QuoteService = Depends(get_quote_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Create sales invoices" (ADR-012): a quote is a pre-invoice
+            # commercial document, drafted by the same people who draft invoices.
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-007: turn an ACCEPTED quote into a DRAFT invoice with exactly its lines.
+
+    A draft, not an issued invoice: a numbered, posted invoice with no human looking at
+    it is the bulk-click problem again. Idempotent - converting a converted quote
+    returns its invoice (`already_converted`), so a retry cannot invoice twice.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        result: ConversionResult = await service.convert(
+            administration_id=administration_id,
+            quote_id=quote_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+            invoice_date=body.invoice_date if body else None,
+        )
+    except Exception as exc:
+        _raise_quote(request, exc)
+    return {
+        "invoice_id": str(result.invoice_id),
+        "already_converted": result.already_converted,
+        "quote": _quote_json(result.quote, date.today()),
     }

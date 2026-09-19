@@ -1177,3 +1177,48 @@ export interface SwitcherEntry extends ClientBadge {
   roleIsSystem: boolean;
   expiresAt: string | null;
 }
+
+
+/**
+ * SI-08 (ADR-075) - `api.invoicing.routes._quote_json`. An offer or order confirmation that
+ * converts into a DRAFT invoice. Totals are NET only: the VAT rate is the one in force on the
+ * invoice date, so a VAT figure here would promise a rate that can change.
+ */
+export interface QuoteView {
+  readonly id: string;
+  readonly kind: "quote" | "order_confirmation";
+  /** OF-0001 for quotes, OB-0001 for order confirmations. */
+  readonly reference: string;
+  readonly customer_id: string;
+  readonly subject: string | null;
+  readonly valid_until: string | null;
+  readonly notes: string | null;
+  readonly status: "draft" | "sent" | "accepted" | "declined" | "cancelled" | "converted";
+  /** Derived, never stored: only a quote still out can expire. */
+  readonly is_expired: boolean;
+  readonly net_amount: string;
+  readonly sent_at: string | null;
+  readonly accepted_at: string | null;
+  readonly accepted_by_name: string | null;
+  readonly acceptance_reference: string | null;
+  readonly declined_at: string | null;
+  readonly decline_reason: string | null;
+  readonly cancelled_at: string | null;
+  readonly converted_at: string | null;
+  readonly converted_invoice_id: string | null;
+  readonly lines: readonly {
+    readonly description: string;
+    readonly quantity: string;
+    readonly unit_price: string;
+    readonly discount_percent: string;
+    readonly vat_treatment: string;
+    readonly line_net: string;
+  }[];
+}
+
+/** `POST .../quotes/{id}/convert`. `already_converted` is true when a retry hit an existing conversion. */
+export interface QuoteConversionView {
+  readonly invoice_id: string;
+  readonly already_converted: boolean;
+  readonly quote: QuoteView;
+}
