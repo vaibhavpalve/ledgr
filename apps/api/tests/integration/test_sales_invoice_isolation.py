@@ -415,3 +415,30 @@ async def test_reading_another_tenants_statement_is_refused(
         )
 
     assert response.status_code in REFUSED
+
+
+# -- SI-11: chase everything overdue (ADR-073) ------------------------------------------
+#
+# The bulk send is the route that could mail another tenant's whole customer list, so
+# it is asked with a body that would otherwise be a perfectly valid explicit selection.
+
+
+@pytest.mark.isolation("POST", "/v1/administrations/{administration_id}/dunning/chase")
+async def test_chasing_another_tenants_overdue_invoices_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        everything = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/dunning/chase",
+            headers=_headers(token),
+        )
+        chosen = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/dunning/chase",
+            headers=_headers(token),
+            json={"items": [{"invoice_id": str(uuid.uuid4()), "step_position": 1}]},
+        )
+
+    assert everything.status_code in REFUSED
+    assert chosen.status_code in REFUSED

@@ -32,8 +32,10 @@ how hard to press, somebody outside the business - the act that permission names
 
 from __future__ import annotations
 
+import enum
 import uuid
 from collections.abc import Sequence
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -42,20 +44,38 @@ from typing import Any, Protocol
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.authz.model import AdministrationScope, AuthorizationRequest, ResourceAttributes
 from api.authz.service import AuthorizationService
-from api.invoicing.delivery import DeliveryStatus, ReminderNotice
-from api.invoicing.delivery_service import DeliveryRecord, InvoiceDeliveryService
+from api.invoicing.delivery import (
+    ArtifactNotAvailable,
+    ChannelNotAvailable,
+    DeliveryStatus,
+    ReminderNotice,
+    UnreachableCustomer,
+)
+from api.invoicing.delivery_service import (
+    DeliveryRecord,
+    InvoiceDeliveryService,
+    InvoiceNotRendered,
+)
 from api.invoicing.dunning import (
     DEFAULT_LADDER,
     DunningAssessment,
     InterestRate,
     InterestRateKind,
     LadderStep,
+    StepKind,
     assess,
     validate_ladder,
 )
 from api.invoicing.model import InvoiceNotFound, InvoicingError, NotAuthorizedToInvoice
 
 __all__ = [
+    "MAX_CHASE_PER_CALL",
+    "ChaseFailure",
+    "ChaseItem",
+    "ChaseReport",
+    "ChaseResult",
+    "ChaseSkip",
+    "ChaseStatus",
     "DunningInvoice",
     "DunningRepository",
     "DunningService",
@@ -108,6 +128,8 @@ class DunningInvoice:
     is_business: bool
     is_paused: bool
     sent_positions: frozenset[int]
+    #: The day the most recent reminder about this invoice went out, if any.
+    last_sent_on: date | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,8 +138,107 @@ class SentReminder:
     delivery: DeliveryRecord
 
 
+#: The most reminders one chase call sends. Sending is sequential (one SMTP hand-over
+#: each), so an unbounded call would run past any request timeout with half the
+#: customers mailed and no report. The rest are `deferred`; call again - anyone
+#: already reminded is `too_soon`, so it is safe.
+MAX_CHASE_PER_CALL = 50
+
+
+class ChaseStatus(enum.Enum):
+    SENT = "sent"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+
+class ChaseSkip(enum.Enum):
+    """Why an invoice was not attempted."""
+
+    #: The rules say nothing is due (see the assessment's blocker).
+    BLOCKED = "blocked"
+    #: A formal notice, in a "chase everything" call: it claims money and needs a
+    #: person to have chosen it.
+    NEEDS_CONFIRMATION = "needs_confirmation"
+    #: The step the person reviewed is no longer the next one.
+    STEP_CHANGED = "step_changed"
+    #: Named, but not overdue in this administration (or not there at all).
+    NOT_OVERDUE_OR_UNKNOWN = "not_overdue_or_unknown"
+    #: Over `MAX_CHASE_PER_CALL`; call again.
+    DEFERRED = "deferred"
+
+
+class ChaseFailure(enum.Enum):
+    """Why an attempted reminder did not go."""
+
+    UNREACHABLE = "unreachable"
+    NOT_RENDERED = "not_rendered"
+    NOT_DELIVERED = "not_delivered"
+    ALREADY_SENT = "already_sent"
+    UNAVAILABLE = "unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class ChaseItem:
+    """One invoice a person chose to chase, and the step they SAW."""
+
+    invoice_id: uuid.UUID
+    step_position: int
+
+
+@dataclass(frozen=True, slots=True)
+class ChaseResult:
+    invoice_id: uuid.UUID
+    status: ChaseStatus
+    invoice: DunningInvoice | None = None
+    assessment: DunningAssessment | None = None
+    skip: ChaseSkip | None = None
+    failure: ChaseFailure | None = None
+    delivery: DeliveryRecord | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ChaseReport:
+    results: tuple[ChaseResult, ...]
+
+    @property
+    def sent(self) -> int:
+        return sum(1 for r in self.results if r.status is ChaseStatus.SENT)
+
+    @property
+    def failed(self) -> int:
+        return sum(1 for r in self.results if r.status is ChaseStatus.FAILED)
+
+    @property
+    def deferred(self) -> int:
+        return sum(1 for r in self.results if r.skip is ChaseSkip.DEFERRED)
+
+    @property
+    def skipped(self) -> int:
+        """Skipped for any reason EXCEPT being deferred, which is its own count."""
+        return sum(
+            1
+            for r in self.results
+            if r.status is ChaseStatus.SKIPPED and r.skip is not ChaseSkip.DEFERRED
+        )
+
+
+def _skipped(invoice: DunningInvoice, assessment: DunningAssessment, why: ChaseSkip) -> ChaseResult:
+    return ChaseResult(
+        invoice_id=invoice.invoice_id,
+        status=ChaseStatus.SKIPPED,
+        invoice=invoice,
+        assessment=assessment,
+        skip=why,
+    )
+
+
 class DunningRepository(Protocol):
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None: ...
+
+    def savepoint(self) -> AbstractAsyncContextManager[None]:
+        """A SAVEPOINT around one unit of work: an error inside rolls back that
+        unit only, not the request's whole transaction."""
+        ...
 
     async def ladder(self, *, administration_id: uuid.UUID) -> tuple[LadderStep, ...] | None:
         """The configured ladder, or None when the administration never chose one
@@ -261,14 +382,44 @@ class DunningService:
 
         Raises `NothingToSend` (with the reason) when they do not, and
         `ReminderNotDelivered` when the provider did not accept the message - in
-        which case nothing is recorded and the step is still due.
+        which case nothing is recorded and the step is still due. The failed
+        dispatch and its audit entry ARE written, so a route that catches this
+        (rather than letting it roll the transaction back) keeps them.
         """
         await self._require(SEND, actor_user_id, administration_id)
         _, assessment = await self._assessed(administration_id, invoice_id, today)
         if not assessment.can_send or assessment.step is None:
             raise NothingToSend(assessment)
 
+        delivery, sent = await self._dispatch_and_record(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=actor_user_id,
+            assessment=assessment,
+            correlation_id=correlation_id,
+        )
+        if not sent:
+            raise ReminderNotDelivered(delivery)
+        return SentReminder(assessment=assessment, delivery=delivery)
+
+    async def _dispatch_and_record(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        invoice_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+        assessment: DunningAssessment,
+        correlation_id: str | None,
+    ) -> tuple[DeliveryRecord, bool]:
+        """Dispatch one assessed reminder and record what happened.
+
+        Returns the delivery and whether the provider ACCEPTED it. Only an accepted
+        one is recorded as a reminder sent (see the module docstring). A refusal is
+        RETURNED, not raised: a bulk chase must carry on to the next customer, and
+        a single send must be able to commit the failed dispatch's record.
+        """
         step = assessment.step
+        assert step is not None  # only called for a sendable assessment
         delivery = await self._delivery.dispatch(
             administration_id=administration_id,
             invoice_id=invoice_id,
@@ -294,7 +445,7 @@ class DunningService:
                 correlation_id=correlation_id,
                 detail={"step": step.position, "delivery_status": delivery.status.value},
             )
-            raise ReminderNotDelivered(delivery)
+            return delivery, False
 
         await self._repository.record_reminder(
             administration_id=administration_id,
@@ -324,7 +475,191 @@ class DunningService:
                 "days_overdue": assessment.days_overdue,
             },
         )
-        return SentReminder(assessment=assessment, delivery=delivery)
+        return delivery, True
+
+    # -- SI-11: chase everything overdue -----------------------------------------------
+
+    async def chase(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+        today: date,
+        items: Sequence[ChaseItem] | None = None,
+        correlation_id: str | None = None,
+    ) -> ChaseReport:
+        """Send the next reminder step to every overdue invoice that is due one.
+
+        Two modes, and the difference is the safety design:
+
+        * `items is None` - "chase everything". Sends the friendly and ordinary
+          reminder steps to whatever is due one. A FORMAL NOTICE is never sent this
+          way: it claims interest and collection cost, and a bulk click must not be
+          able to demand money from fifty customers nobody looked at. Those are
+          reported as `needs_confirmation`.
+        * `items` given - exactly those invoices, each with the step position the
+          person REVIEWED. An item whose step has since changed (a preview that went
+          stale, a retried request) is skipped as `step_changed`, never sent as
+          whatever the step has become. Naming a formal notice here IS the explicit
+          confirmation.
+
+        Every invoice is re-assessed at send time, so the answer is current whichever
+        mode. One customer's failure (no e-mail address, a provider refusal) does not
+        stop the rest: each runs in its own savepoint and is reported. At most
+        `MAX_CHASE_PER_CALL` are sent per call, because sending is sequential; the
+        rest are `deferred`, and calling again is safe - anyone already reminded is
+        `too_soon`.
+        """
+        await self._require(SEND, actor_user_id, administration_id)
+        steps, _ = await self._ladder(administration_id)
+        invoices = await self._repository.overdue(administration_id=administration_id, today=today)
+        rates = await self._rates_for(invoices, steps)
+        assessed = {
+            invoice.invoice_id: (invoice, self._assess(invoice, steps, rates, today))
+            for invoice in invoices
+        }
+
+        results: list[ChaseResult] = []
+        candidates: list[tuple[DunningInvoice, DunningAssessment]] = []
+
+        if items is None:
+            for invoice, assessment in assessed.values():
+                if not assessment.can_send or assessment.step is None:
+                    results.append(_skipped(invoice, assessment, ChaseSkip.BLOCKED))
+                elif assessment.step.kind is StepKind.FORMAL_NOTICE:
+                    results.append(_skipped(invoice, assessment, ChaseSkip.NEEDS_CONFIRMATION))
+                else:
+                    candidates.append((invoice, assessment))
+        else:
+            seen: set[uuid.UUID] = set()
+            for item in items:
+                if item.invoice_id in seen:
+                    continue
+                seen.add(item.invoice_id)
+                found = assessed.get(item.invoice_id)
+                if found is None:
+                    results.append(
+                        ChaseResult(
+                            invoice_id=item.invoice_id,
+                            status=ChaseStatus.SKIPPED,
+                            skip=ChaseSkip.NOT_OVERDUE_OR_UNKNOWN,
+                        )
+                    )
+                    continue
+                invoice, assessment = found
+                # A step that exists but is not the one reviewed is step_changed even
+                # when it is also blocked - that is the more useful thing to tell the
+                # person. No step at all (paused, paid, ...) is simply blocked.
+                if assessment.step is not None and assessment.step.position != item.step_position:
+                    results.append(_skipped(invoice, assessment, ChaseSkip.STEP_CHANGED))
+                elif not assessment.can_send:
+                    results.append(_skipped(invoice, assessment, ChaseSkip.BLOCKED))
+                else:
+                    candidates.append((invoice, assessment))
+
+        for invoice, assessment in candidates[MAX_CHASE_PER_CALL:]:
+            results.append(_skipped(invoice, assessment, ChaseSkip.DEFERRED))
+
+        for invoice, assessment in candidates[:MAX_CHASE_PER_CALL]:
+            results.append(
+                await self._chase_one(
+                    invoice=invoice,
+                    assessment=assessment,
+                    administration_id=administration_id,
+                    actor_user_id=actor_user_id,
+                    correlation_id=correlation_id,
+                )
+            )
+
+        report = ChaseReport(results=tuple(results))
+        await self._record(
+            administration_id=administration_id,
+            user_id=actor_user_id,
+            action="chase_overdue",
+            resource_type="dunning_reminder",
+            resource_id=administration_id,
+            correlation_id=correlation_id,
+            detail={
+                "sent": report.sent,
+                "skipped": report.skipped,
+                "failed": report.failed,
+                "deferred": report.deferred,
+                # Whether a person chose the invoices, or asked for everything.
+                "explicit_selection": items is not None,
+            },
+        )
+        return report
+
+    async def _chase_one(
+        self,
+        *,
+        invoice: DunningInvoice,
+        assessment: DunningAssessment,
+        administration_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+        correlation_id: str | None,
+    ) -> ChaseResult:
+        """One invoice, in its own SAVEPOINT, reported rather than raised."""
+        failure: ChaseFailure | None = None
+        try:
+            async with self._repository.savepoint():
+                delivery, sent = await self._dispatch_and_record(
+                    administration_id=administration_id,
+                    invoice_id=invoice.invoice_id,
+                    actor_user_id=actor_user_id,
+                    assessment=assessment,
+                    correlation_id=correlation_id,
+                )
+        except ReminderAlreadySent:
+            failure = ChaseFailure.ALREADY_SENT
+        except UnreachableCustomer:
+            failure = ChaseFailure.UNREACHABLE
+        except InvoiceNotRendered:
+            failure = ChaseFailure.NOT_RENDERED
+        except (ChannelNotAvailable, ArtifactNotAvailable):
+            failure = ChaseFailure.UNAVAILABLE
+        else:
+            if sent:
+                return ChaseResult(
+                    invoice_id=invoice.invoice_id,
+                    status=ChaseStatus.SENT,
+                    invoice=invoice,
+                    assessment=assessment,
+                    delivery=delivery,
+                )
+            return ChaseResult(
+                invoice_id=invoice.invoice_id,
+                status=ChaseStatus.FAILED,
+                invoice=invoice,
+                assessment=assessment,
+                failure=ChaseFailure.NOT_DELIVERED,
+                delivery=delivery,
+            )
+
+        # The savepoint rolled this invoice's writes back, including any audit the
+        # dispatch made - so the failure is recorded HERE, outside it, or a customer
+        # who may or may not have been e-mailed (the already-sent race) would leave
+        # no trace at all.
+        await self._record(
+            administration_id=administration_id,
+            user_id=actor_user_id,
+            action="send_dunning_reminder",
+            resource_type="dunning_reminder",
+            resource_id=invoice.invoice_id,
+            outcome=AuditOutcome.FAILURE,
+            correlation_id=correlation_id,
+            detail={
+                "step": assessment.step.position if assessment.step else None,
+                "reason": failure.value,
+            },
+        )
+        return ChaseResult(
+            invoice_id=invoice.invoice_id,
+            status=ChaseStatus.FAILED,
+            invoice=invoice,
+            assessment=assessment,
+            failure=failure,
+        )
 
     # -- pause ----------------------------------------------------------------------
 
@@ -437,6 +772,7 @@ class DunningService:
             paused=invoice.is_paused,
             is_business=invoice.is_business,
             rates=rates.get(kind, ()),
+            last_sent_on=invoice.last_sent_on,
         )
 
     async def _require(

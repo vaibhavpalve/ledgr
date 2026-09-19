@@ -662,6 +662,7 @@ export type DunningBlocker =
   | "not_overdue"
   | "ladder_complete"
   | "step_not_due"
+  | "too_soon"
   | "interest_rate_missing";
 
 /**
@@ -720,6 +721,56 @@ export interface InvoiceDeliveryView {
   readonly sent_at: string | null;
   readonly settled_at: string | null;
   readonly next_attempt_at: string | null;
+}
+
+/** Why an invoice was not attempted by a bulk chase (SI-11). */
+export type ChaseSkip =
+  | "blocked"
+  | "needs_confirmation"
+  | "step_changed"
+  | "not_overdue_or_unknown"
+  | "deferred";
+
+/** Why an attempted reminder did not go (SI-11). */
+export type ChaseFailure =
+  | "unreachable"
+  | "not_rendered"
+  | "not_delivered"
+  | "already_sent"
+  | "unavailable";
+
+/**
+ * SI-11 (ADR-073) - `api.invoicing.routes._chase_json`. `POST .../dunning/chase`.
+ * Always HTTP 200 with a per-invoice report: one customer's failure does not stop the rest.
+ *
+ * Body: `{ items?: { invoice_id, step_position }[] | null }`. Omitted or null means "chase
+ * everything" - friendly and ordinary reminders only; a formal notice is NEVER sent that way
+ * and is reported as `needs_confirmation`. With `items`, exactly those invoices are chased, each
+ * with the step the person REVIEWED (`step_changed` if it has since moved on); naming a formal
+ * notice there is the explicit confirmation.
+ */
+export interface ChaseReportView {
+  readonly summary: {
+    readonly sent: number;
+    readonly skipped: number;
+    readonly failed: number;
+    /** Over the per-call cap. Call again: anyone already reminded is `too_soon`. */
+    readonly deferred: number;
+  };
+  readonly results: readonly {
+    readonly invoice_id: string;
+    readonly invoice_reference: string | null;
+    readonly customer_name: string | null;
+    readonly status: "sent" | "skipped" | "failed";
+    readonly step: DunningStepView | null;
+    readonly skip: ChaseSkip | null;
+    /** The reason, in the reader's language - the blocker's sentence for `blocked`. */
+    readonly skip_message: string | null;
+    readonly blocker: DunningBlocker | null;
+    readonly failure: ChaseFailure | null;
+    readonly failure_message: string | null;
+    readonly delivery: InvoiceDeliveryView | null;
+  }[];
 }
 
 /** `POST .../sales-invoices/{id}/dunning/send`. */

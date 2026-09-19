@@ -19,6 +19,7 @@ from api.invoicing.dunning import (
     DEFAULT_LADDER,
     FORMAL_NOTICE_DEADLINE_DAYS,
     MAX_STEPS,
+    MIN_DAYS_BETWEEN_REMINDERS,
     WIK_MAXIMUM,
     WIK_MINIMUM,
     Blocker,
@@ -325,6 +326,7 @@ def _assess(
     business: bool = True,
     rate_table: list[InterestRate] | None = None,
     steps: tuple[LadderStep, ...] = DEFAULT_LADDER,
+    last_sent_days_ago: int | None = None,
 ):  # type: ignore[no-untyped-def]
     return assess(
         invoice_id=INVOICE,
@@ -336,6 +338,11 @@ def _assess(
         paused=paused,
         is_business=business,
         rates=RATE_10 if rate_table is None else rate_table,
+        last_sent_on=(
+            None
+            if last_sent_days_ago is None
+            else _today(days) - timedelta(days=last_sent_days_ago)
+        ),
     )
 
 
@@ -430,3 +437,55 @@ def test_a_ladder_that_charges_no_interest_needs_no_rate() -> None:
 def test_a_consumer_is_assessed_under_the_consumer_rate_kind() -> None:
     assert _assess(business=False).interest_kind is InterestRateKind.CONSUMER
     assert _assess(business=True).interest_kind is InterestRateKind.COMMERCIAL
+
+
+# ===========================================================================
+# spacing: one reminder is never followed at once by the next
+# ===========================================================================
+
+
+def _today(days: int) -> date:
+    return DUE + timedelta(days=days)
+
+
+def test_the_gap_is_a_week() -> None:
+    assert MIN_DAYS_BETWEEN_REMINDERS == 7
+
+
+def test_a_far_overdue_invoice_cannot_be_escalated_straight_away() -> None:
+    """The defect this rule closes: step 1 sent on day 40, and step 2's day (21) has
+    long passed - so without a gap, pressing send again would send step 2 at once."""
+    result = _assess(days=40, sent=frozenset({1}), last_sent_days_ago=0)
+
+    assert result.blocker is Blocker.TOO_SOON
+    assert not result.can_send
+    assert result.step == DEFAULT_LADDER[1]  # named, so a screen can say what is next
+
+
+@pytest.mark.parametrize(
+    ("ago", "sendable"),
+    [(0, False), (1, False), (6, False), (7, True), (8, True), (30, True)],
+)
+def test_the_gap_boundary(ago: int, sendable: bool) -> None:
+    result = _assess(days=40, sent=frozenset({1}), last_sent_days_ago=ago)
+    assert result.can_send is sendable
+
+
+def test_the_first_reminder_has_nothing_to_wait_for() -> None:
+    assert _assess(days=40, last_sent_days_ago=None).can_send
+
+
+def test_the_gap_is_checked_before_a_missing_interest_rate() -> None:
+    """A customer reminded yesterday is 'too soon', not also refused for a rate."""
+    result = _assess(days=40, sent=frozenset({1, 2}), last_sent_days_ago=1, rate_table=[])
+    assert result.blocker is Blocker.TOO_SOON
+
+
+def test_a_finished_ladder_still_says_complete_not_too_soon() -> None:
+    result = _assess(days=400, sent=frozenset({1, 2, 3}), last_sent_days_ago=1)
+    assert result.blocker is Blocker.LADDER_COMPLETE
+
+
+def test_a_step_not_yet_due_still_says_so_not_too_soon() -> None:
+    result = _assess(days=3, last_sent_days_ago=1)
+    assert result.blocker is Blocker.STEP_NOT_DUE

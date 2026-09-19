@@ -8,7 +8,8 @@ there; the rules that DECIDE live in `api.invoicing.dunning` and never in this f
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -39,6 +40,7 @@ def _invoice(row: Any) -> DunningInvoice:
         is_business=bool(row.is_business),
         is_paused=bool(row.is_paused),
         sent_positions=frozenset(row.sent_positions or ()),
+        last_sent_on=row.last_sent_on,
     )
 
 
@@ -53,6 +55,18 @@ class SqlDunningRepository:
         )
         row = result.first()
         return None if row is None else row.organization_id
+
+    @asynccontextmanager
+    async def savepoint(self) -> AsyncIterator[None]:
+        """A SAVEPOINT around one unit of work.
+
+        A bulk chase sends many reminders in one request transaction. A database
+        error part-way (two people racing to send one step) would otherwise poison
+        the whole transaction and lose every reminder already recorded; inside a
+        savepoint only that one item is rolled back and the rest carry on.
+        """
+        async with self._session.begin_nested():
+            yield
 
     async def ladder(self, *, administration_id: uuid.UUID) -> tuple[LadderStep, ...] | None:
         configured = await self._session.execute(
@@ -145,7 +159,8 @@ class SqlDunningRepository:
         result = await self._session.execute(
             text(
                 "SELECT invoice_id, invoice_reference, invoice_date, due_date, customer_id, "
-                "       customer_name, outstanding, is_business, is_paused, sent_positions "
+                "       customer_name, outstanding, is_business, is_paused, sent_positions, "
+                "       last_sent_on "
                 "  FROM invoicing.overdue_invoices(:admin, :today)"
             ),
             {"admin": str(administration_id), "today": today},
@@ -171,7 +186,9 @@ class SqlDunningRepository:
                        COALESCE(ARRAY(SELECT r.step_position FROM dunning_reminder r
                                        WHERE r.invoice_id = b.invoice_id
                                        ORDER BY r.step_position), '{}'::integer[])
-                           AS sent_positions
+                           AS sent_positions,
+                       (SELECT max(r.sent_at)::date FROM dunning_reminder r
+                         WHERE r.invoice_id = b.invoice_id) AS last_sent_on
                   FROM invoicing.invoice_balances(:admin, :invoice) b
                   JOIN sales_invoice si ON si.id = b.invoice_id
                 """

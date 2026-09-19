@@ -50,6 +50,7 @@ __all__ = [
     "DEFAULT_LADDER",
     "FORMAL_NOTICE_DEADLINE_DAYS",
     "MAX_STEPS",
+    "MIN_DAYS_BETWEEN_REMINDERS",
     "WIK_TIERS",
     "Blocker",
     "DunningAssessment",
@@ -71,7 +72,18 @@ __all__ = [
 #: fifteen-step one is a schedule for nagging.
 MAX_STEPS = 6
 
+#: The fewest days between two reminders to one customer about one invoice.
+#:
+#: `days_after_due` spaces the steps from the DUE date, not from each other, so
+#: without this an invoice 40 days overdue that nobody has chased would get step 1,
+#: and pressing send again would immediately send step 2 and then the formal
+#: notice - every step's day having already passed. A ladder that can fire three
+#: times in a minute is not a ladder. Found while designing SI-11's bulk chase,
+#: where one retried click would have done it to every customer at once.
+MIN_DAYS_BETWEEN_REMINDERS = 7
+
 #: A formal notice offers this many days to pay before costs are claimed.
+#:
 #: The statutory minimum is 14 FULL days counted from the day after the notice is
 #: RECEIVED, so 15 counted from the day it is SENT is the conservative reading:
 #: a deadline that is a day too long costs nothing, and one a day too short can
@@ -135,6 +147,8 @@ class Blocker(enum.Enum):
     NOT_OVERDUE = "not_overdue"
     LADDER_COMPLETE = "ladder_complete"
     STEP_NOT_DUE = "step_not_due"
+    #: The last reminder went out fewer than MIN_DAYS_BETWEEN_REMINDERS days ago.
+    TOO_SOON = "too_soon"
     #: The next step charges interest and no rate is loaded for the date. Refused
     #: rather than sent without: see the module docstring.
     INTEREST_RATE_MISSING = "interest_rate_missing"
@@ -340,6 +354,7 @@ def assess(
     paused: bool,
     is_business: bool,
     rates: Sequence[InterestRate],
+    last_sent_on: date | None = None,
 ) -> DunningAssessment:
     """One invoice, one day: the step, the amounts, or the reason for neither.
 
@@ -369,6 +384,11 @@ def assess(
         return blocked(why, step)
     assert step is not None  # next_step returns a step whenever it returns no blocker
 
+    # Spacing from the LAST reminder, not from the due date - see
+    # MIN_DAYS_BETWEEN_REMINDERS. Checked before interest so a customer who was
+    # reminded yesterday is not also assessed (and possibly refused) on a rate.
+    if last_sent_on is not None and (today - last_sent_on).days < MIN_DAYS_BETWEEN_REMINDERS:
+        return blocked(Blocker.TOO_SOON, step)
     interest: Decimal | None = None
     if step.charge_interest:
         try:

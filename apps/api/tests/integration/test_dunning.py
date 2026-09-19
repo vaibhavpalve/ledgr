@@ -70,7 +70,7 @@ async def _overdue_invoice(
 async def _overdue_rows(tenants: SeededTenants) -> list[object]:
     result = await _exec(
         tenants,
-        "SELECT invoice_id, outstanding, is_business, is_paused, sent_positions "
+        "SELECT invoice_id, outstanding, is_business, is_paused, sent_positions, last_sent_on "
         "  FROM invoicing.overdue_invoices(:admin, CAST(:today AS date))",
         admin=str(tenants.admin_a),
         today=TODAY,
@@ -159,6 +159,20 @@ async def test_sent_steps_are_reported(two_organizations: SeededTenants) -> None
 
     (row,) = await _overdue_rows(two_organizations)
     assert list(row.sent_positions) == [1, 2]  # type: ignore[attr-defined]
+
+
+async def test_the_day_of_the_last_reminder_is_reported(two_organizations: SeededTenants) -> None:
+    """Migration 0055: the fact the spacing rule (MIN_DAYS_BETWEEN_REMINDERS) needs."""
+    owed = await _overdue_invoice(two_organizations)
+    (before,) = await _overdue_rows(two_organizations)
+    assert before.last_sent_on is None  # type: ignore[attr-defined]
+
+    await _remind(two_organizations, owed, position=1)
+    await _remind(two_organizations, owed, position=2, kind="reminder")
+
+    (after,) = await _overdue_rows(two_organizations)
+    # The MOST RECENT of the two, as a date - not the first, not a timestamp.
+    assert after.last_sent_on == date.today()  # type: ignore[attr-defined]
 
 
 async def test_a_customer_paused_is_reported_paused(two_organizations: SeededTenants) -> None:

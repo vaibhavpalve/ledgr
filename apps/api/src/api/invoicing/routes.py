@@ -21,6 +21,7 @@ from decimal import Decimal
 from typing import NoReturn
 
 from fastapi import Depends, FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,6 +67,10 @@ from api.invoicing.delivery_service import (
 from api.invoicing.dunning import DunningAssessment, LadderInvalid, LadderStep, StepKind
 from api.invoicing.dunning_repository import SqlDunningRepository
 from api.invoicing.dunning_service import (
+    ChaseItem,
+    ChaseReport,
+    ChaseResult,
+    ChaseSkip,
     CustomerNotFoundForPause,
     DunningInvoice,
     DunningService,
@@ -229,6 +234,8 @@ def register(app: FastAPI) -> None:
         "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/dunning/send",
         send_invoice_reminder,
         methods=["POST"],
+        # Returns either the JSON body or a JSONResponse (the 502 that must commit).
+        response_model=None,
         name="send_sales_invoice_reminder",
     )
     app.add_api_route(
@@ -242,6 +249,13 @@ def register(app: FastAPI) -> None:
         resume_customer_dunning,
         methods=["DELETE"],
         name="resume_customer_dunning",
+    )
+    # SI-11 (ADR-073): chase everything overdue.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/dunning/chase",
+        chase_overdue,
+        methods=["POST"],
+        name="chase_overdue_invoices",
     )
     # SI-06 (ADR-072): aged receivables and the customer statement.
     app.add_api_route(
@@ -1644,7 +1658,7 @@ async def send_invoice_reminder(
             audit=AuditCategory.CONFIGURATION,
         )
     ),
-) -> dict[str, object]:
+) -> dict[str, object] | JSONResponse:
     """Send the NEXT reminder step for one invoice, if the ladder says one is due.
 
     Always the lowest step not yet sent - an invoice far overdue still gets step 1
@@ -1660,6 +1674,12 @@ async def send_invoice_reminder(
             actor_user_id=tenant.user_id,
             today=date.today(),
         )
+    except ReminderNotDelivered as exc:
+        # RETURNED, not raised. The request runs in one transaction that a raised
+        # exception rolls back - taking the failed dispatch's row and its FAILURE
+        # audit entry with it, and leaving no record that an attempt was made.
+        # Nothing was e-mailed, so the 502 is honest; the record is worth keeping.
+        return _not_delivered_response(request, exc)
     except Exception as exc:
         _raise_dunning(request, exc)
     step = sent.assessment.step
@@ -1895,3 +1915,120 @@ async def get_customer_statement(
             request, 404, "errors.customer_not_found", reason="customer_not_found"
         ) from exc
     return _statement_json(result, request_language(request))
+
+
+# -- SI-11: chase everything overdue (ADR-073) ----------------------------------------
+
+
+def _not_delivered_response(request: Request, exc: ReminderNotDelivered) -> JSONResponse:
+    """The 502 for a provider that did not accept a reminder, as a RESPONSE so the
+    transaction commits the failed dispatch's record. Same body shape `problem`
+    gives, so a client cannot tell the difference."""
+    refusal = problem(
+        request,
+        502,
+        "errors.dunning_reminder_not_delivered",
+        reason="dunning_reminder_not_delivered",
+        delivery_status=exc.delivery.status.value,
+    )
+    return JSONResponse(status_code=refusal.status_code, content={"detail": refusal.detail})
+
+
+class ChaseItemBody(BaseModel):
+    invoice_id: uuid.UUID
+    #: The step the person REVIEWED. If it is no longer the next one, the invoice is
+    #: skipped (`step_changed`) rather than sent as whatever the step has become.
+    step_position: int
+
+
+class ChaseBody(BaseModel):
+    #: Omitted or null: "chase everything" - friendly and ordinary reminders only, a
+    #: formal notice is never sent this way. Given: exactly these, and naming a
+    #: formal notice here IS the explicit confirmation.
+    items: list[ChaseItemBody] | None = None
+
+
+def _chase_json(report: ChaseReport, language: Language) -> dict[str, object]:
+    def result_json(result: ChaseResult) -> dict[str, object]:
+        invoice, assessment = result.invoice, result.assessment
+        blocker = assessment.blocker if assessment else None
+        return {
+            "invoice_id": str(result.invoice_id),
+            "invoice_reference": invoice.invoice_reference if invoice else None,
+            "customer_name": invoice.customer_name if invoice else None,
+            "status": result.status.value,
+            "step": _step_json(assessment.step) if assessment and assessment.step else None,
+            "skip": result.skip.value if result.skip else None,
+            "skip_message": (
+                translate(f"invoice.chase.skip.{result.skip.value}", language)
+                if result.skip and result.skip is not ChaseSkip.BLOCKED
+                else (
+                    translate(f"invoice.dunning.blocker.{blocker.value}", language)
+                    if result.skip and blocker
+                    else None
+                )
+            ),
+            "blocker": blocker.value if blocker else None,
+            "failure": result.failure.value if result.failure else None,
+            "failure_message": (
+                translate(f"invoice.chase.failure.{result.failure.value}", language)
+                if result.failure
+                else None
+            ),
+            "delivery": _delivery_json(result.delivery) if result.delivery else None,
+        }
+
+    return {
+        "summary": {
+            "sent": report.sent,
+            "skipped": report.skipped,
+            "failed": report.failed,
+            # Over the per-call cap: call again. Anyone already reminded is
+            # `too_soon`, so repeating the call is safe.
+            "deferred": report.deferred,
+        },
+        "results": [result_json(result) for result in report.results],
+    }
+
+
+async def chase_overdue(
+    administration_id: uuid.UUID,
+    request: Request,
+    body: ChaseBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Send sales invoices" - as sending one reminder.
+            "send",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """SI-11: send the next reminder step to every overdue invoice that is due one.
+
+    Always 200 with a per-invoice report: one customer's missing address or a
+    provider refusal does not stop the rest. Re-assesses every invoice at send time.
+    `items` (invoice + the step reviewed) sends exactly those; omitted, it sends
+    friendly and ordinary reminders only and reports formal notices as
+    `needs_confirmation`.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    items = (
+        None
+        if body is None or body.items is None
+        else [ChaseItem(i.invoice_id, i.step_position) for i in body.items]
+    )
+    try:
+        report = await service.chase(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+            items=items,
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return _chase_json(report, request_language(request))

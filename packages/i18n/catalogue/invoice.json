@@ -938,6 +938,56 @@
       "nl": "Alle herinneringen voor deze factuur zijn verstuurd. Overweeg de volgende stap zelf, bijvoorbeeld incasso of afschrijving.",
       "en": "Every reminder for this invoice has been sent. Decide the next step yourself, for example collection or a write-off."
     },
+    "invoice.dunning.blocker.too_soon": {
+      "note": "SI-11 / FR-AR-010. The last reminder went out fewer than 7 days ago. Steps are spaced from the due date, so without this a far-overdue invoice would get every step in a row; and it is what makes repeating a bulk chase safe.",
+      "nl": "Er is minder dan zeven dagen geleden al een herinnering verstuurd voor deze factuur. De volgende volgt zodra er genoeg tijd verstreken is.",
+      "en": "A reminder about this invoice went out less than seven days ago. The next one follows once enough time has passed."
+    },
+    "invoice.chase.skip.needs_confirmation": {
+      "note": "SI-11. A formal notice claims interest and collection costs, so a bulk 'chase everything' never sends one: a person must choose that invoice. Says how.",
+      "nl": "Dit is een aanmaning, met rente en incassokosten. Die verstuur je niet in bulk: kies deze factuur zelf om de aanmaning te versturen.",
+      "en": "This is a formal notice, with interest and collection costs. It is not sent in bulk: choose this invoice yourself to send the notice."
+    },
+    "invoice.chase.skip.step_changed": {
+      "note": "SI-11. The person reviewed one step and a different one is now next (a stale preview, or a repeated request). Skipped rather than sent as whatever the step has become.",
+      "nl": "De volgende herinnering voor deze factuur is intussen een andere dan die je bekeek. Er is niets verstuurd; bekijk de factuur opnieuw.",
+      "en": "The next reminder for this invoice is no longer the one you reviewed. Nothing was sent; review the invoice again."
+    },
+    "invoice.chase.skip.not_overdue_or_unknown": {
+      "note": "SI-11. Named in the request but not overdue in this administration - paid since, or never here. The two look the same on purpose.",
+      "nl": "Deze factuur is niet (meer) achterstallig. Er is niets verstuurd.",
+      "en": "This invoice is not (or no longer) overdue. Nothing was sent."
+    },
+    "invoice.chase.skip.deferred": {
+      "note": "SI-11. Over the per-call limit. Repeating the call is safe: anyone already reminded is skipped as too soon.",
+      "nl": "Niet verstuurd omdat er per keer een maximumaantal herinneringen wordt verstuurd. Herhaal de actie voor de rest.",
+      "en": "Not sent because only a limited number of reminders are sent at a time. Repeat the action for the rest."
+    },
+    "invoice.chase.failure.unreachable": {
+      "note": "SI-11. The customer has no e-mail address on file. Says what to do: add one, or send it another way.",
+      "nl": "Deze klant heeft geen e-mailadres. Voeg er een toe bij de klant of stuur de herinnering op een andere manier.",
+      "en": "This customer has no e-mail address. Add one on the customer, or send the reminder another way."
+    },
+    "invoice.chase.failure.not_rendered": {
+      "note": "SI-11. Only reachable for an invoice issued before migration 0040, which did not render a PDF at issue (FR-TPL-017).",
+      "nl": "Van deze factuur is geen PDF bewaard, dus er kan geen herinnering met bijlage worden verstuurd.",
+      "en": "No PDF was stored for this invoice, so a reminder with an attachment cannot be sent."
+    },
+    "invoice.chase.failure.not_delivered": {
+      "note": "SI-11. The e-mail provider did not accept the message, so it was not sent and the step is still due.",
+      "nl": "De e-mailprovider heeft de herinnering niet geaccepteerd, dus die is niet verstuurd. Probeer het later opnieuw.",
+      "en": "The e-mail provider did not accept the reminder, so it was not sent. Try again later."
+    },
+    "invoice.chase.failure.already_sent": {
+      "note": "SI-11. Two requests raced to send one step. Worth checking whether the customer received it twice.",
+      "nl": "Deze herinneringsstap was al verstuurd, bijna gelijktijdig door een andere actie. Controleer of de klant hem dubbel kreeg.",
+      "en": "This reminder step had already been sent, almost simultaneously by another action. Check whether the customer received it twice."
+    },
+    "invoice.chase.failure.unavailable": {
+      "note": "SI-11. The customer's preferred channel cannot be used by this deployment.",
+      "nl": "Het verzendkanaal voor deze klant is niet beschikbaar. Er is niets verstuurd.",
+      "en": "The delivery channel for this customer is not available. Nothing was sent."
+    },
     "invoice.dunning.blocker.interest_rate_missing": {
       "note": "SI-04. The step charges statutory interest and no rate is loaded for the date. Refused rather than sent without or with a guess. Two ways out, named: load the rates, or stop charging interest on that step.",
       "nl": "Deze herinnering brengt wettelijke rente in rekening, maar er is geen rentepercentage geladen voor deze periode. Laat een beheerder de wettelijke rente laden, of zet rente uit voor deze stap.",
