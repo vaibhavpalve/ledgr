@@ -60,6 +60,7 @@ from api.invoicing.delivery_service import (
     InvoiceDeliveryService,
     InvoiceNotRendered,
 )
+from api.invoicing.duplicates import message_for as duplicate_message
 from api.invoicing.model import (
     AlreadyCredited,
     CreditNoteMismatch,
@@ -374,6 +375,21 @@ def _view_json(view: InvoiceView, language: Language) -> dict[str, object]:
             for failure, message in describe(view.statutory_failures, language)
         ],
         "can_be_issued": view.can_be_issued,
+        # SI-12. Recent invoices to the same customer that look like this one -
+        # a warning shown beside the draft, never a reason `can_be_issued` is
+        # false. A client must not gate the issue button on this being empty.
+        "duplicate_warnings": [
+            {
+                "invoice_id": str(warning.invoice_id),
+                "strength": warning.strength.value,
+                "status": warning.status,
+                "invoice_reference": warning.invoice_reference,
+                "invoice_date": warning.invoice_date.isoformat(),
+                "net_amount": str(warning.net_total),
+                "message": duplicate_message(warning, language),
+            }
+            for warning in view.duplicate_warnings
+        ],
         # The legal wording has not been reviewed by a Dutch tax adviser. Said
         # out loud rather than left in a comment - see api.invoicing.wording.
         "wording_is_provisional": view.wording_is_provisional,

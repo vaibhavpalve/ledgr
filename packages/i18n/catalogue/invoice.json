@@ -241,6 +241,26 @@
       "nl": "Voor de BTW-behandeling op regel {line} is geen tarief bekend op de factuurdatum, dus er valt niets te berekenen. Kies een andere factuurdatum of een andere BTW-behandeling, of laat een beheerder de actuele BTW-tarieven laden.",
       "en": "No rate is known for the BTW treatment on line {line} on the invoice date, so there is nothing to calculate with. Choose a different invoice date or BTW treatment, or ask an administrator to load the current BTW rates."
     },
+    "invoice.duplicate.identical.issued": {
+      "note": "SI-12. A WARNING, never a refusal: repeating an invoice is often correct, so the sentence says what was found and what to check, not that anything is wrong. {reference} is the issued invoice's number, {date} its invoice date, {amount} its net total, all already formatted.",
+      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft dezelfde regels (netto {amount}). Controleer of je niet dezelfde factuur twee keer verstuurt. Is het bedoeld, dan kun je gewoon doorgaan.",
+      "en": "Invoice {reference} of {date} to the same customer has the same lines (net {amount}). Check that you are not sending the same invoice twice. If it is intended, carry on."
+    },
+    "invoice.duplicate.identical.draft": {
+      "note": "SI-12. As invoice.duplicate.identical.issued, for another DRAFT: it has no number yet, so it is identified by its date. Often the half-finished draft somebody forgot they had started.",
+      "nl": "Er staat al een concept van {date} voor dezelfde klant met dezelfde regels (netto {amount}). Verwijder een van de twee als het er per ongeluk twee zijn. Is het bedoeld, dan kun je gewoon doorgaan.",
+      "en": "There is already a draft dated {date} for the same customer with the same lines (net {amount}). Delete one of the two if it was created twice by accident. If it is intended, carry on."
+    },
+    "invoice.duplicate.same_total.issued": {
+      "note": "SI-12. The weaker match: different lines, same net total. Worded as a possibility, not a finding, because two different jobs can cost the same.",
+      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die je opnieuw factureert.",
+      "en": "Invoice {reference} of {date} to the same customer has the same net amount ({amount}) but different lines. Check whether this is the same supply being invoiced again."
+    },
+    "invoice.duplicate.same_total.draft": {
+      "note": "SI-12. As invoice.duplicate.same_total.issued, for another DRAFT.",
+      "nl": "Er staat al een concept van {date} voor dezelfde klant met hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die je twee keer opvoert.",
+      "en": "There is already a draft dated {date} for the same customer with the same net amount ({amount}) but different lines. Check whether this is the same supply entered twice."
+    },
     "invoice.template.locked.quantity_column": {
       "note": "FR-TPL-009 / D5. api.templates.compliance's counterpart to invoice.required.* above: a template, not a document, is refused. The quantity column cannot be hidden because art. 35a(1)(h)-(i) requires the extent of the supply on every line.",
       "nl": "De kolom Aantal kan niet worden verborgen. Een factuur moet de omvang van de levering per regel vermelden (art. 35a lid 1 Wet OB). Zet de kolom weer aan, of verberg in plaats daarvan een niet-verplichte kolom.",

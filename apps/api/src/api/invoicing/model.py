@@ -14,6 +14,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from api.i18n.language import Language
+from api.invoicing.duplicates import InvoiceDuplicateWarning
 from api.invoicing.statutory import StatutoryFailure
 from api.invoicing.vat import VatGroup
 from api.vat.rules import TreatmentRole
@@ -152,6 +153,10 @@ class InvoiceView:
     #: True while any wording on this invoice has not been reviewed by a tax
     #: adviser. Surfaced rather than hidden - see api.invoicing.wording.
     wording_is_provisional: bool = True
+    #: SI-12. Recent invoices to the same customer that look like this one. A
+    #: WARNING and never a gate: `can_be_issued` below deliberately does not
+    #: consult it. Empty on anything but a draft.
+    duplicate_warnings: tuple[InvoiceDuplicateWarning, ...] = ()
 
     @property
     def can_be_issued(self) -> bool:

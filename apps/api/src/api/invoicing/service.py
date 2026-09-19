@@ -43,8 +43,8 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
-from datetime import date
+from dataclasses import dataclass, replace
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Protocol
 
@@ -53,6 +53,14 @@ from api.authz.model import AdministrationScope, AuthorizationRequest, ResourceA
 from api.authz.service import AuthorizationService
 from api.customers.service import InvoiceCustomerSnapshot
 from api.i18n.language import DEFAULT_LANGUAGE, Language
+from api.invoicing.duplicates import (
+    WINDOW_DAYS,
+    DuplicateCandidate,
+    InvoiceDuplicateWarning,
+    InvoiceFingerprint,
+    LineFingerprint,
+    find_duplicates,
+)
 from api.invoicing.model import (
     AlreadyCredited,
     CreditNoteMismatch,
@@ -176,6 +184,21 @@ class InvoiceRepository(Protocol):
     async def delete_draft(
         self, *, administration_id: uuid.UUID, invoice_id: uuid.UUID
     ) -> None: ...
+
+    async def duplicate_candidates(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        exclude_invoice_id: uuid.UUID,
+        customer_id: uuid.UUID | None,
+        customer_name: str,
+        since: date,
+        until: date,
+    ) -> Sequence[DuplicateCandidate]:
+        """SI-12: non-credit-note invoices of this administration dated in
+        [since, until] for this customer. Bounded. An over-approximation is
+        fine - `find_duplicates` applies the exact rule."""
+        ...
 
     async def list_invoices(
         self, *, administration_id: uuid.UUID, limit: int
@@ -575,7 +598,13 @@ class InvoicingService:
     ) -> InvoiceView:
         await self._require(CREATE_INVOICE, actor_user_id, administration_id)
         invoice = await self._get_or_refuse(administration_id, invoice_id)
-        return await self._build_view(invoice)
+        view = await self._build_view(invoice)
+        # SI-12. Drafts only: the question is "should I issue this?", which is
+        # not asked of an invoice already issued - and `issue` reaches here for
+        # the issued row, so this also spares it a query.
+        if not invoice.is_draft or invoice.is_credit_note:
+            return view
+        return replace(view, duplicate_warnings=await self._duplicate_warnings(invoice, view.net))
 
     async def list_invoices(
         self, *, administration_id: uuid.UUID, actor_user_id: uuid.UUID, limit: int
@@ -680,6 +709,37 @@ class InvoicingService:
             statutory_failures=failures,
             wording_is_provisional=provisional,
         )
+
+    async def _duplicate_warnings(
+        self, invoice: SalesInvoice, net: Decimal
+    ) -> tuple[InvoiceDuplicateWarning, ...]:
+        subject = InvoiceFingerprint(
+            customer_id=invoice.customer_id,
+            customer_name=invoice.customer_name,
+            invoice_date=invoice.invoice_date,
+            lines=tuple(
+                LineFingerprint(
+                    description=line.description,
+                    quantity=line.quantity,
+                    unit_price=line.unit_price,
+                    discount_percent=line.discount_percent,
+                )
+                for line in invoice.lines
+            ),
+            net_total=net,
+        )
+        if not subject.is_comparable:
+            return ()
+        window = timedelta(days=WINDOW_DAYS)
+        candidates = await self._repository.duplicate_candidates(
+            administration_id=invoice.administration_id,
+            exclude_invoice_id=invoice.id,
+            customer_id=invoice.customer_id,
+            customer_name=invoice.customer_name,
+            since=invoice.invoice_date - window,
+            until=invoice.invoice_date + window,
+        )
+        return tuple(find_duplicates(subject, candidates, subject_id=invoice.id))
 
     # -- internals -----------------------------------------------------------
 

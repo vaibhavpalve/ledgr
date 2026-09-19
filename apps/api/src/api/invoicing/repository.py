@@ -17,6 +17,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.i18n.language import Language
+from api.invoicing.duplicates import DuplicateCandidate, InvoiceFingerprint, LineFingerprint
 from api.invoicing.model import InvoiceLine, InvoiceStatus, SalesInvoice
 from api.invoicing.statutory import SupplierDetails
 from api.vat.rules import TreatmentRole
@@ -331,6 +332,102 @@ class SqlInvoiceRepository:
             ),
             {"id": str(invoice_id), "admin": str(administration_id)},
         )
+
+    async def duplicate_candidates(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        exclude_invoice_id: uuid.UUID,
+        customer_id: uuid.UUID | None,
+        customer_name: str,
+        since: date,
+        until: date,
+    ) -> Sequence[DuplicateCandidate]:
+        """SI-12's pool: this administration's invoices dated in [since, until]
+        for the same customer, credit notes excluded.
+
+        An OVER-approximation on purpose. The customer is matched here by id or
+        by a trimmed, case-insensitive name, which is looser than nothing and
+        narrower than `duplicates.normalise_name` (it does not strip edge
+        punctuation) - so a name differing only by a trailing full stop is not
+        fetched. `find_duplicates` then applies the exact rule to what came
+        back. The window and the administration predicate use
+        `sales_invoice_administration_idx`; the LIMIT bounds a customer billed
+        many times in a month.
+        """
+        result = await self._session.execute(
+            text(
+                """
+                SELECT id, status, invoice_reference, invoice_date,
+                       customer_id, customer_name
+                  FROM sales_invoice
+                 WHERE administration_id = :admin
+                   AND id <> :exclude
+                   AND credits_invoice_id IS NULL
+                   AND invoice_date BETWEEN :since AND :until
+                   AND (
+                        (CAST(:customer_id AS uuid) IS NOT NULL
+                         AND customer_id = CAST(:customer_id AS uuid))
+                     OR lower(btrim(customer_name)) = lower(btrim(:name))
+                   )
+                 ORDER BY invoice_date DESC
+                 LIMIT 50
+                """
+            ),
+            {
+                "admin": str(administration_id),
+                "exclude": str(exclude_invoice_id),
+                "customer_id": str(customer_id) if customer_id else None,
+                "name": customer_name,
+                "since": since,
+                "until": until,
+            },
+        )
+        rows = result.all()
+        if not rows:
+            return []
+
+        lines_by_invoice: dict[uuid.UUID, list[LineFingerprint]] = {}
+        net_by_invoice: dict[uuid.UUID, Decimal] = {}
+        line_rows = await self._session.execute(
+            text(
+                """
+                SELECT invoice_id, description, quantity, unit_price,
+                       discount_percent, line_net
+                  FROM sales_invoice_line
+                 WHERE invoice_id = ANY(CAST(:ids AS uuid[])) AND administration_id = :admin
+                """
+            ),
+            {"ids": [str(row.id) for row in rows], "admin": str(administration_id)},
+        )
+        for line in line_rows:
+            lines_by_invoice.setdefault(line.invoice_id, []).append(
+                LineFingerprint(
+                    description=line.description,
+                    quantity=line.quantity,
+                    unit_price=line.unit_price,
+                    discount_percent=line.discount_percent,
+                )
+            )
+            net_by_invoice[line.invoice_id] = (
+                net_by_invoice.get(line.invoice_id, Decimal(0)) + line.line_net
+            )
+
+        return [
+            DuplicateCandidate(
+                invoice_id=row.id,
+                status=row.status,
+                invoice_reference=row.invoice_reference,
+                fingerprint=InvoiceFingerprint(
+                    customer_id=row.customer_id,
+                    customer_name=row.customer_name,
+                    invoice_date=row.invoice_date,
+                    lines=tuple(lines_by_invoice.get(row.id, ())),
+                    net_total=net_by_invoice.get(row.id, Decimal(0)),
+                ),
+            )
+            for row in rows
+        ]
 
     async def list_invoices(
         self, *, administration_id: uuid.UUID, limit: int

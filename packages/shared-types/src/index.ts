@@ -521,7 +521,27 @@ export interface SalesInvoiceView {
   readonly gross_amount: string;
   readonly statutory_failures: readonly StatutoryFailureView[];
   readonly can_be_issued: boolean;
+  /**
+   * SI-12. Recent invoices to the same customer that look like this draft. A
+   * warning shown beside it, never a reason `can_be_issued` is false - do not
+   * gate the issue button on this being empty. Always empty on an issued
+   * invoice or a credit note.
+   */
+  readonly duplicate_warnings: readonly DuplicateWarningView[];
   readonly wording_is_provisional: boolean;
+}
+
+/** SI-12 - `api.invoicing.routes._view_json`'s `duplicate_warnings[]` entry. `message` is already translated. */
+export interface DuplicateWarningView {
+  readonly invoice_id: string;
+  /** `identical`: same lines. `same_total`: different lines, same net amount. */
+  readonly strength: "identical" | "same_total";
+  readonly status: "draft" | "issued";
+  /** Null for a draft, which has no number yet. */
+  readonly invoice_reference: string | null;
+  readonly invoice_date: string;
+  readonly net_amount: string;
+  readonly message: string;
 }
 
 /**
