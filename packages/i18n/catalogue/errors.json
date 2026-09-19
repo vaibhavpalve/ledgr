@@ -695,6 +695,46 @@
       "nl": "Deze incasso kan pas worden bevestigd vanaf de incassodatum, {collection_date}.",
       "en": "This collection can only be confirmed from its collection date, {collection_date}."
     },
+    "errors.sales_invoice_approval_required": {
+      "note": "SI-16. {state} is none, pending, rejected or stale, as a machine field so a screen can say what to do next.",
+      "nl": "Deze factuur moet eerst worden goedgekeurd door de eigenaar voordat u hem kunt versturen. Vraag goedkeuring aan; is de factuur na goedkeuring aangepast, dan moet dat opnieuw.",
+      "en": "This invoice must be approved by the owner before it can be issued. Request approval; if the invoice was changed after approval, ask again."
+    },
+    "errors.approval_invoice_incomplete": {
+      "note": "`missing` lists the statutory fields that are absent.",
+      "nl": "De factuur is nog niet compleet genoeg om te worden verzonden, dus goedkeuring vragen heeft geen zin. Vul eerst de ontbrekende gegevens aan.",
+      "en": "The invoice is not complete enough to be issued, so asking for approval would be pointless. Fill in the missing details first."
+    },
+    "errors.approval_not_required": {
+      "note": "Approval is an opt-in policy of the administration.",
+      "nl": "Voor deze administratie is goedkeuring van facturen niet ingeschakeld. Er is niets om aan te vragen.",
+      "en": "Invoice approval is not switched on for this administration. There is nothing to request."
+    },
+    "errors.approval_not_found": {
+      "note": "There is no pending request for the invoice.",
+      "nl": "Er is geen openstaande aanvraag voor deze factuur. Vraag eerst goedkeuring aan.",
+      "en": "There is no pending request for this invoice. Request approval first."
+    },
+    "errors.approval_stale": {
+      "note": "The draft changed after approval was requested; approving would approve something nobody looked at.",
+      "nl": "De factuur is aangepast nadat goedkeuring was aangevraagd. Laat de opsteller opnieuw goedkeuring aanvragen.",
+      "en": "The invoice was changed after approval was requested. Ask the drafter to request approval again."
+    },
+    "errors.approval_already_decided": {
+      "note": "A request is decided once.",
+      "nl": "Over deze aanvraag is al beslist.",
+      "en": "This request has already been decided."
+    },
+    "errors.approval_reason_missing": {
+      "note": "A rejection tells the drafter what to fix.",
+      "nl": "Geef een reden op voor de afwijzing, zodat de opsteller weet wat er moet worden aangepast.",
+      "en": "Give a reason for the rejection so the drafter knows what to change."
+    },
+    "errors.approval_status_invalid": {
+      "note": "Filter for the approvals list.",
+      "nl": "Kies als status pending, approved, rejected of superseded.",
+      "en": "Choose pending, approved, rejected or superseded as the status."
+    },
     "errors.payment_not_found": {
       "note": "FR-AR-010. Indistinguishable from another tenant's payment, on purpose - the same rule as errors.sales_invoice_not_found.",
       "nl": "Deze betaling bestaat niet op deze factuur. Vernieuw de pagina en kies een bestaande betaling.",

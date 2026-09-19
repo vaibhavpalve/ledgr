@@ -753,3 +753,46 @@ async def test_failing_another_tenants_collection_is_refused(
 ) -> None:
     path = f"/sepa-collections/{uuid.uuid4()}/items/{uuid.uuid4()}/failed"
     assert await _as_a("POST", path, two_organizations, {"reason": "MS02"}) in REFUSED
+
+
+# -- SI-16: draft - approve - send (ADR-078) -----------------------------------------------
+_APPROVAL = "/v1/administrations/{administration_id}"
+
+
+@pytest.mark.isolation("POST", _APPROVAL + "/sales-invoices/{invoice_id}/request-approval")
+async def test_requesting_approval_for_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/request-approval"
+    assert await _as_a("POST", path, two_organizations, {"note": "x"}) in REFUSED
+
+
+@pytest.mark.isolation("POST", _APPROVAL + "/sales-invoices/{invoice_id}/approve")
+async def test_approving_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/approve"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _APPROVAL + "/sales-invoices/{invoice_id}/reject")
+async def test_rejecting_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/reject"
+    assert await _as_a("POST", path, two_organizations, {"reason": "x"}) in REFUSED
+
+
+@pytest.mark.isolation("GET", _APPROVAL + "/sales-invoices/{invoice_id}/approval")
+async def test_reading_another_tenants_approval_status_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/approval"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _APPROVAL + "/sales-invoice-approvals")
+async def test_listing_another_tenants_approvals_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", "/sales-invoice-approvals", two_organizations) in REFUSED

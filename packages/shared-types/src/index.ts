@@ -1339,3 +1339,40 @@ export interface SepaBatchResultView {
   readonly items: readonly SepaCollectionView[];
   readonly skipped: readonly { readonly invoice_id: string; readonly reason: SepaSkipReason }[];
 }
+
+
+/**
+ * SI-16 (ADR-078) - `api.invoicing.routes._approval_json`. One request for the owner to approve
+ * one draft, bound to a hash of the draft's contents: edit the draft afterwards and the approval
+ * stops counting (`state: "stale"`).
+ */
+export interface InvoiceApprovalView {
+  readonly id: string;
+  readonly invoice_id: string;
+  readonly status: "pending" | "approved" | "rejected" | "superseded";
+  readonly content_hash: string;
+  readonly requested_by_user_id: string;
+  readonly requested_at: string;
+  readonly request_note: string | null;
+  readonly decided_by_user_id: string | null;
+  readonly decided_at: string | null;
+  readonly decision_reason: string | null;
+}
+
+/** `GET .../sales-invoices/{id}/approval`. */
+export interface InvoiceApprovalStatusView {
+  /** The administration has switched invoice approval on. */
+  readonly required: boolean;
+  /** `stale` = approved, but the draft was changed afterwards. */
+  readonly state: "none" | "pending" | "approved" | "rejected" | "stale";
+  /** Whether the CALLER could issue this draft right now (an approver, or a current approval). */
+  readonly can_issue: boolean;
+  readonly approval: InvoiceApprovalView | null;
+}
+
+/** One row of the owner's queue, `GET .../sales-invoice-approvals`. */
+export interface InvoiceApprovalQueueEntryView extends InvoiceApprovalView {
+  readonly customer_name: string;
+  readonly invoice_date: string;
+  readonly invoice_reference: string | null;
+}

@@ -112,7 +112,7 @@ from pathlib import Path
 from typing import Protocol
 
 from api.i18n.catalogue import translate
-from api.i18n.formatting import format_date, format_money, format_number
+from api.i18n.formatting import format_date, format_money, format_number, locale_spec
 from api.i18n.language import Language
 from api.invoicing.epc_qr import EpcQrRequest, render_epc_qr
 from api.invoicing.model import InvoiceLine, InvoiceView
@@ -757,6 +757,38 @@ def _column_edges(visible: tuple[LineColumn, ...], right: float) -> dict[LineCol
     return {column: right - index * _COLUMN_SLOT for index, column in enumerate(reversed(visible))}
 
 
+def _trimmed(value: Decimal, minimum: int = 2) -> tuple[Decimal, int]:
+    """`value` and the number of places to show it at: its own, but never fewer than `minimum`.
+
+    The database stores quantities, prices and rates at three or four places (`10.0000`,
+    `21.000`), and the formatter refuses to show a value at fewer places than it carries,
+    because rounding would print a figure different from the stored one. So a stored `10.0000`
+    is shown as `10,00` (its trailing zeros carry nothing), and `0.0350` as `0,035` (its
+    third place does). Nothing is ever rounded.
+    """
+    exponent = value.normalize().as_tuple().exponent
+    own = -exponent if isinstance(exponent, int) and exponent < 0 else 0
+    scale = max(minimum, own)
+    return value.quantize(Decimal(1).scaleb(-scale)), scale
+
+
+def _number(value: Decimal, locale: str) -> str:
+    trimmed, scale = _trimmed(value)
+    return format_number(trimmed, locale, scale=scale)
+
+
+def _price(value: Decimal, locale: str) -> str:
+    """A unit price with its currency symbol, at its own scale (a price may be `0,035`)."""
+    trimmed, scale = _trimmed(value)
+    if scale == 2:
+        return format_money(trimmed, locale)
+    spec = locale_spec(locale)
+    digits = format_number(trimmed, locale, scale=scale)
+    if spec.currency_symbol_first:
+        return spec.currency_symbol + spec.currency_space + digits
+    return digits + spec.currency_space + spec.currency_symbol
+
+
 def _column_value(
     column: LineColumn,
     line: InvoiceLine,
@@ -765,7 +797,7 @@ def _column_value(
     rate_by_treatment: dict[str, Decimal | None],
 ) -> str:
     if column is LineColumn.QUANTITY:
-        return format_number(line.quantity, locale, scale=2)
+        return _number(line.quantity, locale)
     if column is LineColumn.UNIT:
         # ADR-041's known gap, carried forward unchanged: `sales_invoice_line`
         # has no unit column (hours, pcs, kg) to print. An em dash says
@@ -773,16 +805,12 @@ def _column_value(
         # a rendering bug.
         return "—"
     if column is LineColumn.UNIT_PRICE:
-        return format_money(line.unit_price, locale)
+        return _price(line.unit_price, locale)
     if column is LineColumn.DISCOUNT:
-        return (
-            f"{format_number(line.discount_percent, locale, scale=2)}%"
-            if line.discount_percent
-            else ""
-        )
+        return f"{_number(line.discount_percent, locale)}%" if line.discount_percent else ""
     if column is LineColumn.VAT_RATE:
         rate = rate_by_treatment.get(line.vat_treatment)
-        return f"{format_number(rate, locale, scale=2)}%" if rate is not None else "—"
+        return f"{_number(rate, locale)}%" if rate is not None else "—"
     if column is LineColumn.LINE_TOTAL:
         return format_money(line.line_net, locale)
     raise AssertionError(column)  # pragma: no cover - LineColumn is exhaustive above
@@ -1386,7 +1414,7 @@ def _lay_out(
     # table, regardless of `totals_position` - only the SUMMARY block below
     # (subtotal/VAT total/total) is what FR-TPL-005 calls "the totals block".
     for group in view.groups:
-        rate_text = "-" if group.rate is None else f"{format_number(group.rate, locale, scale=2)}%"
+        rate_text = "-" if group.rate is None else f"{_number(group.rate, locale)}%"
         label = _t("invoice.pdf.vat_group", language, rate=rate_text, base=money(group.taxable))
         page.at(x=_MARGIN, top=row, value=label, size=small_size, font=body_font, color=text_color)
         _right(page, _RIGHT, row, money(group.vat), small_size, font=body_font, color=text_color)

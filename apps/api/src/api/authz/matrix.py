@@ -191,11 +191,25 @@ VIEW_VAT_RETURN = Capability(
     ),
 )
 
+APPROVE_SALES_INVOICE = Capability(
+    label="Approve sales invoices",
+    scope="administration",
+    full=(Permission("approve", "sales_invoice", "Approve sales invoices"),),
+    note=(
+        "Not an Appendix A row: SI-16's draft-approve-send workflow. Held by the Owner alone - "
+        "the business owner approves what a bookkeeper (or a firm) drafted on their behalf. "
+        "Deliberately NOT given to Accountant or Bookkeeper: the point of the workflow is that "
+        "the person who drafts cannot also release. Only consulted when an administration has "
+        "turned invoice approval on."
+    ),
+)
+
 EXTENSION_CAPABILITIES: tuple[Capability, ...] = (
     UPLOAD_DOCUMENT,
     VIEW_DOCUMENT,
     MANAGE_CUSTOMER,
     VIEW_VAT_RETURN,
+    APPROVE_SALES_INVOICE,
 )
 
 
@@ -536,6 +550,7 @@ ROLES: tuple[Role, ...] = (
             "View source documents",
             "Manage customers",
             "View filed returns",
+            "Approve sales invoices",
         ),
     ),
     Role("Organization Admin", "organization", "Org Admin"),

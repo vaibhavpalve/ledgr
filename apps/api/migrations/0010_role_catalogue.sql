@@ -22,6 +22,7 @@ begin;
 insert into permission (action, resource_type, resource_scope, description) values
     ('approve', 'expense', 'administration', 'Approve expenses'),
     ('approve', 'purchase_invoice', 'administration', 'Approve purchase invoices'),
+    ('approve', 'sales_invoice', 'administration', 'Approve sales invoices'),
     ('close', 'fiscal_year', 'administration', 'Year-end close'),
     ('code', 'purchase_invoice', 'administration', 'Code purchase invoices'),
     ('create', 'payment_batch', 'administration', 'Create a payment batch'),
@@ -81,6 +82,7 @@ from "role" r
 join (values
     ('Owner', 'approve', 'expense'),
     ('Owner', 'approve', 'purchase_invoice'),
+    ('Owner', 'approve', 'sales_invoice'),
     ('Owner', 'close', 'fiscal_year'),
     ('Owner', 'code', 'purchase_invoice'),
     ('Owner', 'create', 'payment_batch'),

@@ -207,6 +207,10 @@ class UpdateAdministrationBody(BaseModel):
     #: SI-09. The SEPA creditor identifier (Incassant-ID); format AND check digits are
     #: validated (api.invoicing.sepa.parse_creditor_id). An empty string clears it.
     sepa_creditor_id: str | None = None
+    #: SI-16. When true a sales invoice can only be issued by someone who may approve
+    #: (the owner) or from a draft the owner approved. Changing it needs the same
+    #: authority as the rest of this route - a bookkeeper cannot switch the check off.
+    invoice_approval_required: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -836,6 +840,10 @@ async def update_administration(
             )
         changes["sepa_creditor_id"] = creditor_id
 
+    if "invoice_approval_required" in changes and changes["invoice_approval_required"] is None:
+        # A flag has no "cleared" state; null means "leave it", not "unset it".
+        del changes["invoice_approval_required"]
+
     assignments = {
         "legal_name": "legal_name = :legal_name",
         "trade_name": "trade_name = :trade_name",
@@ -843,6 +851,7 @@ async def update_administration(
         "formatting_locale": "formatting_locale = :formatting_locale",
         "iban": "iban = :iban",
         "sepa_creditor_id": "sepa_creditor_id = :sepa_creditor_id",
+        "invoice_approval_required": "invoice_approval_required = :invoice_approval_required",
     }
     set_clause = ", ".join(assignments[name] for name in changes)
     params: dict[str, object] = {"id": str(administration_id)}
@@ -868,7 +877,7 @@ async def update_administration(
         await session.execute(
             text(
                 "SELECT id, legal_name, trade_name, legal_form, kvk_number, vat_number, "
-                "       formatting_locale, iban, sepa_creditor_id "
+                "       formatting_locale, iban, sepa_creditor_id, invoice_approval_required "
                 "  FROM administration WHERE id = :id"
             ),
             {"id": str(administration_id)},
@@ -888,4 +897,5 @@ async def update_administration(
         "formatting_locale": row.formatting_locale,
         "iban": row.iban,
         "sepa_creditor_id": row.sepa_creditor_id,
+        "invoice_approval_required": row.invoice_approval_required,
     }

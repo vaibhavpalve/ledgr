@@ -50,6 +50,20 @@ from api.i18n.catalogue import translate
 from api.i18n.formatting import format_date, format_money
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language, parse_language
+from api.invoicing.approval import (
+    ApprovalAlreadyDecided,
+    ApprovalNotFound,
+    ApprovalNotReady,
+    ApprovalNotRequired,
+    ApprovalReasonMissing,
+    ApprovalRequired,
+    ApprovalService,
+    ApprovalStale,
+    InvoiceApproval,
+    QueueEntry,
+    SalesInvoiceApprovalGate,
+)
+from api.invoicing.approval_repository import SqlApprovalRepository
 from api.invoicing.delivery import (
     ArtifactNotAvailable,
     ChannelNotAvailable,
@@ -281,7 +295,35 @@ def register(app: FastAPI) -> None:
         methods=["POST"],
         name="void_sales_invoice_payment",
     )
-    # SI-09 (ADR-077): SEPA direct debit mandates and pain.008 files.
+    # SI-16 (ADR-078): draft - approve - send.
+    for a_path, a_handler, a_verb, a_name in (
+        (
+            "/sales-invoices/{invoice_id}/request-approval",
+            request_invoice_approval,
+            "POST",
+            "request_sales_invoice_approval",
+        ),
+        ("/sales-invoices/{invoice_id}/approve", approve_invoice, "POST", "approve_sales_invoice"),
+        ("/sales-invoices/{invoice_id}/reject", reject_invoice, "POST", "reject_sales_invoice"),
+        (
+            "/sales-invoices/{invoice_id}/approval",
+            get_invoice_approval,
+            "GET",
+            "get_sales_invoice_approval",
+        ),
+        (
+            "/sales-invoice-approvals",
+            list_invoice_approvals,
+            "GET",
+            "list_sales_invoice_approvals",
+        ),
+    ):
+        app.add_api_route(
+            "/v1/administrations/{administration_id}" + a_path,
+            a_handler,
+            methods=[a_verb],
+            name=a_name,
+        )  # SI-09 (ADR-077): SEPA direct debit mandates and pain.008 files.
     for path, handler, verb, name in (
         (
             "/customers/{customer_id}/sepa-mandates",
@@ -505,6 +547,8 @@ async def get_invoicing_service(
         authorization=authorization,
         audit_log=audit_log,
         customers=customers,
+        # SI-16: consulted at issue; a no-op unless the administration turned approval on.
+        approval_gate=SalesInvoiceApprovalGate(SqlApprovalRepository(session), authorization),
         posting=SalesPostingService(
             repository=SqlSalesPostingRepository(session),
             # `build_ledger_service` rather than the repository: CLAUDE.md's
@@ -1024,6 +1068,14 @@ async def issue_invoice(
             invoice_id=invoice_id,
             actor_user_id=tenant.user_id,
         )
+    except ApprovalRequired as exc:
+        raise problem(
+            request,
+            409,
+            "errors.sales_invoice_approval_required",
+            reason="sales_invoice_approval_required",
+            state=exc.state.value,
+        ) from exc
     except PostingConfigurationMissing as exc:
         # 409, not 422: nothing about the REQUEST is wrong, and nothing the
         # caller can change in the payload would fix it. The administration's
@@ -3940,3 +3992,249 @@ async def record_sepa_failed(
             raise
         raise refusal from exc
     return {"item": _collection_json(item)}
+
+
+# -- SI-16: draft - approve - send (ADR-078) --------------------------------------
+
+
+async def get_approval_service(
+    session: AsyncSession = Depends(get_db_session),
+    invoicing: InvoicingService = Depends(get_invoicing_service),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> ApprovalService:
+    return ApprovalService(
+        repository=SqlApprovalRepository(session),
+        invoices=invoicing,
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+class RequestApprovalBody(BaseModel):
+    note: str | None = None
+
+
+class RejectBody(BaseModel):
+    reason: str
+
+
+def _approval_json(approval: InvoiceApproval) -> dict[str, object]:
+    return {
+        "id": str(approval.id),
+        "invoice_id": str(approval.invoice_id),
+        "status": approval.status,
+        "content_hash": approval.content_hash,
+        "requested_by_user_id": str(approval.requested_by_user_id),
+        "requested_at": approval.requested_at.isoformat(),
+        "request_note": approval.request_note,
+        "decided_by_user_id": (
+            str(approval.decided_by_user_id) if approval.decided_by_user_id else None
+        ),
+        "decided_at": approval.decided_at.isoformat() if approval.decided_at else None,
+        "decision_reason": approval.decision_reason,
+    }
+
+
+def _queue_json(entry: QueueEntry) -> dict[str, object]:
+    return {
+        **_approval_json(entry.approval),
+        "customer_name": entry.customer_name,
+        "invoice_date": entry.invoice_date.isoformat(),
+        "invoice_reference": entry.invoice_reference,
+    }
+
+
+def _approval_problem(request: Request, exc: Exception) -> Exception | None:
+    """The refusals a request, an approval or a rejection can raise, as problems."""
+    if isinstance(exc, InvoiceNotFound):
+        return problem(
+            request, 404, "errors.sales_invoice_not_found", reason="sales_invoice_not_found"
+        )
+    if isinstance(exc, InvoiceAlreadyIssued):
+        return problem(
+            request,
+            409,
+            "errors.sales_invoice_issued",
+            reason="sales_invoice_issued",
+        )
+    if isinstance(exc, ApprovalNotReady):
+        return problem(
+            request,
+            422,
+            "errors.approval_invoice_incomplete",
+            reason="approval_invoice_incomplete",
+            missing=[failure.field.value for failure in exc.failures],
+        )
+    table: tuple[tuple[type[Exception], int, str], ...] = (
+        (ApprovalNotRequired, 409, "approval_not_required"),
+        (ApprovalNotFound, 404, "approval_not_found"),
+        (ApprovalStale, 409, "approval_stale"),
+        (ApprovalAlreadyDecided, 409, "approval_already_decided"),
+        (ApprovalReasonMissing, 422, "approval_reason_missing"),
+    )
+    for error_type, status, key in table:
+        if isinstance(exc, error_type):
+            return problem(request, status, f"errors.{key}", reason=key)
+    return None
+
+
+async def request_invoice_approval(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    body: RequestApprovalBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ApprovalService = Depends(get_approval_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """SI-16: put a draft up for the owner's approval. A new request replaces an earlier one -
+    which is how a draft that was edited gets approved again."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        approval = await service.request(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            note=body.note if body else None,
+        )
+    except Exception as exc:
+        refusal = _approval_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"approval": _approval_json(approval)}
+
+
+async def approve_invoice(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ApprovalService = Depends(get_approval_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "approve",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Approve the pending request for this draft, as it is now. If it changed since it was
+    requested, this is refused and the drafter must ask again."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        approval = await service.approve(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _approval_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"approval": _approval_json(approval)}
+
+
+async def reject_invoice(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    body: RejectBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ApprovalService = Depends(get_approval_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "approve",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Send the draft back with the reason the drafter needs to fix it."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        approval = await service.reject(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            reason=body.reason,
+        )
+    except Exception as exc:
+        refusal = _approval_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"approval": _approval_json(approval)}
+
+
+async def get_invoice_approval(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ApprovalService = Depends(get_approval_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    """Where this draft stands: whether approval is required, its state, the latest request
+    and whether the caller could issue it right now."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        status = await service.status(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _approval_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {
+        "required": status.required,
+        "state": status.state.value,
+        "can_issue": status.can_issue,
+        "approval": _approval_json(status.approval) if status.approval else None,
+    }
+
+
+async def list_invoice_approvals(
+    administration_id: uuid.UUID,
+    request: Request,
+    status: str = Query(default="pending"),
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ApprovalService = Depends(get_approval_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "approve", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    """What is waiting for the owner (or, with `status`, what was decided)."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    if status not in ("pending", "approved", "rejected", "superseded"):
+        raise problem(
+            request, 422, "errors.approval_status_invalid", reason="approval_status_invalid"
+        )
+    entries = await service.queue(
+        administration_id=administration_id, actor_user_id=tenant.user_id, status=status
+    )
+    return {"approvals": [_queue_json(entry) for entry in entries]}

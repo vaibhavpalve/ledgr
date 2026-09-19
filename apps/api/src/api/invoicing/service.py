@@ -238,6 +238,12 @@ class CustomerSnapshotSource(Protocol):
     ) -> InvoiceCustomerSnapshot: ...
 
 
+class IssueGate(Protocol):
+    """SI-16's hook: raises to stop an issue that has not been approved."""
+
+    async def check(self, invoice: SalesInvoice, *, actor_user_id: uuid.UUID) -> None: ...
+
+
 class InvoicingService:
     def __init__(
         self,
@@ -246,6 +252,7 @@ class InvoicingService:
         audit_log: AuditLog,
         customers: CustomerSnapshotSource,
         posting: SalesPostingService,
+        approval_gate: IssueGate | None = None,
     ) -> None:
         self._repository = repository
         self._authorization = authorization
@@ -256,6 +263,9 @@ class InvoicingService:
         # omit the posting service would make that gap reachable again by
         # forgetting an argument.
         self._posting = posting
+        # SI-16. Optional so every existing construction keeps working; the production wiring
+        # (get_invoicing_service) always supplies it. With no gate, no approval is required.
+        self._approval_gate = approval_gate
 
     # -- FR-AR-001: create and edit -----------------------------------------
 
@@ -434,6 +444,11 @@ class InvoicingService:
         """
         await self._require(SEND_INVOICE, actor_user_id, administration_id)
         invoice = await self._draft_or_refuse(administration_id, invoice_id)
+
+        # SI-16: before the statutory gate and long before a number is allocated, so a refusal
+        # here burns nothing (FR-AR-004's series stays gapless).
+        if self._approval_gate is not None:
+            await self._approval_gate.check(invoice, actor_user_id=actor_user_id)
 
         view = await self._build_view(invoice)
         if view.statutory_failures:
