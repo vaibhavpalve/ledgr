@@ -208,3 +208,65 @@ async def test_reading_another_tenants_delivery_status_is_refused(
         )
 
     assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "POST", "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/payments"
+)
+async def test_recording_a_payment_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    """ADR-070. The one that would move another tenant's debtor balance and post
+    a receipt into their books, so it is asked with a body that would otherwise
+    be perfectly valid."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/sales-invoices/{uuid.uuid4()}/payments",
+            headers=_headers(token),
+            json={
+                "amount": "100.00",
+                "paid_on": "2026-09-15",
+                "method": "bank_transfer",
+                "bank_account_id": str(uuid.uuid4()),
+            },
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "GET", "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/payments"
+)
+async def test_listing_another_tenants_payments_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.get(
+            f"/v1/administrations/{two_organizations.admin_b}/sales-invoices/{uuid.uuid4()}/payments",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "POST",
+    "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/payments/{payment_id}/void",
+)
+async def test_voiding_another_tenants_payment_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/sales-invoices/{uuid.uuid4()}"
+            f"/payments/{uuid.uuid4()}/void",
+            headers=_headers(token),
+        )
+
+    assert response.status_code in REFUSED

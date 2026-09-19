@@ -537,6 +537,47 @@ export interface SalesInvoiceView {
   readonly wording_is_provisional: boolean;
 }
 
+/**
+ * ADR-070 - `api.invoicing.routes._payment_json`. A payment received against an
+ * issued invoice; the ledger entry that recorded it is `journal_entry_id`.
+ * A voided payment stays in the list (`voided_at` set) as history.
+ */
+export interface InvoicePaymentView {
+  readonly id: string;
+  readonly invoice_id: string;
+  readonly amount: string;
+  readonly paid_on: string;
+  readonly method: "bank_transfer" | "cash" | "card" | "other";
+  readonly reference: string | null;
+  readonly bank_account_id: string;
+  readonly journal_entry_id: string;
+  readonly recorded_at: string;
+  readonly voided_at: string | null;
+  readonly void_journal_entry_id: string | null;
+}
+
+/** ADR-070 - what one invoice owes: `gross - credited - paid`. All amounts are decimal strings. */
+export interface InvoiceBalanceView {
+  readonly gross_amount: string;
+  readonly credited_amount: string;
+  readonly paid_amount: string;
+  readonly outstanding_amount: string;
+  /** `credited` = owed nothing because it was credited and never paid. */
+  readonly state: "open" | "partially_paid" | "paid" | "credited";
+}
+
+/** `POST .../sales-invoices/{id}/payments` and `.../payments/{id}/void` answer this. */
+export interface RecordedPaymentView {
+  readonly payment: InvoicePaymentView;
+  readonly balance: InvoiceBalanceView;
+}
+
+/** `GET .../sales-invoices/{id}/payments`. */
+export interface InvoicePaymentsView {
+  readonly payments: readonly InvoicePaymentView[];
+  readonly balance: InvoiceBalanceView;
+}
+
 /** SI-13 - `api.invoicing.routes._view_json`'s `rubriek_preview`. */
 export interface RubriekPreviewView {
   readonly boxes: readonly RubriekBoxView[];

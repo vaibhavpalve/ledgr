@@ -44,6 +44,7 @@ from api.customers.service import CustomerService
 from api.db import get_db_session
 from api.documents.routes import get_document_service
 from api.documents.service import DocumentService
+from api.i18n.formatting import format_money
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language, parse_language
 from api.invoicing.delivery import (
@@ -73,6 +74,20 @@ from api.invoicing.model import (
     NotStatutoryCompliant,
     SalesInvoice,
 )
+from api.invoicing.payments import (
+    InvalidPaymentAmount,
+    InvoiceBalance,
+    InvoiceNotPayable,
+    InvoicePayment,
+    NoPaymentJournal,
+    PaymentAlreadyVoided,
+    PaymentExceedsOutstanding,
+    PaymentMethod,
+    PaymentNotFound,
+    PaymentPostingUnavailable,
+    SalesPaymentService,
+)
+from api.invoicing.payments_repository import SqlPaymentRepository
 from api.invoicing.posting import (
     NoOpenPeriod,
     NoSalesJournal,
@@ -149,6 +164,27 @@ def register(app: FastAPI) -> None:
         get_invoice_deliveries,
         methods=["GET"],
         name="get_sales_invoice_deliveries",
+    )
+    # ADR-070. Payments received against an issued invoice: the receivable's
+    # other half, which dunning (SI-04) and aged receivables (SI-06) both need.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/payments",
+        record_payment,
+        methods=["POST"],
+        name="record_sales_invoice_payment",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/payments",
+        list_payments,
+        methods=["GET"],
+        name="list_sales_invoice_payments",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}"
+        "/payments/{payment_id}/void",
+        void_payment,
+        methods=["POST"],
+        name="void_sales_invoice_payment",
     )
 
 
@@ -1024,3 +1060,262 @@ async def get_invoice_deliveries(
         "deliveries": [_delivery_json(record) for record in records],
         "available_channels": sorted(c.value for c in service.channels),
     }
+
+
+# -- SI-04 groundwork: payments received against an invoice (ADR-070) ---------
+
+
+async def get_payment_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> SalesPaymentService:
+    audit_log = AuditLog(SqlAuditRepository(session))
+    return SalesPaymentService(
+        repository=SqlPaymentRepository(session),
+        # `build_ledger_service`, not the ledger repository: CLAUDE.md's first
+        # non-negotiable, enforced by tests/ledger/test_bounded_context.py.
+        ledger=build_ledger_service(session, audit_log),
+        authorization=authorization,
+        audit_log=audit_log,
+    )
+
+
+class PaymentBody(BaseModel):
+    """`amount` is a string on the wire and a Decimal here - see the module
+    docstring. `method` is validated against `PaymentMethod` in the handler, so a
+    typo is a 422 in the app's own problem format rather than pydantic's."""
+
+    amount: Decimal
+    paid_on: date
+    method: str = "bank_transfer"
+    bank_account_id: uuid.UUID
+    reference: str | None = None
+
+
+def _payment_json(payment: InvoicePayment) -> dict[str, object]:
+    return {
+        "id": str(payment.id),
+        "invoice_id": str(payment.invoice_id),
+        "amount": str(payment.amount),
+        "paid_on": payment.paid_on.isoformat(),
+        "method": payment.method.value,
+        "reference": payment.reference,
+        "bank_account_id": str(payment.bank_account_id),
+        "journal_entry_id": str(payment.journal_entry_id),
+        "recorded_at": payment.recorded_at.isoformat(),
+        # A voided payment stays in the list: it is history, and hiding it would
+        # make the ledger's reversing entry look like it corrected nothing.
+        "voided_at": payment.voided_at.isoformat() if payment.voided_at else None,
+        "void_journal_entry_id": (
+            str(payment.void_journal_entry_id) if payment.void_journal_entry_id else None
+        ),
+    }
+
+
+def _balance_json(balance: InvoiceBalance) -> dict[str, object]:
+    return {
+        "gross_amount": str(balance.gross),
+        "credited_amount": str(balance.credited),
+        "paid_amount": str(balance.paid),
+        "outstanding_amount": str(balance.outstanding),
+        "state": balance.state.value,
+    }
+
+
+def _payment_problem(request: Request, exc: Exception) -> Exception | None:
+    """The refusals recording or voiding a payment can raise, as problems.
+
+    Shared by both handlers because most of them are the same species - the
+    books are not ready, or the request names something that does not exist.
+    Returns None for an exception this does not recognise, so the caller
+    re-raises it rather than this function swallowing it.
+    """
+    if isinstance(exc, InvoiceNotFound):
+        return problem(
+            request, 404, "errors.sales_invoice_not_found", reason="sales_invoice_not_found"
+        )
+    if isinstance(exc, InvoiceNotPayable):
+        return problem(
+            request, 409, "errors.sales_invoice_not_payable", reason="sales_invoice_not_payable"
+        )
+    if isinstance(exc, InvalidPaymentAmount):
+        return problem(
+            request, 422, "errors.payment_amount_invalid", reason="payment_amount_invalid"
+        )
+    if isinstance(exc, PaymentExceedsOutstanding):
+        return problem(
+            request,
+            409,
+            "errors.payment_exceeds_outstanding",
+            reason="payment_exceeds_outstanding",
+            outstanding=format_money(exc.outstanding),
+        )
+    if isinstance(exc, NoPaymentJournal):
+        return problem(
+            request,
+            409,
+            "errors.payment_no_journal",
+            reason="payment_no_journal",
+            journal_type=exc.journal_type,
+        )
+    if isinstance(exc, PaymentPostingUnavailable):
+        return problem(
+            request,
+            409,
+            "errors.payment_posting_unavailable",
+            reason="payment_posting_unavailable",
+            missing=exc.missing,
+        )
+    if isinstance(exc, NoOpenPeriod):
+        return problem(
+            request, 409, "errors.payment_no_open_period", reason="payment_no_open_period"
+        )
+    if isinstance(exc, PaymentNotFound):
+        return problem(request, 404, "errors.payment_not_found", reason="payment_not_found")
+    if isinstance(exc, PaymentAlreadyVoided):
+        return problem(
+            request, 409, "errors.payment_already_voided", reason="payment_already_voided"
+        )
+    return None
+
+
+async def record_payment(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    body: PaymentBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SalesPaymentService = Depends(get_payment_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Post journal entries" - NOT `send sales_invoice`. The
+            # person who raises invoices must not be the one who records that
+            # cash arrived against them; see api.invoicing.payments.
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    # IAM-010b: this posts to the ledger.
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """FR-AR-010's groundwork: record money received against an issued invoice.
+
+    Posts `Dr bank / Cr Debiteuren` through the ledger in the same transaction, so
+    the invoice's outstanding balance and the debtor's sub-ledger balance fall by
+    the same amount.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        method = PaymentMethod(body.method)
+    except ValueError:
+        raise problem(
+            request, 422, "errors.payment_method_invalid", reason="payment_method_invalid"
+        ) from None
+    try:
+        payment = await service.record(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            amount=body.amount,
+            paid_on=body.paid_on,
+            method=method,
+            bank_account_id=body.bank_account_id,
+            reference=body.reference,
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _payment_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"payment": _payment_json(payment), "balance": _balance_json(balance)}
+
+
+async def list_payments(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SalesPaymentService = Depends(get_payment_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """Every payment against one invoice - voided ones included - and what the
+    invoice still owes."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        payments = await service.payments(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _payment_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {
+        "payments": [_payment_json(payment) for payment in payments],
+        "balance": _balance_json(balance),
+    }
+
+
+async def void_payment(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    payment_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SalesPaymentService = Depends(get_payment_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Reverse a posting": undoing a receipt is a reversing
+            # entry (FR-GL-003), and it is the same authority as any other.
+            "reverse",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Undo a payment by reversing its entry. The invoice is owed again."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        payment = await service.void(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            payment_id=payment_id,
+            actor_user_id=tenant.user_id,
+            void_date=date.today(),
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _payment_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"payment": _payment_json(payment), "balance": _balance_json(balance)}

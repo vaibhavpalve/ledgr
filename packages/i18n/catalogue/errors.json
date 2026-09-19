@@ -410,6 +410,51 @@
       "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
       "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
     },
+    "errors.payment_no_open_period": {
+      "note": "FR-GL-007. The payment date falls in no open period. Says to check the date: a receipt belongs to the period the money arrived in.",
+      "nl": "De betaaldatum valt in geen enkele open periode. Controleer de datum; een betaling wordt geboekt in de periode waarin het geld binnenkwam.",
+      "en": "The payment date falls in no open period. Check the date; a payment is posted in the period the money arrived in."
+    },
+    "errors.sales_invoice_not_payable": {
+      "note": "FR-AR-010. A draft owes nothing and a credit note is not a debt. Names both so the reader knows which fix applies.",
+      "nl": "Op deze factuur kan geen betaling worden geregistreerd. Alleen een verstuurde factuur wordt betaald; een concept is nog niet verschuldigd en een creditnota is geen schuld.",
+      "en": "A payment cannot be recorded against this invoice. Only an issued invoice is paid; a draft is not yet owed and a credit note is not a debt."
+    },
+    "errors.payment_amount_invalid": {
+      "note": "FR-AR-010 / NFR-031. Not refused for being rounded: a payment is a fact about money that moved, so it is asked for exactly rather than corrected.",
+      "nl": "Het bedrag van de betaling is ongeldig. Vul een bedrag groter dan nul in met ten hoogste twee decimalen.",
+      "en": "The payment amount is not valid. Enter an amount greater than zero with at most two decimal places."
+    },
+    "errors.payment_method_invalid": {
+      "note": "FR-AR-010. The method is one of bank_transfer, cash, card, other; it chooses the journal the receipt is posted into, so it cannot be guessed.",
+      "nl": "De betaalmethode is ongeldig. Kies bankoverschrijving, contant, kaart of overig.",
+      "en": "The payment method is not valid. Choose bank transfer, cash, card or other."
+    },
+    "errors.payment_exceeds_outstanding": {
+      "note": "FR-AR-010 / FR-BNK-005. {outstanding} is the amount still owed, already formatted. Refused rather than parked, because absorbing an overpayment silently hides somebody's money; overpayment and split allocation arrive with bank reconciliation.",
+      "nl": "De betaling is hoger dan het openstaande bedrag van {outstanding}. Registreer ten hoogste het openstaande bedrag; een overbetaling verwerkt u wanneer bankkoppeling beschikbaar is.",
+      "en": "The payment is more than the {outstanding} still outstanding. Record at most the outstanding amount; an overpayment is handled once bank reconciliation is available."
+    },
+    "errors.payment_no_journal": {
+      "note": "FR-GL-002. {journal_type} is 'bank' or 'cash' as a machine field. Nothing about the request is wrong; the chart has no single journal for this kind of receipt, which is somebody else's screen.",
+      "nl": "Deze administratie heeft geen enkel actief journaal voor deze betaling ({journal_type}). Richt eerst precies één zo'n journaal in.",
+      "en": "This administration has no single active journal for this payment ({journal_type}). Set up exactly one first."
+    },
+    "errors.payment_posting_unavailable": {
+      "note": "FR-GL-006. {missing} names what the books lack (accounts_receivable or debtor) as a machine field, so a screen can point at the right setting.",
+      "nl": "De betaling kan niet worden geboekt omdat er iets ontbreekt in de administratie ({missing}). Controleer het rekeningschema of de debiteur van deze factuur.",
+      "en": "The payment cannot be posted because something is missing from the books ({missing}). Check the chart of accounts or this invoice's debtor."
+    },
+    "errors.payment_not_found": {
+      "note": "FR-AR-010. Indistinguishable from another tenant's payment, on purpose - the same rule as errors.sales_invoice_not_found.",
+      "nl": "Deze betaling bestaat niet op deze factuur. Vernieuw de pagina en kies een bestaande betaling.",
+      "en": "This payment does not exist on this invoice. Refresh the page and choose an existing payment."
+    },
+    "errors.payment_already_voided": {
+      "note": "FR-GL-003. A payment can be reversed once; a second reversal would put the receivable back above what was ever owed.",
+      "nl": "Deze betaling is al ongedaan gemaakt. Registreer een nieuwe betaling als het geld er toch is.",
+      "en": "This payment has already been voided. Record a new payment if the money did arrive."
+    },
     "errors.sales_invoice_unreachable": {
       "note": "FR-AR-005 / FR-AR-006. The customer has no address on the requested channel. {channel} travels beside the sentence as a machine field so a screen can point at the right input - an e-mail address and a Peppol id are different fields with different fixes. Names both ways out because sending a one-off copy is as legitimate as correcting the customer record.",
       "nl": "Deze klant heeft geen adres voor dit verzendkanaal. Vul het adres aan bij de klant, of geef eenmalig een adres op bij het versturen.",
