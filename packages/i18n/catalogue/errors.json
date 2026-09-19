@@ -735,6 +735,36 @@
       "nl": "Kies als status pending, approved, rejected of superseded.",
       "en": "Choose pending, approved, rejected or superseded as the status."
     },
+    "errors.batch_invalid_empty": {
+      "note": "SI-17. A batch needs at least one entry.",
+      "nl": "Voeg minstens een klant toe aan de batch.",
+      "en": "Add at least one customer to the batch."
+    },
+    "errors.batch_invalid_too_many": {
+      "note": "SI-17. At most 200 entries per batch.",
+      "nl": "Een batch bevat ten hoogste 200 facturen. Splits de selectie.",
+      "en": "A batch holds at most 200 invoices. Split the selection."
+    },
+    "errors.batch_invalid_name_required": {
+      "note": "SI-17. A batch is named so it can be found again.",
+      "nl": "Geef de batch een naam.",
+      "en": "Give the batch a name."
+    },
+    "errors.batch_invalid_lines": {
+      "note": "SI-17. `position` is the 1-based entry whose lines are missing or unusable.",
+      "nl": "De regels van een factuur in de batch ontbreken of zijn niet bruikbaar. Controleer de regels van invoer {position}.",
+      "en": "The lines of an invoice in the batch are missing or unusable. Check the lines of entry {position}."
+    },
+    "errors.batch_not_found": {
+      "note": "Indistinguishable from another tenant's batch, on purpose.",
+      "nl": "Deze batch bestaat niet. Vernieuw de pagina.",
+      "en": "This batch does not exist. Refresh the page."
+    },
+    "errors.batch_key_taken": {
+      "note": "SI-17. Two requests with the same batch_key arrived at once; the other won and this one wrote nothing. Repeat it to receive the first batch.",
+      "nl": "Een andere aanvraag met dezelfde batchsleutel was net sneller. Er is niets aangemaakt; probeer het opnieuw om de eerste batch te zien.",
+      "en": "Another request with the same batch key was just faster. Nothing was created; repeat the request to see the first batch."
+    },
     "errors.payment_not_found": {
       "note": "FR-AR-010. Indistinguishable from another tenant's payment, on purpose - the same rule as errors.sales_invoice_not_found.",
       "nl": "Deze betaling bestaat niet op deze factuur. Vernieuw de pagina en kies een bestaande betaling.",

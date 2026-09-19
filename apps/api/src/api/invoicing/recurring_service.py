@@ -57,15 +57,14 @@ from api.customers.model import (
     CustomerIsArchived,
     CustomerNotFound,
 )
+from api.invoicing.issue_attempt import attempt_issue
 from api.invoicing.model import (
     CustomerDetailsConflict,
     CustomerDetailsMissing,
     InvoiceNotFound,
     InvoicingError,
     NotAuthorizedToInvoice,
-    NotStatutoryCompliant,
 )
-from api.invoicing.posting import NoOpenPeriod, NoSalesJournal, PostingConfigurationMissing
 from api.invoicing.recurrence import (
     RecurringLine,
     Schedule,
@@ -75,7 +74,6 @@ from api.invoicing.recurrence import (
     validate_definition,
 )
 from api.invoicing.service import InvoicingService, NewLine
-from api.templates.assets import LogoNotRenderable
 
 __all__ = [
     "MAX_RUNS_PER_CALL_TOTAL",
@@ -619,26 +617,13 @@ class RecurringInvoiceService:
     ) -> tuple[bool, str | None]:
         """Issue in a NESTED savepoint, so a refusal leaves the draft behind (and the
         gapless series untouched - the number allocation rolls back with it)."""
-        try:
-            async with self._repository.savepoint():
-                await self._invoicing.issue(
-                    administration_id=administration_id,
-                    invoice_id=invoice_id,
-                    actor_user_id=actor_user_id,
-                )
-        except NotAuthorizedToInvoice:
-            return False, "not_authorized_to_issue"
-        except NotStatutoryCompliant:
-            return False, "not_statutory_compliant"
-        except NoOpenPeriod:
-            return False, "no_open_period"
-        except NoSalesJournal:
-            return False, "no_sales_journal"
-        except PostingConfigurationMissing:
-            return False, "posting_unconfigured"
-        except LogoNotRenderable:
-            return False, "template_not_renderable"
-        return True, None
+        return await attempt_issue(
+            invoicing=self._invoicing,
+            savepoint=self._repository.savepoint,
+            administration_id=administration_id,
+            actor_user_id=actor_user_id,
+            invoice_id=invoice_id,
+        )
 
     async def _failed(
         self,

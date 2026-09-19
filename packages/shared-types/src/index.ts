@@ -1376,3 +1376,60 @@ export interface InvoiceApprovalQueueEntryView extends InvoiceApprovalView {
   readonly invoice_date: string;
   readonly invoice_reference: string | null;
 }
+
+
+/**
+ * SI-17 (ADR-079) - `api.invoicing.routes._batch_result_json`. One pass that raised an invoice per
+ * entry. Every entry is a real draft (or, with `issue`, an issued invoice); an entry that could
+ * not be raised is reported here and never spoils the others. A repeat with the same `batch_key`
+ * returns the first batch with `already_exists: true` and creates nothing.
+ */
+export interface InvoiceBatchView {
+  readonly id: string;
+  readonly name: string;
+  readonly batch_key: string | null;
+  readonly invoice_date: string;
+  readonly issue_requested: boolean;
+  readonly summary: {
+    readonly entries: number;
+    readonly drafted: number;
+    readonly issued: number;
+    readonly failed: number;
+  };
+  readonly created_at: string;
+}
+
+export interface InvoiceBatchItemView {
+  /** 1-based position of the entry in the request. */
+  readonly position: number;
+  readonly customer_id: string;
+  /** `drafted` = a draft exists (see `issue_error` if issuing was asked for). */
+  readonly status: "drafted" | "issued" | "failed";
+  readonly invoice_id: string | null;
+  readonly error:
+    | "no_fiscal_year"
+    | "customer_not_found"
+    | "customer_archived"
+    | "customer_details_incomplete"
+    | "invoice_invalid"
+    | null;
+  readonly error_message: string | null;
+  /** Why an entry stayed a draft although issuing was asked for. */
+  readonly issue_error:
+    | "not_authorized_to_issue"
+    | "approval_required"
+    | "not_statutory_compliant"
+    | "no_open_period"
+    | "no_sales_journal"
+    | "posting_unconfigured"
+    | "template_not_renderable"
+    | null;
+  readonly issue_error_message: string | null;
+}
+
+/** `POST .../sales-invoice-batches` and `GET .../sales-invoice-batches/{id}`. */
+export interface InvoiceBatchResultView {
+  readonly batch: InvoiceBatchView;
+  readonly already_exists: boolean;
+  readonly items: readonly InvoiceBatchItemView[];
+}

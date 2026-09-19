@@ -796,3 +796,41 @@ async def test_listing_another_tenants_approvals_is_refused(
     two_organizations: SeededTenants,
 ) -> None:
     assert await _as_a("GET", "/sales-invoice-approvals", two_organizations) in REFUSED
+
+
+# -- SI-17: batch invoicing (ADR-079) ---------------------------------------------------------
+_BATCHES = "/v1/administrations/{administration_id}/sales-invoice-batches"
+
+
+@pytest.mark.isolation("POST", _BATCHES)
+async def test_running_a_batch_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    body = {
+        "name": "Contributie",
+        "lines": [
+            {
+                "description": "Bijdrage",
+                "quantity": "1",
+                "unit_price": "250",
+                "vat_treatment": "btw_21",
+            }
+        ],
+        "entries": [{"customer_id": str(uuid.uuid4())}],
+    }
+    assert await _as_a("POST", "/sales-invoice-batches", two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("GET", _BATCHES)
+async def test_listing_another_tenants_batches_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", "/sales-invoice-batches", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _BATCHES + "/{batch_id}")
+async def test_reading_another_tenants_batch_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoice-batches/{uuid.uuid4()}"
+    assert await _as_a("GET", path, two_organizations) in REFUSED

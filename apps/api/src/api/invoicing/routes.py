@@ -64,6 +64,17 @@ from api.invoicing.approval import (
     SalesInvoiceApprovalGate,
 )
 from api.invoicing.approval_repository import SqlApprovalRepository
+from api.invoicing.batch_repository import SqlBatchRepository
+from api.invoicing.batch_service import (
+    BatchInvoicingService,
+    BatchItem,
+    BatchKeyTaken,
+    BatchRecord,
+    BatchRejected,
+    BatchResult,
+    InvoiceBatchNotFound,
+)
+from api.invoicing.batches import BatchEntry
 from api.invoicing.delivery import (
     ArtifactNotAvailable,
     ChannelNotAvailable,
@@ -295,7 +306,23 @@ def register(app: FastAPI) -> None:
         methods=["POST"],
         name="void_sales_invoice_payment",
     )
-    # SI-16 (ADR-078): draft - approve - send.
+    # SI-17 (ADR-079): batch invoicing.
+    for b_path, b_handler, b_verb, b_name in (
+        ("/sales-invoice-batches", run_invoice_batch, "POST", "run_sales_invoice_batch"),
+        ("/sales-invoice-batches", list_invoice_batches, "GET", "list_sales_invoice_batches"),
+        (
+            "/sales-invoice-batches/{batch_id}",
+            get_invoice_batch,
+            "GET",
+            "get_sales_invoice_batch",
+        ),
+    ):
+        app.add_api_route(
+            "/v1/administrations/{administration_id}" + b_path,
+            b_handler,
+            methods=[b_verb],
+            name=b_name,
+        )  # SI-16 (ADR-078): draft - approve - send.
     for a_path, a_handler, a_verb, a_name in (
         (
             "/sales-invoices/{invoice_id}/request-approval",
@@ -4238,3 +4265,222 @@ async def list_invoice_approvals(
         administration_id=administration_id, actor_user_id=tenant.user_id, status=status
     )
     return {"approvals": [_queue_json(entry) for entry in entries]}
+
+
+# -- SI-17: batch invoicing (ADR-079) ----------------------------------------------
+
+
+async def get_batch_service(
+    session: AsyncSession = Depends(get_db_session),
+    invoicing: InvoicingService = Depends(get_invoicing_service),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> BatchInvoicingService:
+    return BatchInvoicingService(
+        repository=SqlBatchRepository(session),
+        invoicing=invoicing,
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+class BatchEntryBody(BaseModel):
+    customer_id: uuid.UUID
+    #: Omitted: the batch's own `lines`.
+    lines: list[LineBody] | None = None
+    notes: str | None = None
+    due_days: int | None = None
+
+
+class BatchBody(BaseModel):
+    name: str
+    entries: list[BatchEntryBody]
+    #: Defaults an entry inherits when it leaves the field out.
+    lines: list[LineBody] | None = None
+    notes: str | None = None
+    due_days: int | None = None
+    #: Defaults to today.
+    invoice_date: date | None = None
+    #: Also issue each draft (an entry that cannot be issued stays a draft, with the reason).
+    issue: bool = False
+    #: The caller's own name for this pass; a repeat with the same key creates nothing.
+    batch_key: str | None = None
+
+
+def _batch_line(line: LineBody) -> QuoteLine:
+    return QuoteLine(
+        description=line.description,
+        quantity=line.quantity,
+        unit_price=line.unit_price,
+        vat_treatment=line.vat_treatment,
+        discount_percent=line.discount_percent,
+    )
+
+
+def _batch_record_json(batch: BatchRecord) -> dict[str, object]:
+    return {
+        "id": str(batch.id),
+        "name": batch.name,
+        "batch_key": batch.batch_key,
+        "invoice_date": batch.invoice_date.isoformat(),
+        "issue_requested": batch.issue_requested,
+        "summary": {
+            "entries": batch.item_count,
+            "drafted": batch.drafted_count,
+            "issued": batch.issued_count,
+            "failed": batch.failed_count,
+        },
+        "created_at": batch.created_at.isoformat(),
+    }
+
+
+def _batch_item_json(item: BatchItem, language: Language) -> dict[str, object]:
+    return {
+        "position": item.position,
+        "customer_id": str(item.customer_id),
+        "status": item.status,
+        "invoice_id": str(item.invoice_id) if item.invoice_id else None,
+        "error": item.error_code,
+        "error_message": (
+            translate(f"invoice.batch.error.{item.error_code}", language)
+            if item.error_code
+            else None
+        ),
+        # Set when issuing was asked for and the invoice was left a draft.
+        "issue_error": item.issue_error,
+        "issue_error_message": (
+            translate(f"invoice.batch.issue_error.{item.issue_error}", language)
+            if item.issue_error
+            else None
+        ),
+    }
+
+
+def _batch_result_json(result: BatchResult, language: Language) -> dict[str, object]:
+    return {
+        "batch": _batch_record_json(result.batch),
+        "already_exists": result.already_exists,
+        "items": [_batch_item_json(item, language) for item in result.items],
+    }
+
+
+def _batch_problem(request: Request, exc: Exception) -> Exception | None:
+    if isinstance(exc, BatchRejected):
+        extra: dict[str, object] = {} if exc.position is None else {"position": exc.position}
+        key = {
+            "empty": "errors.batch_invalid_empty",
+            "too_many": "errors.batch_invalid_too_many",
+            "name_required": "errors.batch_invalid_name_required",
+            "lines": "errors.batch_invalid_lines",
+        }[exc.code]
+        return problem(request, 422, key, reason=f"batch_{exc.code}", **extra)
+    if isinstance(exc, InvoiceBatchNotFound):
+        return problem(request, 404, "errors.batch_not_found", reason="batch_not_found")
+    if isinstance(exc, BatchKeyTaken):
+        return problem(request, 409, "errors.batch_key_taken", reason="batch_key_taken")
+    return None
+
+
+async def run_invoice_batch(
+    administration_id: uuid.UUID,
+    body: BatchBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: BatchInvoicingService = Depends(get_batch_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+    # IAM-010b: with `issue`, this posts to the ledger.
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """SI-17: raise one invoice per entry, in one pass. Always 200 with a per-entry report -
+    an entry that cannot be raised is reported, it does not spoil the rest."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        result = await service.run(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            name=body.name,
+            entries=[
+                BatchEntry(
+                    customer_id=entry.customer_id,
+                    lines=(
+                        tuple(_batch_line(line) for line in entry.lines)
+                        if entry.lines is not None
+                        else None
+                    ),
+                    notes=entry.notes,
+                    due_days=entry.due_days,
+                )
+                for entry in body.entries
+            ],
+            today=date.today(),
+            now=datetime.now().astimezone(),
+            invoice_date=body.invoice_date,
+            default_lines=(
+                tuple(_batch_line(line) for line in body.lines) if body.lines is not None else None
+            ),
+            default_notes=body.notes,
+            default_due_days=body.due_days,
+            issue=body.issue,
+            batch_key=body.batch_key,
+        )
+    except Exception as exc:
+        refusal = _batch_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return _batch_result_json(result, request_language(request))
+
+
+async def list_invoice_batches(
+    administration_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: BatchInvoicingService = Depends(get_batch_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    batches = await service.batches(
+        administration_id=administration_id, actor_user_id=tenant.user_id
+    )
+    return {"batches": [_batch_record_json(batch) for batch in batches]}
+
+
+async def get_invoice_batch(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: BatchInvoicingService = Depends(get_batch_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    """One batch and what happened to each of its entries."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        result = await service.batch(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+        )
+    except Exception as exc:
+        refusal = _batch_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return _batch_result_json(result, request_language(request))

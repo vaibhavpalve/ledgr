@@ -928,6 +928,71 @@
       "nl": "De factuursjabloon kan niet worden weergegeven, bijvoorbeeld door het logo. De factuur staat als concept klaar.",
       "en": "The invoice template cannot be rendered, for example because of its logo. The invoice was left as a draft."
     },
+    "invoice.recurring.issue_error.approval_required": {
+      "note": "SI-16 / SI-07. The administration requires the owner's approval before an invoice is issued and this draft has none that counts. Left as a draft.",
+      "nl": "Voor deze administratie moet de eigenaar facturen eerst goedkeuren. De factuur staat als concept klaar; vraag goedkeuring aan.",
+      "en": "This administration requires the owner to approve invoices first. The invoice was left as a draft; request approval."
+    },
+    "invoice.batch.error.no_fiscal_year": {
+      "note": "SI-17. The invoice date is in no fiscal year of the administration: nowhere to put the invoice.",
+      "nl": "Er is geen boekjaar voor deze factuurdatum. Open eerst het boekjaar.",
+      "en": "There is no fiscal year for this invoice date. Open the fiscal year first."
+    },
+    "invoice.batch.error.customer_not_found": {
+      "note": "SI-17. Indistinguishable from another tenant's customer, on purpose.",
+      "nl": "Deze klant bestaat niet in deze administratie.",
+      "en": "This customer does not exist in this administration."
+    },
+    "invoice.batch.error.customer_archived": {
+      "note": "SI-17. An archived customer is not invoiced.",
+      "nl": "Deze klant is gearchiveerd en kan niet worden gefactureerd.",
+      "en": "This customer is archived and cannot be invoiced."
+    },
+    "invoice.batch.error.customer_details_incomplete": {
+      "note": "SI-17. The customer master lacks something an invoice needs, usually the address.",
+      "nl": "De gegevens van de klant zijn onvolledig, meestal het adres. Vul ze aan bij de klant en probeer het opnieuw.",
+      "en": "The customer's details are incomplete, usually the address. Complete them on the customer and try again."
+    },
+    "invoice.batch.error.invoice_invalid": {
+      "note": "SI-17. The draft was refused for a reason specific to its content (for example an unknown BTW treatment on a line).",
+      "nl": "De factuur kon niet worden aangemaakt met deze regels. Controleer de regels, bijvoorbeeld het btw-tarief.",
+      "en": "The invoice could not be created with these lines. Check the lines, for example the BTW treatment."
+    },
+    "invoice.batch.issue_error.not_authorized_to_issue": {
+      "note": "SI-17. Issuing was asked for but the person who ran the batch may not issue (needs the send permission). The invoice is a draft.",
+      "nl": "Je mag facturen niet definitief maken. De factuur staat als concept klaar.",
+      "en": "You may not issue invoices. The invoice was left as a draft."
+    },
+    "invoice.batch.issue_error.approval_required": {
+      "note": "SI-17 / SI-16. The owner's approval is required first. The invoice is a draft.",
+      "nl": "De eigenaar moet deze factuur eerst goedkeuren. Ze staat als concept klaar; vraag goedkeuring aan.",
+      "en": "The owner must approve this invoice first. It was left as a draft; request approval."
+    },
+    "invoice.batch.issue_error.not_statutory_compliant": {
+      "note": "SI-17 / FR-AR-003. Something the law requires is missing (often the supplier's KvK or BTW number). Left as a draft.",
+      "nl": "De factuur mist iets wat wettelijk verplicht is, bijvoorbeeld een KvK- of btw-nummer. Ze staat als concept klaar.",
+      "en": "The invoice lacks something the law requires, for example a KvK or BTW number. It was left as a draft."
+    },
+    "invoice.batch.issue_error.no_open_period": {
+      "note": "SI-17. The invoice date is in a locked or filed period. Left as a draft.",
+      "nl": "De factuurdatum valt in een gesloten periode. De factuur staat als concept klaar.",
+      "en": "The invoice date falls in a closed period. The invoice was left as a draft."
+    },
+    "invoice.batch.issue_error.no_sales_journal": {
+      "note": "SI-17. FR-GL-002: the administration has no single active sales journal.",
+      "nl": "Er is geen verkoopjournaal ingericht. De factuur staat als concept klaar.",
+      "en": "No sales journal is set up. The invoice was left as a draft."
+    },
+    "invoice.batch.issue_error.posting_unconfigured": {
+      "note": "SI-17. A revenue or BTW account is not mapped for this invoice. Left as a draft.",
+      "nl": "Er is geen omzet- of btw-rekening gekoppeld voor deze factuur. De factuur staat als concept klaar.",
+      "en": "No revenue or BTW account is mapped for this invoice. The invoice was left as a draft."
+    },
+    "invoice.batch.issue_error.template_not_renderable": {
+      "note": "SI-17. The invoice template cannot be rendered. Left as a draft.",
+      "nl": "De factuursjabloon kan niet worden weergegeven. De factuur staat als concept klaar.",
+      "en": "The invoice template cannot be rendered. The invoice was left as a draft."
+    },
     "invoice.ageing.bucket.current": {
       "note": "SI-06 / FR-AR-012. Ageing is by days past the DUE date, the Dutch convention: an invoice on 60-day terms is not late at day 45. The due date itself is still 'current' - the customer has until the end of it.",
       "nl": "Nog niet vervallen",
