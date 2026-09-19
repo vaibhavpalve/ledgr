@@ -20,7 +20,8 @@ from api.i18n.language import Language
 from api.invoicing.duplicates import DuplicateCandidate, InvoiceFingerprint, LineFingerprint
 from api.invoicing.model import InvoiceLine, InvoiceStatus, SalesInvoice
 from api.invoicing.statutory import SupplierDetails
-from api.vat.rules import TreatmentRole
+from api.vat.rules import EffectiveRules, TreatmentRole
+from api.vat.rules_repository import SqlVatRulesRepository
 
 _INVOICE_COLUMNS = """
     id, organization_id, administration_id, fiscal_year_id, status,
@@ -332,6 +333,12 @@ class SqlInvoiceRepository:
             ),
             {"id": str(invoice_id), "admin": str(administration_id)},
         )
+
+    async def effective_rules_on(self, *, on_date: date) -> EffectiveRules:
+        """SI-13. Delegates to the VAT rules repository rather than repeating
+        its three queries: one reader of `vat.rules_on`, so the preview and the
+        return builder cannot come to disagree about what it returns."""
+        return await SqlVatRulesRepository(self._session).rules_on(on_date=on_date)
 
     async def duplicate_candidates(
         self,

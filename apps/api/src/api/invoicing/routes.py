@@ -375,6 +375,27 @@ def _view_json(view: InvoiceView, language: Language) -> dict[str, object]:
             for failure, message in describe(view.statutory_failures, language)
         ],
         "can_be_issued": view.can_be_issued,
+        # SI-13. The OB-aangifte boxes this invoice reports into - the same
+        # mapping the return reads, so a draft shows its consequence before
+        # anything is filed. Informational: it gates nothing.
+        "rubriek_preview": {
+            "boxes": [
+                {
+                    "code": box.code,
+                    "description": box.description(language),
+                    "turnover_amount": str(box.turnover),
+                    # Null where the box has no VAT column, which is not the
+                    # same as a VAT column of zero.
+                    "vat_amount": str(box.vat) if box.vat is not None else None,
+                    "treatments": list(box.treatments),
+                }
+                for box in view.rubriek_preview.boxes
+            ],
+            # Treatments whose amounts cannot be shown in a box - no mapping on
+            # the invoice date, or the margin scheme - said out loud rather
+            # than dropped or shown as a zero.
+            "unplaced_treatments": list(view.rubriek_preview.unplaced_treatments),
+        },
         # SI-12. Recent invoices to the same customer that look like this one -
         # a warning shown beside the draft, never a reason `can_be_issued` is
         # false. A client must not gate the issue button on this being empty.

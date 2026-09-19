@@ -39,9 +39,10 @@ from api.invoicing.model import (
     SalesInvoice,
 )
 from api.invoicing.service import InvoicingService
-from api.vat.rules import TreatmentRole
+from api.vat.rules import EffectiveRules, TreatmentRole
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
+from tests.support.fake_vat_rules_repository import InMemoryVatRulesRepository, load_document
 
 DAY = date(2026, 9, 9)
 CUSTOMER = uuid.UUID("11111111-1111-1111-1111-111111111111")
@@ -350,6 +351,11 @@ class FakeRepository:
 
     async def supplier(self, *, administration_id: uuid.UUID) -> None:
         return None
+
+    async def effective_rules_on(self, *, on_date: date) -> EffectiveRules:
+        vat_rules = InMemoryVatRulesRepository()
+        vat_rules.load(load_document())
+        return await vat_rules.rules_on(on_date=on_date)
 
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None:
         return self.organization

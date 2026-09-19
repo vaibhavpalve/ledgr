@@ -528,7 +528,37 @@ export interface SalesInvoiceView {
    * invoice or a credit note.
    */
   readonly duplicate_warnings: readonly DuplicateWarningView[];
+  /**
+   * SI-13. Which OB-aangifte boxes this invoice reports into, recomputed on
+   * every save so a draft shows the consequence of its VAT treatments before
+   * anything is filed. Informational only; gates nothing.
+   */
+  readonly rubriek_preview: RubriekPreviewView;
   readonly wording_is_provisional: boolean;
+}
+
+/** SI-13 - `api.invoicing.routes._view_json`'s `rubriek_preview`. */
+export interface RubriekPreviewView {
+  readonly boxes: readonly RubriekBoxView[];
+  /**
+   * Treatments whose amounts cannot be shown in a box: the ruleset has no box
+   * for them on the invoice date, or they are the margin scheme (the return
+   * reports the margin, not the invoice's sale price). Say "cannot be placed",
+   * never show a zero.
+   */
+  readonly unplaced_treatments: readonly string[];
+}
+
+export interface RubriekBoxView {
+  /** The OB-aangifte box, e.g. `1a`. */
+  readonly code: string;
+  /** The box's title in the reader's language. */
+  readonly description: string;
+  readonly turnover_amount: string;
+  /** Null where the box has no VAT column, which is not a VAT column of zero. */
+  readonly vat_amount: string | null;
+  /** The VAT treatment codes feeding the box. */
+  readonly treatments: readonly string[];
 }
 
 /** SI-12 - `api.invoicing.routes._view_json`'s `duplicate_warnings[]` entry. `message` is already translated. */

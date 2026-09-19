@@ -77,6 +77,7 @@ from api.invoicing.model import (
     SalesInvoice,
 )
 from api.invoicing.posting import SalesPostingService
+from api.invoicing.rubriek_preview import preview as rubriek_preview
 from api.invoicing.statutory import (
     InvoiceForIssue,
     LineForIssue,
@@ -85,7 +86,7 @@ from api.invoicing.statutory import (
 )
 from api.invoicing.vat import InvoiceLineAmounts, totals_for
 from api.invoicing.wording import unreviewed_wording, wording_for
-from api.vat.rules import TreatmentRole
+from api.vat.rules import EffectiveRules, TreatmentRole
 
 #: Appendix A rows, reused rather than invented (ADR-012).
 CREATE_INVOICE = ("create", "sales_invoice")
@@ -184,6 +185,12 @@ class InvoiceRepository(Protocol):
     async def delete_draft(
         self, *, administration_id: uuid.UUID, invoice_id: uuid.UUID
     ) -> None: ...
+
+    async def effective_rules_on(self, *, on_date: date) -> EffectiveRules:
+        """SI-13: every VAT rule in force on `on_date`, including the
+        treatment-to-rubriek mapping. Not tenant data - the ruleset is global
+        reference data (CMP-014)."""
+        ...
 
     async def duplicate_candidates(
         self,
@@ -599,6 +606,12 @@ class InvoicingService:
         await self._require(CREATE_INVOICE, actor_user_id, administration_id)
         invoice = await self._get_or_refuse(administration_id, invoice_id)
         view = await self._build_view(invoice)
+        # SI-13. Every status: a draft shows where it WILL land and an issued
+        # invoice where it did. Skipped with no lines, so an empty draft costs
+        # no rules lookup.
+        if view.groups:
+            rules = await self._repository.effective_rules_on(on_date=invoice.invoice_date)
+            view = replace(view, rubriek_preview=rubriek_preview(view.groups, rules))
         # SI-12. Drafts only: the question is "should I issue this?", which is
         # not asked of an invoice already issued - and `issue` reaches here for
         # the issued row, so this also spares it a query.

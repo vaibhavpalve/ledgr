@@ -15,6 +15,7 @@ from decimal import Decimal
 
 from api.i18n.language import Language
 from api.invoicing.duplicates import InvoiceDuplicateWarning
+from api.invoicing.rubriek_preview import RubriekPreview
 from api.invoicing.statutory import StatutoryFailure
 from api.invoicing.vat import VatGroup
 from api.vat.rules import TreatmentRole
@@ -157,6 +158,9 @@ class InvoiceView:
     #: WARNING and never a gate: `can_be_issued` below deliberately does not
     #: consult it. Empty on anything but a draft.
     duplicate_warnings: tuple[InvoiceDuplicateWarning, ...] = ()
+    #: SI-13. Which OB-aangifte boxes this invoice reports into, from the same
+    #: effective-dated mapping the return reads. Informational only.
+    rubriek_preview: RubriekPreview = field(default_factory=RubriekPreview)
 
     @property
     def can_be_issued(self) -> bool:
