@@ -858,6 +858,56 @@
       "nl": "Met vriendelijke groet,",
       "en": "Kind regards,"
     },
+    "invoice.ageing.bucket.current": {
+      "note": "SI-06 / FR-AR-012. Ageing is by days past the DUE date, the Dutch convention: an invoice on 60-day terms is not late at day 45. The due date itself is still 'current' - the customer has until the end of it.",
+      "nl": "Nog niet vervallen",
+      "en": "Not yet due"
+    },
+    "invoice.ageing.bucket.days_1_30": {
+      "note": "SI-06. First late day to thirty days late, inclusive.",
+      "nl": "1–30 dagen te laat",
+      "en": "1–30 days overdue"
+    },
+    "invoice.ageing.bucket.days_31_60": {
+      "note": "SI-06.",
+      "nl": "31–60 dagen te laat",
+      "en": "31–60 days overdue"
+    },
+    "invoice.ageing.bucket.days_61_90": {
+      "note": "SI-06.",
+      "nl": "61–90 dagen te laat",
+      "en": "61–90 days overdue"
+    },
+    "invoice.ageing.bucket.over_90": {
+      "note": "SI-06. Open-ended: everything more than ninety days late.",
+      "nl": "Meer dan 90 dagen te laat",
+      "en": "More than 90 days overdue"
+    },
+    "invoice.ageing.bucket.no_due_date": {
+      "note": "SI-06. An invoice with no due date cannot be late, and inventing one would put it in a bucket on a term nobody agreed. Counted in the totals, shown separately.",
+      "nl": "Geen vervaldatum",
+      "en": "No due date"
+    },
+    "invoice.statement.kind.invoice": {
+      "note": "SI-06 / FR-AR-012. A statement line: an invoice raises what the customer owes.",
+      "nl": "Factuur",
+      "en": "Invoice"
+    },
+    "invoice.statement.kind.credit_note": {
+      "note": "SI-06. A credit note lowers what the customer owes.",
+      "nl": "Creditnota",
+      "en": "Credit note"
+    },
+    "invoice.statement.kind.payment": {
+      "note": "SI-06. A payment received, on the day the money arrived.",
+      "nl": "Betaling",
+      "en": "Payment"
+    },
+    "invoice.statement.kind.payment_void": {
+      "note": "SI-06. A payment that was recorded in error and reversed: it raises what the customer owes again, on the day it was voided.",
+      "nl": "Betaling ongedaan gemaakt",
+      "en": "Payment voided"
+    },
     "invoice.dunning.blocker.nothing_outstanding": {
       "note": "SI-04. Outranks every other reason: a paid or credited invoice is never chased, paused or not.",
       "nl": "Er staat niets meer open op deze factuur, dus er is niets om te herinneren.",

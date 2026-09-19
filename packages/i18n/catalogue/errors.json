@@ -410,6 +410,11 @@
       "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
       "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
     },
+    "errors.report_period_invalid": {
+      "note": "SI-06 / FR-AR-012. The statement period ends before it starts.",
+      "nl": "De periode is ongeldig: de einddatum ligt vóór de begindatum. Kies een einddatum op of na de begindatum.",
+      "en": "The period is not valid: the end date is before the start date. Choose an end date on or after the start date."
+    },
     "errors.dunning_nothing_to_send": {
       "note": "SI-04. {reason_text} is the specific blocker sentence (invoice.dunning.blocker.*), already translated; the machine code travels beside it as `blocker` so a screen can react.",
       "nl": "Er kan nu geen herinnering worden verstuurd. {reason_text}",

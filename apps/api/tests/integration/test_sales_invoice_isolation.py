@@ -380,3 +380,38 @@ async def test_resuming_another_tenants_customer_is_refused(
         )
 
     assert response.status_code in REFUSED
+
+
+# -- SI-06: aged receivables and the customer statement (ADR-072) ---------------------
+
+
+@pytest.mark.isolation("GET", "/v1/administrations/{administration_id}/receivables/ageing")
+async def test_reading_another_tenants_ageing_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.get(
+            f"/v1/administrations/{two_organizations.admin_b}/receivables/ageing",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "GET", "/v1/administrations/{administration_id}/customers/{customer_id}/statement"
+)
+async def test_reading_another_tenants_statement_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.get(
+            f"/v1/administrations/{two_organizations.admin_b}/customers/{uuid.uuid4()}/statement",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code in REFUSED

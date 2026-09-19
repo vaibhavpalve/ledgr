@@ -107,6 +107,14 @@ from api.invoicing.posting import (
     SalesPostingService,
 )
 from api.invoicing.posting_repository import SqlSalesPostingRepository
+from api.invoicing.receivables import AgeBucket, AgeingReport
+from api.invoicing.receivables_repository import SqlReceivablesRepository
+from api.invoicing.receivables_service import (
+    CustomerStatement,
+    InvalidStatementPeriod,
+    ReceivablesService,
+    StatementCustomerNotFound,
+)
 from api.invoicing.rendering import build_invoice_renderer
 from api.invoicing.repository import SqlInvoiceRepository
 from api.invoicing.service import InvoicingService, NewLine
@@ -234,6 +242,19 @@ def register(app: FastAPI) -> None:
         resume_customer_dunning,
         methods=["DELETE"],
         name="resume_customer_dunning",
+    )
+    # SI-06 (ADR-072): aged receivables and the customer statement.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/receivables/ageing",
+        get_receivables_ageing,
+        methods=["GET"],
+        name="get_receivables_ageing",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/customers/{customer_id}/statement",
+        get_customer_statement,
+        methods=["GET"],
+        name="get_customer_statement",
     )
 
 
@@ -1716,3 +1737,161 @@ async def resume_customer_dunning(
     except Exception as exc:
         _raise_dunning(request, exc)
     return {"customer_id": str(customer_id), "is_paused": False}
+
+
+# -- SI-06: aged receivables and the customer statement (ADR-072) -----------------
+
+
+async def get_receivables_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> ReceivablesService:
+    return ReceivablesService(
+        repository=SqlReceivablesRepository(session),
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+def _ageing_json(report: AgeingReport, language: Language) -> dict[str, object]:
+    def label(bucket: AgeBucket) -> str:
+        return translate(f"invoice.ageing.bucket.{bucket.value}", language)
+
+    return {
+        "as_of": report.as_of.isoformat(),
+        # In display order. A list rather than an object so a client cannot depend
+        # on key order, and each carries its own label.
+        "buckets": [
+            {
+                "bucket": bucket.value,
+                "label": label(bucket),
+                "amount": str(report.bucket_totals[bucket]),
+            }
+            for bucket in AgeBucket
+        ],
+        "grand_total": str(report.grand_total),
+        "customers": [
+            {
+                "customer_id": str(customer.customer_id) if customer.customer_id else None,
+                "customer_name": customer.customer_name,
+                "total": str(customer.total),
+                "buckets": {b.value: str(customer.buckets[b]) for b in AgeBucket},
+                # FR-RPT-002: down to the invoice, and from there to its document.
+                "invoices": [
+                    {
+                        "invoice_id": str(found.invoice_id),
+                        "invoice_reference": found.invoice_reference,
+                        "invoice_date": found.invoice_date.isoformat(),
+                        "due_date": found.due_date.isoformat() if found.due_date else None,
+                        "outstanding_amount": str(found.outstanding),
+                        "bucket": bucket.value,
+                        "days_late": days_late,
+                    }
+                    for found, bucket, days_late in customer.items
+                ],
+            }
+            for customer in report.customers
+        ],
+    }
+
+
+def _statement_json(result: CustomerStatement, language: Language) -> dict[str, object]:
+    statement = result.statement
+    return {
+        "customer_id": str(result.customer_id),
+        "customer_name": result.customer_name,
+        "date_from": statement.date_from.isoformat(),
+        "date_to": statement.date_to.isoformat(),
+        # Positive: the customer owes. Negative: they are in credit.
+        "opening_balance": str(statement.opening_balance),
+        "lines": [
+            {
+                "date": line.movement.movement_date.isoformat(),
+                "kind": line.movement.kind.value,
+                "label": translate(f"invoice.statement.kind.{line.movement.kind.value}", language),
+                "reference": line.movement.reference,
+                "invoice_id": str(line.movement.invoice_id) if line.movement.invoice_id else None,
+                "debit": str(line.movement.debit),
+                "credit": str(line.movement.credit),
+                "balance": str(line.balance),
+            }
+            for line in statement.lines
+        ],
+        "total_debit": str(statement.total_debit),
+        "total_credit": str(statement.total_credit),
+        "closing_balance": str(statement.closing_balance),
+    }
+
+
+async def get_receivables_ageing(
+    administration_id: uuid.UUID,
+    request: Request,
+    as_of: date | None = Query(default=None),
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ReceivablesService = Depends(get_receivables_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "View reports" - not `create sales_invoice`, which would
+            # let an Invoicer read every customer's debt for having drafted one.
+            "view",
+            "report",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-012: who owes what and how overdue, as of a date (today by default).
+
+    Reproducible: the same `as_of` gives the same report next month, because every
+    payment and credit is counted by its own date. Drills down to the invoices.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    report = await service.ageing(
+        administration_id=administration_id,
+        actor_user_id=tenant.user_id,
+        as_of=as_of or date.today(),
+    )
+    return _ageing_json(report, request_language(request))
+
+
+async def get_customer_statement(
+    administration_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    request: Request,
+    # `from` is a Python keyword, so the parameter is `date_from` and the URL says `from`.
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ReceivablesService = Depends(get_receivables_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "view",
+            "report",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-012: one customer's statement of account. `to` defaults to today and
+    `from` to the start of that year. Everything before `from` is folded into the
+    opening balance, so any period's statement starts from what was truly owed."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    end = date_to or date.today()
+    start = date_from or date(end.year, 1, 1)
+    try:
+        result = await service.statement(
+            administration_id=administration_id,
+            customer_id=customer_id,
+            actor_user_id=tenant.user_id,
+            date_from=start,
+            date_to=end,
+        )
+    except InvalidStatementPeriod as exc:
+        raise problem(
+            request, 422, "errors.report_period_invalid", reason="report_period_invalid"
+        ) from exc
+    except StatementCustomerNotFound as exc:
+        raise problem(
+            request, 404, "errors.customer_not_found", reason="customer_not_found"
+        ) from exc
+    return _statement_json(result, request_language(request))

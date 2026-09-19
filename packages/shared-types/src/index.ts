@@ -578,6 +578,71 @@ export interface InvoicePaymentsView {
   readonly balance: InvoiceBalanceView;
 }
 
+/** Days past the DUE date; `no_due_date` is counted in the totals, never guessed into another bucket. */
+export type AgeBucketCode =
+  | "current"
+  | "days_1_30"
+  | "days_31_60"
+  | "days_61_90"
+  | "over_90"
+  | "no_due_date";
+
+/**
+ * SI-06 (ADR-072) - `api.invoicing.routes._ageing_json`. `GET .../receivables/ageing?as_of=`.
+ * Reproducible: the same `as_of` gives the same report later. Every amount is a decimal string.
+ */
+export interface AgeingReportView {
+  readonly as_of: string;
+  /** In display order, each with its label in the reader's language. */
+  readonly buckets: readonly { readonly bucket: AgeBucketCode; readonly label: string; readonly amount: string }[];
+  readonly grand_total: string;
+  /** Largest debt first. */
+  readonly customers: readonly {
+    /** Null for a one-off customer, who is grouped by the name typed on the invoice. */
+    readonly customer_id: string | null;
+    readonly customer_name: string;
+    readonly total: string;
+    readonly buckets: Readonly<Record<AgeBucketCode, string>>;
+    /** The drill-down to the invoices (FR-RPT-002). */
+    readonly invoices: readonly {
+      readonly invoice_id: string;
+      readonly invoice_reference: string | null;
+      readonly invoice_date: string;
+      readonly due_date: string | null;
+      readonly outstanding_amount: string;
+      readonly bucket: AgeBucketCode;
+      readonly days_late: number;
+    }[];
+  }[];
+}
+
+/**
+ * SI-06 - `api.invoicing.routes._statement_json`. `GET .../customers/{id}/statement?from=&to=`.
+ * Positive balances mean the customer owes; negative means they are in credit.
+ */
+export interface CustomerStatementView {
+  readonly customer_id: string;
+  readonly customer_name: string;
+  readonly date_from: string;
+  readonly date_to: string;
+  /** Everything before `date_from`, brought forward. */
+  readonly opening_balance: string;
+  readonly lines: readonly {
+    readonly date: string;
+    readonly kind: "invoice" | "credit_note" | "payment" | "payment_void";
+    readonly label: string;
+    readonly reference: string | null;
+    readonly invoice_id: string | null;
+    readonly debit: string;
+    readonly credit: string;
+    /** What the customer owed after this line. */
+    readonly balance: string;
+  }[];
+  readonly total_debit: string;
+  readonly total_credit: string;
+  readonly closing_balance: string;
+}
+
 /** SI-04 (ADR-071) - `api.invoicing.routes._step_json`. One rung of the reminder ladder. */
 export interface DunningStepView {
   readonly position: number;
