@@ -388,3 +388,62 @@ async def test_another_tenant_cannot_see_a_payment(two_organizations: SeededTena
 
     assert seen == 0
     assert balances == 0
+
+
+async def test_two_concurrent_payments_cannot_both_fit(two_organizations: SeededTenants) -> None:
+    """The row lock, exercised rather than reasoned about.
+
+    Two transactions each try to record 700.00 against an invoice owing 1210.00.
+    Either alone fits; together they overpay. The first holds the invoice's row
+    lock (uncommitted); the second must WAIT for it, and once the first commits
+    must see that payment and be refused - not slip through on a stale balance.
+    """
+    import asyncio
+
+    owed = await _owed_invoice(two_organizations)
+    entries = [
+        await _receipt(
+            two_organizations,
+            owed,
+            bank=owed["bank"],
+            journal=owed["bank_journal"],
+            party=owed["party"],
+            amount="700.00",
+        )
+        for _ in range(2)
+    ]
+    insert = text(
+        "INSERT INTO sales_invoice_payment (organization_id, administration_id, invoice_id, "
+        "  amount, paid_on, method, bank_account_id, journal_entry_id, recorded_by_user_id) "
+        "VALUES (:org, :admin, :invoice, 700.00, DATE '2026-09-15', 'bank_transfer', "
+        "  :bank, :entry, :user)"
+    )
+
+    def params(entry: uuid.UUID) -> dict[str, str]:
+        return {
+            "org": str(two_organizations.org_a),
+            "admin": str(two_organizations.admin_a),
+            "invoice": str(owed["invoice"]),
+            "bank": str(owed["bank"]),
+            "entry": str(entry),
+            "user": str(two_organizations.owner_a),
+        }
+
+    async with app_engine.connect() as first, app_engine.connect() as second:
+        for conn in (first, second):
+            await conn.execute(
+                text("SELECT set_config('app.current_org_id', :org, true)"),
+                {"org": str(two_organizations.org_a)},
+            )
+
+        await first.execute(insert, params(entries[0]))  # takes the invoice's row lock
+        racing = asyncio.create_task(second.execute(insert, params(entries[1])))
+        await asyncio.sleep(0.5)
+        assert not racing.done(), "the second insert should be waiting on the first's lock"
+
+        await first.commit()
+        with pytest.raises(Exception, match="(?i)still outstanding|FR-BNK-005"):
+            await racing
+        await second.rollback()
+
+    assert await _balance(two_organizations, owed) == Decimal("510.00")  # 1210 - 700

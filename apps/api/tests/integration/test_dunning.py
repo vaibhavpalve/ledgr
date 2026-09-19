@@ -14,6 +14,7 @@ migrations through 0053 applied and the VAT reference data loaded.
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -36,7 +37,7 @@ from tests.support.seed import SeededTenants
 
 pytestmark = pytest.mark.anyio
 
-TODAY = "2026-10-15"
+TODAY = date(2026, 10, 15)
 
 
 async def _overdue_invoice(
@@ -109,8 +110,8 @@ async def _remind(
         position=position,
         kind=kind,
         delivery=str(delivery),
-        cost=cost,
-        pay_by=pay_by,
+        cost=Decimal(cost) if cost else None,
+        pay_by=date.fromisoformat(pay_by) if pay_by else None,
         user=str(tenants.owner_a),
     )
 

@@ -12,6 +12,7 @@ Skipped without TENANT_ISOLATION_TESTS_ENABLED=1 (see this package's conftest).
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -527,7 +528,7 @@ async def _draft(
         org=str(tenants.org_a),
         admin=str(tenants.admin_a),
         year=str(world["year"]),
-        due=due_date,
+        due=date.fromisoformat(due_date) if due_date else None,
         customer=str(customer_id) if customer_id else None,
     )
 

@@ -158,11 +158,18 @@ outstanding amount, interest and cost it claimed.
 
 **Known gaps.**
 
-- **Migration 0053 and `tests/integration/test_dunning.py` (17 tests) have not been run.** The
-  assistant that wrote them cannot apply migrations (they need the postgres superuser, which the
-  permission classifier blocks in an unattended session). The 66 rule tests and 25 service tests
-  pass, and the shared seed helpers this work touched were re-verified against Postgres (27 pass).
-  Apply 0050 and 0053, then run the file, before trusting the SQL.
+- **Verified against a real Postgres** after migration 0053 was applied to the local database.
+  `tests/integration/test_dunning.py` (17 tests: what is overdue, once-per-step, costs only on a
+  notice, notice needs a deadline, reminder immutable and undeletable, ladder constraints, rates
+  append-only and not writable by the app role, tenant isolation) and
+  `tests/integration/test_dunning_repository.py` (13 tests: every `SqlDunningRepository` method as
+  `ledgr_app` under RLS, including the idempotent pause, wholesale ladder replacement, and the
+  duplicate-step race turning into `ReminderAlreadySent`) pass. The first run found two bugs in the
+  *test helpers* (asyncpg wants real `date`/`Decimal` objects, not strings, even inside a `CAST`) and
+  none in the migration or the repository. Full suite with DB tests on: 3197 passed, 0 failed.
+- **The HTTP layer is not driven end to end.** The six routes are covered by isolation tests
+  (refusal only), the service tests (behaviour, with a fake delivery) and the repository tests
+  (SQL); nothing sends a real email through `POST .../dunning/send` against the real database.
 - **Nothing sends automatically.** A person (or SI-11) presses send; there is no scheduler. Sending is
   deliberately an explicit act until the ladder has been reviewed by a human on real invoices.
 - **No loader for interest rates.** `ledgr_ops` inserts rows with SQL; a script like `load_vat_rules`

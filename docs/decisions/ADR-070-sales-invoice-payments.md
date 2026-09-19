@@ -135,9 +135,10 @@ payments at once is bank-statement import (FR-BNK-002), not this.
   postgres superuser, which the permission classifier blocks in an unattended session), and
   `tests/integration/test_sales_invoice_payment.py` - 13 tests covering the overpayment guard, what
   may be paid and into what, immutability, single void, no delete, balances and RLS - then passed
-  on its first run. The wider unit suite covers the service (34 tests). Not covered by any test:
-  the *concurrent* overpayment race (two transactions inserting at once); the row lock is reasoned
-  about, not exercised.
+  on its first run. The wider unit suite covers the service (34 tests). The *concurrent*
+  overpayment race is exercised too (`test_two_concurrent_payments_cannot_both_fit`): two real
+  transactions each try 700.00 against 1210.00 outstanding; the second blocks on the first's row
+  lock, and once the first commits is refused rather than slipping through on a stale balance.
 - **No `paid` flag on the invoice view.** A client asks `GET .../payments` for the balance; putting it
   on `GET .../sales-invoices/{id}` is a small follow-up if the screen wants one round trip.
 - **No overpayment, no split allocation, no one-payment-many-invoices** (FR-BNK-005).
