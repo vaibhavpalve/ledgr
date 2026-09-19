@@ -130,12 +130,14 @@ payments at once is bank-statement import (FR-BNK-002), not this.
 
 **Known gaps.**
 
-- **The migration has not been run by the assistant that wrote it.** Creating a scratch database
-  needs the postgres superuser, which the permission classifier blocks in an unattended session, and
-  `.devtools`' `ledgr` database predates migrations 0051 and 0052. The unit suite (2516 passed)
-  covers the service, and `tests/integration/test_sales_invoice_payment.py` (13 tests: overpayment
-  guard, what may be paid and into what, immutability, single void, no delete, balances, RLS) is
-  written but **unrun**. Apply 0051 and 0052, then run it, before trusting the SQL.
+- **Verified against a real Postgres, after the fact.** Migration 0052 was applied to the local
+  `ledgr` database by the product owner (the assistant that wrote it cannot: applying needs the
+  postgres superuser, which the permission classifier blocks in an unattended session), and
+  `tests/integration/test_sales_invoice_payment.py` - 13 tests covering the overpayment guard, what
+  may be paid and into what, immutability, single void, no delete, balances and RLS - then passed
+  on its first run. The wider unit suite covers the service (34 tests). Not covered by any test:
+  the *concurrent* overpayment race (two transactions inserting at once); the row lock is reasoned
+  about, not exercised.
 - **No `paid` flag on the invoice view.** A client asks `GET .../payments` for the balance; putting it
   on `GET .../sales-invoices/{id}` is a small follow-up if the screen wants one round trip.
 - **No overpayment, no split allocation, no one-payment-many-invoices** (FR-BNK-005).
