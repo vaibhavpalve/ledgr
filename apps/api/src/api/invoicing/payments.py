@@ -96,6 +96,8 @@ class BalanceState(enum.Enum):
     PAID = "paid"
     #: Owed nothing because it was credited, and never paid.
     CREDITED = "credited"
+    #: Cleared by a bad-debt write-off, not by anybody paying.
+    WRITTEN_OFF = "written_off"
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,10 +108,12 @@ class InvoiceBalance:
     gross: Decimal
     credited: Decimal
     paid: Decimal
+    #: Written off as uncollectable (FR-AR-013); an unvoided write-off clears the balance.
+    written_off: Decimal = ZERO
 
     @property
     def outstanding(self) -> Decimal:
-        return self.gross - self.credited - self.paid
+        return self.gross - self.credited - self.paid - self.written_off
 
     @property
     def state(self) -> BalanceState:
@@ -117,6 +121,8 @@ class InvoiceBalance:
             if self.paid > 0 or self.credited > 0:
                 return BalanceState.PARTIALLY_PAID
             return BalanceState.OPEN
+        if self.written_off > 0:
+            return BalanceState.WRITTEN_OFF
         return BalanceState.PAID if self.paid > 0 else BalanceState.CREDITED
 
 

@@ -515,6 +515,71 @@
       "nl": "De betaling kan niet worden geboekt omdat er iets ontbreekt in de administratie ({missing}). Controleer het rekeningschema of de debiteur van deze factuur.",
       "en": "The payment cannot be posted because something is missing from the books ({missing}). Check the chart of accounts or this invoice's debtor."
     },
+    "errors.write_off_not_allowed": {
+      "note": "A draft owes nothing and a credit note is not a debt; only an issued invoice can be written off.",
+      "nl": "Deze factuur kan niet worden afgeschreven: alleen een verzonden verkoopfactuur waarop nog geld openstaat kan als oninbaar worden afgeschreven.",
+      "en": "This invoice cannot be written off: only an issued sales invoice that is still owed money can be written off as uncollectable."
+    },
+    "errors.write_off_nothing_outstanding": {
+      "note": "Paid, credited or already written off.",
+      "nl": "Er staat niets meer open op deze factuur; er is niets om af te schrijven.",
+      "en": "Nothing is outstanding on this invoice, so there is nothing to write off."
+    },
+    "errors.write_off_reason_missing": {
+      "note": "A write-off is a decision somebody may have to account for.",
+      "nl": "Geef een reden op voor de afschrijving.",
+      "en": "Give a reason for the write-off."
+    },
+    "errors.write_off_date_in_future": {
+      "note": "A write-off records a decision already taken.",
+      "nl": "De afschrijvingsdatum mag niet in de toekomst liggen.",
+      "en": "The write-off date cannot be in the future."
+    },
+    "errors.write_off_no_journal": {
+      "note": "FR-GL-002. The memorial journal is missing or ambiguous.",
+      "nl": "Er is geen enkel actief memoriaal dagboek om de afschrijving in te boeken. Maak er een aan of deactiveer het overtollige dagboek.",
+      "en": "There is no single active memorial journal to post the write-off into. Create one, or deactivate the extra journal."
+    },
+    "errors.write_off_posting_unavailable": {
+      "note": "{missing} names what the books lack (accounts_receivable, debtor or vat_output) so a screen can point at the right setting.",
+      "nl": "De afschrijving kan niet worden geboekt omdat er iets ontbreekt in de administratie ({missing}). Controleer het rekeningschema, de debiteur of de BTW-rekening.",
+      "en": "The write-off cannot be posted because something is missing from the books ({missing}). Check the chart of accounts, the debtor or the BTW account."
+    },
+    "errors.write_off_account_invalid": {
+      "note": "The account a write-off is booked to must be this administration's own expense account.",
+      "nl": "Kies een kostenrekening van deze administratie voor de afschrijving.",
+      "en": "Choose an expense account of this administration for the write-off."
+    },
+    "errors.write_off_not_found": {
+      "note": "Indistinguishable from another tenant's write-off, on purpose - the same rule as errors.sales_invoice_not_found.",
+      "nl": "Deze afschrijving bestaat niet op deze factuur. Vernieuw de pagina.",
+      "en": "This write-off does not exist on this invoice. Refresh the page."
+    },
+    "errors.write_off_already_voided": {
+      "note": "FR-GL-003. A write-off can be reversed once.",
+      "nl": "Deze afschrijving is al ongedaan gemaakt.",
+      "en": "This write-off has already been reversed."
+    },
+    "errors.write_off_vat_already_reclaimed": {
+      "note": "The reclaim is recorded once.",
+      "nl": "De BTW van deze afschrijving is al teruggevraagd.",
+      "en": "The BTW of this write-off has already been reclaimed."
+    },
+    "errors.write_off_nothing_to_reclaim": {
+      "note": "Zero-rated, exempt or reverse-charged supplies carry no VAT to reclaim.",
+      "nl": "Er is geen BTW om terug te vragen: het afgeschreven bedrag bevat geen BTW.",
+      "en": "There is no BTW to reclaim: the written-off amount carries none."
+    },
+    "errors.write_off_vat_not_yet": {
+      "note": "Wet OB art. 29 waiting period (ADR-076, flagged for tax-adviser review). {eligible_on} is the first day, already formatted.",
+      "nl": "De BTW kan pas vanaf {eligible_on} worden teruggevraagd, tenzij de klant failliet of in surseance is. De afschrijving zelf kunt u wel nu boeken.",
+      "en": "The BTW can only be reclaimed from {eligible_on}, unless the customer is insolvent. You can still book the write-off itself now."
+    },
+    "errors.write_off_no_open_period": {
+      "note": "The date falls in no open period; the period is not moved to make it fit.",
+      "nl": "Deze datum valt in geen enkele open periode, dus er kan niets worden geboekt.",
+      "en": "This date falls in no open period, so nothing can be posted."
+    },
     "errors.payment_not_found": {
       "note": "FR-AR-010. Indistinguishable from another tenant's payment, on purpose - the same rule as errors.sales_invoice_not_found.",
       "nl": "Deze betaling bestaat niet op deze factuur. Vernieuw de pagina en kies een bestaande betaling.",

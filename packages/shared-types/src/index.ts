@@ -561,9 +561,11 @@ export interface InvoiceBalanceView {
   readonly gross_amount: string;
   readonly credited_amount: string;
   readonly paid_amount: string;
+  /** Written off as uncollectable (SI-10); an unvoided write-off clears the balance. */
+  readonly written_off_amount: string;
   readonly outstanding_amount: string;
   /** `credited` = owed nothing because it was credited and never paid. */
-  readonly state: "open" | "partially_paid" | "paid" | "credited";
+  readonly state: "open" | "partially_paid" | "paid" | "credited" | "written_off";
 }
 
 /** `POST .../sales-invoices/{id}/payments` and `.../payments/{id}/void` answer this. */
@@ -629,7 +631,7 @@ export interface CustomerStatementView {
   readonly opening_balance: string;
   readonly lines: readonly {
     readonly date: string;
-    readonly kind: "invoice" | "credit_note" | "payment" | "payment_void";
+    readonly kind: "invoice" | "credit_note" | "payment" | "payment_void" | "write_off" | "write_off_void";
     readonly label: string;
     readonly reference: string | null;
     readonly invoice_id: string | null;
@@ -1221,4 +1223,46 @@ export interface QuoteConversionView {
   readonly invoice_id: string;
   readonly already_converted: boolean;
   readonly quote: QuoteView;
+}
+
+
+/**
+ * SI-10 (ADR-076) - `api.invoicing.routes._write_off_json`. An issued invoice written off as
+ * uncollectable. The WHOLE outstanding balance is written off, never part of it. The VAT
+ * reclaim is a second, later step (`vat_reclaimed_on`), allowed once the waiting period from the
+ * due date has passed or when the customer is insolvent.
+ */
+export interface InvoiceWriteOffView {
+  readonly id: string;
+  readonly invoice_id: string;
+  readonly amount: string;
+  /** The VAT-bearing part of `amount`, reclaimable in due course. */
+  readonly vat_amount: string;
+  readonly vat_split: readonly {
+    readonly vat_treatment: string;
+    readonly vat_amount: string;
+  }[];
+  readonly written_off_on: string;
+  readonly reason: string;
+  readonly customer_insolvent: boolean;
+  readonly expense_account_id: string;
+  readonly journal_entry_id: string;
+  readonly recorded_at: string;
+  readonly vat_reclaimed_on: string | null;
+  readonly vat_reclaim_journal_entry_id: string | null;
+  /** A voided write-off stays in the list as history. */
+  readonly voided_at: string | null;
+  readonly void_journal_entry_id: string | null;
+}
+
+/** `POST .../write-offs` and `.../write-offs/{id}/void` answer this. */
+export interface WriteOffResultView {
+  readonly write_off: InvoiceWriteOffView;
+  readonly balance: InvoiceBalanceView;
+}
+
+/** `GET .../write-offs`. */
+export interface WriteOffListView {
+  readonly write_offs: readonly InvoiceWriteOffView[];
+  readonly balance: InvoiceBalanceView;
 }

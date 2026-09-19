@@ -627,3 +627,40 @@ async def test_converting_another_tenants_quote_is_refused(
 ) -> None:
     path = f"/quotes/{uuid.uuid4()}/convert"
     assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+# -- SI-10: bad-debt write-off (ADR-076) ----------------------------------------------------
+_WRITE_OFFS = "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/write-offs"
+
+
+@pytest.mark.isolation("POST", _WRITE_OFFS)
+async def test_writing_off_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/write-offs"
+    body = {"expense_account_id": str(uuid.uuid4()), "reason": "oninbaar"}
+    assert await _as_a("POST", path, two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("GET", _WRITE_OFFS)
+async def test_listing_another_tenants_write_offs_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/write-offs"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _WRITE_OFFS + "/{write_off_id}/reclaim-vat")
+async def test_reclaiming_vat_on_another_tenants_write_off_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/write-offs/{uuid.uuid4()}/reclaim-vat"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _WRITE_OFFS + "/{write_off_id}/void")
+async def test_voiding_another_tenants_write_off_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sales-invoices/{uuid.uuid4()}/write-offs/{uuid.uuid4()}/void"
+    assert await _as_a("POST", path, two_organizations) in REFUSED

@@ -208,6 +208,8 @@ class MovementKind(enum.Enum):
     CREDIT_NOTE = "credit_note"
     PAYMENT = "payment"
     PAYMENT_VOID = "payment_void"
+    WRITE_OFF = "write_off"
+    WRITE_OFF_VOID = "write_off_void"
 
 
 @dataclass(frozen=True, slots=True)

@@ -98,7 +98,7 @@ class SqlPaymentRepository:
     ) -> InvoiceBalance | None:
         result = await self._session.execute(
             text(
-                "SELECT invoice_id, gross, credited, paid "
+                "SELECT invoice_id, gross, credited, paid, written_off "
                 "  FROM invoicing.invoice_balances(:admin, :invoice)"
             ),
             {"admin": str(administration_id), "invoice": str(invoice_id)},
@@ -111,6 +111,7 @@ class SqlPaymentRepository:
             gross=Decimal(row.gross),
             credited=Decimal(row.credited),
             paid=Decimal(row.paid),
+            written_off=Decimal(row.written_off),
         )
 
     async def journal_of_type(

@@ -47,7 +47,7 @@ from api.db import get_db_session
 from api.documents.routes import get_document_service
 from api.documents.service import DocumentService
 from api.i18n.catalogue import translate
-from api.i18n.formatting import format_money
+from api.i18n.formatting import format_date, format_money
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language, parse_language
 from api.invoicing.delivery import (
@@ -155,6 +155,23 @@ from api.invoicing.repository import SqlInvoiceRepository
 from api.invoicing.service import InvoicingService, NewLine
 from api.invoicing.statutory import describe
 from api.invoicing.vat import line_net
+from api.invoicing.write_off_repository import SqlWriteOffRepository
+from api.invoicing.write_off_service import (
+    ExpenseAccountInvalid,
+    InvoiceWriteOff,
+    NothingOutstanding,
+    NothingToReclaim,
+    NoWriteOffJournal,
+    VatAlreadyReclaimed,
+    VatReclaimNotYetAllowed,
+    WriteOffAlreadyVoided,
+    WriteOffDateInFuture,
+    WriteOffNotAllowed,
+    WriteOffNotFound,
+    WriteOffPostingUnavailable,
+    WriteOffReasonMissing,
+    WriteOffService,
+)
 from api.ledger.service import build_ledger_service
 from api.mail.sender import build_email_sender
 from api.templates.assets import LogoNotRenderable, build_resolve_logo
@@ -241,6 +258,33 @@ def register(app: FastAPI) -> None:
         void_payment,
         methods=["POST"],
         name="void_sales_invoice_payment",
+    )
+    # SI-10 (ADR-076): bad-debt write-off with the VAT reclaim entry.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/write-offs",
+        write_off_invoice,
+        methods=["POST"],
+        name="write_off_sales_invoice",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/write-offs",
+        list_write_offs,
+        methods=["GET"],
+        name="list_sales_invoice_write_offs",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}"
+        "/write-offs/{write_off_id}/reclaim-vat",
+        reclaim_write_off_vat,
+        methods=["POST"],
+        name="reclaim_sales_invoice_write_off_vat",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}"
+        "/write-offs/{write_off_id}/void",
+        void_write_off,
+        methods=["POST"],
+        name="void_sales_invoice_write_off",
     )
     # SI-04 (ADR-071): the reminder ladder.
     app.add_api_route(
@@ -1314,6 +1358,7 @@ def _balance_json(balance: InvoiceBalance) -> dict[str, object]:
         "gross_amount": str(balance.gross),
         "credited_amount": str(balance.credited),
         "paid_amount": str(balance.paid),
+        "written_off_amount": str(balance.written_off),
         "outstanding_amount": str(balance.outstanding),
         "state": balance.state.value,
     }
@@ -3024,3 +3069,304 @@ async def convert_quote(
         "already_converted": result.already_converted,
         "quote": _quote_json(result.quote, date.today()),
     }
+
+
+# -- SI-10: bad-debt write-off (ADR-076) ---------------------------------------
+
+
+async def get_write_off_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> WriteOffService:
+    audit_log = AuditLog(SqlAuditRepository(session))
+    return WriteOffService(
+        repository=SqlWriteOffRepository(session),
+        ledger=build_ledger_service(session, audit_log),
+        authorization=authorization,
+        audit_log=audit_log,
+    )
+
+
+class WriteOffBody(BaseModel):
+    """`written_off_on` defaults to today. `reclaim_vat` asks for the VAT reclaim entry in the
+    same request; it is refused (and nothing is written) while the waiting period runs."""
+
+    expense_account_id: uuid.UUID
+    reason: str
+    written_off_on: date | None = None
+    customer_insolvent: bool = False
+    reclaim_vat: bool = False
+
+
+def _write_off_json(write_off: InvoiceWriteOff) -> dict[str, object]:
+    return {
+        "id": str(write_off.id),
+        "invoice_id": str(write_off.invoice_id),
+        "amount": str(write_off.amount),
+        "vat_amount": str(write_off.vat_amount),
+        "vat_split": [
+            {"vat_treatment": line.treatment, "vat_amount": str(line.vat)}
+            for line in write_off.vat_split
+        ],
+        "written_off_on": write_off.written_off_on.isoformat(),
+        "reason": write_off.reason,
+        "customer_insolvent": write_off.customer_insolvent,
+        "expense_account_id": str(write_off.expense_account_id),
+        "journal_entry_id": str(write_off.journal_entry_id),
+        "recorded_at": write_off.recorded_at.isoformat(),
+        "vat_reclaimed_on": (
+            write_off.vat_reclaimed_on.isoformat() if write_off.vat_reclaimed_on else None
+        ),
+        "vat_reclaim_journal_entry_id": (
+            str(write_off.vat_reclaim_journal_entry_id)
+            if write_off.vat_reclaim_journal_entry_id
+            else None
+        ),
+        # A voided write-off stays in the list: it is history.
+        "voided_at": write_off.voided_at.isoformat() if write_off.voided_at else None,
+        "void_journal_entry_id": (
+            str(write_off.void_journal_entry_id) if write_off.void_journal_entry_id else None
+        ),
+    }
+
+
+def _write_off_problem(request: Request, exc: Exception) -> Exception | None:
+    """The refusals a write-off, a reclaim or a void can raise, as problems. None for an
+    exception this does not recognise, so the caller re-raises it."""
+    if isinstance(exc, InvoiceNotFound):
+        return problem(
+            request, 404, "errors.sales_invoice_not_found", reason="sales_invoice_not_found"
+        )
+    if isinstance(exc, WriteOffNotAllowed):
+        return problem(request, 409, "errors.write_off_not_allowed", reason="write_off_not_allowed")
+    if isinstance(exc, NothingOutstanding):
+        return problem(
+            request,
+            409,
+            "errors.write_off_nothing_outstanding",
+            reason="write_off_nothing_outstanding",
+        )
+    if isinstance(exc, WriteOffReasonMissing):
+        return problem(
+            request, 422, "errors.write_off_reason_missing", reason="write_off_reason_missing"
+        )
+    if isinstance(exc, WriteOffDateInFuture):
+        return problem(
+            request, 422, "errors.write_off_date_in_future", reason="write_off_date_in_future"
+        )
+    if isinstance(exc, ExpenseAccountInvalid):
+        return problem(
+            request, 422, "errors.write_off_account_invalid", reason="write_off_account_invalid"
+        )
+    if isinstance(exc, NoWriteOffJournal):
+        return problem(request, 409, "errors.write_off_no_journal", reason="write_off_no_journal")
+    if isinstance(exc, WriteOffPostingUnavailable):
+        return problem(
+            request,
+            409,
+            "errors.write_off_posting_unavailable",
+            reason="write_off_posting_unavailable",
+            missing=exc.missing,
+        )
+    if isinstance(exc, NoOpenPeriod):
+        return problem(
+            request, 409, "errors.write_off_no_open_period", reason="write_off_no_open_period"
+        )
+    if isinstance(exc, WriteOffNotFound):
+        return problem(request, 404, "errors.write_off_not_found", reason="write_off_not_found")
+    if isinstance(exc, WriteOffAlreadyVoided):
+        return problem(
+            request, 409, "errors.write_off_already_voided", reason="write_off_already_voided"
+        )
+    if isinstance(exc, VatAlreadyReclaimed):
+        return problem(
+            request,
+            409,
+            "errors.write_off_vat_already_reclaimed",
+            reason="write_off_vat_already_reclaimed",
+        )
+    if isinstance(exc, NothingToReclaim):
+        return problem(
+            request,
+            409,
+            "errors.write_off_nothing_to_reclaim",
+            reason="write_off_nothing_to_reclaim",
+        )
+    if isinstance(exc, VatReclaimNotYetAllowed):
+        return problem(
+            request,
+            409,
+            "errors.write_off_vat_not_yet",
+            reason="write_off_vat_not_yet",
+            eligible_on=format_date(exc.eligible_on),
+            eligible_on_iso=exc.eligible_on.isoformat(),
+        )
+    return None
+
+
+async def write_off_invoice(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    body: WriteOffBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: WriteOffService = Depends(get_write_off_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Post journal entries", as for a payment: the person who raises
+            # invoices must not be the one who makes a debt disappear.
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """FR-AR-013: write the whole outstanding balance of an issued invoice off as
+    uncollectable. Posts `Dr expense / Cr Debiteuren`; the VAT reclaim is a second entry,
+    made now (`reclaim_vat`) if the rules allow it, or later."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    today = date.today()
+    try:
+        write_off = await service.write_off(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            expense_account_id=body.expense_account_id,
+            written_off_on=body.written_off_on or today,
+            today=today,
+            reason=body.reason,
+            customer_insolvent=body.customer_insolvent,
+            reclaim_vat=body.reclaim_vat,
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _write_off_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"write_off": _write_off_json(write_off), "balance": _balance_json(balance)}
+
+
+async def list_write_offs(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: WriteOffService = Depends(get_write_off_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """Every write-off of one invoice - voided ones included - and what it still owes."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        write_offs = await service.write_offs(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _write_off_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {
+        "write_offs": [_write_off_json(item) for item in write_offs],
+        "balance": _balance_json(balance),
+    }
+
+
+async def reclaim_write_off_vat(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    write_off_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: WriteOffService = Depends(get_write_off_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Claim back the VAT of an earlier write-off, once the waiting period has passed (or
+    the write-off recorded an insolvent customer)."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        write_off = await service.reclaim_vat(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            write_off_id=write_off_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        refusal = _write_off_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"write_off": _write_off_json(write_off)}
+
+
+async def void_write_off(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    write_off_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: WriteOffService = Depends(get_write_off_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "reverse",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Undo a write-off - and its VAT reclaim - by reversing the entries. The invoice is
+    owed again."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        write_off = await service.void(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            write_off_id=write_off_id,
+            actor_user_id=tenant.user_id,
+            void_date=date.today(),
+        )
+        balance = await service.balance(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        refusal = _write_off_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"write_off": _write_off_json(write_off), "balance": _balance_json(balance)}

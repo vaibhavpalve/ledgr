@@ -978,6 +978,16 @@
       "nl": "Betaling ongedaan gemaakt",
       "en": "Payment voided"
     },
+    "invoice.statement.kind.write_off": {
+      "note": "SI-10 / FR-AR-013. An invoice written off as uncollectable: it lowers what the customer owes without a payment.",
+      "nl": "Afgeschreven als oninbaar",
+      "en": "Written off as uncollectable"
+    },
+    "invoice.statement.kind.write_off_void": {
+      "note": "SI-10. A write-off that was reversed: it raises what the customer owes again, on the day it was voided.",
+      "nl": "Afschrijving ongedaan gemaakt",
+      "en": "Write-off reversed"
+    },
     "invoice.dunning.blocker.nothing_outstanding": {
       "note": "SI-04. Outranks every other reason: a paid or credited invoice is never chased, paused or not.",
       "nl": "Er staat niets meer open op deze factuur, dus er is niets om te herinneren.",
