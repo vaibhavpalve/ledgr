@@ -104,6 +104,10 @@ def administration_entry_json(
     formatting_locale: str,
     fiscal_years: Sequence[FiscalYear],
     today: date,
+    #: SI-02. Defaulted rather than required: a freshly created
+    #: administration (api.onboarding.routes' own call site) has none yet,
+    #: and settings' own PATCH .../administrations/{id} is where it is set.
+    iban: str | None = None,
 ) -> dict[str, object]:
     """The `administrations[]` entry of §4.1, also the body POST
     /v1/administrations answers with. Colour and initials come from the
@@ -119,6 +123,7 @@ def administration_entry_json(
         "kvk_number": entry.badge.kvk_number,
         "vat_number": vat_number,
         "formatting_locale": formatting_locale,
+        "iban": iban,
         "colour": entry.badge.colour_token,
         "initials": entry.badge.initials,
         "role": entry.role_name,
@@ -142,7 +147,7 @@ def administration_entry_json(
 # first, else the organization-scoped one that cascades to it (ADR-011).
 _OWNED_ADMINISTRATIONS_SQL = """
     SELECT a.id, a.legal_name, a.trade_name, a.legal_form, a.kvk_number, a.vat_number,
-           a.formatting_locale, a.colour_token,
+           a.formatting_locale, a.colour_token, a.iban,
            g.role_name, g.role_is_system
     FROM administration a
     LEFT JOIN LATERAL (
@@ -168,7 +173,7 @@ class _AdministrationRow:
     """What both branches below reduce to before rendering: the badge plus
     the three columns the badge does not carry."""
 
-    __slots__ = ("entry", "formatting_locale", "legal_form", "vat_number")
+    __slots__ = ("entry", "formatting_locale", "iban", "legal_form", "vat_number")
 
     def __init__(
         self,
@@ -177,11 +182,13 @@ class _AdministrationRow:
         legal_form: str | None,
         vat_number: str | None,
         formatting_locale: str,
+        iban: str | None = None,
     ) -> None:
         self.entry = entry
         self.legal_form = legal_form
         self.vat_number = vat_number
         self.formatting_locale = formatting_locale
+        self.iban = iban
 
 
 async def _owned_administrations(
@@ -214,6 +221,7 @@ async def _owned_administrations(
                 legal_form=row.legal_form,
                 vat_number=row.vat_number,
                 formatting_locale=row.formatting_locale,
+                iban=row.iban,
             )
         )
     return rows
@@ -221,20 +229,22 @@ async def _owned_administrations(
 
 async def _administration_details(
     session: AsyncSession, administration_ids: Sequence[uuid.UUID]
-) -> dict[uuid.UUID, tuple[str | None, str | None, str]]:
-    """legal_form, vat_number and formatting_locale for the switcher's
+) -> dict[uuid.UUID, tuple[str | None, str | None, str, str | None]]:
+    """legal_form, vat_number, formatting_locale and iban for the switcher's
     entries, which carry a badge and not the whole row. RLS scopes the read.
     """
     if not administration_ids:
         return {}
     result = await session.execute(
         text(
-            "SELECT id, legal_form, vat_number, formatting_locale FROM administration "
+            "SELECT id, legal_form, vat_number, formatting_locale, iban FROM administration "
             "WHERE id = ANY(cast(:ids as uuid[]))"
         ),
         {"ids": [str(administration_id) for administration_id in administration_ids]},
     )
-    return {row.id: (row.legal_form, row.vat_number, row.formatting_locale) for row in result}
+    return {
+        row.id: (row.legal_form, row.vat_number, row.formatting_locale, row.iban) for row in result
+    }
 
 
 async def _active_administration_id(
@@ -307,8 +317,8 @@ async def get_me(
         )
         rows = []
         for entry in entries:
-            legal_form, vat_number, formatting_locale = details.get(
-                entry.badge.administration_id, (None, None, DEFAULT_FORMATTING_LOCALE)
+            legal_form, vat_number, formatting_locale, iban = details.get(
+                entry.badge.administration_id, (None, None, DEFAULT_FORMATTING_LOCALE, None)
             )
             rows.append(
                 _AdministrationRow(
@@ -316,6 +326,7 @@ async def get_me(
                     legal_form=legal_form,
                     vat_number=vat_number,
                     formatting_locale=formatting_locale,
+                    iban=iban,
                 )
             )
     else:
@@ -345,6 +356,7 @@ async def get_me(
                 formatting_locale=row.formatting_locale,
                 fiscal_years=years,
                 today=today,
+                iban=row.iban,
             )
         )
 

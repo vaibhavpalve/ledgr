@@ -574,6 +574,7 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
   const [legalName, setLegalName] = useState(administration.legal_name);
   const [tradeName, setTradeName] = useState(administration.trade_name ?? "");
   const [vatNumber, setVatNumber] = useState(administration.vat_number ?? "");
+  const [iban, setIban] = useState(administration.iban ?? "");
   const [locale, setLocale] = useState(administration.formatting_locale);
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [problem, setProblem] = useState<string | null>(null);
@@ -582,6 +583,7 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
     legalName !== administration.legal_name ||
     tradeName !== (administration.trade_name ?? "") ||
     vatNumber !== (administration.vat_number ?? "") ||
+    iban !== (administration.iban ?? "") ||
     locale !== administration.formatting_locale;
 
   const submit = async () => {
@@ -592,6 +594,7 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
         ...(legalName !== administration.legal_name ? { legal_name: legalName.trim() } : {}),
         ...(tradeName !== (administration.trade_name ?? "") ? { trade_name: tradeName.trim() === "" ? null : tradeName.trim() } : {}),
         ...(vatNumber !== (administration.vat_number ?? "") ? { vat_number: vatNumber.trim() === "" ? null : vatNumber.trim().toUpperCase() } : {}),
+        ...(iban !== (administration.iban ?? "") ? { iban: iban.trim() === "" ? null : iban.trim() } : {}),
         ...(locale !== administration.formatting_locale ? { formatting_locale: locale } : {}),
       });
       setState("saved");
@@ -639,6 +642,18 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
         <div className="form__field">
           <label htmlFor={`${prefix}-vat`}>{t("onboarding.company.vat_number")}</label>
           <input id={`${prefix}-vat`} type="text" value={vatNumber} data-testid="administration-vat-number" onChange={(e) => setVatNumber(e.target.value)} />
+        </div>
+        <div className="form__field">
+          <label htmlFor={`${prefix}-iban`}>{t("settings.organization.iban")}</label>
+          <input
+            id={`${prefix}-iban`}
+            type="text"
+            value={iban}
+            placeholder={t("settings.organization.iban_placeholder")}
+            data-testid="administration-iban"
+            onChange={(e) => setIban(e.target.value)}
+          />
+          <p className="caption">{t("settings.organization.iban_hint")}</p>
         </div>
         <div className="form__field">
           {/* Same list, same reason, one source: see FormattingLocaleField's

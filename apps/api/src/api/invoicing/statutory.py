@@ -168,6 +168,10 @@ class SupplierDetails:
     kvk_number: str | None
     address_line2: str | None = None
     country: str = "NL"
+    #: SI-02. None means no EPC QR code is rendered on this administration's
+    #: invoices - see api.invoicing.epc_qr. Never a statutory requirement,
+    #: unlike every other field on this dataclass.
+    iban: str | None = None
 
     @property
     def has_address(self) -> bool:

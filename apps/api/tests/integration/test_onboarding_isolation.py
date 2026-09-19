@@ -272,6 +272,38 @@ async def test_a_fresh_business_ends_up_with_a_usable_administration(
         assert edited.json()["vat_number"] == "NL999999999B01"
         assert edited.json()["legal_name"] == "Van Doorn Bouw B.V."
 
+        # SI-02: a valid IBAN is normalised (spaces stripped, upper-cased)
+        # and travels all the way to GET /v1/me's own administrations list -
+        # the same threading vat_number already had, extended.
+        with_iban = await client.patch(
+            f"/v1/administrations/{body['id']}",
+            headers=_headers(token),
+            json={"iban": "nl91 abna 0417 1643 00"},
+        )
+        assert with_iban.status_code == 200, with_iban.text
+        assert with_iban.json()["iban"] == "NL91ABNA0417164300"
+
+        me_after = await client.get("/v1/me", headers={"Authorization": f"Bearer {token}"})
+        [entry] = [e for e in me_after.json()["administrations"] if e["id"] == body["id"]]
+        assert entry["iban"] == "NL91ABNA0417164300"
+
+        # A checksum-broken IBAN is refused (422), not silently stored - it
+        # will end up on a customer-scanned QR code (SI-02) if it is wrong.
+        bad_iban = await client.patch(
+            f"/v1/administrations/{body['id']}",
+            headers=_headers(token),
+            json={"iban": "NL91ABNA0417164301"},
+        )
+        assert bad_iban.status_code == 422, bad_iban.text
+        assert bad_iban.json()["detail"]["reason"] == "iban_invalid"
+
+        # And it was not silently applied anyway.
+        unchanged = await client.get("/v1/me", headers={"Authorization": f"Bearer {token}"})
+        [entry_unchanged] = [
+            e for e in unchanged.json()["administrations"] if e["id"] == body["id"]
+        ]
+        assert entry_unchanged["iban"] == "NL91ABNA0417164300"
+
 
 async def test_an_unknown_legal_form_is_refused_before_anything_is_written(
     two_organizations: SeededTenants,

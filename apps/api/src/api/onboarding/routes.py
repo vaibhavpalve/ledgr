@@ -87,6 +87,7 @@ from api.db import get_db_session
 from api.firm.switcher import ClientSwitcher, SwitcherEntry
 from api.i18n.formatting import DEFAULT_FORMATTING_LOCALE, LOCALES
 from api.i18n.http import problem
+from api.iban import parse as parse_iban
 from api.ledger import (
     ChartError,
     ChartNotAuthorized,
@@ -198,6 +199,10 @@ class UpdateAdministrationBody(BaseModel):
     trade_name: str | None = None
     vat_number: str | None = None
     formatting_locale: str | None = None
+    #: SI-02. Validated (format AND mod-97 checksum - api.invoicing.iban) and
+    #: normalised to its compact upper-case form before being stored. An
+    #: empty string clears it, same convention as trade_name.
+    iban: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -802,17 +807,35 @@ async def update_administration(
         raise problem(request, 422, "errors.legal_name_required", reason="legal_name_required")
     if "formatting_locale" in changes:
         _require_formatting_locale(request, changes["formatting_locale"] or "")
+    if "iban" in changes and (changes["iban"] or "").strip():
+        # SI-02. Checked HERE, at write time - not just format but the
+        # mod-97 checksum, because this value later goes onto every invoice
+        # PDF as a QR code a customer's banking app pays automatically. A
+        # bad IBAN reaching that point is a payment sent to a stranger, not
+        # a red squiggle under a form field. Stored in its canonical compact
+        # form, never the sender's own spacing/casing.
+        parsed_iban = parse_iban(changes["iban"])
+        if parsed_iban is None:
+            raise problem(request, 422, "errors.iban_invalid", reason="iban_invalid", field="iban")
+        changes["iban"] = parsed_iban.value
 
     assignments = {
         "legal_name": "legal_name = :legal_name",
         "trade_name": "trade_name = :trade_name",
         "vat_number": "vat_number = :vat_number",
         "formatting_locale": "formatting_locale = :formatting_locale",
+        "iban": "iban = :iban",
     }
     set_clause = ", ".join(assignments[name] for name in changes)
     params: dict[str, object] = {"id": str(administration_id)}
     for name, value in changes.items():
-        params[name] = value.strip() if isinstance(value, str) else value
+        if name == "iban":
+            # Already normalised above (or explicitly cleared) - stripping
+            # again would be harmless but re-deriving the same value twice
+            # invites the two derivations drifting apart.
+            params[name] = value if value else None
+        else:
+            params[name] = value.strip() if isinstance(value, str) else value
 
     if set_clause:
         # administration_update (0001) is the tenant boundary; the permission
@@ -827,7 +850,7 @@ async def update_administration(
         await session.execute(
             text(
                 "SELECT id, legal_name, trade_name, legal_form, kvk_number, vat_number, "
-                "       formatting_locale FROM administration WHERE id = :id"
+                "       formatting_locale, iban FROM administration WHERE id = :id"
             ),
             {"id": str(administration_id)},
         )
@@ -844,4 +867,5 @@ async def update_administration(
         "kvk_number": row.kvk_number,
         "vat_number": row.vat_number,
         "formatting_locale": row.formatting_locale,
+        "iban": row.iban,
     }

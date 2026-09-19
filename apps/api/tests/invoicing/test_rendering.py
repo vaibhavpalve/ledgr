@@ -913,6 +913,59 @@ async def test_a_logo_carries_the_business_name_as_alt_text() -> None:
     assert b"/Alt (Bakker Consultancy B.V.)" in figures[0]
 
 
+# --- SI-02: EPC069-12 "pay by bank" QR code ----------------------------------
+
+
+async def render_with_supplier(v: InvoiceView, supplier: SupplierDetails) -> RenderedInvoice:
+    return await TemplatedPdfRenderer().render(
+        v,
+        supplier=supplier,
+        formatting_locale="nl-NL",
+        template=TEMPLATE,
+        document_type=_document_type(v),
+    )
+
+
+async def test_a_supplier_iban_produces_a_qr_code_figure() -> None:
+    """The QR is a `Figure` structure element like the logo - a customer
+    scanning it with a banking app is reading an IMAGE, and PDF/A requires
+    every figure to be reachable by someone who cannot see it either.
+    """
+    supplier = dataclasses.replace(SUPPLIER, iban="NL91ABNA0417164300")
+    rendered = await render_with_supplier(view(), supplier)
+
+    elems = _struct_elems(rendered.content)
+    figures = [body for body in elems.values() if b"/S /Figure" in body]
+    assert len(figures) == 1
+
+
+async def test_no_iban_means_no_qr_code() -> None:
+    """`SUPPLIER` (the module default) has no IBAN on file - the ordinary
+    state for every administration before SI-02's onboarding field is filled
+    in - and must render exactly as it did before this feature existed.
+    """
+    assert SUPPLIER.iban is None
+    rendered = await render(view())
+
+    elems = _struct_elems(rendered.content)
+    figures = [body for body in elems.values() if b"/S /Figure" in body]
+    assert len(figures) == 0
+
+
+async def test_a_credit_note_never_gets_a_qr_code_even_with_an_iban_on_file() -> None:
+    """A credit note reduces what the customer owes - or refunds them - so a
+    QR code requesting a SEPA transfer FROM them would be actively wrong.
+    `build_epc_payload` would in fact refuse a non-positive amount, but this
+    gate is at the rendering call site, before that module is ever reached.
+    """
+    supplier = dataclasses.replace(SUPPLIER, iban="NL91ABNA0417164300")
+    rendered = await render_with_supplier(view(credit_of=uuid.uuid4()), supplier)
+
+    elems = _struct_elems(rendered.content)
+    figures = [body for body in elems.values() if b"/S /Figure" in body]
+    assert len(figures) == 0
+
+
 # --- FR-TPL-002: loading a deployment-supplied font, or honestly finding none
 
 

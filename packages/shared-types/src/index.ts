@@ -606,6 +606,8 @@ export interface AdministrationView {
   readonly vat_number: string | null;
   /** FR-LOC-002: how figures in THESE books are written, for every reader. */
   readonly formatting_locale: string;
+  /** SI-02: the administration's own bank account, for the "pay by bank" QR code on an invoice PDF. `null` means no QR code is rendered. */
+  readonly iban: string | null;
   readonly colour: ClientColour;
   readonly initials: string;
   readonly role: string;

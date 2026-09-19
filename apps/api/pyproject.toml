@@ -23,6 +23,11 @@ dependencies = [
   "httpx>=0.27.2",
   "webauthn>=3.0.0",
   "pyotp>=2.9.0",
+  # SI-02: the EPC069-12 "pay by bank" QR code on an invoice PDF. Pure
+  # Python, zero dependencies, emits raw PNG bytes directly - no Pillow, in
+  # keeping with ADR-044's "no image library in this project's dependency
+  # set" posture. See api.invoicing.epc_qr.
+  "segno>=1.6.0",
 ]
 
 [dependency-groups]

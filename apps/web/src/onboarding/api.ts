@@ -50,6 +50,8 @@ export interface AdministrationPatch {
   trade_name?: string | null;
   vat_number?: string | null;
   formatting_locale?: string;
+  /** SI-02. Validated server-side (mod-97 checksum); `null` clears it. */
+  iban?: string | null;
 }
 
 export class OnboardingApi {

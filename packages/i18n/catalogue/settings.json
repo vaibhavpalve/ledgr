@@ -185,6 +185,23 @@
       "nl": "Nog geen boekjaar",
       "en": "No fiscal year yet"
     },
+    "settings.organization.iban": {
+      "identical": true,
+      "note": "SI-02. The administration's own bank account, used only to render the 'pay by bank' QR code on an invoice PDF. IBAN is the statutory term, unchanged between languages.",
+      "nl": "IBAN",
+      "en": "IBAN"
+    },
+    "settings.organization.iban_placeholder": {
+      "identical": true,
+      "note": "SI-02. A worked example IBAN (a real bank's public example number, not a live account) - identical in both languages because it is not prose, it is a format example.",
+      "nl": "NL91ABNA0417164300",
+      "en": "NL91ABNA0417164300"
+    },
+    "settings.organization.iban_hint": {
+      "note": "SI-02.",
+      "nl": "Voor de QR-code 'betalen met de bank' op uw facturen. Laat leeg om geen QR-code te tonen.",
+      "en": "For the 'pay by bank' QR code on your invoices. Leave empty to show no QR code."
+    },
     "settings.invoice_design.title": {
       "nl": "Factuurontwerp",
       "en": "Invoice design"

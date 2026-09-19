@@ -306,7 +306,7 @@ class SqlInvoiceTemplateRepository:
         result = await self._session.execute(
             text(
                 "SELECT legal_name, kvk_number, vat_number, address_line1, "
-                "       address_line2, postal_code, city, country "
+                "       address_line2, postal_code, city, country, iban "
                 "  FROM administration WHERE id = :id"
             ),
             {"id": str(administration_id)},
@@ -323,6 +323,7 @@ class SqlInvoiceTemplateRepository:
             country=row.country,
             vat_number=row.vat_number,
             kvk_number=row.kvk_number,
+            iban=row.iban,
         )
 
     async def formatting_locale(self, *, administration_id: uuid.UUID) -> str:

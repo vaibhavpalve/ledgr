@@ -30,6 +30,7 @@ export const testAdministration: AdministrationView = {
   kvk_number: "34281907",
   vat_number: "NL001234567B01",
   formatting_locale: "nl-NL",
+  iban: null,
   colour: "indigo",
   initials: "VD",
   role: "Owner",

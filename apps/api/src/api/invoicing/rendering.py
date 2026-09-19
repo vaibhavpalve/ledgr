@@ -114,6 +114,7 @@ from typing import Protocol
 from api.i18n.catalogue import translate
 from api.i18n.formatting import format_date, format_money, format_number
 from api.i18n.language import Language
+from api.invoicing.epc_qr import EpcQrRequest, render_epc_qr
 from api.invoicing.model import InvoiceLine, InvoiceView
 from api.invoicing.pdf import (
     A4_HEIGHT,
@@ -126,6 +127,7 @@ from api.invoicing.pdf import (
     Image,
     Page,
     StructureTag,
+    load_image,
     render_pdf,
     text_width,
     winansi_codepoints,
@@ -1439,6 +1441,60 @@ def _lay_out(
             )
             _right(page, _RIGHT, row, amount_text, body_size, font=font, color=color)
         row += line_height + (3 if bold else 0)
+
+    # -- SI-02: EPC069-12 "pay by bank" QR code -------------------------------
+    # One injection point regardless of header_arrangement/totals_position -
+    # both vary WHERE the totals block sits, not what comes after it. Skipped
+    # entirely (not a blank square) when there is nothing to pay TO
+    # (no IBAN on file) or nothing owed BY the customer (a credit note is
+    # money going back, not a request for one - the same reasoning
+    # api.invoicing.delivery's covering-email body omits a due date for one).
+    if supplier.iban and not invoice.is_credit_note:
+        qr_size = 90.0
+        row += 12
+        if row + qr_size > _PAGE_BOTTOM:
+            footer()
+            page = Page(
+                default_letter_spacing=letter_spacing,
+                page_width=page_width,
+                page_height=page_height,
+            )
+            pages.append(page)
+            row = _MARGIN
+        try:
+            qr_png = render_epc_qr(
+                EpcQrRequest(
+                    beneficiary_name=supplier.legal_name or "",
+                    iban=supplier.iban,
+                    amount=view.gross,
+                    reference=invoice.invoice_reference or "",
+                )
+            )
+            page.place_image(
+                image=load_image(qr_png),
+                x=_MARGIN,
+                top=row,
+                width=qr_size,
+                height=qr_size,
+                alt=_t("invoice.pdf.qr_alt", language),
+            )
+            page.at(
+                x=_MARGIN + qr_size + 10,
+                top=row + qr_size / 2 - small_size,
+                value=_t("invoice.pdf.qr_caption", language),
+                size=small_size,
+                font=body_font,
+                color=text_color,
+            )
+        except ValueError:
+            # A malformed IBAN that somehow reached this column (SI-02's
+            # write-time check in api.onboarding.routes is what should
+            # normally prevent this) is not a reason to refuse rendering the
+            # rest of a real invoice - it just means no QR code this time,
+            # exactly like an administration with none on file at all.
+            pass
+        else:
+            row += qr_size
 
     # -- PAYMENT_TERMS content block (FR-TPL-007) ----------------------------
     payment_terms_text = block(ContentBlock.PAYMENT_TERMS)

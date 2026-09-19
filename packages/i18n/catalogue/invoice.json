@@ -700,6 +700,15 @@
       "nl": "Leveringsdatum",
       "en": "Date of supply"
     },
+    "invoice.pdf.qr_alt": {
+      "note": "SI-02. FR-TPL-016 alt text for the EPC069-12 QR image - describes its FUNCTION for a screen-reader user, not 'QR code', since the pixels themselves carry no statutory content a text alternative needs to restate.",
+      "nl": "QR-code om deze factuur via uw bank-app te betalen",
+      "en": "QR code to pay this invoice via your banking app"
+    },
+    "invoice.pdf.qr_caption": {
+      "nl": "Scan om te betalen",
+      "en": "Scan to pay"
+    },
     "invoice.pdf.due_date": {
       "note": "FR-AR-006 turns the customer payment terms into this date. Not statutory; it is what gets the invoice paid.",
       "nl": "Vervaldatum",

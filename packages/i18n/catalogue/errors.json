@@ -355,6 +355,11 @@
       "nl": "Deze klant is gewist op verzoek van de betrokkene en kan niet meer worden bewerkt of gefactureerd.",
       "en": "This customer was erased at the data subject's request and can no longer be edited or invoiced."
     },
+    "errors.iban_invalid": {
+      "note": "SI-02. Its own message rather than the generic errors.customer_field_invalid below: a wrong IBAN becomes a QR code that pays a stranger, which deserves a clearer sentence than 'check the highlighted field'.",
+      "nl": "Dit is geen geldig IBAN. Controleer het rekeningnummer.",
+      "en": "That is not a valid IBAN. Check the account number."
+    },
     "errors.customer_field_invalid": {
       "note": "FR-UX-007. The field name travels beside the sentence in {field} as a machine-readable value, never inside it: 'payment_terms_days is invalid' is a developer-facing string in a user-facing message. The client puts the message against the input it names. Deliberately one key rather than one per field — the correction is always the same act, and fourteen near-identical sentences drift.",
       "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",
