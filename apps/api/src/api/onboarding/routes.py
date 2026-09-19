@@ -88,6 +88,7 @@ from api.firm.switcher import ClientSwitcher, SwitcherEntry
 from api.i18n.formatting import DEFAULT_FORMATTING_LOCALE, LOCALES
 from api.i18n.http import problem
 from api.iban import parse as parse_iban
+from api.iban import parse_creditor_id
 from api.ledger import (
     ChartError,
     ChartNotAuthorized,
@@ -203,6 +204,9 @@ class UpdateAdministrationBody(BaseModel):
     #: normalised to its compact upper-case form before being stored. An
     #: empty string clears it, same convention as trade_name.
     iban: str | None = None
+    #: SI-09. The SEPA creditor identifier (Incassant-ID); format AND check digits are
+    #: validated (api.invoicing.sepa.parse_creditor_id). An empty string clears it.
+    sepa_creditor_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -818,6 +822,19 @@ async def update_administration(
         if parsed_iban is None:
             raise problem(request, 422, "errors.iban_invalid", reason="iban_invalid", field="iban")
         changes["iban"] = parsed_iban.value
+    if "sepa_creditor_id" in changes and (changes["sepa_creditor_id"] or "").strip():
+        # SI-09. A wrong creditor id gets every direct debit file refused by the bank, so it is
+        # checked here, at write time, and stored in its compact upper-case form.
+        creditor_id = parse_creditor_id(changes["sepa_creditor_id"])
+        if creditor_id is None:
+            raise problem(
+                request,
+                422,
+                "errors.sepa_creditor_id_invalid",
+                reason="sepa_creditor_id_invalid",
+                field="sepa_creditor_id",
+            )
+        changes["sepa_creditor_id"] = creditor_id
 
     assignments = {
         "legal_name": "legal_name = :legal_name",
@@ -825,11 +842,12 @@ async def update_administration(
         "vat_number": "vat_number = :vat_number",
         "formatting_locale": "formatting_locale = :formatting_locale",
         "iban": "iban = :iban",
+        "sepa_creditor_id": "sepa_creditor_id = :sepa_creditor_id",
     }
     set_clause = ", ".join(assignments[name] for name in changes)
     params: dict[str, object] = {"id": str(administration_id)}
     for name, value in changes.items():
-        if name == "iban":
+        if name in ("iban", "sepa_creditor_id"):
             # Already normalised above (or explicitly cleared) - stripping
             # again would be harmless but re-deriving the same value twice
             # invites the two derivations drifting apart.
@@ -850,7 +868,8 @@ async def update_administration(
         await session.execute(
             text(
                 "SELECT id, legal_name, trade_name, legal_form, kvk_number, vat_number, "
-                "       formatting_locale, iban FROM administration WHERE id = :id"
+                "       formatting_locale, iban, sepa_creditor_id "
+                "  FROM administration WHERE id = :id"
             ),
             {"id": str(administration_id)},
         )
@@ -868,4 +887,5 @@ async def update_administration(
         "vat_number": row.vat_number,
         "formatting_locale": row.formatting_locale,
         "iban": row.iban,
+        "sepa_creditor_id": row.sepa_creditor_id,
     }

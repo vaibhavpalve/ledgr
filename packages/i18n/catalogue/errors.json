@@ -580,6 +580,121 @@
       "nl": "Deze datum valt in geen enkele open periode, dus er kan niets worden geboekt.",
       "en": "This date falls in no open period, so nothing can be posted."
     },
+    "errors.sepa_invalid_signed_in_future": {
+      "note": "A mandate cannot authorise a debit before consent.",
+      "nl": "De ondertekendatum van het mandaat mag niet in de toekomst liggen.",
+      "en": "The mandate cannot be signed in the future."
+    },
+    "errors.sepa_invalid_holder_name_required": {
+      "note": "The debtor name goes into the file.",
+      "nl": "Vul de naam van de rekeninghouder in.",
+      "en": "Enter the account holder's name."
+    },
+    "errors.sepa_invalid_iban_invalid": {
+      "note": "Format and check digits, as for the administration IBAN.",
+      "nl": "Dit IBAN is niet geldig. Controleer het rekeningnummer van de klant.",
+      "en": "This IBAN is not valid. Check the customer's account number."
+    },
+    "errors.sepa_invalid_bic_invalid": {
+      "note": "Optional; 8 or 11 characters.",
+      "nl": "Dit BIC is niet geldig. Laat het leeg als u het niet weet; dat is toegestaan.",
+      "en": "This BIC is not valid. Leave it empty if you do not know it; that is allowed."
+    },
+    "errors.sepa_invalid_reference_invalid": {
+      "note": "The debtor's bank matches on it byte for byte, so it is never altered.",
+      "nl": "Een mandaatkenmerk is 1 tot 35 tekens: letters, cijfers en + ? / : ( ) . , - of een apostrof.",
+      "en": "A mandate reference is 1 to 35 characters: letters, digits and + ? / : ( ) . , - or an apostrophe."
+    },
+    "errors.sepa_invalid_collection_date_invalid": {
+      "note": "Future TARGET business day, at most 60 days ahead (flagged for review in ADR-077).",
+      "nl": "Kies een incassodatum op een werkdag, minimaal een dag vooruit en niet meer dan 60 dagen.",
+      "en": "Choose a collection date on a business day, at least a day ahead and no more than 60 days."
+    },
+    "errors.sepa_invalid_file_invalid": {
+      "note": "The file could not be built from the given collections.",
+      "nl": "Het incassobestand kan niet worden opgebouwd uit deze incasso's.",
+      "en": "The direct debit file cannot be built from these collections."
+    },
+    "errors.sepa_invalid_failure_reason_required": {
+      "note": "A failure is recorded with its return reason.",
+      "nl": "Geef een reden op, bijvoorbeeld de retourcode van de bank.",
+      "en": "Give a reason, for example the bank's return code."
+    },
+    "errors.sepa_invalid_scheme_or_kind": {
+      "note": "scheme is core or b2b; kind is recurring or one_off.",
+      "nl": "Kies als type mandaat core of b2b, en als soort doorlopend of eenmalig.",
+      "en": "Choose core or b2b as the scheme, and recurring or one_off as the kind."
+    },
+    "errors.sepa_customer_not_found": {
+      "note": "Indistinguishable from another tenant's customer, on purpose.",
+      "nl": "Deze klant bestaat niet. Vernieuw de pagina.",
+      "en": "This customer does not exist. Refresh the page."
+    },
+    "errors.sepa_mandate_not_found": {
+      "note": "Indistinguishable from another tenant's mandate, on purpose.",
+      "nl": "Dit mandaat bestaat niet. Vernieuw de pagina.",
+      "en": "This mandate does not exist. Refresh the page."
+    },
+    "errors.sepa_mandate_reference_taken": {
+      "note": "Unique per administration.",
+      "nl": "Dit mandaatkenmerk is al in gebruik. Kies een ander kenmerk of laat het leeg om er een te laten maken.",
+      "en": "This mandate reference is already in use. Choose another or leave it empty to have one generated."
+    },
+    "errors.sepa_mandate_already_revoked": {
+      "note": "A mandate is revoked once.",
+      "nl": "Dit mandaat is al ingetrokken.",
+      "en": "This mandate has already been revoked."
+    },
+    "errors.sepa_creditor_not_configured": {
+      "note": "{missing} is name, iban or sepa_creditor_id, as a machine field so a screen can point at the right setting.",
+      "nl": "De administratie mist gegevens voor incasso ({missing}). Vul het IBAN en het incassant-ID in bij de administratiegegevens.",
+      "en": "The administration lacks details needed for direct debit ({missing}). Enter the IBAN and the creditor identifier in the administration settings."
+    },
+    "errors.sepa_creditor_id_invalid": {
+      "note": "Format and check digits, validated at write time.",
+      "nl": "Dit incassant-ID is niet geldig. Controleer het nummer dat uw bank u heeft gegeven.",
+      "en": "This creditor identifier is not valid. Check the number your bank gave you."
+    },
+    "errors.sepa_nothing_to_collect": {
+      "note": "`skipped` lists each invoice with its reason code.",
+      "nl": "Geen van de facturen kan worden geincasseerd. Bekijk per factuur de reden.",
+      "en": "None of the invoices can be collected. See the reason for each invoice."
+    },
+    "errors.sepa_too_many_invoices": {
+      "note": "At most 500 per file.",
+      "nl": "Een incassobestand bevat ten hoogste 500 facturen. Splits de selectie.",
+      "en": "A direct debit file holds at most 500 invoices. Split the selection."
+    },
+    "errors.sepa_batch_not_found": {
+      "note": "Indistinguishable from another tenant's batch, on purpose.",
+      "nl": "Dit incassobestand bestaat niet. Vernieuw de pagina.",
+      "en": "This direct debit file does not exist. Refresh the page."
+    },
+    "errors.sepa_batch_not_cancellable": {
+      "note": "Only a batch with no recorded outcomes can be withdrawn.",
+      "nl": "Dit bestand kan niet meer worden ingetrokken: het is al ingetrokken of er zijn uitkomsten vastgelegd.",
+      "en": "This file can no longer be withdrawn: it is already withdrawn or outcomes have been recorded."
+    },
+    "errors.sepa_batch_raced": {
+      "note": "Nothing was written; the request may be repeated.",
+      "nl": "Een van de facturen is net door een ander verzoek gereserveerd. Probeer het opnieuw.",
+      "en": "One of the invoices was just reserved by another request. Try again."
+    },
+    "errors.sepa_item_not_found": {
+      "note": "An item that is not in this batch.",
+      "nl": "Deze incasso bestaat niet in dit bestand.",
+      "en": "This collection does not exist in this file."
+    },
+    "errors.sepa_item_already_decided": {
+      "note": "An outcome is recorded once.",
+      "nl": "De uitkomst van deze incasso is al vastgelegd.",
+      "en": "The outcome of this collection has already been recorded."
+    },
+    "errors.sepa_collection_not_due": {
+      "note": "{collection_date} is the batch's collection date, already formatted.",
+      "nl": "Deze incasso kan pas worden bevestigd vanaf de incassodatum, {collection_date}.",
+      "en": "This collection can only be confirmed from its collection date, {collection_date}."
+    },
     "errors.payment_not_found": {
       "note": "FR-AR-010. Indistinguishable from another tenant's payment, on purpose - the same rule as errors.sales_invoice_not_found.",
       "nl": "Deze betaling bestaat niet op deze factuur. Vernieuw de pagina en kies een bestaande betaling.",

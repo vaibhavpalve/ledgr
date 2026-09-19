@@ -35,7 +35,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-__all__ = ["Iban", "normalise", "parse"]
+__all__ = ["Iban", "normalise", "parse", "parse_creditor_id"]
 
 #: Characters stripped before matching - the same posture
 #: api.customers.vat_number.normalise takes: a person who copied an IBAN off
@@ -105,3 +105,25 @@ def parse(value: str | None) -> Iban | None:
         return None
 
     return Iban(value=compact)
+
+
+_CREDITOR_ID = re.compile(r"^[A-Z]{2}[0-9]{2}[A-Z0-9]{3}[A-Z0-9]{1,28}$")
+
+
+def parse_creditor_id(value: str | None) -> str | None:
+    """The compact upper-case creditor identifier, or None when it is not valid.
+
+    Shape: country, two check digits, a three-character business code (ZZZ when unused), then
+    the national identifier. The check digits are ISO 7064 mod 97-10 over the national
+    identifier followed by the country code and the check digits - the business code is NOT part
+    of the check, which is what makes this different from an IBAN.
+    """
+    if value is None:
+        return None
+    compact = re.sub(r"[\s.\-]+", "", value).upper()
+    if not _CREDITOR_ID.match(compact):
+        return None
+    national = compact[7:]
+    if _mod_97(national + compact[:4]) != 1:
+        return None
+    return compact

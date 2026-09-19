@@ -664,3 +664,92 @@ async def test_voiding_another_tenants_write_off_is_refused(
 ) -> None:
     path = f"/sales-invoices/{uuid.uuid4()}/write-offs/{uuid.uuid4()}/void"
     assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+# -- SI-09: SEPA direct debit (ADR-077) ---------------------------------------------------
+_SEPA = "/v1/administrations/{administration_id}"
+
+
+@pytest.mark.isolation("POST", _SEPA + "/customers/{customer_id}/sepa-mandates")
+async def test_registering_a_mandate_for_another_tenants_customer_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    body = {
+        "signed_on": "2026-01-10",
+        "debtor_name": "De Vries Holding B.V.",
+        "debtor_iban": "NL02ABNA0123456789",
+    }
+    path = f"/customers/{uuid.uuid4()}/sepa-mandates"
+    assert await _as_a("POST", path, two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("GET", _SEPA + "/customers/{customer_id}/sepa-mandates")
+async def test_listing_another_tenants_mandates_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/customers/{uuid.uuid4()}/sepa-mandates"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _SEPA + "/sepa-mandates/{mandate_id}/revoke")
+async def test_revoking_another_tenants_mandate_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-mandates/{uuid.uuid4()}/revoke"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _SEPA + "/sepa-collections")
+async def test_creating_a_collection_file_in_another_tenant_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    body = {"collection_date": "2099-01-05"}
+    assert await _as_a("POST", "/sepa-collections", two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("GET", _SEPA + "/sepa-collections")
+async def test_listing_another_tenants_collection_files_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    assert await _as_a("GET", "/sepa-collections", two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _SEPA + "/sepa-collections/{batch_id}")
+async def test_reading_another_tenants_collection_file_record_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-collections/{uuid.uuid4()}"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("GET", _SEPA + "/sepa-collections/{batch_id}/file")
+async def test_downloading_another_tenants_collection_file_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-collections/{uuid.uuid4()}/file"
+    assert await _as_a("GET", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _SEPA + "/sepa-collections/{batch_id}/cancel")
+async def test_cancelling_another_tenants_collection_file_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-collections/{uuid.uuid4()}/cancel"
+    assert await _as_a("POST", path, two_organizations) in REFUSED
+
+
+@pytest.mark.isolation("POST", _SEPA + "/sepa-collections/{batch_id}/items/{item_id}/collected")
+async def test_confirming_another_tenants_collection_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-collections/{uuid.uuid4()}/items/{uuid.uuid4()}/collected"
+    body = {"bank_account_id": str(uuid.uuid4())}
+    assert await _as_a("POST", path, two_organizations, body) in REFUSED
+
+
+@pytest.mark.isolation("POST", _SEPA + "/sepa-collections/{batch_id}/items/{item_id}/failed")
+async def test_failing_another_tenants_collection_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    path = f"/sepa-collections/{uuid.uuid4()}/items/{uuid.uuid4()}/failed"
+    assert await _as_a("POST", path, two_organizations, {"reason": "MS02"}) in REFUSED

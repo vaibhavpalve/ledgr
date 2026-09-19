@@ -1266,3 +1266,76 @@ export interface WriteOffListView {
   readonly write_offs: readonly InvoiceWriteOffView[];
   readonly balance: InvoiceBalanceView;
 }
+
+
+/**
+ * SI-09 (ADR-077) - `api.invoicing.routes._mandate_json`. A customer's signed SEPA direct debit
+ * authorisation. Evidence of consent: never edited, only revoked. A customer who changes bank
+ * signs a new mandate.
+ */
+export interface SepaMandateView {
+  readonly id: string;
+  readonly customer_id: string;
+  readonly mandate_reference: string;
+  readonly scheme: "core" | "b2b";
+  readonly kind: "recurring" | "one_off";
+  readonly signed_on: string;
+  readonly debtor_name: string;
+  readonly debtor_iban: string;
+  readonly debtor_bic: string | null;
+  readonly status: "active" | "revoked";
+  /** Derived: unused for 36 months, so it may no longer be collected on. */
+  readonly is_lapsed: boolean;
+  /** The first / recurring flag the NEXT collection on this mandate will carry. */
+  readonly next_sequence: "FRST" | "RCUR" | "OOFF";
+  readonly last_collected_on: string | null;
+  readonly revoked_at: string | null;
+  readonly revoked_reason: string | null;
+  readonly created_at: string;
+}
+
+/** One generated pain.008 file. Download it from `.../sepa-collections/{id}/file`. */
+export interface SepaCollectionBatchView {
+  readonly id: string;
+  readonly message_id: string;
+  readonly collection_date: string;
+  readonly item_count: number;
+  readonly total_amount: string;
+  /** SHA-256 of the file exactly as generated and served. */
+  readonly file_sha256: string;
+  readonly created_at: string;
+  readonly cancelled_at: string | null;
+}
+
+/** One invoice inside a batch, and how it turned out. */
+export interface SepaCollectionView {
+  readonly id: string;
+  readonly batch_id: string;
+  readonly invoice_id: string;
+  readonly mandate_id: string;
+  readonly amount: string;
+  readonly sequence_type: "FRST" | "RCUR" | "OOFF";
+  readonly end_to_end_id: string;
+  readonly status: "submitted" | "collected" | "failed" | "cancelled";
+  readonly decided_at: string | null;
+  readonly failure_reason: string | null;
+  /** The payment recorded when the collection was confirmed. */
+  readonly payment_id: string | null;
+}
+
+/** Why an invoice was left out of a batch. Reported, never silently dropped. */
+export type SepaSkipReason =
+  | "not_found"
+  | "not_collectable"
+  | "nothing_outstanding"
+  | "already_in_collection"
+  | "not_yet_due"
+  | "no_mandate"
+  | "mandate_lapsed";
+
+/** `POST .../sepa-collections`. */
+export interface SepaBatchResultView {
+  readonly batch: SepaCollectionBatchView;
+  readonly items: readonly SepaCollectionView[];
+  readonly skipped: readonly { readonly invoice_id: string; readonly reason: SepaSkipReason }[];
+}

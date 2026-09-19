@@ -21,7 +21,7 @@ from decimal import Decimal
 from typing import NoReturn
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -152,6 +152,28 @@ from api.invoicing.recurring_service import (
 )
 from api.invoicing.rendering import build_invoice_renderer
 from api.invoicing.repository import SqlInvoiceRepository
+from api.invoicing.sepa import MandateScheme, SequenceKind
+from api.invoicing.sepa_repository import SqlSepaRepository
+from api.invoicing.sepa_service import (
+    BatchNotCancellable,
+    BatchNotFound,
+    BatchRaced,
+    CollectionBatch,
+    CollectionInvalid,
+    CollectionItem,
+    CollectionNotDue,
+    CreditorNotConfigured,
+    ItemAlreadyDecided,
+    ItemNotFound,
+    Mandate,
+    MandateAlreadyRevoked,
+    MandateNotFound,
+    MandateReferenceTaken,
+    NothingToCollect,
+    SepaCustomerNotFound,
+    SepaDirectDebitService,
+    TooManyInvoices,
+)
 from api.invoicing.service import InvoicingService, NewLine
 from api.invoicing.statutory import describe
 from api.invoicing.vat import line_net
@@ -259,7 +281,40 @@ def register(app: FastAPI) -> None:
         methods=["POST"],
         name="void_sales_invoice_payment",
     )
-    # SI-10 (ADR-076): bad-debt write-off with the VAT reclaim entry.
+    # SI-09 (ADR-077): SEPA direct debit mandates and pain.008 files.
+    for path, handler, verb, name in (
+        (
+            "/customers/{customer_id}/sepa-mandates",
+            create_sepa_mandate,
+            "POST",
+            "create_sepa_mandate",
+        ),
+        ("/customers/{customer_id}/sepa-mandates", list_sepa_mandates, "GET", "list_sepa_mandates"),
+        ("/sepa-mandates/{mandate_id}/revoke", revoke_sepa_mandate, "POST", "revoke_sepa_mandate"),
+        ("/sepa-collections", create_sepa_batch, "POST", "create_sepa_collection_batch"),
+        ("/sepa-collections", list_sepa_batches, "GET", "list_sepa_collection_batches"),
+        ("/sepa-collections/{batch_id}", get_sepa_batch, "GET", "get_sepa_collection_batch"),
+        ("/sepa-collections/{batch_id}/file", download_sepa_file, "GET", "download_sepa_file"),
+        ("/sepa-collections/{batch_id}/cancel", cancel_sepa_batch, "POST", "cancel_sepa_batch"),
+        (
+            "/sepa-collections/{batch_id}/items/{item_id}/collected",
+            record_sepa_collected,
+            "POST",
+            "record_sepa_collected",
+        ),
+        (
+            "/sepa-collections/{batch_id}/items/{item_id}/failed",
+            record_sepa_failed,
+            "POST",
+            "record_sepa_failed",
+        ),
+    ):
+        app.add_api_route(
+            "/v1/administrations/{administration_id}" + path,
+            handler,
+            methods=[verb],
+            name=name,
+        )  # SI-10 (ADR-076): bad-debt write-off with the VAT reclaim entry.
     app.add_api_route(
         "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/write-offs",
         write_off_invoice,
@@ -3370,3 +3425,518 @@ async def void_write_off(
             raise
         raise refusal from exc
     return {"write_off": _write_off_json(write_off), "balance": _balance_json(balance)}
+
+
+# -- SI-09: SEPA direct debit (ADR-077) ------------------------------------------
+
+
+async def get_sepa_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> SepaDirectDebitService:
+    audit_log = AuditLog(SqlAuditRepository(session))
+    return SepaDirectDebitService(
+        repository=SqlSepaRepository(session),
+        # Recording that a collection arrived is an ordinary payment: same service, same
+        # ledger posting, same guards.
+        payments=SalesPaymentService(
+            repository=SqlPaymentRepository(session),
+            ledger=build_ledger_service(session, audit_log),
+            authorization=authorization,
+            audit_log=audit_log,
+        ),
+        authorization=authorization,
+        audit_log=audit_log,
+    )
+
+
+class MandateBody(BaseModel):
+    signed_on: date
+    debtor_name: str
+    debtor_iban: str
+    debtor_bic: str | None = None
+    #: Generated when omitted. Unique per administration; 1-35 SEPA characters.
+    mandate_reference: str | None = None
+    scheme: str = "core"
+    kind: str = "recurring"
+
+
+class RevokeMandateBody(BaseModel):
+    reason: str | None = None
+
+
+class SepaBatchBody(BaseModel):
+    collection_date: date
+    #: Omitted: every invoice of a customer with a usable mandate that is due by then.
+    invoice_ids: list[uuid.UUID] | None = None
+
+
+class SepaCollectedBody(BaseModel):
+    #: The asset account the money landed in, as for any payment.
+    bank_account_id: uuid.UUID
+
+
+class SepaFailedBody(BaseModel):
+    reason: str
+
+
+def _mandate_json(mandate: Mandate, today: date) -> dict[str, object]:
+    return {
+        "id": str(mandate.id),
+        "customer_id": str(mandate.customer_id),
+        "mandate_reference": mandate.mandate_reference,
+        "scheme": mandate.scheme.value,
+        "kind": mandate.kind.value,
+        "signed_on": mandate.signed_on.isoformat(),
+        "debtor_name": mandate.debtor_name,
+        "debtor_iban": mandate.debtor_iban,
+        "debtor_bic": mandate.debtor_bic,
+        "status": mandate.status,
+        # Derived, never stored: a mandate unused for 36 months may no longer be collected on.
+        "is_lapsed": mandate.is_lapsed(today),
+        # What the next collection on it would be flagged as (the first / recurring flag).
+        "next_sequence": (
+            "OOFF" if mandate.kind is SequenceKind.ONE_OFF else ("RCUR" if mandate.used else "FRST")
+        ),
+        "last_collected_on": (
+            mandate.last_collected_on.isoformat() if mandate.last_collected_on else None
+        ),
+        "revoked_at": mandate.revoked_at.isoformat() if mandate.revoked_at else None,
+        "revoked_reason": mandate.revoked_reason,
+        "created_at": mandate.created_at.isoformat(),
+    }
+
+
+def _batch_json(batch: CollectionBatch) -> dict[str, object]:
+    return {
+        "id": str(batch.id),
+        "message_id": batch.message_id,
+        "collection_date": batch.collection_date.isoformat(),
+        "item_count": batch.item_count,
+        "total_amount": str(batch.total_amount),
+        "file_sha256": batch.file_sha256,
+        "created_at": batch.created_at.isoformat(),
+        "cancelled_at": batch.cancelled_at.isoformat() if batch.cancelled_at else None,
+    }
+
+
+def _collection_json(item: CollectionItem) -> dict[str, object]:
+    return {
+        "id": str(item.id),
+        "batch_id": str(item.batch_id),
+        "invoice_id": str(item.invoice_id),
+        "mandate_id": str(item.mandate_id),
+        "amount": str(item.amount),
+        "sequence_type": item.sequence_type.value,
+        "end_to_end_id": item.end_to_end_id,
+        "status": item.status,
+        "decided_at": item.decided_at.isoformat() if item.decided_at else None,
+        "failure_reason": item.failure_reason,
+        "payment_id": str(item.payment_id) if item.payment_id else None,
+    }
+
+
+def _sepa_problem(request: Request, exc: Exception) -> Exception | None:
+    """The refusals mandate and collection operations can raise, as problems. None for an
+    exception this does not recognise, so the caller re-raises it."""
+    if isinstance(exc, CollectionInvalid):
+        return problem(
+            request,
+            422,
+            f"errors.sepa_invalid_{exc.code}",
+            reason=f"sepa_{exc.code}",
+        )
+    table: tuple[tuple[type[Exception], int, str], ...] = (
+        (SepaCustomerNotFound, 404, "sepa_customer_not_found"),
+        (MandateNotFound, 404, "sepa_mandate_not_found"),
+        (MandateReferenceTaken, 409, "sepa_mandate_reference_taken"),
+        (MandateAlreadyRevoked, 409, "sepa_mandate_already_revoked"),
+        (TooManyInvoices, 422, "sepa_too_many_invoices"),
+        (BatchNotFound, 404, "sepa_batch_not_found"),
+        (BatchNotCancellable, 409, "sepa_batch_not_cancellable"),
+        (BatchRaced, 409, "sepa_batch_raced"),
+        (ItemNotFound, 404, "sepa_item_not_found"),
+        (ItemAlreadyDecided, 409, "sepa_item_already_decided"),
+    )
+    for error_type, status, key in table:
+        if isinstance(exc, error_type):
+            return problem(request, status, f"errors.{key}", reason=key)
+    if isinstance(exc, CreditorNotConfigured):
+        return problem(
+            request,
+            409,
+            "errors.sepa_creditor_not_configured",
+            reason="sepa_creditor_not_configured",
+            missing=exc.missing,
+        )
+    if isinstance(exc, CollectionNotDue):
+        return problem(
+            request,
+            409,
+            "errors.sepa_collection_not_due",
+            reason="sepa_collection_not_due",
+            collection_date=format_date(exc.collection_date),
+            collection_date_iso=exc.collection_date.isoformat(),
+        )
+    if isinstance(exc, NothingToCollect):
+        return problem(
+            request,
+            409,
+            "errors.sepa_nothing_to_collect",
+            reason="sepa_nothing_to_collect",
+            skipped=[
+                {"invoice_id": str(item.invoice_id), "reason": item.reason.value}
+                for item in exc.skipped
+            ],
+        )
+    # Recording a collection records a payment, which has refusals of its own.
+    return _payment_problem(request, exc)
+
+
+async def create_sepa_mandate(
+    administration_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    body: MandateBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """FR-AR-011: register a mandate the customer signed. It is evidence of consent and is
+    never edited; a customer who changes bank signs a new one."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        scheme = MandateScheme(body.scheme)
+        kind = SequenceKind(body.kind)
+    except ValueError:
+        raise problem(
+            request, 422, "errors.sepa_invalid_scheme_or_kind", reason="sepa_scheme_or_kind_invalid"
+        ) from None
+    today = date.today()
+    try:
+        mandate = await service.create_mandate(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            customer_id=customer_id,
+            signed_on=body.signed_on,
+            today=today,
+            debtor_name=body.debtor_name,
+            debtor_iban=body.debtor_iban,
+            debtor_bic=body.debtor_bic,
+            mandate_reference=body.mandate_reference,
+            scheme=scheme,
+            kind=kind,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"mandate": _mandate_json(mandate, today)}
+
+
+async def list_sepa_mandates(
+    administration_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create", "sales_invoice", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    """A customer's mandates, revoked ones included, newest signature first."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    today = date.today()
+    try:
+        mandates = await service.mandates(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            customer_id=customer_id,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"mandates": [_mandate_json(m, today) for m in mandates]}
+
+
+async def revoke_sepa_mandate(
+    administration_id: uuid.UUID,
+    mandate_id: uuid.UUID,
+    request: Request,
+    body: RevokeMandateBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Withdraw a mandate. It is never collected on again, and stays as history."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    today = date.today()
+    try:
+        mandate = await service.revoke_mandate(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            mandate_id=mandate_id,
+            reason=body.reason if body else None,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"mandate": _mandate_json(mandate, today)}
+
+
+async def create_sepa_batch(
+    administration_id: uuid.UUID,
+    body: SepaBatchBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Generate a pain.008 file and reserve its invoices. Invoices that cannot be collected
+    are reported in `skipped`; if none can, 409 says why."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        result = await service.create_batch(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            collection_date=body.collection_date,
+            today=date.today(),
+            now=datetime.now().astimezone(),
+            invoice_ids=body.invoice_ids,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {
+        "batch": _batch_json(result.batch),
+        "items": [_collection_json(item) for item in result.items],
+        "skipped": [
+            {"invoice_id": str(item.invoice_id), "reason": item.reason.value}
+            for item in result.skipped
+        ],
+    }
+
+
+async def list_sepa_batches(
+    administration_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post", "journal_entry", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    batches = await service.batches(
+        administration_id=administration_id, actor_user_id=tenant.user_id
+    )
+    return {"batches": [_batch_json(batch) for batch in batches]}
+
+
+async def get_sepa_batch(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post", "journal_entry", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        batch, items = await service.batch(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"batch": _batch_json(batch), "items": [_collection_json(item) for item in items]}
+
+
+async def download_sepa_file(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post", "journal_entry", scope=administration_from_path("administration_id")
+        )
+    ),
+) -> Response:
+    """The pain.008 file exactly as generated - the bytes the bank is given, whose SHA-256 the
+    batch records."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        batch, xml = await service.file(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return Response(
+        content=xml.encode("utf-8"),
+        media_type="application/xml",
+        headers={"Content-Disposition": f'attachment; filename="{batch.message_id}.xml"'},
+    )
+
+
+async def cancel_sepa_batch(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """Withdraw a file nobody uploaded: its invoices are free to be collected again."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        batch = await service.cancel_batch(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"batch": _batch_json(batch)}
+
+
+async def record_sepa_collected(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    item_id: uuid.UUID,
+    body: SepaCollectedBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """The bank confirms this collection arrived: records the payment (posting Dr bank / Cr
+    Debiteuren) and settles the item in one step."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        item = await service.record_collected(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+            item_id=item_id,
+            bank_account_id=body.bank_account_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"item": _collection_json(item)}
+
+
+async def record_sepa_failed(
+    administration_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    item_id: uuid.UUID,
+    body: SepaFailedBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: SepaDirectDebitService = Depends(get_sepa_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "post",
+            "journal_entry",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+    __: None = Depends(require_verified_email),
+) -> dict[str, object]:
+    """The bank returned or rejected this collection. The invoice stays owed."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        item = await service.record_failed(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            batch_id=batch_id,
+            item_id=item_id,
+            reason=body.reason,
+        )
+    except Exception as exc:
+        refusal = _sepa_problem(request, exc)
+        if refusal is None:
+            raise
+        raise refusal from exc
+    return {"item": _collection_json(item)}
