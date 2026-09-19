@@ -70,6 +70,7 @@ __all__ = [
     "Recipient",
     "DeliverableInvoice",
     "DeliveryRequest",
+    "ReminderNotice",
     "DeliveryOutcome",
     "DeliveryChannelAdapter",
     "ChannelRegistry",
@@ -202,6 +203,28 @@ class DeliverableInvoice:
 
 
 @dataclass(frozen=True, slots=True)
+class ReminderNotice:
+    """SI-04: this dispatch is a payment REMINDER, not the invoice itself.
+
+    Generic on the request for the reason `custom_message` is: a channel with no
+    use for it (Peppol's structured e-invoice has nowhere to put a reminder)
+    ignores it, and the service stays free of `if channel is EMAIL`.
+
+    `kind` is `api.invoicing.dunning.StepKind.value`, as a string so this module
+    does not import the dunning rules it is only a carrier for. The amounts are
+    exactly what the customer will be told, decided by the caller; nothing here
+    computes interest or cost.
+    """
+
+    kind: str
+    outstanding: Decimal
+    days_overdue: int
+    interest: Decimal | None = None
+    collection_cost: Decimal | None = None
+    pay_by: date | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class DeliveryRequest:
     invoice: DeliverableInvoice
     recipient: Recipient
@@ -217,6 +240,9 @@ class DeliveryRequest:
     #: nowhere to put free text) simply ignores the field, and the service
     #: stays free of `if channel is EMAIL`.
     custom_message: str | None = None
+    #: SI-04: when set, the covering message is a payment reminder rather than the
+    #: invoice's own cover note. The invoice PDF is still attached.
+    reminder: ReminderNotice | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -398,8 +424,16 @@ class EmailInvoiceChannel:
         language = request.recipient.language
         message = EmailMessage(
             to=request.address,
-            subject=_subject(request.invoice, language),
-            body=_body(request.invoice, language, custom_message=request.custom_message),
+            subject=(
+                _reminder_subject(request.invoice, language, request.reminder)
+                if request.reminder
+                else _subject(request.invoice, language)
+            ),
+            body=(
+                _reminder_body(request.invoice, language, request.reminder)
+                if request.reminder
+                else _body(request.invoice, language, custom_message=request.custom_message)
+            ),
             from_address=self._from_address,
             # The SUPPLIER's name, not LEDGR's: the customer is receiving an
             # invoice from their supplier, and a sender line naming the
@@ -500,6 +534,72 @@ def _body(
             ]
         )
 
+    lines.extend(
+        [
+            "",
+            translate("invoice.email.questions", language, supplier=invoice.supplier_name),
+            "",
+            translate("invoice.email.signoff", language),
+            invoice.supplier_name,
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _reminder_subject(
+    invoice: DeliverableInvoice, language: Language, reminder: ReminderNotice
+) -> str:
+    return translate(
+        f"invoice.reminder.subject.{reminder.kind}",
+        language,
+        reference=invoice.reference,
+        supplier=invoice.supplier_name,
+    )
+
+
+def _reminder_body(
+    invoice: DeliverableInvoice, language: Language, reminder: ReminderNotice
+) -> str:
+    """SI-04's covering message: the step's own sentence, then - only where the
+    step claims them - the interest and the collection cost, then the fixed
+    'questions' and sign-off lines every invoice e-mail ends with.
+
+    Amounts come from `reminder`, already decided; this function only words
+    them. An amount the step does not claim is ABSENT, not written as zero: a
+    friendly reminder that mentioned '0,00 interest' would put the idea in the
+    customer's head.
+    """
+    due = format_date(invoice.due_date) if invoice.due_date else ""
+    pay_by = format_date(reminder.pay_by) if reminder.pay_by else ""
+    lines = [
+        translate("invoice.email.greeting", language),
+        "",
+        translate(
+            f"invoice.reminder.intro.{reminder.kind}",
+            language,
+            reference=invoice.reference,
+            supplier=invoice.supplier_name,
+            outstanding=format_money(reminder.outstanding),
+            due_date=due,
+            days=reminder.days_overdue,
+            pay_by=pay_by,
+        ),
+    ]
+    if reminder.interest is not None:
+        lines.append(
+            translate(
+                "invoice.reminder.interest", language, interest=format_money(reminder.interest)
+            )
+        )
+    if reminder.collection_cost is not None:
+        lines.append(
+            translate(
+                "invoice.reminder.collection_cost",
+                language,
+                cost=format_money(reminder.collection_cost),
+                pay_by=pay_by,
+            )
+        )
     lines.extend(
         [
             "",

@@ -68,6 +68,7 @@ from api.invoicing.delivery import (
     DeliveryRequest,
     DeliveryStatus,
     Recipient,
+    ReminderNotice,
     UnreachableCustomer,
 )
 from api.invoicing.model import (
@@ -221,6 +222,7 @@ class InvoiceDeliveryService:
         recipient_override: str | None = None,
         correlation_id: str | None = None,
         custom_message: str | None = None,
+        reminder: ReminderNotice | None = None,
     ) -> DeliveryRecord:
         """Send one invoice over one channel, and record what happened.
 
@@ -305,6 +307,7 @@ class InvoiceDeliveryService:
                 address=address,
                 artifacts=artifacts,
                 custom_message=custom_message,
+                reminder=reminder,
             )
         )
 
@@ -354,6 +357,8 @@ class InvoiceDeliveryService:
                 # dispatch. The CONTENT is never audited - it is not
                 # persisted anywhere at all (see dispatch's own docstring) -
                 # only the fact that one was included.
+                # SI-04: which reminder step this dispatch was, if it was one.
+                "reminder_kind": reminder.kind if reminder else None,
                 "custom_message_included": custom_message is not None
                 and custom_message.strip() != "",
             },

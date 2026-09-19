@@ -578,6 +578,95 @@ export interface InvoicePaymentsView {
   readonly balance: InvoiceBalanceView;
 }
 
+/** SI-04 (ADR-071) - `api.invoicing.routes._step_json`. One rung of the reminder ladder. */
+export interface DunningStepView {
+  readonly position: number;
+  /** Days after the DUE date on which this step becomes due. */
+  readonly days_after_due: number;
+  readonly kind: "friendly" | "reminder" | "formal_notice";
+  readonly charge_interest: boolean;
+  /** Only a `formal_notice` may charge collection cost; the API refuses anything else. */
+  readonly charge_collection_cost: boolean;
+}
+
+/** Why nothing is sent for an invoice right now - each has a sentence in `blocker_message`. */
+export type DunningBlocker =
+  | "nothing_outstanding"
+  | "paused"
+  | "no_due_date"
+  | "not_overdue"
+  | "ladder_complete"
+  | "step_not_due"
+  | "interest_rate_missing";
+
+/**
+ * SI-04 - `api.invoicing.routes._assessment_json`: what should happen to one
+ * invoice today. Read-only; looking sends nothing.
+ */
+export interface DunningAssessmentView {
+  readonly invoice_id: string;
+  readonly invoice_reference: string | null;
+  readonly customer_id: string | null;
+  readonly customer_name: string;
+  readonly due_date: string | null;
+  readonly days_overdue: number;
+  readonly outstanding_amount: string;
+  readonly can_send: boolean;
+  readonly blocker: DunningBlocker | null;
+  /** The blocker's sentence in the reader's language. */
+  readonly blocker_message: string | null;
+  /** The step in question, including when it is not yet due. Null only when none is left. */
+  readonly next_step: DunningStepView | null;
+  /** What THIS step will claim. Null where it claims nothing - never "0.00". */
+  readonly interest_amount: string | null;
+  readonly collection_cost_amount: string | null;
+  /** For a formal notice: the last day the customer is given to pay. */
+  readonly pay_by: string | null;
+  /** Inferred (a VAT or KvK number): there is no consumer flag on the customer. */
+  readonly is_business: boolean;
+  readonly interest_kind: "commercial" | "consumer";
+  readonly is_paused: boolean;
+  readonly sent_steps: readonly number[];
+}
+
+/** `GET .../dunning`. */
+export interface DunningOverviewView {
+  readonly ladder: { readonly is_default: boolean; readonly steps: readonly DunningStepView[] };
+  readonly overdue: readonly DunningAssessmentView[];
+}
+
+/**
+ * FR-AR-005 - `api.invoicing.routes._delivery_json`: one dispatch of an invoice
+ * (or, for SI-04, of a reminder about it) over one channel.
+ */
+export interface InvoiceDeliveryView {
+  readonly channel: string;
+  readonly status: "queued" | "sent" | "delivered" | "bounced" | "failed";
+  /** Whether it actually ARRIVED - not the same as having been sent. */
+  readonly reached_the_customer: boolean;
+  readonly is_settled: boolean;
+  readonly recipient: string;
+  readonly language: "nl" | "en";
+  readonly attempts: number;
+  readonly provider: string | null;
+  readonly provider_reference: string | null;
+  readonly document_id: string | null;
+  readonly requested_at: string | null;
+  readonly sent_at: string | null;
+  readonly settled_at: string | null;
+  readonly next_attempt_at: string | null;
+}
+
+/** `POST .../sales-invoices/{id}/dunning/send`. */
+export interface SentReminderView {
+  readonly step: DunningStepView | null;
+  readonly delivery: InvoiceDeliveryView;
+  readonly outstanding_amount: string;
+  readonly interest_amount: string | null;
+  readonly collection_cost_amount: string | null;
+  readonly pay_by: string | null;
+}
+
 /** SI-13 - `api.invoicing.routes._view_json`'s `rubriek_preview`. */
 export interface RubriekPreviewView {
   readonly boxes: readonly RubriekBoxView[];

@@ -270,3 +270,113 @@ async def test_voiding_another_tenants_payment_is_refused(
         )
 
     assert response.status_code in REFUSED
+
+
+# -- SI-04: the reminder ladder (ADR-071) ------------------------------------------
+#
+# Six routes, each asked as organization A's owner for something in organization
+# B. The send is the one that would mail another tenant's customer, so it is asked
+# with a request that would otherwise be perfectly valid.
+
+
+@pytest.mark.isolation("GET", "/v1/administrations/{administration_id}/dunning")
+async def test_reading_another_tenants_dunning_overview_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.get(
+            f"/v1/administrations/{two_organizations.admin_b}/dunning",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation("PUT", "/v1/administrations/{administration_id}/dunning/ladder")
+async def test_configuring_another_tenants_ladder_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.put(
+            f"/v1/administrations/{two_organizations.admin_b}/dunning/ladder",
+            headers=_headers(token),
+            json={"steps": []},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "GET", "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/dunning"
+)
+async def test_assessing_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.get(
+            f"/v1/administrations/{two_organizations.admin_b}/sales-invoices/{uuid.uuid4()}/dunning",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "POST", "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/dunning/send"
+)
+async def test_sending_a_reminder_for_another_tenants_invoice_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/sales-invoices/{uuid.uuid4()}"
+            f"/dunning/send",
+            headers=_headers(token),
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "PUT", "/v1/administrations/{administration_id}/customers/{customer_id}/dunning-pause"
+)
+async def test_pausing_another_tenants_customer_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.put(
+            f"/v1/administrations/{two_organizations.admin_b}/customers/{uuid.uuid4()}"
+            f"/dunning-pause",
+            headers=_headers(token),
+            json={"reason": "x"},
+        )
+
+    assert response.status_code in REFUSED
+
+
+@pytest.mark.isolation(
+    "DELETE", "/v1/administrations/{administration_id}/customers/{customer_id}/dunning-pause"
+)
+async def test_resuming_another_tenants_customer_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.delete(
+            f"/v1/administrations/{two_organizations.admin_b}/customers/{uuid.uuid4()}"
+            f"/dunning-pause",
+            headers=_headers(token),
+        )
+
+    assert response.status_code in REFUSED

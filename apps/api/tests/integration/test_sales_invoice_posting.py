@@ -509,24 +509,38 @@ async def _post(
     )
 
 
-async def _draft(tenants: SeededTenants, world: dict[str, uuid.UUID]) -> uuid.UUID:
+async def _draft(
+    tenants: SeededTenants,
+    world: dict[str, uuid.UUID],
+    *,
+    due_date: str | None = None,
+    customer_id: uuid.UUID | None = None,
+) -> uuid.UUID:
     return await _scalar(
         tenants,
         "INSERT INTO sales_invoice (organization_id, administration_id, fiscal_year_id, "
-        "  invoice_date, customer_name, customer_address, customer_country, "
-        "  customer_language) "
-        "VALUES (:org, :admin, :year, '2026-09-09', 'De Vries Holding B.V.', "
+        "  invoice_date, due_date, customer_id, customer_name, customer_address, "
+        "  customer_country, customer_language) "
+        "VALUES (:org, :admin, :year, '2026-09-09', CAST(:due AS date), CAST(:customer AS uuid), "
+        "  'De Vries Holding B.V.', "
         "  'Damrak 70', 'NL', 'nl') RETURNING id",
         org=str(tenants.org_a),
         admin=str(tenants.admin_a),
         year=str(world["year"]),
+        due=due_date,
+        customer=str(customer_id) if customer_id else None,
     )
 
 
 async def _issued_and_posted(
-    tenants: SeededTenants, world: dict[str, uuid.UUID], party: uuid.UUID
+    tenants: SeededTenants,
+    world: dict[str, uuid.UUID],
+    party: uuid.UUID,
+    *,
+    due_date: str | None = None,
+    customer_id: uuid.UUID | None = None,
 ) -> tuple[uuid.UUID, uuid.UUID]:
-    invoice = await _draft(tenants, world)
+    invoice = await _draft(tenants, world, due_date=due_date, customer_id=customer_id)
     entry = await _post(tenants, world, party_id=party)
     document = await _document(tenants, world)
 

@@ -18,6 +18,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import NoReturn
 
 from fastapi import Depends, FastAPI, Query, Request
 from pydantic import BaseModel, Field
@@ -44,6 +45,7 @@ from api.customers.service import CustomerService
 from api.db import get_db_session
 from api.documents.routes import get_document_service
 from api.documents.service import DocumentService
+from api.i18n.catalogue import translate
 from api.i18n.formatting import format_money
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language, parse_language
@@ -60,6 +62,16 @@ from api.invoicing.delivery_service import (
     DeliveryRecord,
     InvoiceDeliveryService,
     InvoiceNotRendered,
+)
+from api.invoicing.dunning import DunningAssessment, LadderInvalid, LadderStep, StepKind
+from api.invoicing.dunning_repository import SqlDunningRepository
+from api.invoicing.dunning_service import (
+    CustomerNotFoundForPause,
+    DunningInvoice,
+    DunningService,
+    NothingToSend,
+    ReminderAlreadySent,
+    ReminderNotDelivered,
 )
 from api.invoicing.duplicates import message_for as duplicate_message
 from api.invoicing.model import (
@@ -185,6 +197,43 @@ def register(app: FastAPI) -> None:
         void_payment,
         methods=["POST"],
         name="void_sales_invoice_payment",
+    )
+    # SI-04 (ADR-071): the reminder ladder.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/dunning",
+        get_dunning_overview,
+        methods=["GET"],
+        name="get_dunning_overview",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/dunning/ladder",
+        put_dunning_ladder,
+        methods=["PUT"],
+        name="put_dunning_ladder",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/dunning",
+        get_invoice_dunning,
+        methods=["GET"],
+        name="get_sales_invoice_dunning",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/sales-invoices/{invoice_id}/dunning/send",
+        send_invoice_reminder,
+        methods=["POST"],
+        name="send_sales_invoice_reminder",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/customers/{customer_id}/dunning-pause",
+        pause_customer_dunning,
+        methods=["PUT"],
+        name="pause_customer_dunning",
+    )
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/customers/{customer_id}/dunning-pause",
+        resume_customer_dunning,
+        methods=["DELETE"],
+        name="resume_customer_dunning",
     )
 
 
@@ -1319,3 +1368,351 @@ async def void_payment(
             raise
         raise refusal from exc
     return {"payment": _payment_json(payment), "balance": _balance_json(balance)}
+
+
+# -- SI-04: the reminder ladder (ADR-071) --------------------------------------
+
+
+async def get_dunning_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+    # One session, so the dispatch row, the reminder row and the audit entries are
+    # one transaction. The delivery service is the same one `send` uses: a reminder
+    # is a dispatch, not a second email system.
+    delivery: InvoiceDeliveryService = Depends(get_delivery_service),
+) -> DunningService:
+    return DunningService(
+        repository=SqlDunningRepository(session),
+        delivery=delivery,
+        authorization=authorization,
+        audit_log=AuditLog(SqlAuditRepository(session)),
+    )
+
+
+class LadderStepBody(BaseModel):
+    position: int
+    days_after_due: int
+    kind: str
+    charge_interest: bool = False
+    charge_collection_cost: bool = False
+
+
+class LadderBody(BaseModel):
+    steps: list[LadderStepBody] = Field(default_factory=list)
+
+
+class PauseBody(BaseModel):
+    reason: str | None = None
+
+
+def _step_json(step: LadderStep) -> dict[str, object]:
+    return {
+        "position": step.position,
+        "days_after_due": step.days_after_due,
+        "kind": step.kind.value,
+        "charge_interest": step.charge_interest,
+        "charge_collection_cost": step.charge_collection_cost,
+    }
+
+
+def _assessment_json(
+    invoice: DunningInvoice, assessment: DunningAssessment, language: Language
+) -> dict[str, object]:
+    blocker = assessment.blocker
+    return {
+        "invoice_id": str(invoice.invoice_id),
+        "invoice_reference": invoice.invoice_reference,
+        "customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+        "customer_name": invoice.customer_name,
+        "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+        "days_overdue": assessment.days_overdue,
+        "outstanding_amount": str(assessment.outstanding),
+        "can_send": assessment.can_send,
+        # A code for a client to branch on, and a sentence for one that will not.
+        "blocker": blocker.value if blocker else None,
+        "blocker_message": (
+            translate(f"invoice.dunning.blocker.{blocker.value}", language) if blocker else None
+        ),
+        # The step in question, including when it is not yet due, so a screen can
+        # say "step 2 in 4 days". Null only when there is nothing left to send.
+        "next_step": _step_json(assessment.step) if assessment.step else None,
+        # What THIS step will claim. Null where it claims nothing - never "0.00",
+        # which would put the idea of a claim in a friendly reminder.
+        "interest_amount": str(assessment.interest) if assessment.interest is not None else None,
+        "collection_cost_amount": (
+            str(assessment.collection_cost) if assessment.collection_cost is not None else None
+        ),
+        "pay_by": assessment.pay_by.isoformat() if assessment.pay_by else None,
+        # A judgement the assessment surfaces rather than hides: there is no
+        # consumer flag on the customer, so this is inferred (a VAT or KvK number).
+        "is_business": invoice.is_business,
+        "interest_kind": assessment.interest_kind.value,
+        "is_paused": invoice.is_paused,
+        "sent_steps": sorted(invoice.sent_positions),
+    }
+
+
+def _dunning_problem(request: Request, exc: Exception) -> Exception | None:
+    if isinstance(exc, InvoiceNotFound):
+        return problem(
+            request, 404, "errors.sales_invoice_not_found", reason="sales_invoice_not_found"
+        )
+    if isinstance(exc, CustomerNotFoundForPause):
+        return problem(request, 404, "errors.customer_not_found", reason="customer_not_found")
+    if isinstance(exc, NothingToSend):
+        why = exc.assessment.blocker
+        return problem(
+            request,
+            409,
+            "errors.dunning_nothing_to_send",
+            reason="dunning_nothing_to_send",
+            blocker=why.value if why else None,
+            reason_text=(
+                translate(f"invoice.dunning.blocker.{why.value}", request_language(request))
+                if why
+                else ""
+            ),
+        )
+    if isinstance(exc, ReminderNotDelivered):
+        return problem(
+            request,
+            502,
+            "errors.dunning_reminder_not_delivered",
+            reason="dunning_reminder_not_delivered",
+            delivery_status=exc.delivery.status.value,
+        )
+    if isinstance(exc, ReminderAlreadySent):
+        return problem(
+            request, 409, "errors.dunning_reminder_already_sent", reason="dunning_reminder_sent"
+        )
+    if isinstance(exc, LadderInvalid):
+        return problem(
+            request, 422, "errors.dunning_ladder_invalid", reason="dunning_ladder_invalid"
+        )
+    return None
+
+
+def _raise_dunning(request: Request, exc: Exception) -> NoReturn:
+    refusal = _dunning_problem(request, exc)
+    if refusal is None:
+        raise exc
+    raise refusal from exc
+
+
+async def get_dunning_overview(
+    administration_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """Every overdue invoice with what should happen to it today, and the ladder
+    in force. Read-only: nothing is sent by looking."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    language = request_language(request)
+    try:
+        steps, is_default = await service.ladder(
+            administration_id=administration_id, actor_user_id=tenant.user_id
+        )
+        rows = await service.overview(
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return {
+        "ladder": {"is_default": is_default, "steps": [_step_json(s) for s in steps]},
+        "overdue": [_assessment_json(invoice, result, language) for invoice, result in rows],
+    }
+
+
+async def put_dunning_ladder(
+    administration_id: uuid.UUID,
+    body: LadderBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "send",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Replace the whole ladder. Validated first: a ladder that would claim what
+    the law does not allow is refused here, not discovered when a customer is
+    mailed. An empty list is valid and means "chase nobody"."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        steps = [
+            LadderStep(
+                position=s.position,
+                days_after_due=s.days_after_due,
+                kind=StepKind(s.kind),
+                charge_interest=s.charge_interest,
+                charge_collection_cost=s.charge_collection_cost,
+            )
+            for s in body.steps
+        ]
+    except ValueError:
+        raise problem(
+            request, 422, "errors.dunning_ladder_invalid", reason="dunning_ladder_invalid"
+        ) from None
+    try:
+        ordered = await service.set_ladder(
+            administration_id=administration_id, actor_user_id=tenant.user_id, steps=steps
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return {"is_default": False, "steps": [_step_json(s) for s in ordered]}
+
+
+async def get_invoice_dunning(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "create",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+        )
+    ),
+) -> dict[str, object]:
+    """What should happen to ONE invoice today - including "nothing, because...\""""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        invoice, result = await service.assessment(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return _assessment_json(invoice, result, request_language(request))
+
+
+async def send_invoice_reminder(
+    administration_id: uuid.UUID,
+    invoice_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            # Appendix A's "Send sales invoices": a reminder is a claim to somebody
+            # outside the business, the act that permission names (ADR-012).
+            "send",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Send the NEXT reminder step for one invoice, if the ladder says one is due.
+
+    Always the lowest step not yet sent - an invoice far overdue still gets step 1
+    first. 409 with the reason when nothing is due; 502 when the provider did not
+    accept it (nothing is recorded, the step stays due).
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        sent = await service.send_next(
+            administration_id=administration_id,
+            invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+            today=date.today(),
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    step = sent.assessment.step
+    return {
+        "step": _step_json(step) if step else None,
+        "delivery": _delivery_json(sent.delivery),
+        "outstanding_amount": str(sent.assessment.outstanding),
+        "interest_amount": (
+            str(sent.assessment.interest) if sent.assessment.interest is not None else None
+        ),
+        "collection_cost_amount": (
+            str(sent.assessment.collection_cost)
+            if sent.assessment.collection_cost is not None
+            else None
+        ),
+        "pay_by": sent.assessment.pay_by.isoformat() if sent.assessment.pay_by else None,
+    }
+
+
+async def pause_customer_dunning(
+    administration_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    body: PauseBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "send",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Stop chasing this customer's invoices. Idempotent."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        await service.pause(
+            administration_id=administration_id,
+            customer_id=customer_id,
+            actor_user_id=tenant.user_id,
+            reason=body.reason,
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return {"customer_id": str(customer_id), "is_paused": True}
+
+
+async def resume_customer_dunning(
+    administration_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: DunningService = Depends(get_dunning_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "send",
+            "sales_invoice",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """Resume chasing where the ladder stood: steps already sent stay sent."""
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    try:
+        await service.resume(
+            administration_id=administration_id,
+            customer_id=customer_id,
+            actor_user_id=tenant.user_id,
+        )
+    except Exception as exc:
+        _raise_dunning(request, exc)
+    return {"customer_id": str(customer_id), "is_paused": False}

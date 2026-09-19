@@ -857,6 +857,81 @@
     "invoice.email.signoff": {
       "nl": "Met vriendelijke groet,",
       "en": "Kind regards,"
+    },
+    "invoice.dunning.blocker.nothing_outstanding": {
+      "note": "SI-04. Outranks every other reason: a paid or credited invoice is never chased, paused or not.",
+      "nl": "Er staat niets meer open op deze factuur, dus er is niets om te herinneren.",
+      "en": "Nothing is outstanding on this invoice, so there is nothing to remind about."
+    },
+    "invoice.dunning.blocker.paused": {
+      "note": "SI-04. The customer is paused. Says how to resume, because a pause is somebody's decision and the next action is theirs.",
+      "nl": "Herinneringen voor deze klant staan op pauze. Hervat ze bij de klant om de aanmaanprocedure voort te zetten.",
+      "en": "Reminders for this customer are paused. Resume them on the customer to carry on chasing."
+    },
+    "invoice.dunning.blocker.no_due_date": {
+      "note": "SI-04. Without a due date there is no 'overdue' - inventing one would be a payment demand nobody agreed.",
+      "nl": "Deze factuur heeft geen vervaldatum, dus ze kan niet te laat zijn. Er wordt geen herinnering verstuurd.",
+      "en": "This invoice has no due date, so it cannot be overdue. No reminder is sent."
+    },
+    "invoice.dunning.blocker.not_overdue": {
+      "note": "SI-04. The due date itself is not overdue - the customer has until the end of it.",
+      "nl": "Deze factuur is nog niet verlopen. Er wordt geen herinnering verstuurd.",
+      "en": "This invoice is not overdue yet. No reminder is sent."
+    },
+    "invoice.dunning.blocker.step_not_due": {
+      "note": "SI-04. The next step exists but its day has not come.",
+      "nl": "De volgende herinnering is nog niet aan de beurt. Wacht tot het aantal dagen na de vervaldatum is bereikt.",
+      "en": "The next reminder is not due yet. Wait until the configured number of days after the due date."
+    },
+    "invoice.dunning.blocker.ladder_complete": {
+      "note": "SI-04. Every step has been sent. What follows a formal notice (collection, write-off) is a decision, not another email.",
+      "nl": "Alle herinneringen voor deze factuur zijn verstuurd. Overweeg de volgende stap zelf, bijvoorbeeld incasso of afschrijving.",
+      "en": "Every reminder for this invoice has been sent. Decide the next step yourself, for example collection or a write-off."
+    },
+    "invoice.dunning.blocker.interest_rate_missing": {
+      "note": "SI-04. The step charges statutory interest and no rate is loaded for the date. Refused rather than sent without or with a guess. Two ways out, named: load the rates, or stop charging interest on that step.",
+      "nl": "Deze herinnering brengt wettelijke rente in rekening, maar er is geen rentepercentage geladen voor deze periode. Laat een beheerder de wettelijke rente laden, of zet rente uit voor deze stap.",
+      "en": "This reminder charges statutory interest, but no interest rate is loaded for this period. Ask an administrator to load the statutory rates, or turn interest off for this step."
+    },
+    "invoice.reminder.subject.friendly": {
+      "note": "SI-04 / FR-LOC-003. The recipient's language, frozen on the invoice. The gentlest step: a subject that says 'reminder', not 'overdue', because most first reminders go to somebody who simply missed it.",
+      "nl": "Herinnering: factuur {reference} van {supplier}",
+      "en": "Reminder: invoice {reference} from {supplier}"
+    },
+    "invoice.reminder.subject.reminder": {
+      "note": "SI-04. The second, firmer step.",
+      "nl": "Betalingsherinnering: factuur {reference} van {supplier}",
+      "en": "Payment reminder: invoice {reference} from {supplier}"
+    },
+    "invoice.reminder.subject.formal_notice": {
+      "note": "SI-04. NEEDS LEGAL REVIEW. 'Aanmaning' is the word the WIK's 14-day requirement attaches to, so it is carried in Dutch and named plainly in English.",
+      "nl": "Aanmaning: factuur {reference} van {supplier}",
+      "en": "Formal notice of payment: invoice {reference} from {supplier}"
+    },
+    "invoice.reminder.intro.friendly": {
+      "note": "SI-04. Assumes nothing: 'may have slipped your attention'. No claim beyond the invoice itself - no interest, no costs. The invoice is attached again so the customer has what they need to pay.",
+      "nl": "Mogelijk is het aan uw aandacht ontsnapt: factuur {reference} van {supplier} met vervaldatum {due_date} staat nog open voor {outstanding}. In de bijlage vindt u de factuur nogmaals.",
+      "en": "It may have slipped your attention: invoice {reference} from {supplier}, due on {due_date}, is still open for {outstanding}. The invoice is attached again."
+    },
+    "invoice.reminder.intro.reminder": {
+      "note": "SI-04. {days} is whole days past the due date. Firmer, still no claim beyond the invoice.",
+      "nl": "Factuur {reference} van {supplier} is {days} dagen na de vervaldatum ({due_date}) nog niet betaald. Het openstaande bedrag is {outstanding}. Wij verzoeken u dit alsnog te voldoen.",
+      "en": "Invoice {reference} from {supplier} is still unpaid {days} days after its due date ({due_date}). The outstanding amount is {outstanding}. Please pay it as soon as possible."
+    },
+    "invoice.reminder.intro.formal_notice": {
+      "note": "SI-04. NEEDS LEGAL REVIEW. The aanmaning: it must give the debtor a last chance to pay before costs are claimed, so the deadline is stated as a date ({pay_by}), not as 'promptly'.",
+      "nl": "Ondanks eerdere herinneringen hebben wij geen betaling ontvangen voor factuur {reference} van {supplier} (vervaldatum {due_date}). Het openstaande bedrag is {outstanding}. Dit is een aanmaning: wij verzoeken u dit bedrag uiterlijk {pay_by} te betalen.",
+      "en": "Despite earlier reminders we have not received payment for invoice {reference} from {supplier} (due {due_date}). The outstanding amount is {outstanding}. This is a formal notice: please pay this amount by {pay_by}."
+    },
+    "invoice.reminder.interest": {
+      "note": "SI-04. NEEDS LEGAL REVIEW. {interest} is the statutory interest accrued up to the day of sending. Says it keeps accruing, because the amount stated is a snapshot.",
+      "nl": "Tot en met vandaag is {interest} aan wettelijke rente opgebouwd; de rente loopt door tot de dag van betaling.",
+      "en": "Statutory interest of {interest} has accrued up to today and continues to accrue until payment."
+    },
+    "invoice.reminder.collection_cost": {
+      "note": "SI-04. NEEDS LEGAL REVIEW. A CONDITIONAL statement: costs are charged if payment is not received by {pay_by}. It announces the cost the WIK allows on this debt ({cost}), it does not add it to what is owed today.",
+      "nl": "Betaalt u niet uiterlijk {pay_by}, dan brengen wij buitengerechtelijke incassokosten in rekening van {cost}.",
+      "en": "If payment is not received by {pay_by}, we will charge extrajudicial collection costs of {cost}."
     }
   }
 }

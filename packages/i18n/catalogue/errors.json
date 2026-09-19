@@ -410,6 +410,26 @@
       "nl": "De factuurdatum valt in geen enkele open periode. Controleer de datum; een gesloten periode corrigeert u met een suppletie, niet door in een andere periode te boeken.",
       "en": "The invoice date falls in no open period. Check the date; a closed period is corrected with a suppletie, not by posting into a different one."
     },
+    "errors.dunning_nothing_to_send": {
+      "note": "SI-04. {reason_text} is the specific blocker sentence (invoice.dunning.blocker.*), already translated; the machine code travels beside it as `blocker` so a screen can react.",
+      "nl": "Er kan nu geen herinnering worden verstuurd. {reason_text}",
+      "en": "No reminder can be sent right now. {reason_text}"
+    },
+    "errors.dunning_reminder_not_delivered": {
+      "note": "SI-04. The provider did not accept the message. Nothing was recorded, so the step is still due and the person can try again.",
+      "nl": "De herinnering is niet door de e-mailprovider geaccepteerd en is dus niet verstuurd. Er is niets vastgelegd; probeer het zo opnieuw.",
+      "en": "The e-mail provider did not accept the reminder, so it was not sent. Nothing was recorded; try again shortly."
+    },
+    "errors.dunning_reminder_already_sent": {
+      "note": "SI-04. Two requests raced to send one step; the database let one record it.",
+      "nl": "Deze herinneringsstap is al verstuurd voor deze factuur. Vernieuw de pagina om de huidige stand te zien.",
+      "en": "This reminder step has already been sent for this invoice. Refresh the page to see the current state."
+    },
+    "errors.dunning_ladder_invalid": {
+      "note": "SI-04. Every rule a ladder must satisfy, in one sentence, because the specific one is an internal message (FR-UX-007). Collection cost only on a formal notice is the one that protects the customer.",
+      "nl": "Deze reeks herinneringen is ongeldig. Gebruik oplopende dagen vanaf 1, ten hoogste zes stappen, en laat alleen de aanmaning (als laatste stap) incassokosten in rekening brengen.",
+      "en": "This reminder ladder is not valid. Use increasing days from 1, at most six steps, and let only the formal notice (as the last step) charge collection costs."
+    },
     "errors.payment_no_open_period": {
       "note": "FR-GL-007. The payment date falls in no open period. Says to check the date: a receipt belongs to the period the money arrived in.",
       "nl": "De betaaldatum valt in geen enkele open periode. Controleer de datum; een betaling wordt geboekt in de periode waarin het geld binnenkwam.",
