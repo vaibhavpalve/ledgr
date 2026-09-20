@@ -1,0 +1,515 @@
+/*
+ * Ledgr UI primitives (design/DESIGN.md section 5, ADR-080).
+ *
+ * Tokens only: every colour, radius, space and family below is a handoff
+ * token from @ledgr/design-tokens/ui-tokens.css. The few literal pixel sizes
+ * (heights, type sizes) are the spec's own numbers for that component.
+ * Class names are `ui-*` so nothing here can collide with the legacy sheets.
+ */
+
+.ui-root {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  -webkit-font-smoothing: antialiased;
+}
+.ui-root *,
+.ui-root *::before,
+.ui-root *::after {
+  box-sizing: border-box;
+}
+.ui-root a {
+  color: inherit;
+  text-decoration: none;
+}
+.ui-root button,
+.ui-root input,
+.ui-root select {
+  font-family: inherit;
+}
+
+.ui-serif {
+  font-family: var(--font-serif);
+  font-weight: 500;
+}
+.ui-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Button ------------------------------------------------------------ */
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: 500 14px/1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+.ui-btn:hover {
+  background: var(--surface-sunken);
+}
+.ui-btn--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+  font-weight: 600;
+}
+.ui-btn--primary:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+.ui-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--brand);
+  padding: 0 var(--space-2);
+}
+.ui-btn--ghost:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+.ui-btn--sm {
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+}
+.ui-btn--lg {
+  height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ui-btn--xl {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.ui-btn--icon {
+  width: 40px;
+  padding: 0;
+}
+.ui-btn--block {
+  width: 100%;
+}
+.ui-btn:disabled,
+.ui-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-btn svg {
+  flex-shrink: 0;
+}
+
+/* ---- Field / Input ------------------------------------------------------ */
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ui-field__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ui-label {
+  font: 500 13px/16px var(--font-sans);
+  color: var(--ink);
+}
+.ui-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 15px;
+}
+.ui-input--lg {
+  height: 48px;
+}
+.ui-input::placeholder {
+  color: var(--ink-muted);
+}
+.ui-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.ui-help {
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.ui-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font: 400 13px/20px var(--font-sans);
+  color: var(--danger);
+}
+.ui-error svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.ui-textbutton {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--brand);
+  font: 500 13px/16px var(--font-sans);
+  cursor: pointer;
+}
+.ui-textbutton:hover {
+  text-decoration: underline;
+}
+
+/* ---- Badge -------------------------------------------------------------- */
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  font: 500 12px/16px var(--font-sans);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.ui-badge--booked {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.ui-badge--draft {
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+.ui-badge--overdue {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+.ui-badge--review,
+.ui-badge--syncing {
+  background: var(--info-tint);
+  color: var(--info);
+}
+.ui-badge--delta {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* ---- Card, KPI ---------------------------------------------------------- */
+
+.ui-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.ui-card--pad {
+  padding: 20px;
+}
+.ui-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 20px;
+}
+.ui-card__title {
+  margin: 0;
+  font: 600 18px/26px var(--font-sans);
+}
+
+.ui-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 132px;
+  padding: 20px;
+}
+.ui-kpi__label {
+  margin: 0;
+  font: 500 13px/16px var(--font-sans);
+  color: var(--ink-muted);
+}
+.ui-kpi__value {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 500;
+}
+.ui-kpi__caption {
+  margin: 0;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-muted);
+}
+.ui-kpi__caption .ui-badge {
+  margin-right: 6px;
+}
+
+/* ---- Nav item ----------------------------------------------------------- */
+
+.ui-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--ink-muted);
+  font: 500 14px/1 var(--font-sans);
+  background: transparent;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-nav:hover {
+  background: var(--border-subtle);
+  color: var(--ink);
+}
+.ui-nav[aria-current="page"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ui-nav svg {
+  flex-shrink: 0;
+}
+.ui-nav__label {
+  flex-grow: 1;
+}
+.ui-navgroup {
+  padding: 18px var(--space-3) 6px;
+  font: 600 12px/16px var(--font-sans);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* ---- Data table / rows -------------------------------------------------- */
+
+.ui-tablewrap {
+  overflow-x: auto;
+}
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 13px/20px var(--font-sans);
+}
+.ui-table caption {
+  text-align: left;
+}
+.ui-table th {
+  padding: 0 20px;
+  height: 40px;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font: 500 13px/16px var(--font-sans);
+  text-align: left;
+  white-space: nowrap;
+}
+.ui-table td {
+  padding: 0 20px;
+  height: 51px;
+  border-top: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.ui-table th.ui-num,
+.ui-table td.ui-num {
+  text-align: right;
+}
+.ui-table tr[aria-selected="true"] td {
+  background: var(--brand-tint);
+}
+.ui-table tfoot td {
+  font-weight: 600;
+}
+
+.ui-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ui-amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.ui-amount--overdrawn {
+  color: var(--danger);
+}
+
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ui-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- Avatar ------------------------------------------------------------- */
+
+.ui-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font: 700 13px/1 var(--font-sans);
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.ui-avatar--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ui-avatar--info {
+  background: var(--info);
+  color: var(--surface-raised);
+}
+.ui-avatar--ink {
+  background: var(--ink);
+  color: var(--surface);
+}
+.ui-avatar--tint {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.ui-avatar--round {
+  border-radius: 50%;
+}
+
+/* ---- Empty state -------------------------------------------------------- */
+
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--ink-muted);
+}
+.ui-empty__title {
+  margin: 0;
+  font: 600 15px/22px var(--font-sans);
+  color: var(--ink);
+}
+.ui-empty__body {
+  margin: 0;
+  font: 400 13px/20px var(--font-sans);
+  max-width: 34ch;
+}
+
+/* ---- Cash chart --------------------------------------------------------- */
+
+.ui-chart {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 380 / 176;
+}
+.ui-chart svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ui-chart__hit {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+.ui-chart__rule {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: var(--border);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.ui-chart__dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 2px solid var(--surface-raised);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ui-chart__tip {
+  position: absolute;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  color: var(--surface);
+  font: 400 12px/16px var(--font-mono);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ui-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Logo --------------------------------------------------------------- */
+
+.ui-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.ui-logo svg {
+  color: var(--brand);
+}
+.ui-logo__word {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.3px;
+}
