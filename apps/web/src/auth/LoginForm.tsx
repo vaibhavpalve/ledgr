@@ -22,11 +22,14 @@ import { getPasskey, PasskeyUnavailableError } from "./webauthn";
 export function LoginForm({
   api,
   onSwitchToSignup,
+  onForgotPassword,
   onSignedIn,
   onGoogleStart,
 }: {
   api: AuthApi;
   onSwitchToSignup: () => void;
+  /** IAM-018's recovery screen. Omitted, the link is not drawn. */
+  onForgotPassword?: () => void;
   onSignedIn: (result: AuthResult) => void;
   /** Called with the URL to navigate to for Google sign-in — `Shell` owns
    * the actual `window.location` assignment, the same "the composition
@@ -107,6 +110,18 @@ export function LoginForm({
             }
           />
         </div>
+        {onForgotPassword ? (
+          <div className="login-forgot">
+            <button
+              type="button"
+              className="ui-textbutton"
+              data-testid="login-forgot"
+              onClick={onForgotPassword}
+            >
+              {t("auth.sign_in.forgot")}
+            </button>
+          </div>
+        ) : null}
 
         {problem ? (
           <p role="alert" className="ui-error" data-testid="login-error">

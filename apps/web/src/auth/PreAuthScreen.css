@@ -217,6 +217,11 @@
   flex-direction: column;
   gap: 18px;
 }
+.login-forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
 .login-actions {
   display: flex;
   flex-direction: column;

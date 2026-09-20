@@ -4,6 +4,7 @@ import { I18nProvider, useI18n, type FormattingLocale, type Language } from "@le
 
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import {
+  ForgotPasswordRoute,
   GoogleCallbackRoute,
   LoginRoute,
   MfaRoute,
@@ -131,6 +132,7 @@ function Routed({ services }: { services?: Partial<Services> }) {
       <Route element={<RedirectIfAuthenticated />}>
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/signup" element={<SignupRoute />} />
+        <Route path="/forgot-password" element={<ForgotPasswordRoute />} />
       </Route>
       {/* The public marketing page (ADR-080). "/" stays the signed-in home. */}
       <Route path="/welcome" element={<Website />} />

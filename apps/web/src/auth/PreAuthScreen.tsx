@@ -7,7 +7,7 @@ import { LanguageSwitcher } from "../LanguageSwitcher";
 import { ThemeButton } from "../theme/ThemeButton";
 import { Logo } from "../ui";
 
-export type PreAuthScreenKind = "login" | "signup" | "mfa";
+export type PreAuthScreenKind = "login" | "signup" | "mfa" | "recover";
 
 const HEADING_KEY: Record<PreAuthScreenKind, string> = {
   login: "auth.sign_in.title",
@@ -17,6 +17,7 @@ const HEADING_KEY: Record<PreAuthScreenKind, string> = {
   // screens, but reuses this same frame rather than inventing a second one,
   // since nothing about that layout is specific to signing in or signing up.
   mfa: "auth.mfa.heading",
+  recover: "auth.recover.heading",
 };
 
 const POINTS = ["permanent", "exact", "passkey"] as const;
@@ -92,8 +93,10 @@ export function PreAuthScreen({
             <h1 className="pre-auth__heading" data-testid="pre-auth-heading">
               {t(HEADING_KEY[screen])}
             </h1>
-            {screen === "login" ? (
-              <p className="pre-auth__subtitle">{t("auth.sign_in.subtitle")}</p>
+            {screen === "login" || screen === "recover" ? (
+              <p className="pre-auth__subtitle">
+                {t(screen === "login" ? "auth.sign_in.subtitle" : "auth.recover.subtitle")}
+              </p>
             ) : null}
           </header>
 

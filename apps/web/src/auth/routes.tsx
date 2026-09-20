@@ -7,6 +7,7 @@ import { AccountApi } from "../account/api";
 import { intendedPath } from "../router/guards";
 import { useAuth } from "./AuthProvider";
 import { GoogleCallback } from "./GoogleCallback";
+import { ForgotPasswordForm } from "./ForgotPasswordForm";
 import { LoginForm } from "./LoginForm";
 import { MfaEnrollment } from "./MfaEnrollment";
 import { PreAuthScreen } from "./PreAuthScreen";
@@ -57,11 +58,27 @@ export function LoginRoute() {
           navigate("/signup", { state: location.state });
         }}
         onSignedIn={afterAuth}
+        onForgotPassword={() => navigate("/forgot-password", { state: location.state })}
         onGoogleStart={(authorizationUrl) => {
           // A full page navigation, not a fetch: this is Google's own
           // consent screen, outside this SPA entirely.
           window.location.href = authorizationUrl;
         }}
+      />
+    </PreAuthScreen>
+  );
+}
+
+export function ForgotPasswordRoute() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { authApi } = useAuth();
+
+  return (
+    <PreAuthScreen screen="recover">
+      <ForgotPasswordForm
+        api={authApi}
+        onBackToLogin={() => navigate("/login", { state: location.state })}
       />
     </PreAuthScreen>
   );

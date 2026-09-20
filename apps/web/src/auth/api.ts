@@ -126,6 +126,16 @@ export class AuthApi {
     }).then(toAuthResult);
   }
 
+  /** IAM-018: a new password on proof of an authenticator code. Signs no one in;
+   * the caller sends the person to the login screen. */
+  recover(email: string, code: string, newPassword: string): Promise<void> {
+    return this.call("POST", "/v1/auth/recover", {
+      email,
+      code,
+      new_password: newPassword,
+    }).then(() => undefined);
+  }
+
   logout(): Promise<void> {
     return this.call("POST", "/v1/auth/logout", undefined, { authenticated: true }).then(
       () => undefined,
