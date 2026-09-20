@@ -120,6 +120,8 @@ class DashboardSummary:
     vat_period_start: date
     vat_period_end: date
     items_needing_action: tuple[ActionItem, ...]
+    #: Draft expenses awaiting review: the count the Review nav item shows.
+    receipts_to_review: int = 0
 
 
 def liquid_account_ids(accounts: Sequence[ChartAccount]) -> frozenset[uuid.UUID]:
@@ -265,11 +267,13 @@ def summarize(
     logic.
     """
     liquid_ids = liquid_account_ids(chart_accounts)
+    items = build_action_items(invoices=invoices, expenses=expenses, today=today)
     return DashboardSummary(
         cash_position=cash_position(trial_balance_rows, liquid_ids),
         receivables=receivables_total(receivable_rows),
         vat_estimate=vat_estimate(output_vat=output_vat, input_vat=input_vat),
         vat_period_start=vat_period_start,
         vat_period_end=vat_period_end,
-        items_needing_action=build_action_items(invoices=invoices, expenses=expenses, today=today),
+        items_needing_action=items,
+        receipts_to_review=sum(1 for item in items if item.kind is ActionItemKind.DRAFT_EXPENSE),
     )

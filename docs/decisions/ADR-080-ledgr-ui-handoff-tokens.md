@@ -33,8 +33,9 @@ CSS-to-TypeScript parity tests behind it.
 6. **Home shows only what the API supplies.** No deltas, chart, filing deadline, per-item amounts,
    Review count, bell or bank step: none has a data source. The empty state (all three figures
    zero, nothing needing attention) swaps the bank step for "Add a customer".
-7. **Website** lives at `/welcome` (public), English only, copy verbatim from the reference. `/`
-   remains the signed-in home. Its footer links point nowhere yet and are plain text.
+7. **Recovery and dashboard follow-ups.** `POST /v1/auth/recover` (IAM-018) and a web forgot-password screen exist now. The dashboard returns `receipts_to_review` (Review nav count), `customer_name` and, for draft receipts, `amount`. Still open, because each needs a ledger-API change: a date-bounded balance for a monthly `cash_history` (and so deltas), and a confirmed statutory BTW filing rule for a due date. Invoice rows carry no amount because totals need the VAT rules applied line by line.
+8. **Website** lives at `/welcome` (public), English only, copy verbatim from the reference. `/`
+   remains the signed-in home. Its footer links point nowhere yet and are plain text. Three reference lines were changed because the product cannot back them: Create account (not a free trial), the bank-import tick dropped, and the 42-days mockup line.
 
 ## Consequences
 

@@ -167,6 +167,24 @@ describe("a company with bookings", () => {
     expect(screen.queryByTestId("home-error")).toBeNull();
   });
 
+  it("shows a draft receipt's amount in the mono figure style and no amount for an invoice", async () => {
+    home({
+      ...base,
+      receipts_to_review: 1,
+      items_needing_action: [
+        { kind: "draft_expense", id: "e1", description: "Receipt", amount: "52.80" },
+        { kind: "draft_invoice", id: "i1", description: "Draft invoice", amount: null },
+      ],
+    });
+    await waitFor(() => expect(screen.getByTestId("home-items-list")).not.toBeNull());
+    const [receipt, invoice] = screen.getAllByTestId("home-item");
+    expect(receipt?.querySelector(".ui-amount")?.textContent?.replace("\u00a0", " ")).toBe(
+      "€ 52,80",
+    );
+    expect(invoice?.querySelector(".ui-amount")).toBeNull();
+    expect(screen.getByText("1 receipt still needs review.")).not.toBeNull();
+  });
+
   it("does not invent a change figure, a chart or a filing deadline", async () => {
     home(base);
     await waitFor(() => expect(screen.getByTestId("home-figures")).not.toBeNull());

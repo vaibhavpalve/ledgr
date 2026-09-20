@@ -362,3 +362,41 @@ def test_no_floats_anywhere_in_the_money_path() -> None:
     assert isinstance(summary.receivables, Decimal)
     assert isinstance(summary.vat_estimate, Decimal)
     assert summary.vat_estimate == Decimal("66.67")
+
+
+# --- what the Review nav item and the attention rows read ---------------------
+
+
+def test_summarize_counts_the_draft_receipts_awaiting_review() -> None:
+    summary = summarize(
+        trial_balance_rows=[],
+        chart_accounts=[],
+        receivable_rows=[],
+        output_vat=Decimal("0.00"),
+        input_vat=Decimal("0.00"),
+        vat_period_start=date(2026, 1, 1),
+        vat_period_end=TODAY,
+        invoices=[_invoice(status=InvoiceStatus.DRAFT)],
+        expenses=[
+            _expense(supplier="Papierhuis", gross_amount=Decimal("52.80")),
+            _expense(supplier="Kantoor BV", gross_amount=Decimal("10.00")),
+            _expense(status=ExpenseStatus.POSTED),
+        ],
+        today=TODAY,
+    )
+
+    # Two drafts; the posted one and the draft invoice are not receipts to review.
+    assert summary.receipts_to_review == 2
+
+
+def test_a_draft_receipt_row_carries_its_gross_amount_and_an_invoice_row_its_customer() -> None:
+    items = build_action_items(
+        invoices=[_invoice(status=InvoiceStatus.DRAFT, customer_name="Studio Noord")],
+        expenses=[_expense(supplier="Papierhuis", gross_amount=Decimal("52.80"))],
+        today=TODAY,
+    )
+
+    receipt = next(item for item in items if item.kind is ActionItemKind.DRAFT_EXPENSE)
+    invoice = next(item for item in items if item.kind is ActionItemKind.DRAFT_INVOICE)
+    assert receipt.gross_amount == Decimal("52.80")
+    assert invoice.customer_name == "Studio Noord"

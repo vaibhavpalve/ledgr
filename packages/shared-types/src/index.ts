@@ -901,6 +901,8 @@ export interface DashboardView {
   readonly vat_period_end: string;
   /** FR-UX-005: already prioritised by the server - a client must not re-sort. */
   readonly items_needing_action: readonly DashboardActionItemView[];
+  /** Draft receipts awaiting review, for the Review nav item. Absent from older servers. */
+  readonly receipts_to_review?: number;
 }
 
 /** Mirrors `api.dashboard.model.ActionItemKind`. */
@@ -916,6 +918,10 @@ export interface DashboardActionItemView {
   readonly kind: DashboardActionItemKind;
   readonly id: string;
   readonly description: string;
+  /** Invoice items: who it is for. Also inside description. */
+  readonly customer_name?: string | null;
+  /** Draft receipts only: the gross on the row. An invoice item carries none. */
+  readonly amount?: string | null;
 }
 
 /* ==========================================================================

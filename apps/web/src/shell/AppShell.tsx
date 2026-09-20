@@ -23,8 +23,9 @@ import "./Shell.css";
 import { useAuth } from "../auth/AuthProvider";
 import { ClientHeader } from "../client/ClientHeader";
 import { useSwitcherShortcut } from "../client/ClientSwitcher";
+import { useServices } from "../session/ServicesProvider";
 import { useSession } from "../session/SessionProvider";
-import { Logo, NavGroup, NavItem } from "../ui";
+import { Badge, Logo, NavGroup, NavItem } from "../ui";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { QuickSearch } from "./QuickSearch";
 import { UserMenu } from "./UserMenu";
@@ -123,6 +124,31 @@ export function AppShell() {
   const openSearch = useCallback(() => setSearchOpen(true), []);
   useSwitcherShortcut(openSearch);
 
+  // The count beside "Review": draft receipts awaiting a decision, from the same
+  // dashboard call Home makes. Secondary chrome, so a failure just shows no badge.
+  const { dashboard } = useServices();
+  const administrationId = administration?.id ?? null;
+  const fiscalYearId = fiscalYear?.id ?? null;
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (administrationId === null || fiscalYearId === null) {
+      setReviewCount(null);
+      return;
+    }
+    let cancelled = false;
+    void Promise.resolve()
+      .then(() => dashboard.getDashboard(administrationId, fiscalYearId))
+      .then((summary) => {
+        if (!cancelled) setReviewCount(summary.receipts_to_review ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setReviewCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboard, administrationId, fiscalYearId]);
+
   const mainRef = useRef<HTMLElement>(null);
   const mounted = useRef(false);
   useEffect(() => {
@@ -188,6 +214,13 @@ export function AppShell() {
                   end={item.end}
                   icon={item.icon}
                   testId={`nav-${item.id}`}
+                  badge={
+                    item.id === REVIEW.id && reviewCount !== null && reviewCount > 0 ? (
+                      <Badge variant="review" data-testid="nav-review-count">
+                        {reviewCount}
+                      </Badge>
+                    ) : undefined
+                  }
                 >
                   {t(item.labelKey)}
                 </NavItem>

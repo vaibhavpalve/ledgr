@@ -126,7 +126,8 @@ export function HomeScreen({
     isZero(summary.cash_position) &&
     isZero(summary.receivables) &&
     isZero(summary.vat_estimate);
-  const draftReceipts = items.filter((item) => item.kind === "draft_expense").length;
+  const draftReceipts =
+    summary?.receipts_to_review ?? items.filter((item) => item.kind === "draft_expense").length;
   const recent = [...invoices]
     .sort((a, b) => b.invoice_date.localeCompare(a.invoice_date))
     .slice(0, 4);
@@ -275,6 +276,9 @@ export function HomeScreen({
                                   placed as-is rather than recomposed from `kind`. */}
                               {item.description}
                             </button>
+                            <span className="home__item-amount">
+                              {item.amount ? <Amount value={item.amount} /> : null}
+                            </span>
                             <Button
                               size="sm"
                               className="home__item-action"

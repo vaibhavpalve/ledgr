@@ -108,6 +108,11 @@ def _action_item_json(item: ActionItem, language: Language) -> dict[str, object]
         "kind": item.kind.value,
         "id": str(item.id),
         "description": description,
+        # The customer (invoice items) and the amount (draft receipts, whose gross is
+        # already on the row). An invoice item carries no amount: its total needs the
+        # VAT rules applied line by line, which is not a dashboard-sized query.
+        "customer_name": item.customer_name,
+        "amount": str(item.gross_amount) if item.gross_amount is not None else None,
     }
 
 
@@ -123,6 +128,7 @@ def _dashboard_json(summary: DashboardSummary, language: Language) -> dict[str, 
         "items_needing_action": [
             _action_item_json(item, language) for item in summary.items_needing_action
         ],
+        "receipts_to_review": summary.receipts_to_review,
     }
 
 

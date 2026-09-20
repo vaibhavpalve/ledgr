@@ -93,6 +93,11 @@
 .home__item-row:hover {
   text-decoration: underline;
 }
+.home__item-amount {
+  width: 92px;
+  flex-shrink: 0;
+  text-align: right;
+}
 .home__item-action {
   width: 128px;
   flex-shrink: 0;
@@ -205,10 +210,14 @@
     width: auto;
     padding-inline: var(--space-3);
   }
-  .home__item-action {
+  .home__item-amount {
     order: 2;
     width: auto;
     margin-left: auto;
+  }
+  .home__item-action {
+    order: 2;
+    width: auto;
   }
   .home__item-row {
     order: 3;
