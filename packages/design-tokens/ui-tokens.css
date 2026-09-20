@@ -1,0 +1,130 @@
+/* Ledgr design tokens. Source of truth: tokens.json. Do not hand-edit values in components. */
+
+:root,
+[data-theme="light"] {
+  --surface: #f7f6f2;
+  --surface-raised: #ffffff;
+  --surface-sunken: #efede6;
+  --border-subtle: #e2ded2;
+  --border: #8a8578;
+  --ink: #1c211f;
+  --ink-muted: #565d58;
+  --brand: #6b4a2f;
+  --brand-hover: #553a24;
+  --brand-tint: #f1e6da;
+  --on-brand: #ffffff;
+  --accent: #e8b93a;
+  --on-accent: #2b1d0e;
+  --panel: #4a3220;
+  --on-panel: #ffffff;
+  --on-panel-muted: #eadfd2;
+  --danger: #a3312b;
+  --danger-tint: #f8e3e1;
+  --warning: #8a5a00;
+  --warning-tint: #fbf0d6;
+  --info: #1d6b7a;
+  --info-tint: #e0f0f3;
+  --focus: #6b4a2f;
+  --shadow-sm: 0 1px 2px rgba(28,33,31,0.08);
+  --shadow-md: 0 4px 12px rgba(28,33,31,0.12);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --surface: #161a18;
+  --surface-raised: #1f2421;
+  --surface-sunken: #111412;
+  --border-subtle: #2d332f;
+  --border: #6b736d;
+  --ink: #eceee9;
+  --ink-muted: #a3aaa4;
+  --brand: #d9b48f;
+  --brand-hover: #e6c8a8;
+  --brand-tint: #33281f;
+  --on-brand: #2b1d0e;
+  --accent: #e8b93a;
+  --on-accent: #161a18;
+  --panel: #33281f;
+  --on-panel: #eceee9;
+  --on-panel-muted: #d8c8b6;
+  --danger: #f08a80;
+  --danger-tint: #3d1f1c;
+  --warning: #e0b04a;
+  --warning-tint: #3a2e12;
+  --info: #6cc4d4;
+  --info-tint: #14303a;
+  --focus: #d9b48f;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.6);
+  color-scheme: dark;
+}
+
+/* Follow the OS unless a data-theme is set explicitly. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #161a18;
+    --surface-raised: #1f2421;
+    --surface-sunken: #111412;
+    --border-subtle: #2d332f;
+    --border: #6b736d;
+    --ink: #eceee9;
+    --ink-muted: #a3aaa4;
+    --brand: #d9b48f;
+    --brand-hover: #e6c8a8;
+    --brand-tint: #33281f;
+    --on-brand: #2b1d0e;
+    --accent: #e8b93a;
+    --on-accent: #161a18;
+    --panel: #33281f;
+    --on-panel: #eceee9;
+    --on-panel-muted: #d8c8b6;
+    --danger: #f08a80;
+    --danger-tint: #3d1f1c;
+    --warning: #e0b04a;
+    --warning-tint: #3a2e12;
+    --info: #6cc4d4;
+    --info-tint: #14303a;
+    --focus: #d9b48f;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+}
+
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+  --font-serif: Newsreader, Georgia, serif;
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* Fonts: load from Google Fonts (or self-host):
+   Newsreader 400,500 · Hanken Grotesk 400,500,600,700 · IBM Plex Mono 400,500 */
+
+/* Type styles */
+.display-lg { font-family: var(--font-serif); font-size: 48px; line-height: 52px; font-weight: 500; letter-spacing: -0.5px; }
+.display-md { font-family: var(--font-serif); font-size: 32px; line-height: 38px; font-weight: 500; letter-spacing: -0.25px; }
+.heading-lg { font-family: var(--font-sans); font-size: 22px; line-height: 30px; font-weight: 600; }
+.heading-md { font-family: var(--font-sans); font-size: 17px; line-height: 24px; font-weight: 600; }
+.body { font-family: var(--font-sans); font-size: 15px; line-height: 22px; font-weight: 400; }
+.body-sm { font-family: var(--font-sans); font-size: 13px; line-height: 20px; font-weight: 400; }
+.label { font-family: var(--font-sans); font-size: 13px; line-height: 16px; font-weight: 500; }
+.caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 400; }
+.figure-lg { font-family: var(--font-mono); font-size: 28px; line-height: 34px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.figure { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 400; font-variant-numeric: tabular-nums; }
+
+/* Focus: 2px solid, 2px offset, on every interactive element. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

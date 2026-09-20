@@ -5,6 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 // property referenced before it is declared resolves to nothing rather than to
 // a sensible default (ADR-055).
 import "@ledgr/design-tokens/tokens.css";
+// The Ledgr UI handoff tokens and fonts (design/, ADR-080). Different names from
+// the `--ledgr-*` set above, so the two coexist while screens move across.
+import "@ledgr/design-tokens/ui-tokens.css";
+import "@ledgr/design-tokens/ui-fonts.css";
 import "./accessibility.css";
 import "./app.css";
 import { App } from "./App";

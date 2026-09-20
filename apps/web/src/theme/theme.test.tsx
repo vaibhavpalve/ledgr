@@ -148,8 +148,10 @@ describe("the pre-paint script in index.html", () => {
   it("declares a theme-color for each theme, matching the tokens", () => {
     // These cannot be custom properties — the address bar cannot read CSS —
     // so they are literals, and literals are exactly what drifts.
-    expect(INDEX_HTML).toContain('content="#fafafa"');
-    expect(INDEX_HTML).toContain('content="#09090b"');
+    // Since ADR-080 the page ground is the handoff's `surface`
+    // (design/tokens/tokens.css: light #f7f6f2, dark #161a18).
+    expect(INDEX_HTML).toContain('content="#f7f6f2"');
+    expect(INDEX_HTML).toContain('content="#161a18"');
   });
 });
 

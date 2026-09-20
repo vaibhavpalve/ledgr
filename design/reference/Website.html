@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Ledgr website</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lg{--surface:#f7f6f2;--raised:#ffffff;--sunken:#efede6;--line:#e2ded2;--border:#8a8578;--ink:#1c211f;--muted:#565d58;--brand:#6b4a2f;--brand-h:#553a24;--brand-text:var(--brand);--tint:#f1e6da;--on-brand:#ffffff;--accent:#e8b93a;--on-accent:#2b1d0e;--panel:#4a3220;--panel-ink:#ffffff;--panel-muted:#eadfd2;--panel-line:rgba(255,255,255,.28);--danger:#a3312b;--danger-t:#f8e3e1;--warn:#8a5a00;--warn-t:#fbf0d6;--info:#1d6b7a;--info-t:#e0f0f3}
+.lg.dark{--surface:#161a18;--raised:#1f2421;--sunken:#111412;--line:#2d332f;--border:#6b736d;--ink:#eceee9;--muted:#a3aaa4;--brand:#d9b48f;--brand-h:#e6c8a8;--tint:#33281f;--on-brand:#2b1d0e;--accent:#e8b93a;--on-accent:#161a18;--panel:#33281f;--panel-ink:#eceee9;--panel-muted:#d8c8b6;--panel-line:rgba(236,238,233,.25);--danger:#f08a80;--danger-t:#3d1f1c;--warn:#e0b04a;--warn-t:#3a2e12;--info:#6cc4d4;--info-t:#14303a}
+.lg *{box-sizing:border-box}
+.lg a{text-decoration:none;color:inherit}
+.lg button{font-family:inherit}
+.serif{font-family:'Newsreader',Georgia,serif}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mark{background:var(--accent);color:var(--on-accent);padding:0 14px;border-radius:12px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 24px;border-radius:10px;border:1px solid var(--border);background:var(--raised);color:var(--ink);font:600 16px/1 'Hanken Grotesk',sans-serif;cursor:pointer}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-h);border-color:var(--brand-h)}
+.btn:focus-visible,.nl:focus-visible{outline:2px solid var(--brand-text);outline-offset:2px}
+.nl{font:500 15px/1 'Hanken Grotesk',sans-serif;color:var(--ink);padding:8px 4px}
+.nl:hover{color:var(--brand-text)}
+.eyebrow{font:600 13px/16px 'Hanken Grotesk',sans-serif;letter-spacing:1.4px;color:var(--brand-text)}
+.h2{margin:0;font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:52px;line-height:56px;letter-spacing:-1px}
+.lead{margin:0;font-size:19px;line-height:29px;color:var(--muted)}
+.tick{display:flex;gap:12px;align-items:flex-start;font-size:16px;line-height:24px}
+.tick svg{flex-shrink:0;margin-top:2px;color:var(--brand-text)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font:500 12px/16px 'Hanken Grotesk',sans-serif;background:var(--sunken);color:var(--ink)}
+.b-ok{background:var(--tint);color:var(--brand-text)}
+.b-draft{background:var(--warn-t);color:var(--warn)}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:14px}
+.shadow{box-shadow:0 24px 60px rgba(28,26,23,.18)}
+.fcol{font:400 15px/32px 'Hanken Grotesk',sans-serif;color:var(--muted)}
+</style>
+</head>
+<body>
+
+
+<div class="lg " style="width: 1440px; height: 3560px; background: var(--surface); color: var(--ink); font-family: 'Hanken Grotesk', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden;">
+
+<header style="height: 88px; padding: 0 80px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+  <div style="display: flex; align-items: center; gap: 10px; color: var(--ink);"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="7"/><path d="M11 3v26M11 12h18M11 20h18"/></svg><span class="serif" style="font-size: 30px; font-weight: 500; letter-spacing: -0.3px;">Ledgr</span></div>
+  <nav aria-label="Main" style="display: flex; gap: 36px;"><a class="nl" href="#product">Product</a><a class="nl" href="#books">The books</a><a class="nl" href="#accountants">For accountants</a></nav>
+  <div style="display: flex; gap: 12px; align-items: center;"><a class="nl" href="Login.html" style="padding: 8px 12px;">Sign in</a><a class="btn primary" href="Login.html" style="height: 44px; font-size: 15px;">Start free trial</a></div>
+</header>
+
+<section id="product" style="height: 700px; flex-shrink: 0; position: relative;">
+  <div style="position: absolute; left: 740px; top: 24px; width: 700px; height: 652px; border-radius: 36px 0 0 36px; background: var(--panel); overflow: hidden;">
+    <svg width="700" height="652" viewBox="0 0 700 652" fill="none" aria-hidden="true" style="position: absolute; left: 0; top: 0;"><g stroke="var(--panel-ink)" stroke-opacity="0.1"><line x1="0" y1="80" x2="700" y2="80"/><line x1="0" y1="160" x2="700" y2="160"/><line x1="0" y1="240" x2="700" y2="240"/><line x1="0" y1="320" x2="700" y2="320"/><line x1="0" y1="400" x2="700" y2="400"/><line x1="0" y1="480" x2="700" y2="480"/><line x1="0" y1="560" x2="700" y2="560"/></g><g stroke="var(--panel-ink)" stroke-opacity="0.16" stroke-width="1.5"><circle cx="700" cy="652" r="180"/><circle cx="700" cy="652" r="290"/></g><circle cx="700" cy="652" r="90" fill="var(--accent)"/></svg>
+  </div>
+
+  <div style="position: absolute; left: 80px; top: 92px; width: 600px; display: flex; flex-direction: column; gap: 28px;">
+    <span class="badge b-ok" style="align-self: flex-start; padding: 6px 14px; font-size: 13px;">Dutch bookkeeping for small businesses and accountants</span>
+    <h1 class="serif" style="margin: 0; font-weight: 400; font-size: 84px; line-height: 88px; letter-spacing: -2.4px;">From receipt to return, <span class="mark">automatically.</span></h1>
+    <p class="lead" style="max-width: 540px; font-size: 20px; line-height: 30px;">Capture receipts on your phone, keep a permanent grootboek and see your BTW at any time. Built for how Dutch small businesses and their accountants actually work.</p>
+    <div style="display: flex; gap: 14px;"><a class="btn primary" href="Login.html">Start free trial</a><a class="btn" href="#books">See how it works</a></div>
+  </div>
+
+  <div class="shadow" style="position: absolute; left: 790px; top: 100px; width: 600px; height: 440px; border-radius: 16px; background: var(--surface); overflow: hidden; border: 1px solid var(--line);">
+    <div style="height: 36px; background: var(--sunken); border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 6px; padding: 0 14px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--border);"></span></div>
+    <div style="display: flex; height: 404px;">
+      <div style="width: 128px; background: var(--sunken); border-right: 1px solid var(--line); padding: 14px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 500; color: var(--muted);">
+        <div class="serif" style="font-size: 18px; color: var(--ink); padding: 0 6px 10px;">Ledgr</div>
+        <div style="padding: 8px; border-radius: 6px; background: var(--accent); color: var(--on-accent);">Home</div><div style="padding: 8px;">Capture</div><div style="padding: 8px;">Review</div><div style="padding: 8px;">Invoices</div><div style="padding: 8px;">Grootboek</div>
+      </div>
+      <div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div class="serif" style="font-size: 22px; font-weight: 500;">Good afternoon, Max</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+          <div class="card" style="padding: 10px; border-radius: 10px;"><div style="font-size: 11px; color: var(--muted);">Cash position</div><div class="mono" style="font-size: 14px; font-weight: 500;">€ 24.310,45</div></div>
+          <div class="card" style="padding: 10px; border-radius: 10px;"><div style="font-size: 11px; color: var(--muted);">Receivables</div><div class="mono" style="font-size: 14px; font-weight: 500;">€ 12.850,00</div></div>
+          <div class="card" style="padding: 10px; border-radius: 10px;"><div style="font-size: 11px; color: var(--muted);">BTW estimate</div><div class="mono" style="font-size: 14px; font-weight: 500;">€ 4.216,80</div></div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-grow: 1;">
+          <div class="card" style="flex-grow: 1.3; padding: 12px; border-radius: 10px;"><div style="font-size: 12px; font-weight: 600; margin-bottom: 6px;">Cash position</div>
+            <svg width="230" height="110" viewBox="0 0 230 110" aria-hidden="true"><path d="M8 82 L52 66 L96 74 L140 48 L184 38 L222 20 L222 100 L8 100 Z" fill="var(--brand)" fill-opacity="0.16"/><path d="M8 82 L52 66 L96 74 L140 48 L184 38 L222 20" fill="none" stroke="var(--brand-text)" stroke-width="2.5" stroke-linejoin="round"/></svg></div>
+          <div class="card" style="flex-grow: 1; padding: 12px; border-radius: 10px; font-size: 12px; line-height: 18px;"><div style="font-weight: 600; margin-bottom: 8px;">Needs attention</div><div style="margin-bottom: 8px;"><span class="badge b-draft">Draft</span><div>Invoice 2026-044</div></div><div><span class="badge" style="background: var(--danger-t); color: var(--danger);">Overdue</span><div>Invoice 2026-032</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shadow" style="position: absolute; left: 706px; top: 470px; width: 340px; padding: 16px 18px; border-radius: 14px; background: var(--raised); display: flex; gap: 14px; align-items: center;">
+    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--tint); color: var(--brand-text); display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+    <div><div style="font-weight: 600; font-size: 15px;">Receipt booked</div><div style="font-size: 13px; color: var(--muted);">Papierhuis Amsterdam · <span class="mono">€ 52,80</span></div></div>
+  </div>
+  <div class="shadow" style="position: absolute; left: 1150px; top: 540px; width: 250px; padding: 16px 18px; border-radius: 14px; background: var(--raised);">
+    <div style="font-size: 13px; color: var(--muted);">Next BTW return</div><div class="serif" style="font-size: 26px; font-weight: 500;">Q3 2026</div><div style="font-size: 13px; color: var(--muted);">Due in 42 days</div>
+  </div>
+</section>
+
+<section style="height: 140px; flex-shrink: 0; padding: 0 80px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px; align-items: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+  <div><div class="serif" style="font-size: 30px; font-weight: 500;">Exact to the cent</div><div style="font-size: 15px; color: var(--muted);">Decimal arithmetic, never floating point.</div></div>
+  <div><div class="serif" style="font-size: 30px; font-weight: 500;">Permanent entries</div><div style="font-size: 15px; color: var(--muted);">Corrections are new entries, never deletions.</div></div>
+  <div><div class="serif" style="font-size: 30px; font-weight: 500;">Works offline</div><div style="font-size: 15px; color: var(--muted);">Capture receipts with no signal.</div></div>
+  <div><div class="serif" style="font-size: 30px; font-weight: 500;">Passkey sign-in</div><div style="font-size: 15px; color: var(--muted);">One step, no password to remember.</div></div>
+</section>
+
+<section style="height: 720px; flex-shrink: 0; padding: 0 80px; display: flex; align-items: center; gap: 100px;">
+  <div style="width: 560px; height: 640px; border-radius: 32px; background: var(--tint); position: relative; flex-shrink: 0; overflow: hidden;">
+    <div style="position: absolute; left: 130px; top: 20px; width: 300px; height: 600px; border-radius: 46px; background: #1c1a17; padding: 10px;">
+      <div style="width: 280px; height: 580px; border-radius: 36px; background: #2b2824; position: relative; overflow: hidden;">
+        <div style="position: absolute; left: 50%; top: 14px; margin-left: -50px; width: 100px; height: 26px; border-radius: 13px; background: #1c1a17;"></div>
+        <div style="position: absolute; left: 60px; top: 110px; width: 160px; height: 210px; background: #ffffff; border-radius: 6px; transform: rotate(-3deg); padding: 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 16px; color: #1c1a17;"><div style="font-weight: 600;">Papierhuis Amsterdam</div><div>18 Sep 2026</div><div style="border-top: 1px dashed #8a8578; margin: 8px 0;"></div><div style="display: flex; justify-content: space-between;"><span>Printer paper</span><span>43,64</span></div><div style="display: flex; justify-content: space-between;"><span>BTW 21%</span><span>9,16</span></div><div style="border-top: 1px dashed #8a8578; margin: 8px 0;"></div><div style="display: flex; justify-content: space-between; font-weight: 600;"><span>Total</span><span>52,80</span></div></div>
+        <div style="position: absolute; left: 44px; top: 92px; width: 192px; height: 250px;"><span style="position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-left: 3px solid var(--accent); border-top: 3px solid var(--accent);"></span><span style="position: absolute; right: 0; top: 0; width: 26px; height: 26px; border-right: 3px solid var(--accent); border-top: 3px solid var(--accent);"></span><span style="position: absolute; left: 0; bottom: 0; width: 26px; height: 26px; border-left: 3px solid var(--accent); border-bottom: 3px solid var(--accent);"></span><span style="position: absolute; right: 0; bottom: 0; width: 26px; height: 26px; border-right: 3px solid var(--accent); border-bottom: 3px solid var(--accent);"></span></div>
+        <div style="position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 16px; border-radius: 24px; background: var(--raised); color: var(--ink);">
+          <div style="display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 600; font-size: 14px;">Papierhuis Amsterdam</span><span class="mono" style="font-size: 14px; font-weight: 500;">€ 52,80</span></div>
+          <div style="font-size: 12px; color: var(--muted); margin: 4px 0 12px;">4300 Kantoorkosten · BTW 21%</div>
+          <div style="height: 44px; border-radius: 10px; background: var(--brand); color: var(--on-brand); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">Book entry</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 640px;">
+    <span class="eyebrow">CAPTURE</span>
+    <h2 class="h2">Snap a photo. We book it.</h2>
+    <p class="lead">Photograph a receipt from your phone, even with no signal. Ledgr reads the supplier, date, total and BTW, proposes the entry and books it the moment you are back online.</p>
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 4px;">
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Works offline, syncs when you reconnect.</span></div>
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Suggests the account and BTW rate for you to confirm.</span></div>
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Every receipt stays attached to its entry.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="books" style="height: 720px; flex-shrink: 0; padding: 0 80px; display: flex; align-items: center; gap: 100px; background: var(--sunken);">
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 520px;">
+    <span class="eyebrow">THE BOOKS</span>
+    <h2 class="h2">A grootboek that never changes quietly.</h2>
+    <p class="lead">Every entry is permanent. A correction is a new entry that everyone can see, never a deletion. Amounts are calculated in exact decimals, down to the cent.</p>
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 4px;">
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Double-entry, enforced on every booking.</span></div>
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Dutch chart of accounts and BTW built in.</span></div>
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Bank files import and match automatically.</span></div>
+    </div>
+  </div>
+  <div class="card shadow" style="width: 680px; padding: 8px; border-radius: 20px; flex-shrink: 0;">
+    <div style="padding: 18px 20px; display: flex; justify-content: space-between; align-items: center;"><span style="font-weight: 600; font-size: 17px;">Journal entry 2026-0918</span><span class="badge b-ok">Booked</span></div>
+    <div style="display: grid; grid-template-columns: 1fr 130px 130px; padding: 10px 20px; background: var(--sunken); font-size: 13px; font-weight: 500; color: var(--muted);"><span>Account</span><span style="text-align: right;">Debit</span><span style="text-align: right;">Credit</span></div>
+    <div style="display: grid; grid-template-columns: 1fr 130px 130px; padding: 16px 20px; border-bottom: 1px solid var(--line); font-size: 15px;"><span>4300 Kantoorkosten</span><span class="mono" style="text-align: right;">43,64</span><span></span></div>
+    <div style="display: grid; grid-template-columns: 1fr 130px 130px; padding: 16px 20px; border-bottom: 1px solid var(--line); font-size: 15px;"><span>1520 BTW te vorderen</span><span class="mono" style="text-align: right;">9,16</span><span></span></div>
+    <div style="display: grid; grid-template-columns: 1fr 130px 130px; padding: 16px 20px; border-bottom: 1px solid var(--line); font-size: 15px;"><span>1100 Bank</span><span></span><span class="mono" style="text-align: right;">52,80</span></div>
+    <div style="display: grid; grid-template-columns: 1fr 130px 130px; padding: 16px 20px; font-size: 15px; font-weight: 600;"><span>Total</span><span class="mono" style="text-align: right;">52,80</span><span class="mono" style="text-align: right;">52,80</span></div>
+    <div style="margin: 8px 12px 12px; padding: 12px 16px; border-radius: 10px; background: var(--tint); color: var(--brand-text); font-size: 14px; font-weight: 500; display: flex; gap: 10px; align-items: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Balanced to the cent. Correct it later with a new entry.</span></div>
+  </div>
+</section>
+
+<section id="accountants" style="height: 640px; flex-shrink: 0; padding: 0 80px; display: flex; align-items: center; gap: 100px;">
+  <div class="card shadow" style="width: 560px; padding: 24px; border-radius: 20px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.8px;">YOUR CLIENTS</div>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; background: var(--tint);"><div style="width: 44px; height: 44px; border-radius: 12px; background: var(--brand); color: var(--on-brand); display: flex; align-items: center; justify-content: center; font-weight: 700;">DB</div><div style="flex-grow: 1;"><div style="font-weight: 600;">Datapal BV</div><div style="font-size: 13px; color: var(--muted);">Currently open</div></div><span class="badge b-ok">Active</span></div>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; border: 1px solid var(--line);"><div style="width: 44px; height: 44px; border-radius: 12px; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; font-weight: 700;">SN</div><div style="flex-grow: 1;"><div style="font-weight: 600;">Studio Noord</div><div style="font-size: 13px; color: var(--muted);">2 items need attention</div></div></div>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; border: 1px solid var(--line);"><div style="width: 44px; height: 44px; border-radius: 12px; background: var(--info); color: var(--raised); display: flex; align-items: center; justify-content: center; font-weight: 700;">DM</div><div style="flex-grow: 1;"><div style="font-weight: 600;">De Molen Bakkerij</div><div style="font-size: 13px; color: var(--muted);">BTW Q3 ready to review</div></div></div>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 12px; border: 1px solid var(--line);"><div style="width: 44px; height: 44px; border-radius: 12px; background: var(--ink); color: var(--surface); display: flex; align-items: center; justify-content: center; font-weight: 700;">VB</div><div style="flex-grow: 1;"><div style="font-weight: 600;">Van Beek Advies</div><div style="font-size: 13px; color: var(--muted);">All up to date</div></div></div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 24px; width: 640px;">
+    <span class="eyebrow">FOR ACCOUNTANTS</span>
+    <h2 class="h2">Every client in its own colour.</h2>
+    <p class="lead">Switch between clients deliberately. Each one has its own colour, name and initials on screen at all times, so nothing is ever posted to the wrong books.</p>
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 4px;">
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>See what needs attention across every client.</span></div>
+      <div class="tick"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>Review captured receipts before they count.</span></div>
+    </div>
+  </div>
+</section>
+
+<section style="height: 400px; flex-shrink: 0; padding: 0 80px;">
+  <div style="height: 320px; border-radius: 36px; background: var(--panel); color: var(--panel-ink); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; text-align: center;">
+    <svg width="1280" height="320" viewBox="0 0 1280 320" fill="none" aria-hidden="true" style="position: absolute; left: 0; top: 0;"><g stroke="var(--panel-ink)" stroke-opacity="0.1"><line x1="0" y1="64" x2="1280" y2="64"/><line x1="0" y1="128" x2="1280" y2="128"/><line x1="0" y1="192" x2="1280" y2="192"/><line x1="0" y1="256" x2="1280" y2="256"/></g><g stroke="var(--panel-ink)" stroke-opacity="0.16" stroke-width="1.5"><circle cx="1280" cy="0" r="150"/><circle cx="1280" cy="0" r="250"/></g><circle cx="1280" cy="0" r="70" fill="var(--accent)"/></svg>
+    <h2 class="h2" style="position: relative; font-size: 56px; line-height: 60px;">Close the books without the chase.</h2>
+    <a class="btn" href="Login.html" style="position: relative; background: var(--surface); border-color: var(--surface); color: var(--ink);">Start free trial</a>
+  </div>
+</section>
+
+<footer style="flex-grow: 1; padding: 40px 80px 48px; display: flex; justify-content: space-between; border-top: 1px solid var(--line);">
+  <div style="width: 360px; display: flex; flex-direction: column; gap: 14px;"><div style="display: flex; align-items: center; gap: 10px;"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="7"/><path d="M11 3v26M11 12h18M11 20h18"/></svg><span class="serif" style="font-size: 28px; font-weight: 500;">Ledgr</span></div><div style="font-size: 15px; line-height: 24px; color: var(--muted);">Dutch bookkeeping for small businesses and their accountants.</div></div>
+  <div style="display: flex; gap: 96px;">
+    <div><div style="font-weight: 600; margin-bottom: 8px;">Product</div><div class="fcol">Capture<br>Invoices<br>Grootboek<br>BTW</div></div>
+    <div><div style="font-weight: 600; margin-bottom: 8px;">Company</div><div class="fcol">About<br>Contact<br>Privacy<br>Terms</div></div>
+  </div>
+</footer>
+</div>
+
+</body>
+</html>

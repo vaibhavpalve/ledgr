@@ -19,6 +19,7 @@
     "@ledgr/i18n": "workspace:*",
     "@ledgr/offline-queue": "workspace:*",
     "@ledgr/shared-types": "workspace:*",
+    "lucide-react": "^1.47.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

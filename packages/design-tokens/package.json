@@ -7,7 +7,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./tokens.css": "./tokens.css"
+    "./tokens.css": "./tokens.css",
+    "./ui-tokens.css": "./ui-tokens.css",
+    "./ui-fonts.css": "./ui-fonts.css"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",

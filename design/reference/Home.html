@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Ledgr home</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lg{--surface:#f7f6f2;--raised:#ffffff;--sunken:#efede6;--line:#e2ded2;--border:#8a8578;--ink:#1c211f;--muted:#565d58;--brand:#6b4a2f;--brand-h:#553a24;--brand-text:var(--brand);--tint:#f1e6da;--on-brand:#ffffff;--accent:#e8b93a;--on-accent:#2b1d0e;--panel:#4a3220;--panel-ink:#ffffff;--panel-muted:#eadfd2;--panel-line:rgba(255,255,255,.28);--danger:#a3312b;--danger-t:#f8e3e1;--warn:#8a5a00;--warn-t:#fbf0d6;--info:#1d6b7a;--info-t:#e0f0f3}
+.lg.dark{--surface:#161a18;--raised:#1f2421;--sunken:#111412;--line:#2d332f;--border:#6b736d;--ink:#eceee9;--muted:#a3aaa4;--brand:#d9b48f;--brand-h:#e6c8a8;--tint:#33281f;--on-brand:#2b1d0e;--accent:#e8b93a;--on-accent:#161a18;--panel:#33281f;--panel-ink:#eceee9;--panel-muted:#d8c8b6;--panel-line:rgba(236,238,233,.25);--danger:#f08a80;--danger-t:#3d1f1c;--warn:#e0b04a;--warn-t:#3a2e12;--info:#6cc4d4;--info-t:#14303a}
+.lg *{box-sizing:border-box}
+.lg a{text-decoration:none;color:inherit}
+.lg button{font-family:inherit}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:12px}
+.nav{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:8px;color:var(--muted);font:500 14px/1 'Hanken Grotesk',sans-serif;cursor:pointer}
+.nav:hover{background:var(--line);color:var(--ink)}
+.nav.on{background:var(--accent);color:var(--on-accent)}
+.dl:not(:empty){background:var(--accent);color:var(--on-accent);padding:1px 8px;border-radius:999px;font-weight:600}
+.nav svg{flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:var(--raised);color:var(--ink);font:500 14px/1 'Hanken Grotesk',sans-serif;cursor:pointer}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand);font-weight:600}
+.btn.primary:hover{background:var(--brand-h);border-color:var(--brand-h)}
+.btn.sm{height:34px;padding:0 12px;font-size:13px}
+.btn:focus-visible,.nav:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font:500 12px/16px 'Hanken Grotesk',sans-serif;background:var(--sunken);color:var(--ink)}
+.b-draft{background:var(--warn-t);color:var(--warn)}
+.b-over{background:var(--danger-t);color:var(--danger)}
+.b-review{background:var(--info-t);color:var(--info)}
+.b-ok{background:var(--tint);color: var(--brand-text)}
+.row{display:flex;align-items:center;gap:14px;padding:0 20px;border-top:1px solid var(--line)}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+
+<div class="lg " style="width: 1440px; height: 900px; display: flex; background: var(--surface); color: var(--ink); font-family: 'Hanken Grotesk', system-ui, sans-serif; overflow: hidden;">
+
+<nav aria-label="Main" style="width: 248px; height: 900px; padding: 20px 16px; display: flex; flex-direction: column; gap: 4px; background: var(--sunken); border-right: 1px solid var(--line);">
+  <div style="display: flex; align-items: center; gap: 10px; padding: 0 4px 16px;">
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="var(--brand-text)" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="7"/><path d="M11 3v26M11 12h18M11 20h18"/></svg>
+    <span style="font-family: 'Newsreader', Georgia, serif; font-size: 26px; font-weight: 500; letter-spacing: -0.3px;">Ledgr</span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 16px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); cursor: pointer;">
+    <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--brand); color: var(--on-brand); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">DB</div>
+    <div style="flex-grow: 1; min-width: 0;">
+      <div style="font-size: 14px; font-weight: 600; line-height: 18px;">Datapal BV</div>
+      <div style="font-size: 12px; line-height: 16px; color: var(--muted);">KvK 92590659</div>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+  </div>
+
+  <div style="padding: 0 12px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.6px; color: var(--muted);">DAILY WORK</div>
+  <a class="nav on" href="Home.html" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Capture</a>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span style="flex-grow: 1;">Review</span><span class="badge b-review">3</span></a>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Overview</a>
+
+  <div style="padding: 18px 12px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.6px; color: var(--muted);">SALES</div>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>Sales invoices</a>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Customers</a>
+
+  <div style="padding: 18px 12px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.6px; color: var(--muted);">THE BOOKS</div>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z"/><path d="M5 17a3 3 0 013-3h11"/></svg>Grootboek</a>
+
+  <div style="flex-grow: 1;"></div>
+  <a class="nav" href="Home.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Settings</a>
+  <a class="nav" href="Login.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/></svg>Sign out</a>
+</nav>
+
+<div style="width: 1192px; height: 900px; display: flex; flex-direction: column;">
+  <header style="height: 72px; padding: 0 32px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); background: var(--surface);">
+    <div style="width: 440px; height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--raised); color: var(--muted); font-size: 14px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="flex-grow: 1;">Search invoices, customers, entries</span>
+      <span class="mono" style="font-size: 12px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px;">Ctrl K</span>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <button class="btn sm">FY 2026<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+    <button class="btn" style="width: 40px; padding: 0;" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg></button>
+    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--tint); color: var(--brand-text); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">PV</div>
+  </header>
+
+  <main style="flex-grow: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 56px;">
+      <div>
+        <h1 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 36px; line-height: 40px; letter-spacing: -0.5px;">Good afternoon, Max</h1>
+        <div style="font-size: 14px; line-height: 20px; color: var(--muted);">Saturday 19 September 2026</div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <a class="btn" href="Home.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Capture receipt</a>
+        <a class="btn primary" href="Home.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New invoice</a>
+      </div>
+    </div>
+
+    <section aria-label="Key figures" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      
+        <div class="card" style="padding: 20px; height: 132px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 13px; line-height: 16px; font-weight: 500; color: var(--muted);">Cash position</div>
+          <div class="mono" style="font-size: 30px; line-height: 38px; font-weight: 500;">€ 24.310,45</div>
+          <div style="font-size: 13px; line-height: 18px; color: var(--muted);"><span class="dl">↑ € 3.120,00</span> vs August</div>
+        </div>
+      
+        <div class="card" style="padding: 20px; height: 132px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 13px; line-height: 16px; font-weight: 500; color: var(--muted);">Receivables</div>
+          <div class="mono" style="font-size: 30px; line-height: 38px; font-weight: 500;">€ 12.850,00</div>
+          <div style="font-size: 13px; line-height: 18px; color: var(--muted);"><span class="dl">4 open</span> invoices, 1 overdue</div>
+        </div>
+      
+        <div class="card" style="padding: 20px; height: 132px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="font-size: 13px; line-height: 16px; font-weight: 500; color: var(--muted);">BTW estimate</div>
+          <div class="mono" style="font-size: 30px; line-height: 38px; font-weight: 500;">€ 4.216,80</div>
+          <div style="font-size: 13px; line-height: 18px; color: var(--muted);"><span class="dl">To pay</span> for Q3, from posted entries</div>
+        </div>
+      
+    </section>
+
+    <div style="display: flex; gap: 20px; flex-grow: 1;">
+      <div style="width: 688px; display: flex; flex-direction: column; gap: 20px;">
+        
+        
+          <section class="card" aria-label="Needs your attention" style="overflow: hidden;">
+            <div style="height: 56px; padding: 0 20px; display: flex; align-items: center; gap: 10px;">
+              <h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600;">Needs your attention</h2>
+              <span class="badge b-over">3 items</span>
+            </div>
+            
+              <div class="row" style="height: 72px;">
+                <span class="badge b-draft" style="width: 72px; justify-content: center;">Draft</span>
+                <div style="flex-grow: 1; min-width: 0;">
+                  <div style="font-size: 15px; line-height: 22px; font-weight: 500;">Invoice 2026-044 has not been sent</div>
+                  <div style="font-size: 13px; line-height: 20px; color: var(--muted);">Allegis Group (Switzerland) GmbH</div>
+                </div>
+                <div class="mono" style="font-size: 14px; width: 92px; text-align: right;">€ 6.400,00</div>
+                <a class="btn sm" href="Home.html" style="width: 128px;">Send invoice</a>
+              </div>
+            
+              <div class="row" style="height: 72px;">
+                <span class="badge b-over" style="width: 72px; justify-content: center;">Overdue</span>
+                <div style="flex-grow: 1; min-width: 0;">
+                  <div style="font-size: 15px; line-height: 22px; font-weight: 500;">Invoice 2026-032 is 9 days overdue</div>
+                  <div style="font-size: 13px; line-height: 20px; color: var(--muted);">Studio Noord · due 10 Sep</div>
+                </div>
+                <div class="mono" style="font-size: 14px; width: 92px; text-align: right;">€ 2.420,00</div>
+                <a class="btn sm" href="Home.html" style="width: 128px;">Send reminder</a>
+              </div>
+            
+              <div class="row" style="height: 72px;">
+                <span class="badge b-review" style="width: 72px; justify-content: center;">Review</span>
+                <div style="flex-grow: 1; min-width: 0;">
+                  <div style="font-size: 15px; line-height: 22px; font-weight: 500;">3 receipts need review</div>
+                  <div style="font-size: 13px; line-height: 20px; color: var(--muted);">Captured this week</div>
+                </div>
+                <div class="mono" style="font-size: 14px; width: 92px; text-align: right;"></div>
+                <a class="btn sm" href="Home.html" style="width: 128px;">Review</a>
+              </div>
+            
+          </section>
+          <section class="card" aria-label="Recent activity" style="flex-grow: 1; overflow: hidden;">
+            <div style="height: 52px; padding: 0 20px; display: flex; align-items: center;">
+              <h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600;">Recent activity</h2>
+            </div>
+            
+              <div class="row" style="height: 51px;">
+                <div style="flex-grow: 1; font-size: 14px; line-height: 20px;">Receipt booked · Papierhuis Amsterdam</div>
+                <div class="mono" style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">€ 52,80</div>
+                <div style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">Today</div>
+              </div>
+            
+              <div class="row" style="height: 51px;">
+                <div style="flex-grow: 1; font-size: 14px; line-height: 20px;">Invoice 2026-043 paid · Studio Noord</div>
+                <div class="mono" style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">€ 1.815,00</div>
+                <div style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">Yesterday</div>
+              </div>
+            
+              <div class="row" style="height: 51px;">
+                <div style="flex-grow: 1; font-size: 14px; line-height: 20px;">Bank import · 24 lines matched</div>
+                <div class="mono" style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;"></div>
+                <div style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">17 Sep</div>
+              </div>
+            
+              <div class="row" style="height: 51px;">
+                <div style="flex-grow: 1; font-size: 14px; line-height: 20px;">BTW Q2 2026 filed</div>
+                <div class="mono" style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;"></div>
+                <div style="font-size: 13px; color: var(--muted); width: 88px; text-align: right;">28 Jul</div>
+              </div>
+            
+          </section>
+        
+      </div>
+
+      <div style="width: 420px; display: flex; flex-direction: column; gap: 20px;">
+        <section class="card" aria-label="Cash position" style="height: 276px; padding: 20px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600;">Cash position</h2>
+            <span style="font-size: 13px; color: var(--muted);">Last 6 months</span>
+          </div>
+          
+            <div style="position: relative; width: 380px; height: 176px; margin-top: 12px;">
+              <svg width="380" height="176" viewBox="0 0 380 176" role="img" aria-label="Cash position rose from 14,210 euro in April to 24,310 euro in September" style="position: absolute; left: 0; top: 0;">
+                <g stroke="var(--line)" stroke-width="1"><line x1="28" y1="140" x2="380" y2="140"/><line x1="28" y1="105.7" x2="380" y2="105.7"/><line x1="28" y1="71.4" x2="380" y2="71.4"/><line x1="28" y1="37.1" x2="380" y2="37.1"/></g>
+                <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)"><text x="0" y="144">12k</text><text x="0" y="109.7">16k</text><text x="0" y="75.4">20k</text><text x="0" y="41.1">24k</text></g>
+                <path d="M40 121.1 L104 98.9 L168 113.4 L232 76.6 L296 61.1 L360 34.6 L360 140 L40 140 Z" fill="var(--brand)" fill-opacity="0.16"/>
+                <path d="M40 121.1 L104 98.9 L168 113.4 L232 76.6 L296 61.1 L360 34.6" fill="none" stroke="var(--brand-text)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                <g font-family="Hanken Grotesk, sans-serif" font-size="12" fill="var(--muted)" text-anchor="middle"><text x="40" y="164">Apr</text><text x="104" y="164">May</text><text x="168" y="164">Jun</text><text x="232" y="164">Jul</text><text x="296" y="164">Aug</text><text x="360" y="164">Sep</text></g>
+              </svg>
+              <div style="position: absolute; top: 0; height: 140px; width: 1px; background: var(--border); opacity: 0.5; left: 360px;"></div>
+              <div style="position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--raised); box-sizing: content-box; left: 353px; top: 27.6px;"></div>
+              <div class="mono" style="position: absolute; padding: 6px 10px; border-radius: 8px; background: var(--ink); color: var(--surface); font-size: 12px; line-height: 16px; white-space: nowrap; left: 262px; top: 0px;">Sep · € 24.310</div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 8px;"></div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 72px;"></div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 136px;"></div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 200px;"></div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 264px;"></div>
+              
+                <div style="position: absolute; top: 0; height: 176px; width: 64px; left: 328px;"></div>
+              
+            </div>
+          
+          
+        </section>
+
+        <section class="card" aria-label="Next BTW return" style="flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600;">Next BTW return</h2>
+            <span class="badge b-draft">42 days</span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font-family: 'Newsreader', Georgia, serif; font-size: 30px; line-height: 34px; font-weight: 500;">Q3 2026</span>
+            <span style="font-size: 13px; color: var(--muted);">Due 31 Oct 2026</span>
+          </div>
+          <div style="font-size: 14px; line-height: 20px;"><span class="mono" style="font-weight: 500;">€ 4.216,80</span> <span style="color: var(--muted);">estimated to pay for Q3</span></div>
+          <div style="font-size: 13px; line-height: 20px; color: var(--muted);">! 3 receipts still need review.<br>✓ Bank reconciled to 17 Sep.</div>
+          <div style="flex-grow: 1;"></div>
+          <a class="btn" href="Home.html" style="align-self: flex-start;">Prepare return</a>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+</body>
+</html>
