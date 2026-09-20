@@ -1,6 +1,10 @@
 /**
  * The marketing site's copy, verbatim from design/reference/Website.html.
  *
+ * Three lines differ from the reference on purpose, because the product cannot back them:
+ * "Start free trial" (there is no trial), "Bank files import and match automatically" (no bank
+ * import exists; the tick is dropped) and the mockup's "Due in 42 days" (see Website.tsx). Everything else is verbatim.
+ *
  * English only: the reference has no Dutch, and inventing a translation of
  * marketing claims is a decision for the owner (FR-LOC-001 asks for both). Kept
  * out of the component so the words can move to the message catalogue in one
@@ -9,7 +13,7 @@
 export const COPY = {
   nav: { product: "Product", books: "The books", accountants: "For accountants" },
   signIn: "Sign in",
-  cta: "Start free trial",
+  cta: "Create account",
   hero: {
     badge: "Dutch bookkeeping for small businesses and accountants",
     lead: "From receipt to return,",
@@ -40,7 +44,6 @@ export const COPY = {
     ticks: [
       "Double-entry, enforced on every booking.",
       "Dutch chart of accounts and BTW built in.",
-      "Bank files import and match automatically.",
     ],
     balanced: "Balanced to the cent. Correct it later with a new entry.",
   },

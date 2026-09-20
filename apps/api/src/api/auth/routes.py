@@ -70,6 +70,8 @@ from webauthn.helpers import (
 from api.audit.log import ActorType, AuditLog, AuditOutcome
 from api.audit.repository import SqlAuditRepository
 from api.audit.trail import AuditTrail
+from api.auth.account_recovery import AccountRecoveryService, InvalidRecoveryProofError
+from api.auth.account_recovery_repository import SqlAccountRecoveryEventRepository
 from api.auth.breach_check import build_breach_checker
 from api.auth.ceremony import CeremonyNotFoundError, SqlCeremonyRepository
 from api.auth.email_verification import (
@@ -161,6 +163,7 @@ def register(app: FastAPI) -> None:
     """
     app.add_api_route(f"{_BASE}/signup", signup, methods=["POST"], name="auth_signup")
     app.add_api_route(f"{_BASE}/login", login, methods=["POST"], name="auth_login")
+    app.add_api_route(f"{_BASE}/recover", recover_account, methods=["POST"], name="auth_recover")
     app.add_api_route(f"{_BASE}/logout", logout, methods=["POST"], name="auth_logout")
 
     app.add_api_route(
@@ -673,6 +676,96 @@ async def login(
     enrollment = await _enrollment_status(session, user.id) if not mfa_verified else None
     await session.commit()
     return _auth_response(token=token, mfa_verified=mfa_verified, enrollment=enrollment)
+
+
+# ---------------------------------------------------------------------------
+# Account recovery (password) - IAM-018, IAM-019
+# ---------------------------------------------------------------------------
+
+
+class RecoverBody(BaseModel):
+    email: str
+    # The current code from an authenticator the account already holds. IAM-018:
+    # an e-mail address alone never recovers an account.
+    code: str
+    new_password: str
+
+
+async def recover_account(
+    request: Request,
+    body: RecoverBody,
+    session: AsyncSession = Depends(get_bootstrap_db_session),
+) -> dict[str, Any]:
+    """Set a new password on proof of a TOTP factor (`AccountRecoveryService.
+    recover_with_totp`), then revoke every existing session.
+
+    Exempt from tenant context like login, since it exists to get someone back
+    in. Two things keep it from being a guessing oracle for six-digit codes:
+    every failed attempt counts against the account's sliding window
+    (IAM-019, the same limiter login uses), and every failure - unknown
+    e-mail, no TOTP enrolled, wrong code - is one identical 401.
+    """
+    rate_limiter = AuthRateLimiter(SqlAuthAttemptRepository(session), LoggingAnomalyAlerter())
+    account_key = body.email.strip().lower()
+    source_ip = request.client.host if request.client else None
+
+    decision = await rate_limiter.check(endpoint="recover", account_key=account_key)
+    if not decision.allowed:
+        raise problem(
+            request,
+            429,
+            "errors.rate_limited",
+            reason=decision.reason,
+            retry_after_seconds=decision.retry_after_seconds,
+        )
+
+    service = AccountRecoveryService(
+        users=SqlUserRepository(session),
+        sessions=_session_service_for(session),
+        totp=TotpService(SqlTotpRepository(session), build_kms()),
+        webauthn=_webauthn_service(SqlPasskeyRepository(session)),
+        recovery_log=SqlAccountRecoveryEventRepository(session),
+        breach_checker=build_breach_checker(settings.breach_checker_provider),
+    )
+    try:
+        recovered_user_id = await service.recover_with_totp(
+            email=body.email, code=body.code, new_password=body.new_password
+        )
+    except InvalidRecoveryProofError as exc:
+        await rate_limiter.record_attempt(
+            endpoint="recover", account_key=account_key, source_ip=source_ip, outcome="failure"
+        )
+        await session.commit()
+        raise problem(
+            request, 401, "errors.invalid_recovery_proof", reason="invalid_recovery_proof"
+        ) from exc
+    except WeakPasswordError as exc:
+        # The factor was proven, so this is not a guess; do not count it.
+        raise problem(
+            request,
+            422,
+            "errors.weak_password",
+            reason="weak_password",
+            weaknesses=list(exc.reasons),
+        ) from exc
+
+    await rate_limiter.record_attempt(
+        endpoint="recover", account_key=account_key, source_ip=source_ip, outcome="success"
+    )
+    # IAM-090: a credential reset is the event an auditor most wants on record.
+    organization_id = await _home_organization_id(session, recovered_user_id)
+    if organization_id is not None:
+        await _record_authentication_event(
+            session,
+            organization_id=organization_id,
+            actor_user_id=recovered_user_id,
+            action="account_recovery",
+            source_ip=source_ip,
+            request=request,
+            set_org_context=True,
+        )
+    await session.commit()
+    return {"status": "recovered"}
 
 
 async def _issue_post_authentication_token(

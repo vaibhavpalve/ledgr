@@ -256,7 +256,7 @@ function HeroPanel() {
       <div className="site__float site__float--btw">
         <div className="site__float-sub">{"Next BTW return"}</div>
         <div className="ui-serif site__float-q">Q3 2026</div>
-        <div className="site__float-sub">{"Due in 42 days"}</div>
+        <div className="site__float-sub">{"Sample figures"}</div>
       </div>
     </div>
   );

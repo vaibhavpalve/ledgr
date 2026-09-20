@@ -104,6 +104,7 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
         "/v1/auth/signup",
         "/v1/auth/signup/google",
         "/v1/auth/login",
+        "/v1/auth/recover",
         "/v1/auth/logout",
         "/v1/auth/mfa/totp/enroll/begin",
         "/v1/auth/mfa/totp/enroll/confirm",

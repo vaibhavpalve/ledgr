@@ -874,6 +874,11 @@
       "note": "GET .../journal-entries/{id}. Answers 'no such entry', 'another tenant's entry' and 'another administration's entry' identically - the same RLS posture errors.administration_not_found takes.",
       "nl": "Deze boeking bestaat niet in deze administratie.",
       "en": "This journal entry does not exist in this administration."
+    },
+    "errors.invalid_recovery_proof": {
+      "note": "IAM-018: one answer for an unknown e-mail, no authenticator enrolled and a wrong code, so the screen cannot be used to find out which accounts exist.",
+      "nl": "Het e-mailadres of de code klopt niet. Gebruik de huidige code uit uw authenticator-app.",
+      "en": "The email or code is not right. Use the current code from your authenticator app."
     }
   }
 }
