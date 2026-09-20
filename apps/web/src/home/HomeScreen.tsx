@@ -1,63 +1,86 @@
 import { useEffect, useState } from "react";
+import { Camera, Check, CircleAlert, Plus } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
-import type { DashboardActionItemView, DashboardView } from "@ledgr/shared-types";
+import type {
+  DashboardActionItemView,
+  DashboardView,
+  SalesInvoiceSummaryView,
+} from "@ledgr/shared-types";
 
 import "./HomeScreen.css";
+import type { SalesInvoiceApi } from "../invoicing/api";
 import { ErrorState } from "../shell/ScreenState";
+import {
+  Amount,
+  Badge,
+  Button,
+  Card,
+  CardHead,
+  EmptyState,
+  KpiCard,
+  Row,
+  useMoney,
+  type BadgeVariant,
+} from "../ui";
 import type { DashboardApi } from "./api";
 
 /**
- * FR-UX-005 / MOB-006: the home screen.
+ * FR-UX-005 / MOB-006: the home screen, drawn as design/reference/Home.png.
  *
  *     FR-UX-005  The home screen is a prioritised list of what needs the
  *                user's attention, not a menu of everything the product can do.
  *     MOB-006    Dashboard: cash position, receivables, VAT estimate, items
  *                needing attention.
  *
- * --- What changed, and why (ADR-055) ---
+ * --- What is real and what is left out (ADR-080) ---
  *
- * This screen used to open with the three figures and put the prioritised list
- * underneath them. That is the dashboard pattern every bookkeeping product
- * shipped a decade ago, and it is backwards for this one: all three figures
- * are LAGGING indicators that nobody can act on, while the list below them is
- * the entire reason FR-UX-005 exists.
+ * Every figure here comes from `GET .../dashboard` or the invoice list. The
+ * reference also shows things the API cannot supply yet, and they are left
+ * out rather than invented:
  *
- * So the order is inverted. The attention list is the hero — first in the DOM,
- * first in the reading order, first under a screen reader — and the figures
- * follow it as a compact row of context. Same data, same honesty captions,
- * opposite emphasis.
+ *   - the change versus last month on each figure (no history)
+ *   - the six-month cash chart (no monthly series)
+ *   - what each attention item is worth, and its customer (an item carries only
+ *     an id, a kind and one already-translated sentence)
+ *   - the BTW filing deadline and days remaining (not on `DashboardView`;
+ *     deriving statutory dates in the browser is business logic in the client)
+ *   - the count on the Review nav item, and the bank step of the setup list
  *
- * A genuinely deadline-led strip ("BTW due in 9 days, 4 documents unposted")
- * would be better still, and is deliberately NOT built here: the days-until-
- * filing figure is not on `DashboardView`, and deriving it in the client would
- * put statutory business logic in the browser, which this product does not do.
- * It needs an API field first.
+ * The API has already ordered the attention list (FR-UX-005's ranking is the
+ * backend's job) and this component does not re-sort it.
  *
- * The API has already ordered the list (FR-UX-005's ranking is the backend's
- * job, tested there) and this component does not re-sort it.
+ * --- Two states ---
  *
- * Tapping an item calls `onOpenItem` with the item; the route
- * (`DashboardRoute`) turns that into the record's own URL — the "open this
- * one" entry point ADR-048 recorded as a gap the tab shell could not offer.
- * Each row also carries the item's one action as a button (the canvas's
- * "Aanvullen"/"Openen"), so a keyboard user has a named control rather than
- * a whole-row target only.
+ * A company with no bookings yet (all three figures zero and nothing needing
+ * attention) gets the "Set up" checklist instead of the attention list, so the
+ * first thing a new company sees is what to do next. Everything else is the
+ * populated home.
  */
 export function HomeScreen({
   administrationId,
   fiscalYearId,
   api,
+  invoicesApi,
+  companyName,
   onOpenItem,
+  onNavigate = () => undefined,
 }: {
   administrationId: string;
   fiscalYearId: string;
   api: DashboardApi;
+  /** For the recent-invoices card. Omitted or failing, the card is simply absent. */
+  invoicesApi?: SalesInvoiceApi;
+  companyName?: string;
   onOpenItem: (item: DashboardActionItemView) => void;
+  /** Where the header actions and the setup steps go; the route owns the URLs. */
+  onNavigate?: (path: string) => void;
 }) {
-  const { t, money, date } = useI18n();
+  const { t, language, date } = useI18n();
+  const money = useMoney();
   const [summary, setSummary] = useState<DashboardView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [invoices, setInvoices] = useState<readonly SalesInvoiceSummaryView[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,14 +102,53 @@ export function HomeScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [administrationId, fiscalYearId, api, attempt]);
 
+  useEffect(() => {
+    if (!invoicesApi) return;
+    let cancelled = false;
+    invoicesApi
+      .listInvoices(administrationId)
+      .then((rows) => {
+        if (!cancelled) setInvoices(rows);
+      })
+      .catch(() => {
+        // Secondary content: no card is better than an error on top of a
+        // working dashboard. The invoice list screen reports its own failures.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [administrationId, invoicesApi]);
+
+  const items = summary?.items_needing_action ?? [];
+  const isSetup =
+    summary !== null &&
+    items.length === 0 &&
+    isZero(summary.cash_position) &&
+    isZero(summary.receivables) &&
+    isZero(summary.vat_estimate);
+  const draftReceipts = items.filter((item) => item.kind === "draft_expense").length;
+  const recent = [...invoices]
+    .sort((a, b) => b.invoice_date.localeCompare(a.invoice_date))
+    .slice(0, 4);
+
   return (
     <section className="home" aria-label={t("mobile.home.title")}>
-      <div className="page-header">
-        <div className="page-header__titles">
-          <h1>{t("mobile.home.title")}</h1>
-          <p className="page-header__context ledgr-num" data-testid="home-today">
-            {date(todayIso(), "long")}
+      <div className="home__top">
+        <div>
+          <h1 className="home__title">{greeting(t)}</h1>
+          <p className="home__date" data-testid="home-today">
+            {longToday(language)}
           </p>
+        </div>
+        <div className="home__actions">
+          <Button onClick={() => onNavigate("/capture")}>
+            <Camera size={18} strokeWidth={1.8} aria-hidden="true" />
+            {t("mobile.home.action.capture_receipt")}
+          </Button>
+          <Button variant="primary" onClick={() => onNavigate("/invoices/new")}>
+            <Plus size={18} strokeWidth={2.2} aria-hidden="true" />
+            {t("mobile.home.action.new_invoice")}
+          </Button>
         </div>
       </div>
 
@@ -100,10 +162,8 @@ export function HomeScreen({
 
       {/*
         A skeleton rather than a line of text, so the page does not jump when
-        the data lands. `role="status"` keeps the announcement that the old
-        "Loading…" paragraph carried — the visual treatment changed, the
-        accessible one did not — and the visible text stays in the tree for
-        anyone who needs it, hidden from sight only.
+        the data lands. `role="status"` keeps the announcement; the visible
+        text stays in the tree for anyone who needs it, hidden from sight only.
       */}
       {summary === null && problem === null ? (
         <div role="status" data-testid="home-loading" className="home__loading">
@@ -116,203 +176,310 @@ export function HomeScreen({
 
       {summary !== null ? (
         <>
-          {/*
-            FIRST: the only part of this screen anyone can act on.
-          */}
-          <section className="home__section" aria-label={t("mobile.home.items_heading")}>
-            <div className="home__section-head">
-              <h2>{t("mobile.home.items_heading")}</h2>
-              {summary.items_needing_action.length > 0 ? (
-                <span className="chip chip--attention" data-testid="home-item-count">
-                  {t("mobile.home.item_count", { count: summary.items_needing_action.length })}
+          <section
+            className="home__kpis"
+            aria-label={t("mobile.home.figures_heading")}
+            data-testid="home-figures"
+          >
+            <KpiCard
+              label={t("mobile.home.cash_position_label")}
+              value={<span data-testid="home-cash-position">{money(summary.cash_position)}</span>}
+              caption={
+                <span data-testid="home-cash-position-caption">
+                  {t(isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption")}
                 </span>
+              }
+            />
+            <KpiCard
+              label={t("mobile.home.receivables_label")}
+              value={<span data-testid="home-receivables">{money(summary.receivables)}</span>}
+              caption={
+                <span data-testid="home-receivables-caption">
+                  {t(
+                    isSetup
+                      ? "mobile.home.kpi.receivables_empty"
+                      : "mobile.home.receivables_caption",
+                  )}
+                </span>
+              }
+            />
+            <KpiCard
+              label={t("mobile.home.vat_estimate_label")}
+              value={<span data-testid="home-vat-estimate">{money(summary.vat_estimate)}</span>}
+              caption={
+                <>
+                  <span data-testid="home-vat-estimate-period">
+                    {t("mobile.home.vat_estimate_period", {
+                      start: date(summary.vat_period_start),
+                      end: date(summary.vat_period_end),
+                    })}
+                  </span>
+                  {" · "}
+                  <span data-testid="home-vat-estimate-caption">
+                    {t(isSetup ? "mobile.home.kpi.vat_empty" : "mobile.home.vat_estimate_caption")}
+                  </span>
+                </>
+              }
+            />
+          </section>
+
+          <div className="home__columns">
+            <div className="home__column">
+              {isSetup ? (
+                <SetupCard companyName={companyName} onNavigate={onNavigate} />
+              ) : (
+                <Card aria-label={t("mobile.home.items_heading")} className="home__clip">
+                  <CardHead title={t("mobile.home.items_heading")}>
+                    {items.length > 0 ? (
+                      <span data-testid="home-item-count">
+                        <Badge
+                          variant={
+                            items.some((i) => i.kind === "overdue_invoice") ? "overdue" : "draft"
+                          }
+                        >
+                          {t("mobile.home.item_count", { count: items.length })}
+                        </Badge>
+                      </span>
+                    ) : null}
+                  </CardHead>
+
+                  {items.length === 0 ? (
+                    <div className="home__caught-up">
+                      <EmptyState
+                        testId="home-items-empty"
+                        icon={<Check size={24} strokeWidth={1.5} aria-hidden="true" />}
+                        title={t("mobile.home.items_empty_title")}
+                      >
+                        {t("mobile.home.items_empty")}
+                      </EmptyState>
+                    </div>
+                  ) : (
+                    <ul
+                      className="ui-list"
+                      aria-label={t("mobile.home.items_heading")}
+                      data-testid="home-items-list"
+                    >
+                      {items.map((item) => (
+                        <li key={item.id} data-testid="home-item">
+                          <Row height={72} className="home__list-row">
+                            <Badge variant={badgeFor(item.kind)} className="home__item-badge">
+                              {t(`mobile.home.state.${item.kind}`)}
+                            </Badge>
+                            <button
+                              type="button"
+                              className="home__item-row"
+                              data-testid={`home-item-${item.id}`}
+                              onClick={() => onOpenItem(item)}
+                            >
+                              {/* Already translated server-side (FR-UX-007),
+                                  placed as-is rather than recomposed from `kind`. */}
+                              {item.description}
+                            </button>
+                            <Button
+                              size="sm"
+                              className="home__item-action"
+                              data-testid={`home-item-action-${item.id}`}
+                              onClick={() => onOpenItem(item)}
+                            >
+                              {t(`mobile.home.action.${item.kind}`)}
+                            </Button>
+                          </Row>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              )}
+
+              {!isSetup && recent.length > 0 ? (
+                <Card aria-label={t("mobile.home.recent.title")} className="home__clip">
+                  <CardHead title={t("mobile.home.recent.title")} />
+                  <ul className="ui-list" data-testid="home-recent">
+                    {recent.map((invoice) => (
+                      <li key={invoice.id}>
+                        <Row height={51}>
+                          <span className="home__recent-text">
+                            {invoice.invoice_reference ?? t("invoice.list.draft_reference")}
+                            {" · "}
+                            {invoice.customer_name}
+                          </span>
+                          <Badge variant={invoice.status === "draft" ? "draft" : "neutral"}>
+                            {t(`mobile.view.invoice_status.${invoice.status}`)}
+                          </Badge>
+                          <span className="home__recent-date">{date(invoice.invoice_date)}</span>
+                        </Row>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               ) : null}
             </div>
 
-            {summary.items_needing_action.length === 0 ? (
-              <div className="panel empty-state" data-testid="home-items-empty">
-                <span className="empty-state__icon" aria-hidden="true">
-                  <svg
-                    width="32"
-                    height="32"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="10" cy="10" r="7.3" />
-                    <path d="m6.6 10.2 2.4 2.4 4.5-5" />
-                  </svg>
-                </span>
-                <p className="empty-state__title">{t("mobile.home.items_empty_title")}</p>
-                <p className="empty-state__body">{t("mobile.home.items_empty")}</p>
-              </div>
-            ) : (
-              <ul
-                className="panel list"
-                aria-label={t("mobile.home.items_heading")}
-                data-testid="home-items-list"
-              >
-                {summary.items_needing_action.map((item) => (
-                  <li
-                    key={item.id}
-                    data-testid="home-item"
-                    className={`home__item home__item--${item.kind}`}
-                  >
-                    <button
-                      type="button"
-                      className="list__row home__item-row"
-                      data-testid={`home-item-${item.id}`}
-                      onClick={() => onOpenItem(item)}
+            <div className="home__column">
+              {isSetup ? (
+                <Card padded aria-label={t("mobile.home.cash_position_label")}>
+                  <h2 className="ui-card__title">{t("mobile.home.cash_position_label")}</h2>
+                  <div className="home__chart-empty">
+                    <EmptyState
+                      testId="home-chart-empty"
+                      title={t("mobile.home.chart.empty_title")}
                     >
-                      <span className={`home__item-icon home__item-icon--${item.kind}`}>
-                        <ItemIcon kind={item.kind} />
-                      </span>
-                      <span className="list__row-text">
-                        {/* Already translated server-side (FR-UX-007) — placed
-                            as-is rather than recomposed from `kind`. */}
-                        <span>{item.description}</span>
-                        <span className={`home__item-state home__item-state--${item.kind}`}>
-                          {t(`mobile.home.state.${item.kind}`)}
-                        </span>
-                      </span>
-                    </button>
-                    {/*
-                      The row's one action, as the canvas draws it: a named
-                      button at the right. Only the overdue invoice — the
-                      one kind where something has gone wrong — wears the
-                      filled treatment; the drafts are outlined.
-                    */}
-                    <button
-                      type="button"
-                      className={
-                        item.kind === "overdue_invoice"
-                          ? "button--primary home__item-action"
-                          : "home__item-action"
-                      }
-                      data-testid={`home-item-action-${item.id}`}
-                      onClick={() => onOpenItem(item)}
-                    >
-                      {t(`mobile.home.action.${item.kind}`)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                      {t("mobile.home.chart.empty_body")}
+                    </EmptyState>
+                  </div>
+                </Card>
+              ) : null}
 
-          {/*
-            THEN: context. Same three figures, same honesty captions, a third
-            of the height and no longer the first thing the eye lands on.
-
-            WCAG 2.2 / SC 1.3.1 (Info and Relationships): a `<dl>` may only
-            directly contain <dt>/<dd> groups (each optionally wrapped in a
-            <div>, which is what groups one term with its value here) — axe
-            (this file's own CMP-012/FR-LOC-004 coverage in HomeScreen.test.tsx,
-            via MobileShell.test.tsx's Home-tab check) flagged the caption
-            below as a stray <p> inside that div, which breaks the group. A
-            <dt> may have more than one <dd>, so the caption is a second
-            description of the same term rather than an unrelated paragraph —
-            not a workaround, the correct reading of what a caption under a
-            figure actually is.
-          */}
-          <section className="home__section" aria-label={t("mobile.home.figures_heading")}>
-            <div className="home__section-head">
-              <h2>{t("mobile.home.figures_heading")}</h2>
+              <Card padded aria-label={t("mobile.home.btw.title")}>
+                <h2 className="ui-card__title">{t("mobile.home.btw.title")}</h2>
+                <p className="home__btw-period" data-testid="home-btw-period">
+                  {periodLabel(summary.vat_period_start, summary.vat_period_end) ??
+                    t("mobile.home.vat_estimate_period", {
+                      start: date(summary.vat_period_start),
+                      end: date(summary.vat_period_end),
+                    })}
+                </p>
+                <p className="home__btw-estimate">
+                  <Amount value={summary.vat_estimate} /> {t("mobile.home.btw.estimated")}
+                </p>
+                {isSetup ? (
+                  <p className="home__btw-note">{t("mobile.home.btw.empty")}</p>
+                ) : draftReceipts > 0 ? (
+                  <p className="home__btw-note">
+                    <CircleAlert size={14} strokeWidth={1.8} aria-hidden="true" />{" "}
+                    {t("mobile.home.btw.receipts_to_review", { count: draftReceipts })}
+                  </p>
+                ) : null}
+              </Card>
             </div>
-
-            <dl className="home__figures" data-testid="home-figures">
-              <div className="home__figure">
-                <dt className="label">{t("mobile.home.cash_position_label")}</dt>
-                <dd className="ledgr-figure home__figure-value" data-testid="home-cash-position">
-                  {money(summary.cash_position)}
-                </dd>
-                <dd className="caption" data-testid="home-cash-position-caption">
-                  {t("mobile.home.cash_position_caption")}
-                </dd>
-              </div>
-
-              <div className="home__figure">
-                <dt className="label">{t("mobile.home.receivables_label")}</dt>
-                <dd className="ledgr-figure home__figure-value" data-testid="home-receivables">
-                  {money(summary.receivables)}
-                </dd>
-                <dd className="caption" data-testid="home-receivables-caption">
-                  {t("mobile.home.receivables_caption")}
-                </dd>
-              </div>
-
-              <div className="home__figure">
-                <dt className="label">{t("mobile.home.vat_estimate_label")}</dt>
-                <dd className="ledgr-figure home__figure-value" data-testid="home-vat-estimate">
-                  {money(summary.vat_estimate)}
-                </dd>
-                <dd className="caption" data-testid="home-vat-estimate-period">
-                  {t("mobile.home.vat_estimate_period", {
-                    start: date(summary.vat_period_start),
-                    end: date(summary.vat_period_end),
-                  })}
-                </dd>
-                <dd className="caption" data-testid="home-vat-estimate-caption">
-                  {t("mobile.home.vat_estimate_caption")}
-                </dd>
-              </div>
-            </dl>
-          </section>
+          </div>
         </>
       ) : null}
     </section>
   );
 }
 
-/** Today as an ISO calendar date in the browser's own zone — a display date, never a posting date. */
-function todayIso(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
+/**
+ * The empty home's checklist (Home-empty.png): what to do to reach the first
+ * booked entry. "Company details" is always done, since the screen only exists
+ * inside an administration. The first pending step wears the one primary button.
+ *
+ * The reference's second step, connecting a bank account, has no screen in the
+ * product yet, so it is replaced by adding a customer, which does.
+ */
+function SetupCard({
+  companyName,
+  onNavigate,
+}: {
+  companyName?: string;
+  onNavigate: (path: string) => void;
+}) {
+  const { t } = useI18n();
+  const steps: ReadonlyArray<{ id: string; path: string | null }> = [
+    { id: "company", path: null },
+    { id: "customer", path: "/customers/new" },
+    { id: "invoice", path: "/invoices/new" },
+    { id: "capture", path: "/capture" },
+  ];
+  const firstPending = steps.findIndex((step) => step.path !== null);
+
+  return (
+    <Card aria-label={t("mobile.home.setup.aria")} className="home__clip" data-testid="home-setup">
+      <div className="home__setup-head">
+        <h2 className="ui-card__title">
+          {t("mobile.home.setup.title", {
+            company: companyName ?? t("mobile.home.setup.your_company"),
+          })}
+        </h2>
+        <p className="home__setup-sub">{t("mobile.home.setup.subtitle")}</p>
+      </div>
+      <ol className="ui-list">
+        {steps.map((step, index) => (
+          <li key={step.id}>
+            <Row height={82}>
+              <span
+                className={`home__step-mark${step.path === null ? " home__step-mark--done" : ""}`}
+                aria-hidden="true"
+              >
+                {step.path === null ? <Check size={16} strokeWidth={2.2} /> : index + 1}
+              </span>
+              <span className="home__step-text">
+                <span className="home__step-title">
+                  {t(`mobile.home.setup.step.${step.id}.title`)}
+                </span>
+                <span className="home__step-body">
+                  {t(`mobile.home.setup.step.${step.id}.body`)}
+                </span>
+              </span>
+              {step.path === null ? (
+                <Badge variant="booked">{t("mobile.home.setup.done")}</Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant={index === firstPending ? "primary" : "secondary"}
+                  data-testid={`home-setup-${step.id}`}
+                  onClick={() => onNavigate(step.path as string)}
+                >
+                  {t(`mobile.home.setup.step.${step.id}.action`)}
+                </Button>
+              )}
+            </Row>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  );
+}
+
+/** A decimal string that is zero: "0", "0.00", "-0.00". Compared as text, never as a float. */
+function isZero(amount: string): boolean {
+  return /^[+-]?0*(\.0*)?$/.test(amount.trim());
+}
+
+function badgeFor(kind: DashboardActionItemView["kind"]): BadgeVariant {
+  return kind === "overdue_invoice" ? "overdue" : "draft";
+}
+
+/** Time-of-day greeting from the browser clock: a display nicety, never a posting date. */
+function greeting(t: ReturnType<typeof useI18n>["t"]): string {
+  const hour = new Date().getHours();
+  const key =
+    hour < 12
+      ? "mobile.home.greeting.morning"
+      : hour < 18
+        ? "mobile.home.greeting.afternoon"
+        : "mobile.home.greeting.evening";
+  return t(key);
+}
+
+/** "Saturday 19 September 2026", in the reader's language. */
+function longToday(language: string): string {
+  return new Intl.DateTimeFormat(language === "nl" ? "nl-NL" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+    .format(new Date())
+    .replace(",", "");
 }
 
 /**
- * An icon per item kind.
- *
- * The colour is applied by the wrapper's `--{kind}` class in HomeScreen.css,
- * not here, and only `overdue_invoice` gets the attention colour: that is the
- * one kind where something has actually gone wrong. A draft is not a problem,
- * it is unfinished work, and colouring it as an alarm is how an alarm stops
- * meaning anything.
+ * "Q3 2026" when the estimate covers exactly one calendar quarter, else null and
+ * the caller shows the dates. Read off the ISO strings; no date arithmetic.
  */
-function ItemIcon({ kind }: { kind: DashboardActionItemView["kind"] }) {
-  const shared = {
-    width: 18,
-    height: 18,
-    viewBox: "0 0 20 20",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.67,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    "aria-hidden": true,
-  } as const;
-
-  if (kind === "overdue_invoice") {
-    // A clock: the thing that is wrong is elapsed time, not the document.
-    return (
-      <svg {...shared}>
-        <circle cx="10" cy="10" r="7.3" />
-        <path d="M10 5.8v4.4l3 1.8" />
-      </svg>
-    );
-  }
-
-  // Both draft kinds: a document with a line missing from it.
-  return (
-    <svg {...shared}>
-      <path d="M5 2.8h6l4 4v10.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V3.6a.8.8 0 0 1 .8-.8z" />
-      <path d="M11 2.8v4h4" />
-      <path d="M7.4 12.4h3" />
-    </svg>
-  );
+function periodLabel(start: string, end: string): string | null {
+  const s = /^(\d{4})-(\d{2})-01$/.exec(start);
+  const e = /^(\d{4})-(\d{2})-(\d{2})$/.exec(end);
+  if (!s || !e || s[1] !== e[1]) return null;
+  const first = Number(s[2]);
+  const quarterEnds: Record<number, [string, string]> = {
+    1: ["03", "31"],
+    4: ["06", "30"],
+    7: ["09", "30"],
+    10: ["12", "31"],
+  };
+  const expected = quarterEnds[first];
+  if (!expected || e[2] !== expected[0] || e[3] !== expected[1]) return null;
+  return `Q${(first - 1) / 3 + 1} ${s[1]}`;
 }

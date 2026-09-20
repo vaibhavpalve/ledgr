@@ -46,7 +46,6 @@
       "nl": "Donker",
       "en": "Dark"
     },
-
     "common.nav.label": {
       "note": "Accessible name of the desktop rail (the shell's main navigation).",
       "nl": "Hoofdnavigatie",
@@ -225,6 +224,10 @@
     "common.session.load_failed_hint": {
       "nl": "Uw account kon niet worden geladen. Lukt het na een nieuwe poging nog niet, log dan uit en weer in.",
       "en": "Your account could not be loaded. If it still fails after retrying, sign out and back in."
+    },
+    "common.nav.group.sales": {
+      "nl": "Verkoop",
+      "en": "Sales"
     }
   }
 }

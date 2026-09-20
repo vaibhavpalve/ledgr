@@ -1,0 +1,590 @@
+/*
+ * The application shell: sidebar, header, content column and the compact
+ * bottom bar, from design/reference/Home.html, in handoff tokens (ADR-080).
+ *
+ * Two layouts from one DOM, decided here and only here: a grid with a 248px
+ * sidebar beside a header-over-main column from 64rem up, a single column with
+ * a fixed bottom bar below it. 64rem is the breakpoint the pre-auth screen
+ * switches on too, so the product changes shape at one width, not two.
+ *
+ * The one place a colour does not come from the handoff tokens is the client's
+ * own marker colour (`--ledgr-client-*`, FR-FRM-000a). It identifies a client,
+ * it is theme-independent on purpose, and the handoff has no equivalent: its
+ * four avatar fills cannot tell ten clients apart.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ==========================================================================
+ * SIDEBAR (wide screens only)
+ * ========================================================================== */
+
+.shell__rail {
+  display: none;
+}
+
+.shell__brand {
+  padding: 0 var(--space-1) var(--space-4);
+}
+
+.shell__company {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 0;
+  margin-bottom: var(--space-4);
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  letter-spacing: 0;
+}
+.shell__company--button {
+  cursor: pointer;
+}
+.shell__company > svg {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+}
+.shell__company .shell__company-marker {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.shell__company-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+.shell__company-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 14px/18px var(--font-sans);
+}
+.shell__company-kvk {
+  font: 400 12px/16px var(--font-sans);
+  color: var(--ink-muted);
+}
+
+.shell__nav {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+.shell__nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.shell__nav-group:first-child .ui-navgroup {
+  padding-top: 0;
+}
+.shell__rail-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+@media (forced-colors: active) {
+  .ui-nav[aria-current="page"],
+  .shell__tab[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
+/* ==========================================================================
+ * CLIENT HEADER (FR-FRM-000a)
+ * ==========================================================================
+ *
+ * Sticky, so the one piece of chrome that must never scroll away never does.
+ * The client's colour is a 3px rule under the whole header, the device that
+ * makes a switch register peripherally.
+ */
+
+.client-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.client-header[data-state="active"] {
+  border-bottom-width: 3px;
+  border-bottom-color: var(--client-colour, var(--border-subtle));
+}
+.client-header[data-colour="indigo"] {
+  --client-colour: var(--ledgr-client-indigo);
+}
+.client-header[data-colour="amber"] {
+  --client-colour: var(--ledgr-client-amber);
+}
+.client-header[data-colour="teal"] {
+  --client-colour: var(--ledgr-client-teal);
+}
+.client-header[data-colour="rose"] {
+  --client-colour: var(--ledgr-client-rose);
+}
+.client-header[data-colour="lime"] {
+  --client-colour: var(--ledgr-client-lime);
+}
+.client-header[data-colour="violet"] {
+  --client-colour: var(--ledgr-client-violet);
+}
+.client-header[data-colour="cyan"] {
+  --client-colour: var(--ledgr-client-cyan);
+}
+.client-header[data-colour="orange"] {
+  --client-colour: var(--ledgr-client-orange);
+}
+.client-header[data-colour="emerald"] {
+  --client-colour: var(--ledgr-client-emerald);
+}
+.client-header[data-colour="fuchsia"] {
+  --client-colour: var(--ledgr-client-fuchsia);
+}
+
+.client-header--empty,
+.client-header--loading {
+  color: var(--ink-muted);
+  font: 400 13px/20px var(--font-sans);
+}
+.client-header__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.client-header__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 14px/18px var(--font-sans);
+}
+.client-header__legal-name,
+.client-header__kvk {
+  font: 400 12px/16px var(--font-sans);
+  color: var(--ink-muted);
+}
+/* The ambiguous-colour warning is a sentence, so it takes a row of its own. */
+.client-header__ambiguous {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--warning-tint);
+  color: var(--warning);
+  font: 500 12px/16px var(--font-sans);
+}
+
+/* The marker: initials on the client's own colour. */
+.client-marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: 700 12px/1 var(--font-sans);
+  letter-spacing: 0.02em;
+  font-variant-numeric: lining-nums;
+}
+.client-marker--indigo {
+  background: var(--ledgr-client-indigo);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--amber {
+  background: var(--ledgr-client-amber);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--teal {
+  background: var(--ledgr-client-teal);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--rose {
+  background: var(--ledgr-client-rose);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--lime {
+  background: var(--ledgr-client-lime);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--violet {
+  background: var(--ledgr-client-violet);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--cyan {
+  background: var(--ledgr-client-cyan);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--orange {
+  background: var(--ledgr-client-orange);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--emerald {
+  background: var(--ledgr-client-emerald);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--fuchsia {
+  background: var(--ledgr-client-fuchsia);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--large {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+
+/* The compact header's own wordmark; the sidebar carries it on desktop. */
+.shell__header-brand {
+  order: -1;
+  display: inline-flex;
+  margin-right: var(--space-1);
+}
+.shell__header-spacer {
+  flex-grow: 1;
+}
+/* On a phone the avatar stays on the first line beside the identity and the
+   fiscal-year selector drops to its own line. */
+@media (max-width: 63.99rem) {
+  .client-header .user-menu {
+    order: 1;
+    margin-left: auto;
+  }
+  .client-header .shell__fiscal-year {
+    order: 2;
+  }
+  .client-header .shell__header-spacer {
+    display: none;
+  }
+  .shell__fiscal-year select {
+    height: 44px;
+  }
+  .user-menu__avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+.shell__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* The search trigger: a field-shaped button. Hidden on a phone, where the
+   header has no room and Ctrl+K has no keyboard. */
+.shell__search {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 440px;
+  width: 440px;
+  max-width: 100%;
+  height: 40px;
+  min-height: 0;
+  padding: 0 var(--space-3);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--ink-muted);
+  font: 400 14px/1 var(--font-sans);
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.shell__search-text {
+  flex-grow: 1;
+}
+.shell__kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font: 400 12px/16px var(--font-mono);
+  color: var(--ink-muted);
+}
+
+/* The fiscal-year selector, drawn as the reference's small secondary button. */
+.shell__fiscal-year {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.shell__fiscal-year select {
+  appearance: none;
+  width: auto;
+  height: 34px;
+  min-height: 0;
+  padding: 0 32px 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: 500 13px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.shell__fiscal-year-chevron {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: var(--ink);
+}
+
+/* ==========================================================================
+ * USER MENU
+ * ========================================================================== */
+
+.user-menu {
+  position: relative;
+}
+.user-menu__trigger {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.user-menu__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font: 700 13px/1 var(--font-sans);
+}
+.user-menu__panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 40;
+  width: min(20rem, calc(100vw - 2 * var(--space-4)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.user-menu__email {
+  font: 600 14px/20px var(--font-sans);
+  overflow-wrap: anywhere;
+}
+.user-menu__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.user-menu__section .label {
+  font: 500 13px/16px var(--font-sans);
+  color: var(--ink-muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.user-menu__links {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-2);
+}
+.user-menu__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font: 500 14px/20px var(--font-sans);
+  text-decoration: none;
+}
+.user-menu__link:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+.user-menu__sign-out {
+  justify-content: flex-start;
+}
+.user-menu__panel .language-switcher,
+.user-menu__panel .theme-toggle {
+  border-color: var(--border-subtle);
+}
+
+/* ==========================================================================
+ * MAIN
+ * ========================================================================== */
+
+.shell__main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: var(--space-4);
+  /* Room for the fixed tab bar, so the last rows of a list are not hidden. */
+  padding-bottom: calc(64px + var(--space-4) + env(safe-area-inset-bottom, 0px));
+}
+.shell__main > * {
+  width: 100%;
+  max-width: 76rem;
+}
+
+/* ==========================================================================
+ * BOTTOM BAR (compact only)
+ * ========================================================================== */
+
+.shell__tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border-subtle);
+}
+.shell__tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  min-width: 48px;
+  padding: var(--space-2) var(--space-1);
+  color: var(--ink-muted);
+  font: 500 11px/14px var(--font-sans);
+  text-align: center;
+  text-decoration: none;
+}
+.shell__tab:hover {
+  color: var(--ink);
+}
+.shell__tab[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.shell__tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+}
+.shell__tab[aria-current="page"] .shell__tab-icon {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ==========================================================================
+ * WIDE: the sidebar appears, the bar goes
+ * ========================================================================== */
+
+@media (min-width: 64rem) {
+  .shell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "rail header"
+      "rail main";
+    align-items: start;
+  }
+
+  .shell__rail {
+    grid-area: rail;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: 20px var(--space-4);
+    background: var(--surface-sunken);
+    border-right: 1px solid var(--border-subtle);
+    overflow-y: auto;
+  }
+
+  .client-header {
+    grid-area: header;
+    flex-wrap: nowrap;
+    gap: var(--space-4);
+    min-height: 72px;
+    padding: 0 var(--space-6);
+  }
+  .client-header[data-state="active"] {
+    /* One 3px rule replaces the 72px header's 1px hairline; keep the height. */
+    min-height: 72px;
+  }
+  .client-header__ambiguous {
+    flex-basis: auto;
+  }
+
+  /* The identity lives in the sidebar's company card on a wide screen. It stays
+     in the header for assistive technology, first in reading order. */
+  .client-header > .client-marker,
+  .client-header__identity {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .shell__header-brand,
+  .shell__switch {
+    display: none;
+  }
+  .shell__search {
+    display: inline-flex;
+  }
+
+  .shell__main {
+    grid-area: main;
+    padding: 28px var(--space-6) var(--space-7);
+  }
+
+  .shell__tabs {
+    display: none;
+  }
+  .user-menu__link--compact-only {
+    display: none;
+  }
+}

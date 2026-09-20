@@ -373,7 +373,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 0 20px;
+  padding: 8px 20px;
   border-top: 1px solid var(--border-subtle);
 }
 .ui-list {
@@ -523,4 +523,15 @@
   font-size: 26px;
   line-height: 1;
   letter-spacing: -0.3px;
+}
+
+/* Touch targets: 44px minimum on a phone (DESIGN.md section 8). */
+@media (max-width: 63.99rem) {
+  .ui-btn:not(.ui-btn--icon) {
+    min-height: 44px;
+  }
+  .ui-btn--icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

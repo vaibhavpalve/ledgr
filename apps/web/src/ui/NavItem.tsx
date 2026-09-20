@@ -14,6 +14,7 @@ export function NavItem({
   children,
   badge,
   onNavigate,
+  testId,
 }: {
   to: string;
   end?: boolean;
@@ -21,9 +22,10 @@ export function NavItem({
   children: ReactNode;
   badge?: ReactNode;
   onNavigate?: () => void;
+  testId?: string;
 }) {
   return (
-    <NavLink to={to} end={end} className="ui-nav" onClick={onNavigate}>
+    <NavLink to={to} end={end} className="ui-nav" onClick={onNavigate} data-testid={testId}>
       <Icon size={20} strokeWidth={1.7} aria-hidden="true" />
       <span className="ui-nav__label">{children}</span>
       {badge}

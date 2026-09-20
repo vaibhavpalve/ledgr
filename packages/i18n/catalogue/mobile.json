@@ -331,6 +331,143 @@
       "note": "FR-UX-004: what belongs here and where it comes from.",
       "nl": "Elke bon die u vastlegt komt hier terecht totdat de gegevens compleet zijn. Leg een bon vast om te beginnen.",
       "en": "Every receipt you capture lands here until its details are complete. Capture a receipt to get started."
+    },
+    "mobile.home.greeting.morning": {
+      "note": "Home heading, before 12:00 on the reader's clock. The API has no display name, so there is no name after the comma.",
+      "nl": "Goedemorgen",
+      "en": "Good morning"
+    },
+    "mobile.home.greeting.afternoon": {
+      "nl": "Goedemiddag",
+      "en": "Good afternoon"
+    },
+    "mobile.home.greeting.evening": {
+      "nl": "Goedenavond",
+      "en": "Good evening"
+    },
+    "mobile.home.action.capture_receipt": {
+      "nl": "Bon vastleggen",
+      "en": "Capture receipt"
+    },
+    "mobile.home.action.new_invoice": {
+      "nl": "Nieuwe factuur",
+      "en": "New invoice"
+    },
+    "mobile.home.kpi.cash_empty": {
+      "nl": "Verschijnt na uw eerste boeking.",
+      "en": "Appears after your first booking."
+    },
+    "mobile.home.kpi.receivables_empty": {
+      "nl": "Geen openstaande facturen.",
+      "en": "No open invoices."
+    },
+    "mobile.home.kpi.vat_empty": {
+      "nl": "Nog niets om aan te geven.",
+      "en": "Nothing to report yet."
+    },
+    "mobile.home.setup.aria": {
+      "nl": "Uw boekhouding inrichten",
+      "en": "Set up your books"
+    },
+    "mobile.home.setup.title": {
+      "nl": "Richt {company} in",
+      "en": "Set up {company}"
+    },
+    "mobile.home.setup.your_company": {
+      "nl": "uw bedrijf",
+      "en": "your company"
+    },
+    "mobile.home.setup.subtitle": {
+      "nl": "Vier stappen naar uw eerste boeking.",
+      "en": "Four steps to your first booked entry."
+    },
+    "mobile.home.setup.done": {
+      "nl": "Klaar",
+      "en": "Done"
+    },
+    "mobile.home.setup.step.company.title": {
+      "nl": "Uw bedrijfsgegevens toevoegen",
+      "en": "Add your company details"
+    },
+    "mobile.home.setup.step.company.body": {
+      "nl": "Uw bedrijf en rekeningschema staan klaar.",
+      "en": "Your company and its chart of accounts are set up."
+    },
+    "mobile.home.setup.step.company.action": {
+      "note": "Not shown as a button; the step is complete.",
+      "nl": "Klaar",
+      "en": "Done"
+    },
+    "mobile.home.setup.step.customer.title": {
+      "nl": "Een klant toevoegen",
+      "en": "Add a customer"
+    },
+    "mobile.home.setup.step.customer.body": {
+      "nl": "Iemand aan wie u een factuur stuurt.",
+      "en": "Someone to send an invoice to."
+    },
+    "mobile.home.setup.step.customer.action": {
+      "nl": "Klant toevoegen",
+      "en": "Add customer"
+    },
+    "mobile.home.setup.step.invoice.title": {
+      "nl": "Uw eerste factuur versturen",
+      "en": "Send your first invoice"
+    },
+    "mobile.home.setup.step.invoice.body": {
+      "nl": "Maak, controleer en verstuur hem vanaf één plek.",
+      "en": "Create it, review it and send it from one place."
+    },
+    "mobile.home.setup.step.invoice.action": {
+      "nl": "Nieuwe factuur",
+      "en": "New invoice"
+    },
+    "mobile.home.setup.step.capture.title": {
+      "nl": "Een bon vastleggen",
+      "en": "Capture a receipt"
+    },
+    "mobile.home.setup.step.capture.body": {
+      "nl": "Maak een foto en controleer de gegevens voordat hij wordt geboekt.",
+      "en": "Photograph it, then check the details before it is booked."
+    },
+    "mobile.home.setup.step.capture.action": {
+      "nl": "Vastleggen",
+      "en": "Capture"
+    },
+    "mobile.home.chart.empty_title": {
+      "nl": "Nog geen boekingen",
+      "en": "No bookings yet"
+    },
+    "mobile.home.chart.empty_body": {
+      "nl": "Uw liquide middelen verschijnen hier na uw eerste boeking.",
+      "en": "Your cash position appears here after your first booked entry."
+    },
+    "mobile.home.btw.title": {
+      "nl": "Volgende BTW-aangifte",
+      "en": "Next BTW return"
+    },
+    "mobile.home.btw.estimated": {
+      "nl": "geschat voor deze periode",
+      "en": "estimated for this period"
+    },
+    "mobile.home.btw.empty": {
+      "nl": "Nog geen boekingen.",
+      "en": "No entries posted yet."
+    },
+    "mobile.home.btw.receipts_to_review": {
+      "nl": {
+        "one": "{count} bon moet nog worden beoordeeld.",
+        "other": "{count} bonnen moeten nog worden beoordeeld."
+      },
+      "en": {
+        "one": "{count} receipt still needs review.",
+        "other": "{count} receipts still need review."
+      }
+    },
+    "mobile.home.recent.title": {
+      "note": "The reference calls this Recent activity; the API can only supply invoices.",
+      "nl": "Recente facturen",
+      "en": "Recent invoices"
     }
   }
 }

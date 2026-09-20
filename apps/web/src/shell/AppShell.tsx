@@ -1,77 +1,117 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  BookOpen,
+  Camera,
+  ChevronDown,
+  CircleCheck,
+  FileText,
+  House,
+  List,
+  LogOut,
+  Search,
+  Settings,
+  User,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
+import type { ClientBadge } from "@ledgr/shared-types";
 
 import "./AppShell.css";
+import "./Shell.css";
 import { useAuth } from "../auth/AuthProvider";
 import { ClientHeader } from "../client/ClientHeader";
 import { useSwitcherShortcut } from "../client/ClientSwitcher";
 import { useSession } from "../session/SessionProvider";
-import { Wordmark } from "../Wordmark";
+import { Logo, NavGroup, NavItem } from "../ui";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
-import { Icon, type IconName } from "./icons";
 import { QuickSearch } from "./QuickSearch";
 import { UserMenu } from "./UserMenu";
 
 /**
- * The application shell — `.design/Main.dc.html` on a wide screen, the
- * five-section bottom bar below 64rem — around every authenticated route.
+ * The application shell: design/reference/Home.png's sidebar and header on a
+ * wide screen, the five-section bottom bar below 64rem, around every
+ * authenticated route.
  *
  * --- One markup, two layouts ---
  *
- * The rail and the bottom bar are TWO navs, not one restyled: the canvas
- * gives the rail grouped headings ("Dagelijks werk", "De boeken") and a
- * settings entry pinned to its foot, none of which a five-cell bar can hold,
- * and the bar keeps the five sections ADR-046's shell settled on. CSS
- * decides which is shown (`AppShell.css`, 64rem — the same breakpoint the
- * pre-auth screen uses for its rail, ADR-057). Both carry `aria-current`
- * from `NavLink`, so the current section is announced, not only coloured.
+ * The rail and the bottom bar are TWO navs, not one restyled: the rail has
+ * grouped headings, the company card and Settings / Sign out pinned to its
+ * foot, none of which a five-cell bar can hold. CSS decides which is shown
+ * (`Shell.css`, 64rem, the same breakpoint the pre-auth screen uses). Both carry
+ * `aria-current` from `NavLink`, so the current section is announced, not only
+ * coloured.
  *
- * --- The header is the client header (FR-FRM-000a) ---
+ * --- The active client stays unmistakable (FR-FRM-000a) ---
  *
- * `ClientHeader` renders the bar itself, with the fiscal-year selector, the
- * search trigger and the user menu as its children — so the client's
- * colour is the rule under the whole header, exactly as the canvas draws
- * it, and there is one header rather than a client strip inside another
- * bar. A firm at its portfolio has no active client; the header then says
- * so ("no client selected") and the rail shows only what needs no
- * administration.
+ * `ClientHeader` still renders the header bar, so the client's colour is still
+ * the rule under it and its name is still the first thing a screen reader
+ * meets. On a wide screen the handoff moves the visible identity to the
+ * company card at the top of the rail (marker in the client's own colour,
+ * initials, name, KvK); on a phone, where the rail is gone, the header shows
+ * marker and name itself. See ADR-080.
  *
  * --- Focus on route change (WCAG 2.2 SC 2.4.3) ---
  *
- * The pattern `MobileShell` established for its tab switch, applied to the
- * router: a navigation replaces the whole screen, so focus moves onto
- * `<main tabIndex={-1}>` after every pathname change except the first.
- * The skip link targets the same element — "the content" is one place
- * whether you arrive by skipping the chrome or by navigating.
+ * A navigation replaces the whole screen, so focus moves onto
+ * `<main tabIndex={-1}>` after every pathname change except the first. The skip
+ * link targets the same element.
  */
-interface NavItem {
+interface NavDef {
   readonly id: string;
   readonly to: string;
   readonly labelKey: string;
-  readonly icon: IconName;
+  readonly icon: LucideIcon;
   readonly end?: boolean;
 }
 
-const DAILY: readonly NavItem[] = [
-  { id: "home", to: "/", labelKey: "common.nav.home", icon: "home", end: true },
-  { id: "capture", to: "/capture", labelKey: "common.nav.capture", icon: "capture" },
-  { id: "approve", to: "/review", labelKey: "common.nav.review", icon: "approve" },
-  { id: "view", to: "/overview", labelKey: "common.nav.overview", icon: "view" },
-  { id: "invoice", to: "/invoices", labelKey: "common.nav.invoices", icon: "invoice" },
-  { id: "customers", to: "/customers", labelKey: "common.nav.customers", icon: "customers" },
-];
-
-const BOOKS: readonly NavItem[] = [
-  { id: "ledger", to: "/ledger", labelKey: "common.nav.ledger", icon: "ledger" },
-];
-
-const FIRM: readonly NavItem[] = [
-  { id: "clients", to: "/clients", labelKey: "common.nav.clients", icon: "clients" },
-];
+const HOME: NavDef = { id: "home", to: "/", labelKey: "common.nav.home", icon: House, end: true };
+const CAPTURE: NavDef = {
+  id: "capture",
+  to: "/capture",
+  labelKey: "common.nav.capture",
+  icon: Camera,
+};
+const REVIEW: NavDef = {
+  id: "approve",
+  to: "/review",
+  labelKey: "common.nav.review",
+  icon: CircleCheck,
+};
+const OVERVIEW: NavDef = {
+  id: "view",
+  to: "/overview",
+  labelKey: "common.nav.overview",
+  icon: List,
+};
+const INVOICES: NavDef = {
+  id: "invoice",
+  to: "/invoices",
+  labelKey: "common.nav.invoices",
+  icon: FileText,
+};
+const CUSTOMERS: NavDef = {
+  id: "customers",
+  to: "/customers",
+  labelKey: "common.nav.customers",
+  icon: User,
+};
+const LEDGER: NavDef = {
+  id: "ledger",
+  to: "/ledger",
+  labelKey: "common.nav.ledger",
+  icon: BookOpen,
+};
+const CLIENTS: NavDef = {
+  id: "clients",
+  to: "/clients",
+  labelKey: "common.nav.clients",
+  icon: Users,
+};
 
 /** The bottom bar's five: ADR-046's four tasks plus FR-UX-005's home, unchanged. */
-const COMPACT_TABS: readonly NavItem[] = DAILY.slice(0, 5);
+const COMPACT_TABS: readonly NavDef[] = [HOME, CAPTURE, REVIEW, OVERVIEW, INVOICES];
 
 export function AppShell() {
   const { t } = useI18n();
@@ -96,9 +136,14 @@ export function AppShell() {
   const isFirm = me.organization.kind === "firm";
   const hasAdministration = administration !== null;
   const rail = [
-    ...(hasAdministration ? [{ heading: t("common.nav.group.daily"), items: DAILY }] : []),
-    ...(hasAdministration ? [{ heading: t("common.nav.group.books"), items: BOOKS }] : []),
-    ...(isFirm ? [{ heading: t("common.nav.group.firm"), items: FIRM }] : []),
+    ...(hasAdministration
+      ? [
+          { heading: t("common.nav.group.daily"), items: [HOME, CAPTURE, REVIEW, OVERVIEW] },
+          { heading: t("common.nav.group.sales"), items: [INVOICES, CUSTOMERS] },
+          { heading: t("common.nav.group.books"), items: [LEDGER] },
+        ]
+      : []),
+    ...(isFirm ? [{ heading: t("common.nav.group.firm"), items: [CLIENTS] }] : []),
   ];
   const compactExtras = [
     ...(hasAdministration
@@ -112,7 +157,7 @@ export function AppShell() {
 
   return (
     <div
-      className="shell"
+      className="shell ui-root"
       data-testid="app-shell"
       data-layout={hasAdministration ? "administration" : "portfolio"}
     >
@@ -127,52 +172,76 @@ export function AppShell() {
 
       <aside className="shell__rail" data-testid="shell-rail">
         <div className="shell__brand">
-          <Wordmark />
+          <Logo />
         </div>
+
+        <CompanyCard badge={badge} switchable={isFirm} onSwitch={() => navigate("/clients")} />
+
         <nav className="shell__nav" aria-label={t("common.nav.label")}>
           {rail.map((group) => (
             <div key={group.heading} className="shell__nav-group">
-              <p className="label shell__nav-heading">{group.heading}</p>
+              <NavGroup>{group.heading}</NavGroup>
               {group.items.map((item) => (
-                <NavLink
+                <NavItem
                   key={item.id}
                   to={item.to}
                   end={item.end}
-                  className="shell__nav-link"
-                  data-testid={`nav-${item.id}`}
+                  icon={item.icon}
+                  testId={`nav-${item.id}`}
                 >
-                  <Icon name={item.icon} />
-                  <span>{t(item.labelKey)}</span>
-                </NavLink>
+                  {t(item.labelKey)}
+                </NavItem>
               ))}
             </div>
           ))}
         </nav>
+
         <div className="shell__rail-foot">
-          <NavLink to="/settings" className="shell__nav-link" data-testid="nav-settings">
-            <Icon name="settings" />
-            <span>{t("common.nav.settings")}</span>
-          </NavLink>
+          <NavItem to="/settings" icon={Settings} testId="nav-settings">
+            {t("common.nav.settings")}
+          </NavItem>
+          <button
+            type="button"
+            className="ui-nav"
+            data-testid="nav-sign-out"
+            onClick={requestSignOut}
+          >
+            <LogOut size={20} strokeWidth={1.7} aria-hidden="true" />
+            <span className="ui-nav__label">{t("auth.sign_out")}</span>
+          </button>
         </div>
       </aside>
 
       <ClientHeader badge={badge}>
         <span className="shell__header-brand">
-          <Wordmark />
+          <Logo size={24} />
         </span>
         {isFirm ? (
           <button
             type="button"
-            className="button--quiet shell__switch"
+            className="ui-textbutton shell__switch"
             data-testid="shell-switch-client"
             onClick={() => navigate("/clients")}
           >
             <span>
               {hasAdministration ? t("client.switcher.dialog_label") : t("client.portfolio.choose")}
             </span>
-            <Icon name="chevron-down" size={18} />
+            <ChevronDown size={16} strokeWidth={1.8} aria-hidden="true" />
           </button>
         ) : null}
+        <button
+          type="button"
+          className="shell__search"
+          data-testid="shell-search"
+          onClick={openSearch}
+        >
+          <Search size={18} strokeWidth={1.8} aria-hidden="true" />
+          <span className="shell__search-text">{t("common.search.placeholder")}</span>
+          <kbd className="shell__kbd" aria-hidden="true">
+            {t("common.search.shortcut")}
+          </kbd>
+        </button>
+        <div className="shell__header-spacer" />
         {hasAdministration && fiscalYears.length > 0 ? (
           <label className="shell__fiscal-year">
             <span className="ledgr-visually-hidden">{t("common.fiscal_year.label")}</span>
@@ -189,21 +258,14 @@ export function AppShell() {
                 </option>
               ))}
             </select>
+            <ChevronDown
+              className="shell__fiscal-year-chevron"
+              size={14}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
           </label>
         ) : null}
-        <button
-          type="button"
-          className="shell__search"
-          data-testid="shell-search"
-          onClick={openSearch}
-        >
-          <Icon name="search" size={18} />
-          <span className="shell__search-text">{t("common.search.placeholder")}</span>
-          <kbd className="shell__kbd" aria-hidden="true">
-            {t("common.search.shortcut")}
-          </kbd>
-        </button>
-        <div className="shell__header-spacer" />
         <UserMenu email={me.user.email} onSignOut={requestSignOut} extraLinks={compactExtras} />
       </ClientHeader>
 
@@ -233,7 +295,7 @@ export function AppShell() {
               data-testid={`mobile-tab-${item.id}`}
             >
               <span className="shell__tab-icon" aria-hidden="true">
-                <Icon name={item.icon} />
+                <item.icon size={20} strokeWidth={1.7} />
               </span>
               <span>{t(item.labelKey)}</span>
             </NavLink>
@@ -247,9 +309,82 @@ export function AppShell() {
 }
 
 /**
- * "2026" for a calendar year, "2025/2026" for a broken one — the label the
- * canvas's "Boekjaar 2026" uses. Years only: the selector is a choice among
- * a few, and the full dates are on the settings screen.
+ * The company switcher card at the top of the rail (design DESIGN.md 6.2): the
+ * active client's marker, name and KvK number. The marker keeps the client's
+ * own colour and initials (FR-FRM-000a), so it is the same signal the header
+ * rule gives. For a firm the whole card is the way to the portfolio.
+ *
+ * `undefined` badge is "not known yet" and `null` is "confirmed: no client",
+ * exactly as `ClientHeader` treats them; neither may read as an open client.
+ */
+function CompanyCard({
+  badge,
+  switchable,
+  onSwitch,
+}: {
+  badge: ClientBadge | null | undefined;
+  switchable: boolean;
+  onSwitch: () => void;
+}) {
+  const { t } = useI18n();
+
+  if (badge === undefined) {
+    return (
+      <div className="shell__company" role="status">
+        <span className="shell__company-name">{t("client.header.loading")}</span>
+      </div>
+    );
+  }
+
+  const body =
+    badge === null ? (
+      <span className="shell__company-text">
+        <span className="shell__company-name">{t("client.header.none_selected")}</span>
+      </span>
+    ) : (
+      <>
+        <span
+          className={`client-marker client-marker--${badge.colour} shell__company-marker`}
+          aria-hidden="true"
+        >
+          {badge.initials}
+        </span>
+        <span className="shell__company-text">
+          <span className="shell__company-name">{badge.displayName}</span>
+          {badge.kvkNumber !== null ? (
+            <span className="shell__company-kvk">
+              {t("client.switcher.kvk", { number: badge.kvkNumber })}
+            </span>
+          ) : null}
+        </span>
+      </>
+    );
+
+  if (!switchable) {
+    return (
+      <div className="shell__company" data-testid="shell-company">
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="shell__company shell__company--button"
+      data-testid="shell-company"
+      onClick={onSwitch}
+    >
+      {body}
+      <ChevronDown size={16} strokeWidth={2} aria-hidden="true" />
+    </button>
+  );
+}
+
+/**
+ * "2026" for a calendar year, "2025/2026" for a broken one. Years only: the
+ * selector is a choice among a few, and the full dates are on the settings
+ * screen.
  */
 export function fiscalYearLabel(startDate: string, endDate: string): string {
   const startYear = startDate.slice(0, 4);

@@ -1,186 +1,224 @@
 /*
- * The home screen (FR-UX-005 / MOB-006).
- *
- * The layout carries the same argument the component's docstring makes: the
- * attention list is the hero and the figures are context. That shows up here
- * as size — list rows are full-width and body-sized, figures sit in a compact
- * auto-fit grid at caption size — rather than as order alone.
+ * The home screen (design/reference/Home.png, Home-empty.png): title row, three
+ * figure cards, then a 688 / 420 split. Handoff tokens only (ADR-080). Card
+ * anatomy, rows and badges come from the primitives in ../ui/ui.css; this file
+ * is layout and the few home-only pieces.
  */
 
 .home {
   display: flex;
   flex-direction: column;
-  gap: var(--ledgr-space-5);
+  gap: 20px;
 }
 
-.home__section {
+.home__top {
   display: flex;
-  flex-direction: column;
-  gap: var(--ledgr-space-3);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
 }
-
-.home__section-head {
-  display: flex;
-  align-items: center;
-  gap: var(--ledgr-space-3);
-}
-
-/* ==========================================================================
- * ATTENTION LIST
- * ==========================================================================
- */
-
-/*
- * The icon sits in a tinted disc so the row has an anchor at its left edge and
- * the eye can run down the column of kinds without reading. Neutral by
- * default — see the component's `ItemIcon` docstring for why only an overdue
- * invoice earns the attention colour.
- */
-.home__item-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--ledgr-radius-pill);
-
-  background-color: var(--ledgr-surface-raised);
-  color: var(--ledgr-text-secondary);
-}
-
-.home__item-icon--overdue_invoice {
-  background-color: var(--ledgr-attention-wash);
-  color: var(--ledgr-attention);
-}
-
-.home__item-icon--draft_expense,
-.home__item-icon--draft_invoice {
-  background-color: var(--ledgr-caution-wash);
-  color: var(--ledgr-caution);
-}
-
-/*
- * A row is the description (a whole-row button) and, beside it, the row's
- * one named action — the canvas's layout. The reserved colour is spent on
- * the STATE (the left edge, the icon, the label), never on the action.
- */
-.home__item {
-  display: flex;
-  align-items: center;
-  gap: var(--ledgr-space-3);
-  padding-right: var(--ledgr-space-4);
-  border-left: 3px solid transparent;
-}
-
-.home__item--overdue_invoice {
-  border-left-color: var(--ledgr-attention);
-  background-color: var(--ledgr-attention-wash);
-}
-
-.home__item-row {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.home__item-state {
-  font-size: var(--ledgr-type-caption);
-  color: var(--ledgr-text-muted);
-}
-
-.home__item-state--overdue_invoice {
-  color: var(--ledgr-attention);
-  font-weight: var(--ledgr-weight-semibold);
-}
-
-.home__item-action {
-  flex: none;
-  min-height: 40px;
-  padding-inline: var(--ledgr-space-3);
-  font-size: var(--ledgr-type-caption);
-}
-
-.home__item-action:not(.button--primary) {
-  color: var(--ledgr-accent);
-  border-color: var(--ledgr-accent);
-}
-
-/* On a narrow screen the action drops under the description. */
-@media (max-width: 40rem) {
-  .home__item {
-    flex-wrap: wrap;
-    padding-bottom: var(--ledgr-space-2);
-  }
-
-  .home__item-action {
-    margin-left: calc(2.25rem + var(--ledgr-space-3) + var(--ledgr-space-4));
-  }
-}
-
-/* ==========================================================================
- * FIGURES
- * ==========================================================================
- *
- * `auto-fit` with a minimum rather than a fixed column count: one column on a
- * phone, three across a laptop, and — the part a fixed count gets wrong — it
- * never leaves a single figure stranded alone on a second row.
- */
-
-.home__figures {
+.home__title {
   margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: var(--ledgr-space-3);
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 40px;
+  letter-spacing: -0.5px;
+  text-wrap: balance;
+}
+.home__date {
+  margin: 0;
+  font: 400 14px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.home__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
-/* Three across on the desktop canvas, never two-and-one. */
+.home__kpis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
 @media (min-width: 64rem) {
-  .home__figures {
+  .home__kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-.home__figure {
+.home__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 64rem) {
+  .home__columns {
+    grid-template-columns: minmax(0, 688fr) minmax(0, 420fr);
+  }
+}
+.home__column {
   display: flex;
   flex-direction: column;
-  gap: var(--ledgr-space-1);
-
-  padding: var(--ledgr-space-4);
-  background-color: var(--ledgr-surface-paper);
-  border: 1px solid var(--ledgr-border-subtle);
-  border-radius: var(--ledgr-radius-panel);
+  gap: 20px;
+  min-width: 0;
+}
+.home__clip {
+  overflow: hidden;
 }
 
-.home__figure dd {
+/* Attention list */
+.home__item-badge {
+  width: 72px;
+  flex-shrink: 0;
+}
+.home__item-row {
+  display: block;
+  justify-content: flex-start;
+  flex-grow: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 15px/22px var(--font-sans);
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.home__item-row:hover {
+  text-decoration: underline;
+}
+.home__item-action {
+  width: 128px;
+  flex-shrink: 0;
+}
+.home__caught-up {
+  padding: 0 20px 20px;
+}
+
+/* Recent invoices */
+.home__recent-text {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 14px/20px var(--font-sans);
+}
+.home__recent-date {
+  width: 88px;
+  flex-shrink: 0;
+  text-align: right;
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+
+/* Setup checklist (empty state) */
+.home__setup-head {
+  padding: 16px 20px;
+}
+.home__setup-sub {
   margin: 0;
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.home__step-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font: 700 14px/1 var(--font-sans);
+}
+.home__step-mark--done {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.home__step-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+.home__step-title {
+  font: 600 15px/22px var(--font-sans);
+}
+.home__step-body {
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
 }
 
-/*
- * The serif, at section size rather than the display size these had when they
- * opened the screen. Still unmistakably the figure in its card; no longer the
- * largest thing on the page, because it is no longer the most important.
- */
-.home__figure-value {
-  font-size: var(--ledgr-type-section);
-  color: var(--ledgr-text-primary);
+/* Right column */
+.home__chart-empty {
+  margin-top: var(--space-3);
+}
+.home__btw-period {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 34px;
+}
+.home__btw-estimate {
+  margin: var(--space-2) 0 0;
+  font: 400 14px/20px var(--font-sans);
+}
+.home__btw-note {
+  margin: var(--space-2) 0 0;
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.home__btw-note svg {
+  display: inline;
+  vertical-align: -2px;
 }
 
-/* ==========================================================================
- * LOADING
- * ==========================================================================
- *
- * Three rows at the height of a real list row, so the skeleton occupies the
- * space the content will and nothing shifts when it arrives.
- */
-
+/* Loading */
 .home__loading {
   display: flex;
   flex-direction: column;
-  gap: var(--ledgr-space-2);
+  gap: var(--space-3);
+}
+.home__loading-row {
+  height: 132px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
 }
 
-.home__loading-row {
-  height: 3.5rem;
-  border-radius: var(--ledgr-radius-panel);
+@media (max-width: 40rem) {
+  .home__title {
+    font-size: 30px;
+    line-height: 34px;
+  }
+  /* Badge and action share the first line, the sentence takes the line below. */
+  .home__item-badge {
+    order: 1;
+    width: auto;
+    padding-inline: var(--space-3);
+  }
+  .home__item-action {
+    order: 2;
+    width: auto;
+    margin-left: auto;
+  }
+  .home__item-row {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .home__list-row {
+    flex-wrap: wrap;
+    padding-block: 12px;
+  }
+  .home__recent-date {
+    display: none;
+  }
 }

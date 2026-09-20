@@ -6,12 +6,12 @@ import { useServices } from "../session/ServicesProvider";
 import { HomeScreen } from "./HomeScreen";
 
 /**
- * `/` — FR-UX-005's prioritised home, on the session's own tenant context.
+ * `/`: FR-UX-005's prioritised home, on the session's own tenant context.
  *
  * An item opens the record it is about, which the mobile shell could not
  * do (ADR-048's known gap: its tabs had no "open this one" entry point).
  * With URLs, they do: an invoice is `/invoices/:id`, a draft expense is
- * `/review/:id` — the review screen opening straight onto that receipt's
+ * `/review/:id`, the review screen opening straight onto that receipt's
  * form.
  */
 export function destinationFor(item: DashboardActionItemView): string {
@@ -23,14 +23,17 @@ export function destinationFor(item: DashboardActionItemView): string {
 export function DashboardRoute() {
   const navigate = useNavigate();
   const { administration, fiscalYear } = useAdministration();
-  const { dashboard } = useServices();
+  const { dashboard, invoices } = useServices();
 
   return (
     <HomeScreen
       administrationId={administration.id}
       fiscalYearId={fiscalYear.id}
       api={dashboard}
+      invoicesApi={invoices}
+      companyName={administration.trade_name ?? administration.legal_name}
       onOpenItem={(item) => navigate(destinationFor(item))}
+      onNavigate={(path) => navigate(path)}
     />
   );
 }

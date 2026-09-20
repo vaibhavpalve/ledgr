@@ -25,7 +25,7 @@ export function CardHead({ title, children }: { title: ReactNode; children?: Rea
 }
 
 /**
- * A list row inside a card: 1px top rule, 0 20px padding. Height is the
+ * A list row inside a card: 1px top rule, 0 20px padding. Minimum height is the
  * caller's (72 for the attention list, 51 for activity).
  */
 export function Row({
@@ -37,7 +37,7 @@ export function Row({
   return (
     <div
       className={`ui-row${className ? ` ${className}` : ""}`}
-      style={{ height, ...style }}
+      style={{ minHeight: height, ...style }}
       {...rest}
     />
   );
