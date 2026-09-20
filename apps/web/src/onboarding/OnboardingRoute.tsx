@@ -35,7 +35,12 @@ export function OnboardingRoute() {
         <div className="app__bar-spacer" />
         <ThemeToggle />
         <LanguageSwitcher />
-        <button type="button" className="button--quiet" data-testid="sign-out" onClick={requestSignOut}>
+        <button
+          type="button"
+          className="button--quiet"
+          data-testid="sign-out"
+          onClick={requestSignOut}
+        >
           {t("auth.sign_out")}
         </button>
       </header>
@@ -47,7 +52,9 @@ export function OnboardingRoute() {
           onCreated={() => {
             void refresh().then(() => navigate(isFirm ? "/clients" : "/", { replace: true }));
           }}
-          onCancel={isFirm && me.administrations.length > 0 ? () => navigate("/clients") : undefined}
+          onCancel={
+            isFirm && me.administrations.length > 0 ? () => navigate("/clients") : undefined
+          }
         />
       </main>
     </div>

@@ -31,7 +31,9 @@ describe("CustomerApi", () => {
 
     await api.listCustomers("adm-A", { q: "vries", includeArchived: true, limit: 20 });
 
-    expect(calls[0]?.url).toBe("/v1/administrations/adm-A/customers?q=vries&include_archived=true&limit=20");
+    expect(calls[0]?.url).toBe(
+      "/v1/administrations/adm-A/customers?q=vries&include_archived=true&limit=20",
+    );
   });
 
   it("creates with the CustomerBody as-is — the credit limit stays a string", async () => {
@@ -73,7 +75,9 @@ describe("CustomerApi", () => {
   it("keeps the field a 422 names, so a form can mark the right input", async () => {
     const { impl } = fakeFetch({
       "POST /v1/administrations/adm-A/customers": () =>
-        problemResponse(422, "customer_field_invalid", "Dit gegeven klopt niet.", { field: "credit_limit" }),
+        problemResponse(422, "customer_field_invalid", "Dit gegeven klopt niet.", {
+          field: "credit_limit",
+        }),
     });
     const api = new CustomerApi({ language: () => "nl", fetchImpl: impl });
 

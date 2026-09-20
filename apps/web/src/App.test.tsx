@@ -112,7 +112,7 @@ describe("App — the unauthenticated door", () => {
     // panel AND in the marketing rail, toggled by viewport width via CSS
     // rather than JS — jsdom does not evaluate that media query, so both are
     // genuinely in the DOM regardless of which a real browser would show.
-    expect(screen.getAllByText("LEDGR")).toHaveLength(2);
+    expect(screen.getAllByText("Ledgr")).toHaveLength(2);
     expect(screen.getByTestId("login-form")).toBeDefined();
   });
 

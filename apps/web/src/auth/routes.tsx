@@ -211,7 +211,9 @@ export function VerifyEmailRoute() {
           </div>
         ) : null}
         <Link to={status === "authenticated" ? "/" : "/login"} className="auth-form__link">
-          {status === "authenticated" ? t("auth.verify_email.continue") : t("auth.google.callback.back_to_login")}
+          {status === "authenticated"
+            ? t("auth.verify_email.continue")
+            : t("auth.google.callback.back_to_login")}
         </Link>
       </div>
     </PreAuthScreen>

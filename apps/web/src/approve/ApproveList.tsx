@@ -98,7 +98,11 @@ export function ApproveList({
       ) : null}
 
       {problem ? (
-        <div role="alert" data-testid="approve-error" className="alert alert--attention error-state">
+        <div
+          role="alert"
+          data-testid="approve-error"
+          className="alert alert--attention error-state"
+        >
           <div className="error-state__text">
             <p>{t("mobile.common.error")}</p>
             <p className="error-state__hint">{t("common.error.next_step")}</p>
@@ -117,7 +121,11 @@ export function ApproveList({
       ) : null}
 
       {items !== null && items.length > 0 ? (
-        <ul className="panel list" aria-label={t("mobile.approve.list_label")} data-testid="approve-list">
+        <ul
+          className="panel list"
+          aria-label={t("mobile.approve.list_label")}
+          data-testid="approve-list"
+        >
           {items.map((item) => (
             <li key={item.id} data-testid="approve-item">
               <button

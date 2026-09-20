@@ -2,6 +2,10 @@ import { useI18n } from "@ledgr/i18n";
 
 const MINUS = "−";
 
+export interface MoneyFormatter {
+  (amount: string): string;
+}
+
 /**
  * Formats a decimal STRING as money with the real minus sign (U+2212).
  *
@@ -11,7 +15,7 @@ const MINUS = "−";
  * the same as `Intl.NumberFormat('nl-NL', {style:'currency', currency:'EUR'})`
  * except that a negative reads with U+2212 instead of a hyphen.
  */
-export function useMoney(): (amount: string) => string {
+export function useMoney(): MoneyFormatter {
   const { money } = useI18n();
   return (amount) => money(amount).replace("-", MINUS);
 }

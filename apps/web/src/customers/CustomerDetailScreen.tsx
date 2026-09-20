@@ -86,26 +86,39 @@ export function CustomerDetailScreen() {
   const erased = customer.erased_at !== null;
 
   return (
-    <section className="screen" aria-label={t("customers.detail.title")} data-testid="customer-detail">
+    <section
+      className="screen"
+      aria-label={t("customers.detail.title")}
+      data-testid="customer-detail"
+    >
       <PageHeader
         title={customer.trade_name ?? customer.name}
         context={customer.trade_name !== null ? customer.name : undefined}
         action={
           !archived && !erased ? (
-            <Link to="/invoices/new" className="button-link button-link--primary" data-testid="customer-invoice">
+            <Link
+              to="/invoices/new"
+              className="button-link button-link--primary"
+              data-testid="customer-invoice"
+            >
               {t("customers.detail.new_invoice")}
             </Link>
           ) : undefined
         }
       >
         {archived ? <span className="chip">{t("customers.status.archived")}</span> : null}
-        {erased ? <span className="chip chip--attention">{t("customers.status.erased")}</span> : null}
+        {erased ? (
+          <span className="chip chip--attention">{t("customers.status.erased")}</span>
+        ) : null}
       </PageHeader>
 
       <p className="meta-line">
         <Link to="/customers">{t("customers.detail.back")}</Link>
         {!erased ? (
-          <Link to={`/customers/${encodeURIComponent(customer.id)}/edit`} data-testid="customer-edit">
+          <Link
+            to={`/customers/${encodeURIComponent(customer.id)}/edit`}
+            data-testid="customer-edit"
+          >
             {t("common.action.edit")}
           </Link>
         ) : null}
@@ -122,7 +135,9 @@ export function CustomerDetailScreen() {
           <dt className="label">{t("customers.field.address_line1")}</dt>
           <dd>{customer.address_line1 ?? "—"}</dd>
           {customer.address_line2 !== null ? <dd>{customer.address_line2}</dd> : null}
-          <dd>{[customer.postal_code, customer.city].filter((part) => part !== null).join(" ") || "—"}</dd>
+          <dd>
+            {[customer.postal_code, customer.city].filter((part) => part !== null).join(" ") || "—"}
+          </dd>
           <dd className="caption">{customer.country}</dd>
           {!customer.address_is_complete ? (
             <dd className="field-error" data-testid="customer-address-incomplete">
@@ -134,11 +149,15 @@ export function CustomerDetailScreen() {
           <dt className="label">{t("customers.field.vat_number")}</dt>
           <dd className="meta-line">
             <span className="ledgr-num">{customer.vat_number ?? "—"}</span>
-            {customer.vat_number !== null ? <VatStatusChip status={customer.vat_number_status} /> : null}
+            {customer.vat_number !== null ? (
+              <VatStatusChip status={customer.vat_number_status} />
+            ) : null}
           </dd>
           {customer.vat_number_checked_at !== null ? (
             <dd className="caption ledgr-num">
-              {t("customers.detail.vat_checked_at", { date: date(customer.vat_number_checked_at.slice(0, 10)) })}
+              {t("customers.detail.vat_checked_at", {
+                date: date(customer.vat_number_checked_at.slice(0, 10)),
+              })}
             </dd>
           ) : null}
           {customer.vat_number_status === "unavailable" ? (
@@ -150,9 +169,15 @@ export function CustomerDetailScreen() {
                 type="button"
                 disabled={busy !== null}
                 data-testid="customer-check-vat"
-                onClick={() => void run("vies", () => customers.validateVatNumber(administration.id, customer.id))}
+                onClick={() =>
+                  void run("vies", () =>
+                    customers.validateVatNumber(administration.id, customer.id),
+                  )
+                }
               >
-                {busy === "vies" ? t("customers.detail.vat_checking") : t("customers.detail.vat_check")}
+                {busy === "vies"
+                  ? t("customers.detail.vat_checking")
+                  : t("customers.detail.vat_check")}
               </button>
             </dd>
           ) : null}
@@ -164,15 +189,23 @@ export function CustomerDetailScreen() {
         <div>
           <dt className="label">{t("customers.field.invoice_email")}</dt>
           <dd>{customer.invoice_email ?? "—"}</dd>
-          <dd className="caption">{t(`customers.delivery_channel.${customer.delivery_channel}`)}</dd>
+          <dd className="caption">
+            {t(`customers.delivery_channel.${customer.delivery_channel}`)}
+          </dd>
         </div>
         <div>
           <dt className="label">{t("customers.field.payment_terms_days")}</dt>
-          <dd className="ledgr-num">{t("customers.detail.days", { count: customer.payment_terms_days })}</dd>
+          <dd className="ledgr-num">
+            {t("customers.detail.days", { count: customer.payment_terms_days })}
+          </dd>
         </div>
         <div>
           <dt className="label">{t("customers.field.credit_limit")}</dt>
-          <dd className="ledgr-num">{customer.credit_limit === null ? t("customers.detail.no_credit_limit") : money(customer.credit_limit)}</dd>
+          <dd className="ledgr-num">
+            {customer.credit_limit === null
+              ? t("customers.detail.no_credit_limit")
+              : money(customer.credit_limit)}
+          </dd>
         </div>
         <div>
           <dt className="label">{t("customers.field.language")}</dt>
@@ -193,7 +226,9 @@ export function CustomerDetailScreen() {
               type="button"
               disabled={busy !== null}
               data-testid="customer-restore"
-              onClick={() => void run("archive", () => customers.restoreCustomer(administration.id, customer.id))}
+              onClick={() =>
+                void run("archive", () => customers.restoreCustomer(administration.id, customer.id))
+              }
             >
               {t("customers.detail.restore")}
             </button>
@@ -203,12 +238,16 @@ export function CustomerDetailScreen() {
               className="button--danger"
               disabled={busy !== null}
               data-testid="customer-archive"
-              onClick={() => void run("archive", () => customers.archiveCustomer(administration.id, customer.id))}
+              onClick={() =>
+                void run("archive", () => customers.archiveCustomer(administration.id, customer.id))
+              }
             >
               {t("customers.detail.archive")}
             </button>
           )}
-          <p className="caption">{archived ? t("customers.detail.restore_hint") : t("customers.detail.archive_hint")}</p>
+          <p className="caption">
+            {archived ? t("customers.detail.restore_hint") : t("customers.detail.archive_hint")}
+          </p>
         </div>
       ) : null}
     </section>

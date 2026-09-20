@@ -38,7 +38,13 @@ export function RequireAuth() {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
   if (status === "mfa_pending") {
-    return <Navigate to="/mfa" replace state={(location.state as LocationState | null) ?? { from: location }} />;
+    return (
+      <Navigate
+        to="/mfa"
+        replace
+        state={(location.state as LocationState | null) ?? { from: location }}
+      />
+    );
   }
   return <Outlet />;
 }

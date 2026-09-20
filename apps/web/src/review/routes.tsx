@@ -34,5 +34,7 @@ export function OverviewRoute() {
   const { administration } = useAdministration();
   const { capture, invoices } = useServices();
 
-  return <ViewList administrationId={administration.id} captureApi={capture} invoiceApi={invoices} />;
+  return (
+    <ViewList administrationId={administration.id} captureApi={capture} invoiceApi={invoices} />
+  );
 }

@@ -26,8 +26,19 @@ describe("AccountApi", () => {
 
   it("lists sessions from either a bare array or a wrapped one, and marks the current session", async () => {
     const rows = [
-      { id: "s1", created_at: "2026-09-14T08:00:00Z", last_active_at: "2026-09-14T09:00:00Z", expires_at: "2026-09-15T08:00:00Z", is_current: true },
-      { id: "s2", created_at: "2026-09-10T08:00:00Z", last_seen_at: "2026-09-11T09:00:00Z", expires_at: "2026-09-11T08:00:00Z" },
+      {
+        id: "s1",
+        created_at: "2026-09-14T08:00:00Z",
+        last_active_at: "2026-09-14T09:00:00Z",
+        expires_at: "2026-09-15T08:00:00Z",
+        is_current: true,
+      },
+      {
+        id: "s2",
+        created_at: "2026-09-10T08:00:00Z",
+        last_seen_at: "2026-09-11T09:00:00Z",
+        expires_at: "2026-09-11T08:00:00Z",
+      },
     ];
     const bare = new AccountApi({
       language: () => "nl",
@@ -38,7 +49,10 @@ describe("AccountApi", () => {
       fetchImpl: fakeFetch({ "GET /v1/me/sessions": () => jsonResponse({ sessions: rows }) }).impl,
     });
 
-    const [fromBare, fromWrapped] = await Promise.all([bare.listSessions(), wrapped.listSessions()]);
+    const [fromBare, fromWrapped] = await Promise.all([
+      bare.listSessions(),
+      wrapped.listSessions(),
+    ]);
 
     expect(fromBare).toEqual(fromWrapped);
     expect(fromBare[0]?.is_current).toBe(true);
@@ -64,7 +78,10 @@ describe("AccountApi", () => {
 
     await api.changePassword("old-one", "new-and-long-enough");
 
-    expect(calls[0]?.body).toEqual({ current_password: "old-one", new_password: "new-and-long-enough" });
+    expect(calls[0]?.body).toEqual({
+      current_password: "old-one",
+      new_password: "new-and-long-enough",
+    });
   });
 
   it("surfaces the server's reason and sentence as an ApiError", async () => {

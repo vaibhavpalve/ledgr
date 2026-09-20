@@ -111,7 +111,11 @@ export function AppShell() {
   ];
 
   return (
-    <div className="shell" data-testid="app-shell" data-layout={hasAdministration ? "administration" : "portfolio"}>
+    <div
+      className="shell"
+      data-testid="app-shell"
+      data-layout={hasAdministration ? "administration" : "portfolio"}
+    >
       {/*
         WCAG 2.2 SC 2.4.1. First in the DOM so it is the first thing Tab
         reaches, and invisible until focused (see .ledgr-skip-link in
@@ -163,7 +167,9 @@ export function AppShell() {
             data-testid="shell-switch-client"
             onClick={() => navigate("/clients")}
           >
-            <span>{hasAdministration ? t("client.switcher.dialog_label") : t("client.portfolio.choose")}</span>
+            <span>
+              {hasAdministration ? t("client.switcher.dialog_label") : t("client.portfolio.choose")}
+            </span>
             <Icon name="chevron-down" size={18} />
           </button>
         ) : null}
@@ -177,7 +183,9 @@ export function AppShell() {
             >
               {fiscalYears.map((year) => (
                 <option key={year.id} value={year.id}>
-                  {t("common.fiscal_year.option", { label: fiscalYearLabel(year.start_date, year.end_date) })}
+                  {t("common.fiscal_year.option", {
+                    label: fiscalYearLabel(year.start_date, year.end_date),
+                  })}
                 </option>
               ))}
             </select>
@@ -211,7 +219,11 @@ export function AppShell() {
       </main>
 
       {hasAdministration ? (
-        <nav aria-label={t("mobile.shell.nav_label")} className="shell__tabs" data-testid="mobile-shell-tabs">
+        <nav
+          aria-label={t("mobile.shell.nav_label")}
+          className="shell__tabs"
+          data-testid="mobile-shell-tabs"
+        >
           {COMPACT_TABS.map((item) => (
             <NavLink
               key={item.id}

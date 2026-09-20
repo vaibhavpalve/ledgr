@@ -1,3 +1,6 @@
+/** The product name is a proper noun, the same in both languages. */
+const WORD = "Ledgr";
+
 /**
  * The placeholder wordmark (DESIGN.md section 3): an outline mark, a rounded
  * square with a vertical rule at a third and two horizontal rules, then the
@@ -18,7 +21,7 @@ export function Logo({ size = 28, onPanel }: { size?: number; onPanel?: boolean 
         <rect x="3" y="3" width="26" height="26" rx="7" />
         <path d="M11 3v26M11 12h18M11 20h18" />
       </svg>
-      <span className="ui-logo__word">Ledgr</span>
+      <span className="ui-logo__word">{WORD}</span>
     </span>
   );
 }

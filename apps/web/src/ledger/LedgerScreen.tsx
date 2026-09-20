@@ -49,7 +49,10 @@ export function LedgerScreen() {
     <section className="screen" aria-label={t("ledger.title")} data-testid="ledger">
       <PageHeader
         title={t("ledger.title")}
-        context={t("ledger.fiscal_year_context", { start: fiscalYear.start_date.slice(0, 4), end: fiscalYear.end_date.slice(0, 4) })}
+        context={t("ledger.fiscal_year_context", {
+          start: fiscalYear.start_date.slice(0, 4),
+          end: fiscalYear.end_date.slice(0, 4),
+        })}
       />
       <nav className="subnav" aria-label={t("ledger.views_label")}>
         {VIEWS.map((candidate) => (
@@ -63,14 +66,24 @@ export function LedgerScreen() {
           </Link>
         ))}
       </nav>
-      {view === "trial-balance" ? <TrialBalance administrationId={administration.id} fiscalYearId={fiscalYear.id} /> : null}
-      {view === "journal" ? <Journal administrationId={administration.id} fiscalYearId={fiscalYear.id} /> : null}
+      {view === "trial-balance" ? (
+        <TrialBalance administrationId={administration.id} fiscalYearId={fiscalYear.id} />
+      ) : null}
+      {view === "journal" ? (
+        <Journal administrationId={administration.id} fiscalYearId={fiscalYear.id} />
+      ) : null}
       {view === "chart" ? <Chart administrationId={administration.id} /> : null}
     </section>
   );
 }
 
-function TrialBalance({ administrationId, fiscalYearId }: { administrationId: string; fiscalYearId: string }) {
+function TrialBalance({
+  administrationId,
+  fiscalYearId,
+}: {
+  administrationId: string;
+  fiscalYearId: string;
+}) {
   const { t, money } = useI18n();
   const { ledger } = useServices();
   const [balance, setBalance] = useState<TrialBalanceView | null>(null);
@@ -94,7 +107,8 @@ function TrialBalance({ administrationId, fiscalYearId }: { administrationId: st
     };
   }, [ledger, administrationId, fiscalYearId, attempt]);
 
-  if (problem !== null) return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
+  if (problem !== null)
+    return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
   if (balance === null) return <LoadingSkeleton rows={6} />;
   if (balance.rows.length === 0) {
     return (
@@ -119,9 +133,15 @@ function TrialBalance({ administrationId, fiscalYearId }: { administrationId: st
           <tr>
             <th scope="col">{t("ledger.column.account")}</th>
             <th scope="col">{t("ledger.column.name")}</th>
-            <th scope="col" className="table__num">{t("ledger.column.debit")}</th>
-            <th scope="col" className="table__num">{t("ledger.column.credit")}</th>
-            <th scope="col" className="table__num">{t("ledger.column.balance")}</th>
+            <th scope="col" className="table__num">
+              {t("ledger.column.debit")}
+            </th>
+            <th scope="col" className="table__num">
+              {t("ledger.column.credit")}
+            </th>
+            <th scope="col" className="table__num">
+              {t("ledger.column.balance")}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -147,8 +167,12 @@ function TrialBalance({ administrationId, fiscalYearId }: { administrationId: st
                 <span className="chip chip--attention">{t("ledger.trial_balance.unbalanced")}</span>
               )}
             </td>
-            <td className="table__num" data-testid="trial-balance-total-debit">{money(balance.total_debit)}</td>
-            <td className="table__num" data-testid="trial-balance-total-credit">{money(balance.total_credit)}</td>
+            <td className="table__num" data-testid="trial-balance-total-debit">
+              {money(balance.total_debit)}
+            </td>
+            <td className="table__num" data-testid="trial-balance-total-credit">
+              {money(balance.total_credit)}
+            </td>
             <td />
           </tr>
         </tfoot>
@@ -157,7 +181,13 @@ function TrialBalance({ administrationId, fiscalYearId }: { administrationId: st
   );
 }
 
-function Journal({ administrationId, fiscalYearId }: { administrationId: string; fiscalYearId: string }) {
+function Journal({
+  administrationId,
+  fiscalYearId,
+}: {
+  administrationId: string;
+  fiscalYearId: string;
+}) {
   const { t, money, date } = useI18n();
   const { ledger } = useServices();
   const [entries, setEntries] = useState<readonly JournalEntrySummaryView[] | null>(null);
@@ -191,7 +221,11 @@ function Journal({ administrationId, fiscalYearId }: { administrationId: string;
     if (cursor === null) return;
     setLoadingMore(true);
     try {
-      const page = await ledger.listJournalEntries(administrationId, { fiscalYearId, cursor, limit: 50 });
+      const page = await ledger.listJournalEntries(administrationId, {
+        fiscalYearId,
+        cursor,
+        limit: 50,
+      });
       setEntries((current) => [...(current ?? []), ...page.entries]);
       setCursor(page.next_cursor);
     } catch (error) {
@@ -201,7 +235,8 @@ function Journal({ administrationId, fiscalYearId }: { administrationId: string;
     }
   }, [ledger, administrationId, fiscalYearId, cursor]);
 
-  if (problem !== null && entries === null) return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
+  if (problem !== null && entries === null)
+    return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
   if (entries === null) return <LoadingSkeleton rows={6} />;
   if (entries.length === 0) {
     return (
@@ -226,7 +261,9 @@ function Journal({ administrationId, fiscalYearId }: { administrationId: string;
               <th scope="col">{t("ledger.column.date")}</th>
               <th scope="col">{t("ledger.column.entry")}</th>
               <th scope="col">{t("ledger.column.description")}</th>
-              <th scope="col" className="table__num">{t("ledger.column.amount")}</th>
+              <th scope="col" className="table__num">
+                {t("ledger.column.amount")}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -246,7 +283,10 @@ function Journal({ administrationId, fiscalYearId }: { administrationId: string;
                 </td>
                 <td className="ledgr-num">{date(entry.entry_date)}</td>
                 <td className="ledgr-num table__muted">
-                  {t("ledger.journal.entry_number", { journal: entry.journal_code, number: entry.entry_number })}
+                  {t("ledger.journal.entry_number", {
+                    journal: entry.journal_code,
+                    number: entry.entry_number,
+                  })}
                 </td>
                 <td>
                   <button
@@ -267,19 +307,36 @@ function Journal({ administrationId, fiscalYearId }: { administrationId: string;
       {problem !== null ? <ErrorState message={problem} onRetry={() => void loadMore()} /> : null}
       {cursor !== null ? (
         <div className="form__actions">
-          <button type="button" disabled={loadingMore} data-testid="journal-more" onClick={() => void loadMore()}>
+          <button
+            type="button"
+            disabled={loadingMore}
+            data-testid="journal-more"
+            onClick={() => void loadMore()}
+          >
             {loadingMore ? t("mobile.common.loading") : t("ledger.journal.load_more")}
           </button>
         </div>
       ) : null}
       {openId !== null ? (
-        <EntryDrawer administrationId={administrationId} entryId={openId} onClose={() => setOpenId(null)} />
+        <EntryDrawer
+          administrationId={administrationId}
+          entryId={openId}
+          onClose={() => setOpenId(null)}
+        />
       ) : null}
     </>
   );
 }
 
-function EntryDrawer({ administrationId, entryId, onClose }: { administrationId: string; entryId: string; onClose: () => void }) {
+function EntryDrawer({
+  administrationId,
+  entryId,
+  onClose,
+}: {
+  administrationId: string;
+  entryId: string;
+  onClose: () => void;
+}) {
   const { t, money, date } = useI18n();
   const { ledger } = useServices();
   const [entry, setEntry] = useState<JournalEntryView | null>(null);
@@ -312,10 +369,23 @@ function EntryDrawer({ administrationId, entryId, onClose }: { administrationId:
 
   return (
     <div className="drawer-backdrop">
-      <div ref={dialogRef} className="drawer" role="dialog" aria-modal="true" aria-label={t("ledger.entry.title")} data-testid="entry-drawer">
+      <div
+        ref={dialogRef}
+        className="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("ledger.entry.title")}
+        data-testid="entry-drawer"
+      >
         <div className="drawer__head">
           <h2>{t("ledger.entry.title")}</h2>
-          <button type="button" className="button--quiet" aria-label={t("common.action.close")} data-testid="entry-drawer-close" onClick={onClose}>
+          <button
+            type="button"
+            className="button--quiet"
+            aria-label={t("common.action.close")}
+            data-testid="entry-drawer-close"
+            onClick={onClose}
+          >
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -329,7 +399,12 @@ function EntryDrawer({ administrationId, entryId, onClose }: { administrationId:
                 {t("ledger.entry.posted_final")}
               </span>
               <span className="ledgr-num">{date(entry.entry_date)}</span>
-              <span className="ledgr-num">{t("ledger.journal.entry_number", { journal: entry.journal_code, number: entry.entry_number })}</span>
+              <span className="ledgr-num">
+                {t("ledger.journal.entry_number", {
+                  journal: entry.journal_code,
+                  number: entry.entry_number,
+                })}
+              </span>
             </p>
             <p>{entry.description}</p>
             {entry.reverses_entry_id !== null ? (
@@ -341,8 +416,12 @@ function EntryDrawer({ administrationId, entryId, onClose }: { administrationId:
                   <tr>
                     <th scope="col">{t("ledger.column.account")}</th>
                     <th scope="col">{t("ledger.column.description")}</th>
-                    <th scope="col" className="table__num">{t("ledger.column.debit")}</th>
-                    <th scope="col" className="table__num">{t("ledger.column.credit")}</th>
+                    <th scope="col" className="table__num">
+                      {t("ledger.column.debit")}
+                    </th>
+                    <th scope="col" className="table__num">
+                      {t("ledger.column.credit")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -350,8 +429,12 @@ function EntryDrawer({ administrationId, entryId, onClose }: { administrationId:
                     <tr key={line.id}>
                       <td className="ledgr-num">{line.account_code}</td>
                       <td>{line.description ?? line.account_name}</td>
-                      <td className="table__num">{line.debit === "0.00" ? "—" : money(line.debit)}</td>
-                      <td className="table__num">{line.credit === "0.00" ? "—" : money(line.credit)}</td>
+                      <td className="table__num">
+                        {line.debit === "0.00" ? "—" : money(line.debit)}
+                      </td>
+                      <td className="table__num">
+                        {line.credit === "0.00" ? "—" : money(line.credit)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -389,10 +472,17 @@ function Chart({ administrationId }: { administrationId: string }) {
     };
   }, [ledger, administrationId, attempt]);
 
-  if (problem !== null) return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
+  if (problem !== null)
+    return <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />;
   if (accounts === null) return <LoadingSkeleton rows={8} />;
   if (accounts.length === 0) {
-    return <EmptyState title={t("ledger.chart.empty_title")} body={t("ledger.chart.empty_body")} testId="chart-empty" />;
+    return (
+      <EmptyState
+        title={t("ledger.chart.empty_title")}
+        body={t("ledger.chart.empty_body")}
+        testId="chart-empty"
+      />
+    );
   }
 
   return (
@@ -412,7 +502,9 @@ function Chart({ administrationId }: { administrationId: string }) {
               <td className="ledgr-num">{account.code}</td>
               <td>
                 {account.name}
-                {account.status === "blocked" ? <span className="chip"> {t("ledger.chart.blocked")}</span> : null}
+                {account.status === "blocked" ? (
+                  <span className="chip"> {t("ledger.chart.blocked")}</span>
+                ) : null}
               </td>
               <td>{t(`ledger.account_type.${account.account_type}`)}</td>
               <td className="ledgr-num table__muted">{account.rgs_code ?? "—"}</td>

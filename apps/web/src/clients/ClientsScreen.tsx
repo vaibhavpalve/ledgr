@@ -63,7 +63,11 @@ export function ClientsScreen() {
         context={t("client.portfolio.count", { count: administrations.length })}
         action={
           administrations.length > 0 ? (
-            <Link to="/onboarding" className="button-link button-link--primary" data-testid="clients-add">
+            <Link
+              to="/onboarding"
+              className="button-link button-link--primary"
+              data-testid="clients-add"
+            >
               <Icon name="plus" size={18} />
               {isFirm ? t("client.portfolio.add") : t("client.portfolio.add_administration")}
             </Link>
@@ -76,10 +80,18 @@ export function ClientsScreen() {
       {administrations.length === 0 ? (
         <EmptyState
           icon={<Icon name="clients" size={32} />}
-          title={isFirm ? t("client.portfolio.empty_title") : t("client.portfolio.empty_title_business")}
-          body={isFirm ? t("client.portfolio.empty_body") : t("client.portfolio.empty_body_business")}
+          title={
+            isFirm ? t("client.portfolio.empty_title") : t("client.portfolio.empty_title_business")
+          }
+          body={
+            isFirm ? t("client.portfolio.empty_body") : t("client.portfolio.empty_body_business")
+          }
           action={
-            <Link to="/onboarding" className="button-link button-link--primary" data-testid="clients-add-first">
+            <Link
+              to="/onboarding"
+              className="button-link button-link--primary"
+              data-testid="clients-add-first"
+            >
               {isFirm ? t("client.portfolio.add_first") : t("client.portfolio.add_administration")}
             </Link>
           }
@@ -115,20 +127,34 @@ export function ClientsScreen() {
               {visible.map((entry) => {
                 const current = entry.id === administration?.id;
                 return (
-                  <li key={entry.id} className="card" data-testid="client-card" data-administration-id={entry.id}>
+                  <li
+                    key={entry.id}
+                    className="card"
+                    data-testid="client-card"
+                    data-administration-id={entry.id}
+                  >
                     <div className="card__head">
-                      <span className={`client-marker client-marker--large client-marker--${entry.colour}`} aria-hidden="true">
+                      <span
+                        className={`client-marker client-marker--large client-marker--${entry.colour}`}
+                        aria-hidden="true"
+                      >
                         {entry.initials}
                       </span>
                       <div>
                         <p className="card__title">{entry.trade_name ?? entry.legal_name}</p>
-                        {entry.trade_name !== null ? <p className="card__meta">{entry.legal_name}</p> : null}
+                        {entry.trade_name !== null ? (
+                          <p className="card__meta">{entry.legal_name}</p>
+                        ) : null}
                       </div>
                     </div>
                     <p className="card__meta ledgr-num">
-                      {entry.kvk_number === null ? t("client.portfolio.no_kvk") : t("client.switcher.kvk", { number: entry.kvk_number })}
+                      {entry.kvk_number === null
+                        ? t("client.portfolio.no_kvk")
+                        : t("client.switcher.kvk", { number: entry.kvk_number })}
                     </p>
-                    <p className="card__meta">{roleLabel(entry.role, language, { isSystem: entry.role_is_system })}</p>
+                    <p className="card__meta">
+                      {roleLabel(entry.role, language, { isSystem: entry.role_is_system })}
+                    </p>
                     <div className="card__actions">
                       {current ? (
                         <span className="chip chip--accent" data-testid="client-current">
@@ -142,7 +168,9 @@ export function ClientsScreen() {
                         data-testid={`client-open-${entry.id}`}
                         onClick={() => void open(entry)}
                       >
-                        {switching === entry.id ? t("client.portfolio.opening") : t("client.portfolio.open")}
+                        {switching === entry.id
+                          ? t("client.portfolio.opening")
+                          : t("client.portfolio.open")}
                       </button>
                     </div>
                   </li>

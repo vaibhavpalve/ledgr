@@ -130,7 +130,7 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
     expect(mfaTotpVerify).toHaveBeenCalledWith("654321", false);
   });
 
-  it("TOTP: checking \"remember this device\" is passed through to the verify call", async () => {
+  it('TOTP: checking "remember this device" is passed through to the verify call', async () => {
     const mfaTotpVerify = vi.fn(async () => verified);
     const onVerified = vi.fn();
 

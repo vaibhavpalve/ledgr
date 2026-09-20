@@ -56,7 +56,12 @@ export function NewInvoiceScreen() {
 
   return (
     <div className="screen" data-testid="new-invoice">
-      {problem !== null ? <ErrorState message={t("invoice.new.customers_unavailable")} testId="new-invoice-customers-error" /> : null}
+      {problem !== null ? (
+        <ErrorState
+          message={t("invoice.new.customers_unavailable")}
+          testId="new-invoice-customers-error"
+        />
+      ) : null}
       <SendInvoiceForm
         administrationId={administration.id}
         fiscalYearId={fiscalYear.id}

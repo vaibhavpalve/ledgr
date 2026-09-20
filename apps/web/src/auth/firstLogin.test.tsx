@@ -228,7 +228,8 @@ describe("FR-LOC-001a: without reload or re-authentication", () => {
       expect(
         fetchImpl.mock.calls.some(
           ([url, init]) =>
-            String(url) === "/v1/me/language" && (init as RequestInit | undefined)?.method === "PUT",
+            String(url) === "/v1/me/language" &&
+            (init as RequestInit | undefined)?.method === "PUT",
         ),
       ).toBe(true),
     );
@@ -241,5 +242,3 @@ describe("FR-LOC-001a: without reload or re-authentication", () => {
     expect(authCalls).toEqual([]);
   });
 });
-
-

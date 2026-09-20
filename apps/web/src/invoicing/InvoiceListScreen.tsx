@@ -53,7 +53,11 @@ export function InvoiceListScreen() {
         title={t("invoice.list.title")}
         context={rows === null ? undefined : t("invoice.list.count", { count: rows.length })}
         action={
-          <Link to="/invoices/new" className="button-link button-link--primary" data-testid="invoice-list-new">
+          <Link
+            to="/invoices/new"
+            className="button-link button-link--primary"
+            data-testid="invoice-list-new"
+          >
             <Icon name="plus" size={18} />
             {t("invoice.list.new")}
           </Link>
@@ -121,7 +125,10 @@ export function InvoiceListScreen() {
 export function InvoiceStatusChip({ status }: { status: SalesInvoiceStatus }) {
   const { t } = useI18n();
   return (
-    <span className={status === "issued" ? "chip chip--positive" : "chip chip--caution"} data-testid="invoice-status">
+    <span
+      className={status === "issued" ? "chip chip--positive" : "chip chip--caution"}
+      data-testid="invoice-status"
+    >
       {t(`mobile.view.invoice_status.${status}`)}
     </span>
   );

@@ -138,7 +138,12 @@ export function FormattingLocaleField({
   return (
     <>
       <label htmlFor={id}>{t("onboarding.company.formatting_locale")}</label>
-      <select id={id} value={value} data-testid={testId} onChange={(event) => onChange(event.target.value)}>
+      <select
+        id={id}
+        value={value}
+        data-testid={testId}
+        onChange={(event) => onChange(event.target.value)}
+      >
         {FORMATTING_LOCALES.map((locale) => (
           <option key={locale} value={locale}>
             {t(localeKey(locale))}
@@ -149,7 +154,11 @@ export function FormattingLocaleField({
   );
 }
 
-const STEP_KEYS = ["onboarding.step.company", "onboarding.step.fiscal_year", "onboarding.step.review"] as const;
+const STEP_KEYS = [
+  "onboarding.step.company",
+  "onboarding.step.fiscal_year",
+  "onboarding.step.review",
+] as const;
 
 export function OnboardingWizard({
   api,
@@ -188,7 +197,8 @@ export function OnboardingWizard({
     writeDraft(storageKey, draft);
   }, [storageKey, draft]);
 
-  const update = (patch: Partial<OnboardingDraft>) => setDraft((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<OnboardingDraft>) =>
+    setDraft((current) => ({ ...current, ...patch }));
 
   const companyProblems = useMemo(() => validateCompany(draft), [draft]);
   const yearProblems = useMemo(() => validateYear(draft), [draft]);
@@ -203,7 +213,8 @@ export function OnboardingWizard({
       trade_name: draft.tradeName.trim() === "" ? null : draft.tradeName.trim(),
       legal_form: draft.legalForm,
       kvk_number: draft.kvkNumber.trim() === "" ? null : draft.kvkNumber.replace(/\s/g, ""),
-      vat_number: draft.vatNumber.trim() === "" ? null : draft.vatNumber.replace(/[\s.-]/g, "").toUpperCase(),
+      vat_number:
+        draft.vatNumber.trim() === "" ? null : draft.vatNumber.replace(/[\s.-]/g, "").toUpperCase(),
       formatting_locale: draft.formattingLocale,
       fiscal_year: {
         start_date: draft.startDate,
@@ -228,7 +239,9 @@ export function OnboardingWizard({
     <section className="onboarding" aria-labelledby={headingId} data-testid="onboarding">
       <header className="onboarding__head">
         <h1 id={headingId}>{firmClient ? t("onboarding.title_firm") : t("onboarding.title")}</h1>
-        <p className="onboarding__intro">{firmClient ? t("onboarding.intro_firm") : t("onboarding.intro")}</p>
+        <p className="onboarding__intro">
+          {firmClient ? t("onboarding.intro_firm") : t("onboarding.intro")}
+        </p>
         <ol className="steps" aria-label={t("onboarding.progress_label")}>
           {STEP_KEYS.map((key, index) => (
             <li
@@ -255,7 +268,11 @@ export function OnboardingWizard({
           <fieldset className="form__field">
             <legend className="label">{t("onboarding.legal_form.label")}</legend>
             <p className="form__hint">{t("onboarding.legal_form.hint")}</p>
-            <div className="card-grid" role="radiogroup" aria-label={t("onboarding.legal_form.label")}>
+            <div
+              className="card-grid"
+              role="radiogroup"
+              aria-label={t("onboarding.legal_form.label")}
+            >
               {LEGAL_FORMS.map((form) => (
                 <label key={form} className="card choice" data-testid={`legal-form-${form}`}>
                   <input
@@ -266,7 +283,9 @@ export function OnboardingWizard({
                     onChange={() => update({ legalForm: form })}
                   />
                   <span className="choice__title">{t(`onboarding.legal_form.${form}.title`)}</span>
-                  <span className="choice__body">{t(`onboarding.legal_form.${form}.consequence`)}</span>
+                  <span className="choice__body">
+                    {t(`onboarding.legal_form.${form}.consequence`)}
+                  </span>
                 </label>
               ))}
             </div>
@@ -309,8 +328,13 @@ export function OnboardingWizard({
                 data-testid="onboarding-kvk"
                 onChange={(event) => update({ kvkNumber: event.target.value })}
               />
-              <p id="onb-kvk-hint" className={companyProblems.includes("kvk") ? "field-error" : "form__hint"}>
-                {companyProblems.includes("kvk") ? t("onboarding.company.kvk_invalid") : t("onboarding.company.kvk_hint")}
+              <p
+                id="onb-kvk-hint"
+                className={companyProblems.includes("kvk") ? "field-error" : "form__hint"}
+              >
+                {companyProblems.includes("kvk")
+                  ? t("onboarding.company.kvk_invalid")
+                  : t("onboarding.company.kvk_hint")}
               </p>
             </div>
             <div className="form__field">
@@ -324,8 +348,13 @@ export function OnboardingWizard({
                 data-testid="onboarding-vat"
                 onChange={(event) => update({ vatNumber: event.target.value })}
               />
-              <p id="onb-vat-hint" className={companyProblems.includes("vat") ? "field-error" : "form__hint"}>
-                {companyProblems.includes("vat") ? t("onboarding.company.vat_invalid") : t("onboarding.company.vat_hint")}
+              <p
+                id="onb-vat-hint"
+                className={companyProblems.includes("vat") ? "field-error" : "form__hint"}
+              >
+                {companyProblems.includes("vat")
+                  ? t("onboarding.company.vat_invalid")
+                  : t("onboarding.company.vat_hint")}
               </p>
             </div>
             <div className="form__field">
@@ -425,7 +454,12 @@ export function OnboardingWizard({
             <button type="submit" data-testid="onboarding-next">
               {t("onboarding.action.next")}
             </button>
-            <button type="button" className="button--quiet" data-testid="onboarding-back" onClick={() => update({ step: 0 })}>
+            <button
+              type="button"
+              className="button--quiet"
+              data-testid="onboarding-back"
+              onClick={() => update({ step: 0 })}
+            >
               {t("common.action.back")}
             </button>
           </div>
@@ -469,21 +503,34 @@ export function OnboardingWizard({
             <div>
               <dt className="label">{t("onboarding.step.fiscal_year")}</dt>
               <dd className="ledgr-num">
-                {t("onboarding.review.year_range", { start: date(draft.startDate), end: date(draft.endDate) })}
+                {t("onboarding.review.year_range", {
+                  start: date(draft.startDate),
+                  end: date(draft.endDate),
+                })}
               </dd>
-              <dd className="caption">{t(`onboarding.fiscal_year.scheme.${draft.periodScheme}`)}</dd>
+              <dd className="caption">
+                {t(`onboarding.fiscal_year.scheme.${draft.periodScheme}`)}
+              </dd>
             </div>
           </dl>
 
           <p className="alert" data-testid="onboarding-chart-note">
             <Icon name="ledger" size={18} />
-            <span>{t("onboarding.review.chart_note", { form: t(`onboarding.legal_form.${draft.legalForm}.title`) })}</span>
+            <span>
+              {t("onboarding.review.chart_note", {
+                form: t(`onboarding.legal_form.${draft.legalForm}.title`),
+              })}
+            </span>
           </p>
 
           {problem !== null ? (
             <div role="alert" className="alert alert--attention" data-testid="onboarding-problem">
               <p>{problem}</p>
-              {fieldProblem !== null ? <p className="caption">{t("onboarding.review.field_problem", { field: fieldProblem })}</p> : null}
+              {fieldProblem !== null ? (
+                <p className="caption">
+                  {t("onboarding.review.field_problem", { field: fieldProblem })}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -495,9 +542,19 @@ export function OnboardingWizard({
               data-testid="onboarding-submit"
               onClick={() => void submit()}
             >
-              {submitting ? t("onboarding.action.creating") : firmClient ? t("onboarding.action.create_firm") : t("onboarding.action.create")}
+              {submitting
+                ? t("onboarding.action.creating")
+                : firmClient
+                  ? t("onboarding.action.create_firm")
+                  : t("onboarding.action.create")}
             </button>
-            <button type="button" className="button--quiet" data-testid="onboarding-back" disabled={submitting} onClick={() => update({ step: 1 })}>
+            <button
+              type="button"
+              className="button--quiet"
+              data-testid="onboarding-back"
+              disabled={submitting}
+              onClick={() => update({ step: 1 })}
+            >
               {t("common.action.back")}
             </button>
           </div>
@@ -517,7 +574,11 @@ function PeriodPreview({ api, draft }: { api: OnboardingApi; draft: OnboardingDr
     setPeriods(null);
     setProblem(null);
     api
-      .previewFiscalYear({ start_date: draft.startDate, end_date: draft.endDate, period_scheme: draft.periodScheme })
+      .previewFiscalYear({
+        start_date: draft.startDate,
+        end_date: draft.endDate,
+        period_scheme: draft.periodScheme,
+      })
       .then((result) => {
         if (!cancelled) setPeriods(result);
       })
@@ -539,17 +600,26 @@ function PeriodPreview({ api, draft }: { api: OnboardingApi; draft: OnboardingDr
   if (periods === null) return <LoadingSkeleton rows={2} testId="onboarding-preview-loading" />;
 
   return (
-    <section className="screen__section" aria-label={t("onboarding.fiscal_year.preview_heading")} data-testid="onboarding-preview">
+    <section
+      className="screen__section"
+      aria-label={t("onboarding.fiscal_year.preview_heading")}
+      data-testid="onboarding-preview"
+    >
       <div className="section-head">
         <h2>{t("onboarding.fiscal_year.preview_heading")}</h2>
-        <span className="chip chip--accent">{t("onboarding.fiscal_year.period_count", { count: periods.length })}</span>
+        <span className="chip chip--accent">
+          {t("onboarding.fiscal_year.period_count", { count: periods.length })}
+        </span>
       </div>
       <ol className="panel list">
         {periods.map((period) => (
           <li key={period.period_number} className="list__row" data-testid="onboarding-period">
             <span className="chip ledgr-num">{period.period_number}</span>
             <span className="list__row-text ledgr-num">
-              {t("onboarding.review.year_range", { start: date(period.start_date), end: date(period.end_date) })}
+              {t("onboarding.review.year_range", {
+                start: date(period.start_date),
+                end: date(period.end_date),
+              })}
             </span>
           </li>
         ))}
@@ -566,7 +636,8 @@ export function validateCompany(draft: OnboardingDraft): CompanyProblem[] {
   if (draft.legalName.trim() === "") problems.push("legal_name");
   const kvk = draft.kvkNumber.replace(/\s/g, "");
   if (kvk !== "" && !/^\d{8}$/.test(kvk)) problems.push("kvk");
-  if (draft.vatNumber.trim() !== "" && vatNumberFormatProblem(draft.vatNumber) !== null) problems.push("vat");
+  if (draft.vatNumber.trim() !== "" && vatNumberFormatProblem(draft.vatNumber) !== null)
+    problems.push("vat");
   return problems;
 }
 

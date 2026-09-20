@@ -34,7 +34,12 @@ export function AuthenticatedLayout({ services }: { services?: Partial<Services>
         renderError={(message, retry) => (
           <PreAuthScreen screen="login">
             <ErrorState message={message} onRetry={retry} testId="session-error">
-              <button type="button" className="button--quiet" data-testid="sign-out" onClick={requestSignOut}>
+              <button
+                type="button"
+                className="button--quiet"
+                data-testid="sign-out"
+                onClick={requestSignOut}
+              >
                 {t("auth.sign_out")}
               </button>
             </ErrorState>

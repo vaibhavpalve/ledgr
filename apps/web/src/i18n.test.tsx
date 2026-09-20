@@ -314,5 +314,3 @@ describe("FR-UX-007: the API is told which language to answer in", () => {
     expect(languageHeaders("nl")).toEqual({ "Accept-Language": "nl" });
   });
 });
-
-

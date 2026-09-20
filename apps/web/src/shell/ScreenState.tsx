@@ -70,7 +70,11 @@ export function ErrorState({
 }) {
   const { t } = useI18n();
   return (
-    <div role="alert" className="alert alert--attention error-state" data-testid={testId ?? "screen-error"}>
+    <div
+      role="alert"
+      className="alert alert--attention error-state"
+      data-testid={testId ?? "screen-error"}
+    >
       <div className="error-state__text">
         <p className="error-state__title">{t("common.error.title")}</p>
         <p>{message}</p>

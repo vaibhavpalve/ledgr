@@ -69,7 +69,10 @@ export class OnboardingApi {
     return callJson<CreatedAdministrationView>(this.options, "POST", "/v1/administrations", body);
   }
 
-  updateAdministration(administrationId: string, patch: AdministrationPatch): Promise<AdministrationView> {
+  updateAdministration(
+    administrationId: string,
+    patch: AdministrationPatch,
+  ): Promise<AdministrationView> {
     return callJson<AdministrationView>(
       this.options,
       "PATCH",
@@ -79,11 +82,9 @@ export class OnboardingApi {
   }
 
   async listFiscalYears(administrationId: string): Promise<FiscalYearView[]> {
-    const raw = await callJson<readonly FiscalYearView[] | { fiscal_years: readonly FiscalYearView[] }>(
-      this.options,
-      "GET",
-      pathOf("v1", "administrations", administrationId, "fiscal-years"),
-    );
+    const raw = await callJson<
+      readonly FiscalYearView[] | { fiscal_years: readonly FiscalYearView[] }
+    >(this.options, "GET", pathOf("v1", "administrations", administrationId, "fiscal-years"));
     return unwrapList<FiscalYearView>(raw, "fiscal_years");
   }
 

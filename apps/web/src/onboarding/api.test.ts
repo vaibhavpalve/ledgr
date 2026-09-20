@@ -35,7 +35,11 @@ describe("OnboardingApi", () => {
     });
 
     expect(
-      await api.previewFiscalYear({ start_date: "2026-01-01", end_date: "2026-01-31", period_scheme: "monthly" }),
+      await api.previewFiscalYear({
+        start_date: "2026-01-01",
+        end_date: "2026-01-31",
+        period_scheme: "monthly",
+      }),
     ).toEqual(periods);
   });
 
@@ -55,7 +59,13 @@ describe("OnboardingApi", () => {
           role: "Owner",
           role_is_system: true,
           fiscal_years: [
-            { id: "fy-1", start_date: "2026-01-01", end_date: "2026-12-31", period_scheme: "monthly", is_current: true },
+            {
+              id: "fy-1",
+              start_date: "2026-01-01",
+              end_date: "2026-12-31",
+              period_scheme: "monthly",
+              is_current: true,
+            },
           ],
           chart: { seeded: 62, rgs_version: "3.8-provisional" },
         }),
@@ -69,7 +79,11 @@ describe("OnboardingApi", () => {
       kvk_number: "34281907",
       vat_number: "NL001234567B01",
       formatting_locale: "nl-NL",
-      fiscal_year: { start_date: "2026-01-01", end_date: "2026-12-31", period_scheme: "monthly" as const },
+      fiscal_year: {
+        start_date: "2026-01-01",
+        end_date: "2026-12-31",
+        period_scheme: "monthly" as const,
+      },
     };
     const created = await api.createAdministration(body);
 
@@ -81,7 +95,8 @@ describe("OnboardingApi", () => {
 
   it("PATCHes only the fields given", async () => {
     const { impl, calls } = fakeFetch({
-      "PATCH /v1/administrations/adm-1": (call) => jsonResponse({ id: "adm-1", ...(call.body as object) }),
+      "PATCH /v1/administrations/adm-1": (call) =>
+        jsonResponse({ id: "adm-1", ...(call.body as object) }),
     });
     const api = new OnboardingApi({ language: () => "nl", fetchImpl: impl });
 

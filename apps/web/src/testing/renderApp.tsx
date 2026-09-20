@@ -31,7 +31,10 @@ type AppProps = NonNullable<Parameters<typeof App>[0]>;
  * `GET /v1/me` answered (see `SessionProvider`); `authenticated` alone puts
  * the app past the door, not past the bootstrap.
  */
-export function renderApp(props: AppProps = {}, { route = "/" }: { route?: string } = {}): RenderResult {
+export function renderApp(
+  props: AppProps = {},
+  { route = "/" }: { route?: string } = {},
+): RenderResult {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <App {...props} />

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { CircleAlert, KeyRound } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 
 import type { AuthApi, AuthResult } from "./api";
 import { ApiError, OfflineError } from "./api";
+import { Button, Field } from "../ui";
 import { getPasskey, PasskeyUnavailableError } from "./webauthn";
 
 /**
@@ -37,6 +39,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState<"password" | "google" | "passkey" | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // `action` is typed `() => unknown` rather than `() => Promise<void>`
   // deliberately: `await` accepts any return type, and spelling out
@@ -58,6 +61,7 @@ export function LoginForm({
   return (
     <div className="auth-form" data-testid="login-form">
       <form
+        className="login-actions"
         aria-label={t("auth.sign_in.heading")}
         onSubmit={(event) => {
           event.preventDefault();
@@ -66,87 +70,118 @@ export function LoginForm({
           });
         }}
       >
-        <label>
-          {t("auth.sign_in.email")}
-          <input
+        <div className="login-fields">
+          <Field
+            label={t("auth.sign_in.email")}
             type="email"
+            size="lg"
             autoComplete="username"
+            placeholder={t("auth.sign_in.email_placeholder")}
             required
             data-testid="login-email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
-        </label>
 
-        <label>
-          {t("auth.sign_in.password")}
-          <input
-            type="password"
+          <Field
+            id="login-password"
+            label={t("auth.sign_in.password")}
+            type={showPassword ? "text" : "password"}
+            size="lg"
             autoComplete="current-password"
+            placeholder={t("auth.sign_in.password_placeholder")}
             required
             data-testid="login-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            labelAction={
+              <button
+                type="button"
+                className="ui-textbutton"
+                aria-controls="login-password"
+                data-testid="login-show-password"
+                onClick={() => setShowPassword((shown) => !shown)}
+              >
+                {t(showPassword ? "auth.sign_in.hide_password" : "auth.sign_in.show_password")}
+              </button>
+            }
           />
-        </label>
+        </div>
 
         {problem ? (
-          <p role="alert" data-testid="login-error">
-            {problem}
+          <p role="alert" className="ui-error" data-testid="login-error">
+            <CircleAlert size={14} strokeWidth={1.7} aria-hidden="true" />
+            <span>{problem}</span>
           </p>
         ) : null}
 
-        <button type="submit" data-testid="login-submit" disabled={submitting !== null}>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          block
+          data-testid="login-submit"
+          disabled={submitting !== null}
+        >
           {t("auth.sign_in.submit")}
-        </button>
+        </Button>
       </form>
 
-      <p className="auth-form__divider">{t("auth.sign_in.or")}</p>
+      <div className="login-actions">
+        <p className="login-divider">{t("auth.sign_in.or_continue")}</p>
 
-      <button
-        type="button"
-        data-testid="login-google"
-        disabled={submitting !== null}
-        onClick={() =>
-          void withProblem("google", async () => {
-            const { authorizationUrl } = await api.loginGoogleStart();
-            onGoogleStart(authorizationUrl);
-          })
-        }
-      >
-        <GoogleIcon />
-        {t("auth.sign_in.google")}
-      </button>
+        <div className="login-alt">
+          <Button
+            size="lg"
+            data-testid="login-google"
+            aria-label={t("auth.sign_in.google")}
+            disabled={submitting !== null}
+            onClick={() =>
+              void withProblem("google", async () => {
+                const { authorizationUrl } = await api.loginGoogleStart();
+                onGoogleStart(authorizationUrl);
+              })
+            }
+          >
+            <GoogleIcon />
+            {t("auth.sign_in.google_short")}
+          </Button>
 
-      <button
-        type="button"
-        data-testid="login-passkey"
-        disabled={submitting !== null}
-        onClick={() =>
-          void withProblem("passkey", async () => {
-            const { ceremonyId, optionsJson } = await api.loginPasskeyBegin();
-            const credential = await getPasskey(optionsJson);
-            onSignedIn(await api.loginPasskeyFinish(ceremonyId, credential));
-          })
-        }
-      >
-        {t("auth.sign_in.passkey")}
-      </button>
+          <Button
+            size="lg"
+            data-testid="login-passkey"
+            aria-label={t("auth.sign_in.passkey")}
+            disabled={submitting !== null}
+            onClick={() =>
+              void withProblem("passkey", async () => {
+                const { ceremonyId, optionsJson } = await api.loginPasskeyBegin();
+                const credential = await getPasskey(optionsJson);
+                onSignedIn(await api.loginPasskeyFinish(ceremonyId, credential));
+              })
+            }
+          >
+            <KeyRound size={18} strokeWidth={1.8} aria-hidden="true" />
+            {t("auth.sign_in.passkey_short")}
+          </Button>
+        </div>
+      </div>
 
-      {/* A different journey, not a second primary action — so it never wears
-          a filled button beside the one the screen exists for. */}
-      <button
-        type="button"
-        className="button--quiet"
-        data-testid="switch-to-signup"
-        onClick={onSwitchToSignup}
-      >
-        {t("auth.sign_in.switch_to_signup")}
-      </button>
+      {/* A different journey, not a second primary action, so it is a text
+          link and never a filled button beside the one the screen exists for. */}
+      <p className="login-switch">
+        {t("auth.sign_in.no_account")}{" "}
+        <button
+          type="button"
+          className="ui-textbutton"
+          data-testid="switch-to-signup"
+          onClick={onSwitchToSignup}
+        >
+          {t("auth.sign_in.create_one")}
+        </button>
+      </p>
     </div>
   );
 }
-
 /**
  * Google's own four-colour "G" mark, at the fixed proportions and colours
  * Google's brand guidelines require for a "Sign in with Google" button —

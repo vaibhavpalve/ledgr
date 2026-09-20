@@ -30,7 +30,10 @@ export function CustomerListScreen() {
     let cancelled = false;
     setProblem(null);
     customers
-      .listCustomers(administration.id, { q: query.trim() === "" ? undefined : query.trim(), includeArchived })
+      .listCustomers(administration.id, {
+        q: query.trim() === "" ? undefined : query.trim(),
+        includeArchived,
+      })
       .then((result) => {
         if (!cancelled) setRows(result);
       })
@@ -50,7 +53,11 @@ export function CustomerListScreen() {
         title={t("customers.list.title")}
         context={rows === null ? undefined : t("customers.list.count", { count: rows.length })}
         action={
-          <Link to="/customers/new" className="button-link button-link--primary" data-testid="customer-list-new">
+          <Link
+            to="/customers/new"
+            className="button-link button-link--primary"
+            data-testid="customer-list-new"
+          >
             <Icon name="plus" size={18} />
             {t("customers.list.new")}
           </Link>
@@ -163,7 +170,11 @@ export function CustomerListScreen() {
 export function VatStatusChip({ status }: { status: VatNumberStatus }) {
   const { t } = useI18n();
   const tone =
-    status === "valid" ? "chip chip--positive" : status === "invalid" ? "chip chip--attention" : "chip";
+    status === "valid"
+      ? "chip chip--positive"
+      : status === "invalid"
+        ? "chip chip--attention"
+        : "chip";
   return (
     <span className={tone} data-testid="vat-status">
       {t(`customers.vat_status.${status}`)}

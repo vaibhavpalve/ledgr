@@ -69,7 +69,8 @@ export function HomeScreen({
         if (!cancelled) setSummary(result);
       })
       .catch((error: unknown) => {
-        if (!cancelled) setProblem(error instanceof Error ? error.message : t("mobile.common.error"));
+        if (!cancelled)
+          setProblem(error instanceof Error ? error.message : t("mobile.common.error"));
       });
     return () => {
       cancelled = true;
@@ -90,7 +91,11 @@ export function HomeScreen({
       </div>
 
       {problem !== null ? (
-        <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} testId="home-error" />
+        <ErrorState
+          message={problem}
+          onRetry={() => setAttempt((n) => n + 1)}
+          testId="home-error"
+        />
       ) : null}
 
       {/*

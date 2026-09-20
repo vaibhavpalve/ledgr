@@ -83,15 +83,13 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
 
   const options = useMemo<Option[]>(() => {
     const needle = query.trim().toLowerCase();
-    const screens: Option[] = SEARCHABLE_SCREENS.map(
-      (screen): Option => ({
-        id: `screen:${screen.to}`,
-        kind: "screen",
-        label: t(screen.key),
-        detail: null,
-        to: screen.to,
-      }),
-    ).filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
+    const screens: Option[] = SEARCHABLE_SCREENS.map((screen): Option => ({
+      id: `screen:${screen.to}`,
+      kind: "screen",
+      label: t(screen.key),
+      detail: null,
+      to: screen.to,
+    })).filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
     const clientOptions: Option[] = clients
       .filter(
         (entry) =>
@@ -104,7 +102,8 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
         id: `client:${entry.administrationId}`,
         kind: "client",
         label: entry.displayName,
-        detail: entry.kvkNumber === null ? null : t("client.switcher.kvk", { number: entry.kvkNumber }),
+        detail:
+          entry.kvkNumber === null ? null : t("client.switcher.kvk", { number: entry.kvkNumber }),
         entry,
       }));
     return [...clientOptions, ...screens];
@@ -185,9 +184,19 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
             onKeyDown={onKeyDown}
           />
         </div>
-        <ul id={listboxId} role="listbox" aria-label={t("common.search.results")} className="quick-search__list">
+        <ul
+          id={listboxId}
+          role="listbox"
+          aria-label={t("common.search.results")}
+          className="quick-search__list"
+        >
           {options.length === 0 ? (
-            <li role="option" aria-disabled="true" aria-selected="false" className="quick-search__empty">
+            <li
+              role="option"
+              aria-disabled="true"
+              aria-selected="false"
+              className="quick-search__empty"
+            >
               {t("common.search.no_matches", { query })}
             </li>
           ) : (
@@ -201,13 +210,18 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
                 id={`${listboxId}-${option.id}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={index === activeIndex ? "quick-search__option is-active" : "quick-search__option"}
+                className={
+                  index === activeIndex ? "quick-search__option is-active" : "quick-search__option"
+                }
                 data-testid={`quick-search-option-${option.kind}`}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => choose(option)}
               >
                 {option.entry !== undefined ? (
-                  <span className={`client-marker client-marker--${option.entry.colour}`} aria-hidden="true">
+                  <span
+                    className={`client-marker client-marker--${option.entry.colour}`}
+                    aria-hidden="true"
+                  >
                     {option.entry.initials}
                   </span>
                 ) : (
@@ -220,7 +234,9 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
                   <span className="quick-search__detail ledgr-num">{option.detail}</span>
                 ) : null}
                 <span className="chip">
-                  {option.kind === "client" ? t("common.search.kind_client") : t("common.search.kind_screen")}
+                  {option.kind === "client"
+                    ? t("common.search.kind_client")
+                    : t("common.search.kind_screen")}
                 </span>
               </li>
             ))

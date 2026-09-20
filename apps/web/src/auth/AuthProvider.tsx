@@ -10,7 +10,12 @@ import {
 import { useI18n } from "@ledgr/i18n";
 
 import { AuthApi, type AuthResult, type MfaEnrollmentStatus } from "./api";
-import { clearSession, hasVerifiedStoredSession, storeSession, storeTrustedDeviceToken } from "./session";
+import {
+  clearSession,
+  hasVerifiedStoredSession,
+  storeSession,
+  storeTrustedDeviceToken,
+} from "./session";
 import { capturesAtRisk, purgeCaptureQueue } from "../capture/queue";
 import { createAuthenticatedFetch } from "../session/authenticatedFetch";
 import { SignOutConfirm } from "../SignOutConfirm";

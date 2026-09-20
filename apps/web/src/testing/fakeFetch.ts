@@ -20,11 +20,18 @@ export function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-export function problemResponse(status: number, reason: string, message: string, extra = {}): Response {
+export function problemResponse(
+  status: number,
+  reason: string,
+  message: string,
+  extra = {},
+): Response {
   return jsonResponse({ detail: { reason, message, ...extra } }, status);
 }
 
-export function fakeFetch(handlers: Record<string, (call: RecordedCall) => Response | Promise<Response>>) {
+export function fakeFetch(
+  handlers: Record<string, (call: RecordedCall) => Response | Promise<Response>>,
+) {
   const calls: RecordedCall[] = [];
   const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);

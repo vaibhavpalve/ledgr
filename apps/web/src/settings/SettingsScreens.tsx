@@ -46,13 +46,17 @@ export function SettingsLayout() {
     <section className="screen" aria-label={t("common.nav.settings")} data-testid="settings">
       <PageHeader title={t("common.nav.settings")} />
       <nav className="subnav" aria-label={t("settings.sections_label")}>
-        {SECTIONS.filter((section) => administration !== null || section.to !== "/settings/invoice-design").map(
-          (section) => (
-            <NavLink key={section.to} to={section.to} data-testid={`settings-nav-${section.to.split("/").pop()}`}>
-              {t(section.key)}
-            </NavLink>
-          ),
-        )}
+        {SECTIONS.filter(
+          (section) => administration !== null || section.to !== "/settings/invoice-design",
+        ).map((section) => (
+          <NavLink
+            key={section.to}
+            to={section.to}
+            data-testid={`settings-nav-${section.to.split("/").pop()}`}
+          >
+            {t(section.key)}
+          </NavLink>
+        ))}
       </nav>
       <Outlet />
     </section>
@@ -81,7 +85,11 @@ export function ProfileSettings() {
   };
 
   return (
-    <section className="screen__section" aria-label={t("settings.profile.title")} data-testid="settings-profile">
+    <section
+      className="screen__section"
+      aria-label={t("settings.profile.title")}
+      data-testid="settings-profile"
+    >
       <h2>{t("settings.profile.title")}</h2>
       <dl className="facts panel panel__body">
         <div>
@@ -97,14 +105,23 @@ export function ProfileSettings() {
                 <span className="chip chip--caution" data-testid="profile-unverified">
                   {t("settings.profile.unverified")}
                 </span>
-                <button type="button" disabled={resend === "sending"} data-testid="profile-resend" onClick={() => void resendVerification()}>
+                <button
+                  type="button"
+                  disabled={resend === "sending"}
+                  data-testid="profile-resend"
+                  onClick={() => void resendVerification()}
+                >
                   {t("common.verification.resend")}
                 </button>
               </>
             )}
           </dd>
           {resend === "sent" ? <dd role="status">{t("common.verification.resent")}</dd> : null}
-          {problem !== null ? <dd role="alert" className="field-error">{problem}</dd> : null}
+          {problem !== null ? (
+            <dd role="alert" className="field-error">
+              {problem}
+            </dd>
+          ) : null}
         </div>
         <div>
           <dt className="label">{t("common.language.label")}</dt>
@@ -128,7 +145,11 @@ export function ProfileSettings() {
 export function AppearanceSettings() {
   const { t } = useI18n();
   return (
-    <section className="screen__section" aria-label={t("settings.appearance.title")} data-testid="settings-appearance">
+    <section
+      className="screen__section"
+      aria-label={t("settings.appearance.title")}
+      data-testid="settings-appearance"
+    >
       <h2>{t("settings.appearance.title")}</h2>
       <div className="panel panel__body form">
         <p className="label">{t("common.theme.label")}</p>
@@ -226,16 +247,43 @@ function PasswordSection() {
         <div className="form__grid">
           <div className="form__field form__span">
             <label htmlFor="pw-current">{t("settings.security.password_current")}</label>
-            <input id="pw-current" type="password" autoComplete="current-password" required value={current} data-testid="password-current" onChange={(e) => setCurrent(e.target.value)} />
+            <input
+              id="pw-current"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={current}
+              data-testid="password-current"
+              onChange={(e) => setCurrent(e.target.value)}
+            />
           </div>
           <div className="form__field">
             <label htmlFor="pw-next">{t("settings.security.password_new")}</label>
-            <input id="pw-next" type="password" autoComplete="new-password" required minLength={12} value={next} data-testid="password-new" onChange={(e) => setNext(e.target.value)} />
+            <input
+              id="pw-next"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={12}
+              value={next}
+              data-testid="password-new"
+              onChange={(e) => setNext(e.target.value)}
+            />
             <p className="form__hint">{t("settings.security.password_hint")}</p>
           </div>
           <div className="form__field">
             <label htmlFor="pw-confirm">{t("settings.security.password_confirm")}</label>
-            <input id="pw-confirm" type="password" autoComplete="new-password" required value={confirm} aria-invalid={mismatch ? true : undefined} aria-describedby="pw-confirm-hint" data-testid="password-confirm" onChange={(e) => setConfirm(e.target.value)} />
+            <input
+              id="pw-confirm"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirm}
+              aria-invalid={mismatch ? true : undefined}
+              aria-describedby="pw-confirm-hint"
+              data-testid="password-confirm"
+              onChange={(e) => setConfirm(e.target.value)}
+            />
             {mismatch ? (
               <p id="pw-confirm-hint" className="field-error">
                 {t("settings.security.password_mismatch")}
@@ -254,7 +302,11 @@ function PasswordSection() {
           </p>
         ) : null}
         <div className="form__actions">
-          <button type="submit" disabled={state === "saving" || mismatch} data-testid="password-submit">
+          <button
+            type="submit"
+            disabled={state === "saving" || mismatch}
+            data-testid="password-submit"
+          >
             {t("settings.security.password_submit")}
           </button>
         </div>
@@ -263,7 +315,11 @@ function PasswordSection() {
   );
 }
 
-function PasskeysSection({ onVerified }: { onVerified: (result: { accessToken: string; mfaVerified: boolean }) => void }) {
+function PasskeysSection({
+  onVerified,
+}: {
+  onVerified: (result: { accessToken: string; mfaVerified: boolean }) => void;
+}) {
   const { t, date } = useI18n();
   const { authApi } = useAuth();
   const { account } = useServices();
@@ -303,10 +359,16 @@ function PasskeysSection({ onVerified }: { onVerified: (result: { accessToken: s
   };
 
   return (
-    <section className="screen__section" aria-label={t("settings.security.passkeys_title")} data-testid="passkeys">
+    <section
+      className="screen__section"
+      aria-label={t("settings.security.passkeys_title")}
+      data-testid="passkeys"
+    >
       <h2>{t("settings.security.passkeys_title")}</h2>
       <div className="panel panel__body form">
-        {problem !== null ? <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} /> : null}
+        {problem !== null ? (
+          <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />
+        ) : null}
         {passkeys === null && problem === null ? <LoadingSkeleton rows={2} /> : null}
         {passkeys !== null && passkeys.length === 0 ? (
           <p className="caption" data-testid="passkeys-empty">
@@ -320,13 +382,20 @@ function PasskeysSection({ onVerified }: { onVerified: (result: { accessToken: s
                 <span className="list__row-text">
                   <span>{passkey.name}</span>
                   <span className="caption ledgr-num">
-                    {t("settings.security.passkey_added", { date: date(passkey.created_at.slice(0, 10)) })}
+                    {t("settings.security.passkey_added", {
+                      date: date(passkey.created_at.slice(0, 10)),
+                    })}
                     {passkey.last_used_at !== null
                       ? ` · ${t("settings.security.passkey_used", { date: date(passkey.last_used_at.slice(0, 10)) })}`
                       : ""}
                   </span>
                 </span>
-                <button type="button" className="button--danger" data-testid={`passkey-remove-${passkey.id}`} onClick={() => void remove(passkey)}>
+                <button
+                  type="button"
+                  className="button--danger"
+                  data-testid={`passkey-remove-${passkey.id}`}
+                  onClick={() => void remove(passkey)}
+                >
                   {t("settings.security.passkey_remove")}
                 </button>
               </li>
@@ -397,11 +466,17 @@ function SessionsSection() {
   };
 
   return (
-    <section className="screen__section" aria-label={t("settings.security.sessions_title")} data-testid="sessions">
+    <section
+      className="screen__section"
+      aria-label={t("settings.security.sessions_title")}
+      data-testid="sessions"
+    >
       <h2>{t("settings.security.sessions_title")}</h2>
       <p className="caption">{t("settings.security.sessions_hint")}</p>
       <div className="panel">
-        {problem !== null ? <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} /> : null}
+        {problem !== null ? (
+          <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />
+        ) : null}
         {sessions === null && problem === null ? <LoadingSkeleton rows={2} /> : null}
         {sessions !== null ? (
           <ul className="list" data-testid="sessions-list">
@@ -409,7 +484,11 @@ function SessionsSection() {
               <li key={session.id} className="list__row" data-testid="session-row">
                 <span className="list__row-text">
                   <span className="meta-line">
-                    <span className="ledgr-num">{t("settings.security.session_started", { date: date(session.created_at.slice(0, 10)) })}</span>
+                    <span className="ledgr-num">
+                      {t("settings.security.session_started", {
+                        date: date(session.created_at.slice(0, 10)),
+                      })}
+                    </span>
                     {session.is_current ? (
                       <span className="chip chip--accent" data-testid="session-current">
                         {t("settings.security.session_current")}
@@ -417,11 +496,18 @@ function SessionsSection() {
                     ) : null}
                   </span>
                   <span className="caption ledgr-num">
-                    {t("settings.security.session_active", { date: date(session.last_active_at.slice(0, 10)) })}
+                    {t("settings.security.session_active", {
+                      date: date(session.last_active_at.slice(0, 10)),
+                    })}
                   </span>
                 </span>
                 {!session.is_current ? (
-                  <button type="button" className="button--danger" data-testid={`session-revoke-${session.id}`} onClick={() => void revoke(session)}>
+                  <button
+                    type="button"
+                    className="button--danger"
+                    data-testid={`session-revoke-${session.id}`}
+                    onClick={() => void revoke(session)}
+                  >
                     {t("settings.security.session_revoke")}
                   </button>
                 ) : null}
@@ -483,7 +569,9 @@ function TrustedDevicesSection() {
       <h2>{t("settings.security.trusted_devices_title")}</h2>
       <p className="caption">{t("settings.security.trusted_devices_hint")}</p>
       <div className="panel">
-        {problem !== null ? <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} /> : null}
+        {problem !== null ? (
+          <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />
+        ) : null}
         {devices === null && problem === null ? <LoadingSkeleton rows={2} /> : null}
         {devices !== null && devices.length === 0 ? (
           <p className="caption" data-testid="trusted-devices-empty">
@@ -497,7 +585,9 @@ function TrustedDevicesSection() {
                 <span className="list__row-text">
                   <span>{deviceTrust.name ?? t("settings.security.trusted_devices_title")}</span>
                   <span className="caption ledgr-num">
-                    {t("settings.security.trusted_device_added", { date: date(deviceTrust.created_at.slice(0, 10)) })}
+                    {t("settings.security.trusted_device_added", {
+                      date: date(deviceTrust.created_at.slice(0, 10)),
+                    })}
                     {` · ${t("settings.security.trusted_device_used", { date: date(deviceTrust.last_used_at.slice(0, 10)) })}`}
                   </span>
                 </span>
@@ -553,7 +643,10 @@ export function OrganizationSettings() {
           <span className="chip">{administrations.length}</span>
         </div>
         {administrations.length === 0 ? (
-          <EmptyState title={t("settings.organization.no_administrations")} body={t("settings.organization.no_administrations_body")} />
+          <EmptyState
+            title={t("settings.organization.no_administrations")}
+            body={t("settings.organization.no_administrations_body")}
+          />
         ) : (
           <ul className="list" data-testid="administrations-list">
             {administrations.map((entry) => (
@@ -568,7 +661,13 @@ export function OrganizationSettings() {
   );
 }
 
-function AdministrationEditor({ administration, onSaved }: { administration: AdministrationView; onSaved: () => void }) {
+function AdministrationEditor({
+  administration,
+  onSaved,
+}: {
+  administration: AdministrationView;
+  onSaved: () => void;
+}) {
   const { t, date } = useI18n();
   const { onboarding } = useServices();
   const [legalName, setLegalName] = useState(administration.legal_name);
@@ -592,9 +691,15 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
     try {
       await onboarding.updateAdministration(administration.id, {
         ...(legalName !== administration.legal_name ? { legal_name: legalName.trim() } : {}),
-        ...(tradeName !== (administration.trade_name ?? "") ? { trade_name: tradeName.trim() === "" ? null : tradeName.trim() } : {}),
-        ...(vatNumber !== (administration.vat_number ?? "") ? { vat_number: vatNumber.trim() === "" ? null : vatNumber.trim().toUpperCase() } : {}),
-        ...(iban !== (administration.iban ?? "") ? { iban: iban.trim() === "" ? null : iban.trim() } : {}),
+        ...(tradeName !== (administration.trade_name ?? "")
+          ? { trade_name: tradeName.trim() === "" ? null : tradeName.trim() }
+          : {}),
+        ...(vatNumber !== (administration.vat_number ?? "")
+          ? { vat_number: vatNumber.trim() === "" ? null : vatNumber.trim().toUpperCase() }
+          : {}),
+        ...(iban !== (administration.iban ?? "")
+          ? { iban: iban.trim() === "" ? null : iban.trim() }
+          : {}),
         ...(locale !== administration.formatting_locale ? { formatting_locale: locale } : {}),
       });
       setState("saved");
@@ -618,13 +723,18 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
       }}
     >
       <div className="card__head">
-        <span className={`client-marker client-marker--${administration.colour}`} aria-hidden="true">
+        <span
+          className={`client-marker client-marker--${administration.colour}`}
+          aria-hidden="true"
+        >
           {administration.initials}
         </span>
         <div>
           <p className="card__title">{administration.trade_name ?? administration.legal_name}</p>
           <p className="card__meta ledgr-num">
-            {administration.kvk_number === null ? t("client.portfolio.no_kvk") : t("client.switcher.kvk", { number: administration.kvk_number })}
+            {administration.kvk_number === null
+              ? t("client.portfolio.no_kvk")
+              : t("client.switcher.kvk", { number: administration.kvk_number })}
             {" · "}
             {t(`onboarding.legal_form.${administration.legal_form.toLowerCase()}.title`)}
           </p>
@@ -633,15 +743,34 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
       <div className="form__grid">
         <div className="form__field">
           <label htmlFor={`${prefix}-legal`}>{t("onboarding.company.legal_name")}</label>
-          <input id={`${prefix}-legal`} type="text" required value={legalName} data-testid="administration-legal-name" onChange={(e) => setLegalName(e.target.value)} />
+          <input
+            id={`${prefix}-legal`}
+            type="text"
+            required
+            value={legalName}
+            data-testid="administration-legal-name"
+            onChange={(e) => setLegalName(e.target.value)}
+          />
         </div>
         <div className="form__field">
           <label htmlFor={`${prefix}-trade`}>{t("onboarding.company.trade_name")}</label>
-          <input id={`${prefix}-trade`} type="text" value={tradeName} data-testid="administration-trade-name" onChange={(e) => setTradeName(e.target.value)} />
+          <input
+            id={`${prefix}-trade`}
+            type="text"
+            value={tradeName}
+            data-testid="administration-trade-name"
+            onChange={(e) => setTradeName(e.target.value)}
+          />
         </div>
         <div className="form__field">
           <label htmlFor={`${prefix}-vat`}>{t("onboarding.company.vat_number")}</label>
-          <input id={`${prefix}-vat`} type="text" value={vatNumber} data-testid="administration-vat-number" onChange={(e) => setVatNumber(e.target.value)} />
+          <input
+            id={`${prefix}-vat`}
+            type="text"
+            value={vatNumber}
+            data-testid="administration-vat-number"
+            onChange={(e) => setVatNumber(e.target.value)}
+          />
         </div>
         <div className="form__field">
           <label htmlFor={`${prefix}-iban`}>{t("settings.organization.iban")}</label>
@@ -669,7 +798,12 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
       </div>
       <p className="caption ledgr-num">
         {administration.fiscal_years
-          .map((year) => t("onboarding.review.year_range", { start: date(year.start_date), end: date(year.end_date) }))
+          .map((year) =>
+            t("onboarding.review.year_range", {
+              start: date(year.start_date),
+              end: date(year.end_date),
+            }),
+          )
           .join(" · ") || t("settings.organization.no_fiscal_years")}
       </p>
       {problem !== null ? (
@@ -683,7 +817,11 @@ function AdministrationEditor({ administration, onSaved }: { administration: Adm
         </p>
       ) : null}
       <div className="form__actions">
-        <button type="submit" disabled={!dirty || state === "saving"} data-testid="administration-save">
+        <button
+          type="submit"
+          disabled={!dirty || state === "saving"}
+          data-testid="administration-save"
+        >
           {state === "saving" ? t("common.action.saving") : t("common.action.save")}
         </button>
       </div>
@@ -718,7 +856,10 @@ export function InvoiceDesignSettings() {
       .then(async ({ templates: list }) => {
         const chosen = list.find((entry) => entry.is_default) ?? list[0];
         if (chosen !== undefined) return chosen;
-        return templates.createTemplate(administration.id, { name: t("settings.invoice_design.default_name"), is_default: true });
+        return templates.createTemplate(administration.id, {
+          name: t("settings.invoice_design.default_name"),
+          is_default: true,
+        });
       })
       .then((result) => {
         if (!cancelled) setTemplate(result);
@@ -736,10 +877,16 @@ export function InvoiceDesignSettings() {
   if (administration === null) return null;
 
   return (
-    <section className="screen__section" aria-label={t("settings.invoice_design.title")} data-testid="settings-invoice-design">
+    <section
+      className="screen__section"
+      aria-label={t("settings.invoice_design.title")}
+      data-testid="settings-invoice-design"
+    >
       <h2>{t("settings.invoice_design.title")}</h2>
       <p className="caption">{t("settings.invoice_design.intro")}</p>
-      {problem !== null ? <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} /> : null}
+      {problem !== null ? (
+        <ErrorState message={problem} onRetry={() => setAttempt((n) => n + 1)} />
+      ) : null}
       {template === null && problem === null ? <LoadingSkeleton rows={6} /> : null}
       {template !== null ? (
         <div className="panel panel__body">

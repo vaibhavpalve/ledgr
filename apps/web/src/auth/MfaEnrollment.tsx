@@ -289,7 +289,11 @@ export function PasskeySection({
     try {
       const challenge = await api.mfaPasskeyVerifyBegin();
       const credential = await getPasskey(challenge.optionsJson);
-      const result = await api.mfaPasskeyVerifyFinish(challenge.ceremonyId, credential, rememberDevice);
+      const result = await api.mfaPasskeyVerifyFinish(
+        challenge.ceremonyId,
+        credential,
+        rememberDevice,
+      );
       onVerified(result);
     } catch (error) {
       setProblem(errorMessage(error));

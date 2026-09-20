@@ -29,6 +29,17 @@
 .ui-root select {
   font-family: inherit;
 }
+/* The legacy sheet gives every button a 48px floor and its own type; the spec's
+   heights (40/34/48/52) and label style win on anything wearing a ui- class. */
+.ui-btn,
+.ui-nav,
+.ui-textbutton,
+.ui-chart__hit,
+.ui-input {
+  min-height: 0;
+  letter-spacing: 0;
+  text-wrap: nowrap;
+}
 
 .ui-serif {
   font-family: var(--font-serif);

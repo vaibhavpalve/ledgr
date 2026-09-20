@@ -36,8 +36,9 @@ import { SUPPORTED_LANGUAGES, translate, useI18n, type Language } from "@ledgr/i
  * reachable and operable before authentication, where it has to work for
  * somebody who cannot read the page it is on.
  */
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean } = {}) {
   const { language, setLanguage, t } = useI18n();
+  const name = (option: Language) => translate(`common.language.name.${option}`, option);
 
   return (
     <div
@@ -51,6 +52,10 @@ export function LanguageSwitcher() {
           key={option}
           type="button"
           lang={option}
+          // In the compact form the visible text is the code (EN | NL), so the
+          // full endonym is carried as the accessible name; it contains the
+          // visible text's language, which is what WCAG 2.5.3 asks for.
+          aria-label={compact ? name(option) : undefined}
           // Not `disabled` when active: a disabled control drops out of the
           // tab order, so a keyboard user tabbing through would find only the
           // language they are not using.
@@ -58,7 +63,7 @@ export function LanguageSwitcher() {
           data-testid={`language-option-${option}`}
           onClick={() => setLanguage(option)}
         >
-          {translate(`common.language.name.${option}`, option)}
+          {compact ? option.toUpperCase() : name(option)}
         </button>
       ))}
     </div>

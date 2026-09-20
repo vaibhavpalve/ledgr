@@ -143,7 +143,9 @@ export function pathOf(...segments: readonly string[]): string {
 }
 
 /** A query string from only the parameters that have a value. */
-export function queryOf(params: Readonly<Record<string, string | number | null | undefined>>): string {
+export function queryOf(
+  params: Readonly<Record<string, string | number | null | undefined>>,
+): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== null && value !== undefined && value !== "") search.set(key, String(value));

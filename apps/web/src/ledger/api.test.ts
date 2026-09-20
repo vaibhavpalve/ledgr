@@ -4,8 +4,24 @@ import { fakeFetch, jsonResponse } from "../testing/fakeFetch";
 import { LedgerApi, sumDecimals } from "./api";
 
 const rows = [
-  { account_id: "a1", account_code: "1100", account_name: "Bank", account_type: "asset", total_debit: "1240.00", total_credit: "0.00", balance: "1240.00" },
-  { account_id: "a2", account_code: "1600", account_name: "Crediteuren", account_type: "liability", total_debit: "0.00", total_credit: "1240.00", balance: "-1240.00" },
+  {
+    account_id: "a1",
+    account_code: "1100",
+    account_name: "Bank",
+    account_type: "asset",
+    total_debit: "1240.00",
+    total_credit: "0.00",
+    balance: "1240.00",
+  },
+  {
+    account_id: "a2",
+    account_code: "1600",
+    account_name: "Crediteuren",
+    account_type: "liability",
+    total_debit: "0.00",
+    total_credit: "1240.00",
+    balance: "-1240.00",
+  },
 ];
 
 describe("LedgerApi", () => {
@@ -39,8 +55,14 @@ describe("LedgerApi", () => {
 
   it("pages journal entries by cursor", async () => {
     const entry = {
-      id: "e1", entry_number: 7, entry_date: "2026-01-04", description: "Dakgoot vervangen",
-      journal_code: "B", document_reference: null, reverses_entry_id: null, total: "1240.00",
+      id: "e1",
+      entry_number: 7,
+      entry_date: "2026-01-04",
+      description: "Dakgoot vervangen",
+      journal_code: "B",
+      document_reference: null,
+      reverses_entry_id: null,
+      total: "1240.00",
     };
     const { impl, calls } = fakeFetch({
       "GET /v1/administrations/adm-A/journal-entries": () =>
@@ -48,25 +70,46 @@ describe("LedgerApi", () => {
     });
     const api = new LedgerApi({ language: () => "nl", fetchImpl: impl });
 
-    const page = await api.listJournalEntries("adm-A", { fiscalYearId: "fy-1", cursor: "xyz", limit: 50 });
+    const page = await api.listJournalEntries("adm-A", {
+      fiscalYearId: "fy-1",
+      cursor: "xyz",
+      limit: 50,
+    });
 
-    expect(calls[0]?.url).toBe("/v1/administrations/adm-A/journal-entries?fiscal_year_id=fy-1&cursor=xyz&limit=50");
+    expect(calls[0]?.url).toBe(
+      "/v1/administrations/adm-A/journal-entries?fiscal_year_id=fy-1&cursor=xyz&limit=50",
+    );
     expect(page.entries).toEqual([entry]);
     expect(page.next_cursor).toBe("abc");
   });
 
   it("accepts a chart as a bare array or wrapped in `accounts`", async () => {
-    const account = { id: "a1", code: "1100", name: "Bank", account_type: "asset", status: "active", rgs_code: "BLimBanRba", control_kind: null };
+    const account = {
+      id: "a1",
+      code: "1100",
+      name: "Bank",
+      account_type: "asset",
+      status: "active",
+      rgs_code: "BLimBanRba",
+      control_kind: null,
+    };
     const bare = new LedgerApi({
       language: () => "nl",
-      fetchImpl: fakeFetch({ "GET /v1/administrations/adm-A/chart-of-accounts": () => jsonResponse([account]) }).impl,
+      fetchImpl: fakeFetch({
+        "GET /v1/administrations/adm-A/chart-of-accounts": () => jsonResponse([account]),
+      }).impl,
     });
     const wrapped = new LedgerApi({
       language: () => "nl",
-      fetchImpl: fakeFetch({ "GET /v1/administrations/adm-A/chart-of-accounts": () => jsonResponse({ accounts: [account] }) }).impl,
+      fetchImpl: fakeFetch({
+        "GET /v1/administrations/adm-A/chart-of-accounts": () =>
+          jsonResponse({ accounts: [account] }),
+      }).impl,
     });
 
-    expect(await bare.listChartOfAccounts("adm-A")).toEqual(await wrapped.listChartOfAccounts("adm-A"));
+    expect(await bare.listChartOfAccounts("adm-A")).toEqual(
+      await wrapped.listChartOfAccounts("adm-A"),
+    );
   });
 });
 

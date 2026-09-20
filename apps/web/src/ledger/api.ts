@@ -34,11 +34,9 @@ export class LedgerApi {
   constructor(private readonly options: ApiOptions) {}
 
   async listChartOfAccounts(administrationId: string): Promise<ChartAccountView[]> {
-    const raw = await callJson<readonly ChartAccountView[] | { accounts: readonly ChartAccountView[] }>(
-      this.options,
-      "GET",
-      pathOf("v1", "administrations", administrationId, "chart-of-accounts"),
-    );
+    const raw = await callJson<
+      readonly ChartAccountView[] | { accounts: readonly ChartAccountView[] }
+    >(this.options, "GET", pathOf("v1", "administrations", administrationId, "chart-of-accounts"));
     return unwrapList<ChartAccountView>(raw, "accounts");
   }
 
@@ -60,7 +58,11 @@ export class LedgerApi {
       this.options,
       "GET",
       pathOf("v1", "administrations", administrationId, "journal-entries") +
-        queryOf({ fiscal_year_id: params.fiscalYearId, cursor: params.cursor, limit: params.limit }),
+        queryOf({
+          fiscal_year_id: params.fiscalYearId,
+          cursor: params.cursor,
+          limit: params.limit,
+        }),
     );
     return toEntryPage(raw);
   }
@@ -85,7 +87,9 @@ type RawTrialBalance = readonly TrialBalanceRowView[] | WrappedTrialBalance;
 
 function toTrialBalance(raw: RawTrialBalance, fiscalYearId: string): TrialBalanceView {
   const rows = unwrapList<TrialBalanceRowView>(raw, "rows");
-  const totals: Partial<WrappedTrialBalance> = Array.isArray(raw) ? {} : (raw as WrappedTrialBalance);
+  const totals: Partial<WrappedTrialBalance> = Array.isArray(raw)
+    ? {}
+    : (raw as WrappedTrialBalance);
   return {
     fiscal_year_id: totals.fiscal_year_id ?? fiscalYearId,
     rows,
@@ -105,9 +109,13 @@ interface WrappedEntryPage {
 type RawEntryPage = readonly JournalEntrySummaryView[] | WrappedEntryPage;
 
 function toEntryPage(raw: RawEntryPage): JournalEntryPageView {
-  if (Array.isArray(raw)) return { entries: [...(raw as readonly JournalEntrySummaryView[])], next_cursor: null };
+  if (Array.isArray(raw))
+    return { entries: [...(raw as readonly JournalEntrySummaryView[])], next_cursor: null };
   const page = raw as WrappedEntryPage;
-  return { entries: [...(page.entries ?? page.items ?? [])], next_cursor: page.next_cursor ?? null };
+  return {
+    entries: [...(page.entries ?? page.items ?? [])],
+    next_cursor: page.next_cursor ?? null,
+  };
 }
 
 /**

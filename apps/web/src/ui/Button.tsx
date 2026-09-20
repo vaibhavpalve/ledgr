@@ -26,10 +26,14 @@ function classes({ variant = "secondary", size = "md", block, iconOnly }: Look, 
 }
 
 /** DESIGN.md section 5, Button. One primary per view. */
-export const Button = forwardRef<
-  HTMLButtonElement,
-  ButtonHTMLAttributes<HTMLButtonElement> & Look & { children?: ReactNode }
->(function Button({ variant, size, block, iconOnly, className, type = "button", ...rest }, ref) {
+interface ButtonProps extends Look, ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: ReactNode;
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant, size, block, iconOnly, className, type = "button", ...rest },
+  ref,
+) {
   return (
     <button
       ref={ref}

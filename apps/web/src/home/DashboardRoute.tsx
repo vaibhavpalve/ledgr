@@ -15,7 +15,9 @@ import { HomeScreen } from "./HomeScreen";
  * form.
  */
 export function destinationFor(item: DashboardActionItemView): string {
-  return item.kind === "draft_expense" ? `/review/${encodeURIComponent(item.id)}` : `/invoices/${encodeURIComponent(item.id)}`;
+  return item.kind === "draft_expense"
+    ? `/review/${encodeURIComponent(item.id)}`
+    : `/invoices/${encodeURIComponent(item.id)}`;
 }
 
 export function DashboardRoute() {

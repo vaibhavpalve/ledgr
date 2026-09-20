@@ -131,16 +131,36 @@
   transition: border-bottom-color var(--ledgr-duration-base) var(--ledgr-ease-out);
 }
 
-.client-header[data-colour="indigo"] { --client-colour: var(--ledgr-client-indigo); }
-.client-header[data-colour="amber"] { --client-colour: var(--ledgr-client-amber); }
-.client-header[data-colour="teal"] { --client-colour: var(--ledgr-client-teal); }
-.client-header[data-colour="rose"] { --client-colour: var(--ledgr-client-rose); }
-.client-header[data-colour="lime"] { --client-colour: var(--ledgr-client-lime); }
-.client-header[data-colour="violet"] { --client-colour: var(--ledgr-client-violet); }
-.client-header[data-colour="cyan"] { --client-colour: var(--ledgr-client-cyan); }
-.client-header[data-colour="orange"] { --client-colour: var(--ledgr-client-orange); }
-.client-header[data-colour="emerald"] { --client-colour: var(--ledgr-client-emerald); }
-.client-header[data-colour="fuchsia"] { --client-colour: var(--ledgr-client-fuchsia); }
+.client-header[data-colour="indigo"] {
+  --client-colour: var(--ledgr-client-indigo);
+}
+.client-header[data-colour="amber"] {
+  --client-colour: var(--ledgr-client-amber);
+}
+.client-header[data-colour="teal"] {
+  --client-colour: var(--ledgr-client-teal);
+}
+.client-header[data-colour="rose"] {
+  --client-colour: var(--ledgr-client-rose);
+}
+.client-header[data-colour="lime"] {
+  --client-colour: var(--ledgr-client-lime);
+}
+.client-header[data-colour="violet"] {
+  --client-colour: var(--ledgr-client-violet);
+}
+.client-header[data-colour="cyan"] {
+  --client-colour: var(--ledgr-client-cyan);
+}
+.client-header[data-colour="orange"] {
+  --client-colour: var(--ledgr-client-orange);
+}
+.client-header[data-colour="emerald"] {
+  --client-colour: var(--ledgr-client-emerald);
+}
+.client-header[data-colour="fuchsia"] {
+  --client-colour: var(--ledgr-client-fuchsia);
+}
 
 .client-header--empty,
 .client-header--loading {
@@ -201,16 +221,46 @@
   font-variant-numeric: lining-nums;
 }
 
-.client-marker--indigo { background-color: var(--ledgr-client-indigo); color: var(--ledgr-text-on-marker); }
-.client-marker--amber { background-color: var(--ledgr-client-amber); color: var(--ledgr-text-on-marker); }
-.client-marker--teal { background-color: var(--ledgr-client-teal); color: var(--ledgr-text-on-marker); }
-.client-marker--rose { background-color: var(--ledgr-client-rose); color: var(--ledgr-text-on-marker); }
-.client-marker--lime { background-color: var(--ledgr-client-lime); color: var(--ledgr-text-on-marker); }
-.client-marker--violet { background-color: var(--ledgr-client-violet); color: var(--ledgr-text-on-marker); }
-.client-marker--cyan { background-color: var(--ledgr-client-cyan); color: var(--ledgr-text-on-marker); }
-.client-marker--orange { background-color: var(--ledgr-client-orange); color: var(--ledgr-text-on-marker); }
-.client-marker--emerald { background-color: var(--ledgr-client-emerald); color: var(--ledgr-text-on-marker); }
-.client-marker--fuchsia { background-color: var(--ledgr-client-fuchsia); color: var(--ledgr-text-on-marker); }
+.client-marker--indigo {
+  background-color: var(--ledgr-client-indigo);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--amber {
+  background-color: var(--ledgr-client-amber);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--teal {
+  background-color: var(--ledgr-client-teal);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--rose {
+  background-color: var(--ledgr-client-rose);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--lime {
+  background-color: var(--ledgr-client-lime);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--violet {
+  background-color: var(--ledgr-client-violet);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--cyan {
+  background-color: var(--ledgr-client-cyan);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--orange {
+  background-color: var(--ledgr-client-orange);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--emerald {
+  background-color: var(--ledgr-client-emerald);
+  color: var(--ledgr-text-on-marker);
+}
+.client-marker--fuchsia {
+  background-color: var(--ledgr-client-fuchsia);
+  color: var(--ledgr-text-on-marker);
+}
 
 .client-marker--large {
   width: 2.5rem;

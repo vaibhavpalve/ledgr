@@ -63,7 +63,9 @@ describe("SessionProvider under StrictMode", () => {
   });
 
   it("still shows the error state, with a way out, when the load fails", async () => {
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 503 })) as unknown as typeof fetch;
+    const fetchImpl = vi.fn(
+      async () => new Response(null, { status: 503 }),
+    ) as unknown as typeof fetch;
 
     renderStrict(fetchImpl);
 
