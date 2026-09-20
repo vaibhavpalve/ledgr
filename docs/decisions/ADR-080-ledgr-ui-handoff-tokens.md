@@ -30,8 +30,8 @@ CSS-to-TypeScript parity tests behind it.
    client-colour rule and its name first in reading order; on a wide screen the visible marker,
    name and KvK sit in the sidebar company card, on a phone in the header itself. Needs sign-off
    against the PRD's "in the header on every screen".
-6. **Home shows only what the API supplies.** No deltas, chart, filing deadline, per-item amounts,
-   Review count, bell or bank step: none has a data source. The empty state (all three figures
+6. **Home shows only what the API supplies.** No deltas, chart, filing deadline, invoice amounts,
+   bell or bank step: none has a data source (item 7 lists what has since been added). The empty state (all three figures
    zero, nothing needing attention) swaps the bank step for "Add a customer".
 7. **Recovery and dashboard follow-ups.** `POST /v1/auth/recover` (IAM-018) and a web forgot-password screen exist now. The dashboard returns `receipts_to_review` (Review nav count), `customer_name` and, for draft receipts, `amount`. Still open, because each needs a ledger-API change: a date-bounded balance for a monthly `cash_history` (and so deltas), and a confirmed statutory BTW filing rule for a due date. Invoice rows carry no amount because totals need the VAT rules applied line by line.
 8. **Website** lives at `/welcome` (public), English only, copy verbatim from the reference. `/`
