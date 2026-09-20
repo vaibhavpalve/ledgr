@@ -24,6 +24,16 @@
   color: inherit;
   text-decoration: none;
 }
+/* A link wearing a button look keeps the button's own text colour. */
+.ui-root a.ui-btn {
+  color: var(--ink);
+}
+.ui-root a.ui-btn--primary {
+  color: var(--on-brand);
+}
+.ui-root a.ui-btn--ghost {
+  color: var(--brand);
+}
 .ui-root button,
 .ui-root input,
 .ui-root select {

@@ -26,6 +26,7 @@ import { OverviewRoute, ReviewRoute } from "./review/routes";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
+import { Website } from "./site/Website";
 import type { Services } from "./session/ServicesProvider";
 import {
   AppearanceSettings,
@@ -131,6 +132,8 @@ function Routed({ services }: { services?: Partial<Services> }) {
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/signup" element={<SignupRoute />} />
       </Route>
+      {/* The public marketing page (ADR-080). "/" stays the signed-in home. */}
+      <Route path="/welcome" element={<Website />} />
       <Route path="/mfa" element={<MfaRoute />} />
       <Route path="/verify-email" element={<VerifyEmailRoute />} />
 
