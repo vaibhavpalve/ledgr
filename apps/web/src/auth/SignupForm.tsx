@@ -56,28 +56,37 @@ export function SignupForm({
           .finally(() => setSubmitting(false));
       }}
     >
-      <fieldset>
+      <fieldset className="account-model">
         <legend>{t("auth.sign_up.account_model.label")}</legend>
-        <label>
-          <input
-            type="radio"
-            name="account-model"
-            data-testid="signup-account-model-self-managed"
-            checked={accountModel === "self_managed"}
-            onChange={() => setAccountModel("self_managed")}
-          />
-          {t("auth.sign_up.account_model.self_managed")}
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="account-model"
-            data-testid="signup-account-model-firm"
-            checked={accountModel === "firm"}
-            onChange={() => setAccountModel("firm")}
-          />
-          {t("auth.sign_up.account_model.firm")}
-        </label>
+        <div className="account-model__options">
+          <label className="account-model__option">
+            <input
+              type="radio"
+              name="account-model"
+              data-testid="signup-account-model-self-managed"
+              checked={accountModel === "self_managed"}
+              onChange={() => setAccountModel("self_managed")}
+            />
+            {t("auth.sign_up.account_model.self_managed")}
+          </label>
+          <label className="account-model__option">
+            <input
+              type="radio"
+              name="account-model"
+              data-testid="signup-account-model-firm"
+              checked={accountModel === "firm"}
+              onChange={() => setAccountModel("firm")}
+            />
+            {t("auth.sign_up.account_model.firm")}
+          </label>
+        </div>
+        <p className="account-model__hint">
+          {t(
+            accountModel === "firm"
+              ? "auth.sign_up.account_model.firm_hint"
+              : "auth.sign_up.account_model.self_managed_hint",
+          )}
+        </p>
       </fieldset>
 
       <label>
