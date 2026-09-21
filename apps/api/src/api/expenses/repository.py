@@ -165,6 +165,7 @@ class SqlCaptureRepository:
         administration_id: uuid.UUID,
         session_id: uuid.UUID,
         user_id: uuid.UUID,
+        category: str | None = None,
     ) -> tuple[uuid.UUID, Expense]:
         """A receipt and its expense, in one statement.
 
@@ -192,9 +193,10 @@ class SqlCaptureRepository:
                 )
                 INSERT INTO expense (
                     organization_id, administration_id, capture_item_id,
-                    submitted_by_user_id
+                    submitted_by_user_id, category
                 )
-                SELECT :org, new_item.administration_id, new_item.id, :user
+                SELECT :org, new_item.administration_id, new_item.id, :user,
+                       CAST(:category AS text)
                   FROM new_item
                 RETURNING """
                 + _EXPENSE_COLUMNS
@@ -204,6 +206,7 @@ class SqlCaptureRepository:
                 "admin": str(administration_id),
                 "session": str(session_id),
                 "user": str(user_id),
+                "category": category,
             },
         )
         expense = _to_expense(result.one())

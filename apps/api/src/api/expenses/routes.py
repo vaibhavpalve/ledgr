@@ -62,6 +62,7 @@ from api.documents.model import (
 from api.documents.routes import get_document_service
 from api.documents.service import DocumentService
 from api.expenses.capture import CaptureService
+from api.expenses.categories import UnknownExpenseCategory
 from api.expenses.form import ExpenseFormService, ExpenseView
 from api.expenses.model import (
     CaptureSession,
@@ -241,6 +242,7 @@ async def capture_page(
     source: CaptureSource = CaptureSource.UPLOAD,
     item: uuid.UUID | None = None,
     filename: str | None = None,
+    category: str | None = None,
     tenant: TenantContext = Depends(get_tenant_context),
     service: CaptureService = Depends(get_capture_service),
     _: AuthorizationDecision = Depends(
@@ -285,7 +287,18 @@ async def capture_page(
             filename=filename,
             declared_content_type=request.headers.get("content-type"),
             item_id=item,
+            category=category,
         )
+    except UnknownExpenseCategory as exc:
+        # The picker only offers keys from the shared list, so this is a stale or
+        # hand-built client. Refused rather than filed under "Other": a receipt
+        # in the wrong category is a wrong ledger account later.
+        raise problem(
+            request,
+            422,
+            "errors.expense_category_unknown",
+            reason="unknown_expense_category",
+        ) from exc
     except SessionNotFound as exc:
         raise problem(
             request, 404, "errors.capture_session_not_found", reason="capture_session_not_found"

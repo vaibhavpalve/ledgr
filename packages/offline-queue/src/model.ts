@@ -165,6 +165,13 @@ export interface NewCapture {
   readonly source: CaptureSource;
   readonly filename: string | null;
   readonly contentType: string;
+  /**
+   * The expense category the person picked for this receipt, as the API's
+   * category key. Opaque here — the queue neither validates nor interprets it
+   * (the server owns the list). Only a receipt's first page carries it into
+   * the request: the expense is created by that page, and later pages join it.
+   */
+  readonly category?: string | null;
   readonly image: Bytes;
 }
 

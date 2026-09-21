@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@ledgr/i18n";
+import type { ExpenseCategoryKey } from "@ledgr/shared-types";
 import type { CaptureSource } from "@ledgr/offline-queue";
+import { Camera, Upload } from "lucide-react";
 
 import "./CaptureScreen.css";
-import { CaptureQueueStatus } from "./CaptureQueueStatus";
+import { CategoryPicker } from "./CategoryPicker";
 import type { DecodeFile } from "./decode";
 import type { QualityReport } from "./quality";
-import { expensesThisSittingWouldCreate, type CaptureInput, type Sitting } from "./useSitting";
+import { UploadsOverview } from "./UploadsOverview";
+import type { CaptureInput, Sitting } from "./useSitting";
 import { useModalFocus } from "../useModalFocus";
 import type { CaptureQueue } from "@ledgr/offline-queue";
 
@@ -73,6 +76,10 @@ export function CaptureScreen({
   const cameraInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingCapture | null>(null);
   const [joining, setJoining] = useState(false);
+  // Files chosen but not yet filed: the category is asked before anything is
+  // decoded or queued. See `receive`.
+  const [awaitingCategory, setAwaitingCategory] = useState<AwaitingCategory | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   // FR-EXP-001's "single tap from the home screen": the sitting starts itself
   // rather than waiting for a "Start" tap, so the only tap left is the
@@ -101,7 +108,12 @@ export function CaptureScreen({
    * four-page invoice scanned in one go is.
    */
   const accept = useCallback(
-    async (files: readonly File[], source: CaptureSource, into: string | undefined) => {
+    async (
+      files: readonly File[],
+      source: CaptureSource,
+      into: string | undefined,
+      category: ExpenseCategoryKey | undefined,
+    ) => {
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index]!;
         const decoded = await decode(file);
@@ -111,6 +123,7 @@ export function CaptureScreen({
           filename: file.name || null,
           source,
           ...(into === undefined ? {} : { into }),
+          ...(category === undefined ? {} : { category }),
         };
 
         // FR-EXP-001's glare and blur warning, before the capture is committed
@@ -123,6 +136,7 @@ export function CaptureScreen({
             rest: files.slice(index + 1),
             source,
             into,
+            category,
           });
           return;
         }
@@ -139,7 +153,12 @@ export function CaptureScreen({
       setPending(null);
       if (keep) await sitting.capture(pendingCapture.input);
       if (pendingCapture.rest.length > 0) {
-        await accept(pendingCapture.rest, pendingCapture.source, pendingCapture.into);
+        await accept(
+          pendingCapture.rest,
+          pendingCapture.source,
+          pendingCapture.into,
+          pendingCapture.category,
+        );
       } else {
         setJoining(false);
       }
@@ -150,13 +169,35 @@ export function CaptureScreen({
   const armedFor = (): string | undefined =>
     joining && sitting.currentReceiptRef !== null ? sitting.currentReceiptRef : undefined;
 
+  /**
+   * Where every path in ends: the camera, the picker and a drop.
+   *
+   * A NEW receipt is filed before it goes anywhere - the category is asked for
+   * first and the files wait for the answer. A further page of a receipt that
+   * already exists (`armedFor`) skips the question, because that receipt has
+   * its category and asking again would invite filing one invoice two ways.
+   */
+  const receive = (files: readonly File[], source: CaptureSource) => {
+    if (files.length === 0) return;
+    const into = armedFor();
+    if (into !== undefined) {
+      void accept(files, source, into, undefined);
+      return;
+    }
+    setAwaitingCategory({ files, source });
+  };
+
+  // Stable, because the picker's Escape listener is re-registered whenever its
+  // `onCancel` changes identity.
+  const cancelCategory = useCallback(() => setAwaitingCategory(null), []);
+
   const onFiles = (event: React.ChangeEvent<HTMLInputElement>, source: CaptureSource) => {
     const files = [...(event.target.files ?? [])];
     // Cleared so that picking the same file twice in a row still fires a
     // change event — a person retaking a photograph of the same receipt is an
     // ordinary thing to do.
     event.target.value = "";
-    if (files.length > 0) void accept(files, source, armedFor());
+    receive(files, source);
   };
 
   if (sitting.phase === "finalised") {
@@ -166,7 +207,7 @@ export function CaptureScreen({
         <p role="status" data-testid="capture-finalised">
           {t("capture.screen.finalised")}
         </p>
-        <CaptureQueueStatus queue={queue} />
+        <UploadsOverview sitting={sitting} queue={queue} />
       </section>
     );
   }
@@ -184,17 +225,47 @@ export function CaptureScreen({
         />
       ) : null}
 
+      {awaitingCategory !== null ? (
+        <CategoryPicker
+          fileCount={awaitingCategory.files.length}
+          onCancel={cancelCategory}
+          onPick={(category) => {
+            const held = awaitingCategory;
+            setAwaitingCategory(null);
+            void accept(held.files, held.source, undefined, category);
+          }}
+        />
+      ) : null}
+
       <div
         className="capture__drop"
         data-testid="capture-drop"
+        data-active={dragging ? "true" : undefined}
+        onDragEnter={() => setDragging(true)}
+        onDragLeave={(event) => {
+          // Only when the pointer leaves the zone itself, not when it crosses
+          // onto one of the zone's own children - which would flicker it off.
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+        }}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault();
-          const files = [...event.dataTransfer.files];
-          if (files.length > 0) void accept(files, "upload", armedFor());
+          setDragging(false);
+          receive([...event.dataTransfer.files], "upload");
         }}
       >
-        {t("capture.screen.drop_hint")}
+        <span className="capture__drop-icon" aria-hidden="true">
+          <Upload size={22} strokeWidth={1.75} />
+        </span>
+        <p className="capture__drop-hint">{t("capture.screen.drop_hint")}</p>
+        <button
+          type="button"
+          className="capture__choose"
+          data-testid="capture-choose-files"
+          onClick={() => fileInput.current?.click()}
+        >
+          {t("capture.screen.choose_files")}
+        </button>
       </div>
 
       {/*
@@ -235,15 +306,8 @@ export function CaptureScreen({
         data-testid="capture-take-photo"
         onClick={() => cameraInput.current?.click()}
       >
+        <Camera size={22} strokeWidth={1.75} aria-hidden="true" />
         {t("capture.screen.take_photo")}
-      </button>
-      <button
-        type="button"
-        className="capture__secondary"
-        data-testid="capture-choose-files"
-        onClick={() => fileInput.current?.click()}
-      >
-        {t("capture.screen.choose_files")}
       </button>
 
       {/*
@@ -252,10 +316,10 @@ export function CaptureScreen({
         second is the failure this pair exists to prevent.
       */}
       {sitting.currentReceiptRef !== null ? (
-        <>
+        <div className="capture__toggle">
           <button
             type="button"
-            className="capture__secondary"
+            className="capture__toggle-option"
             aria-pressed={joining}
             data-testid="capture-add-page"
             onClick={() => setJoining(true)}
@@ -264,70 +328,27 @@ export function CaptureScreen({
           </button>
           <button
             type="button"
-            className="capture__secondary"
+            className="capture__toggle-option"
             aria-pressed={!joining}
             data-testid="capture-new-receipt"
             onClick={() => setJoining(false)}
           >
             {t("capture.screen.new_receipt")}
           </button>
-        </>
+        </div>
       ) : null}
 
-      <ReviewList sitting={sitting} />
-      <CaptureQueueStatus queue={queue} />
+      <UploadsOverview sitting={sitting} queue={queue} />
 
       <button
         type="button"
-        className="capture__secondary"
+        className="capture__finish"
         disabled={sitting.receipts.length === 0}
         data-testid="capture-finalise"
         onClick={() => void sitting.finalise()}
       >
         {t("capture.screen.finalise")}
       </button>
-    </section>
-  );
-}
-
-/**
- * FR-EXP-001a's "review list before posting", for the sitting in progress.
- *
- * Built from what this screen captured rather than from the server, because
- * offline the server has not seen any of it yet — and a review list that was
- * empty until the pages uploaded would be empty exactly when somebody most
- * wants to check they got all six.
- */
-export function ReviewList({ sitting }: { sitting: Sitting }) {
-  const { t } = useI18n();
-
-  if (sitting.receipts.length === 0) {
-    return <p data-testid="capture-review-empty">{t("capture.screen.nothing_captured")}</p>;
-  }
-
-  return (
-    <section aria-label={t("capture.review.title")}>
-      <h2>{t("capture.review.title")}</h2>
-      <p data-testid="capture-expenses-to-create">
-        {t("capture.screen.expenses_to_create", {
-          count: expensesThisSittingWouldCreate(sitting.receipts),
-        })}
-      </p>
-      <ul aria-label={t("capture.review.list_label")} data-testid="capture-review-list">
-        {sitting.receipts.map((receipt, index) => (
-          <li key={receipt.ref} data-testid="capture-review-item" data-receipt-ref={receipt.ref}>
-            <span>{t("capture.review.receipt", { position: index + 1 })}</span>
-            {/*
-              Pages, shown, because it is what tells somebody a three-page
-              invoice was captured as ONE receipt rather than three — the
-              distinction the whole screen turns on.
-            */}
-            <span data-testid="capture-review-pages">
-              {t("capture.review.pages", { count: receipt.pages.length })}
-            </span>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
@@ -415,4 +436,11 @@ interface PendingCapture {
   readonly rest: readonly File[];
   readonly source: CaptureSource;
   readonly into: string | undefined;
+  readonly category: ExpenseCategoryKey | undefined;
+}
+
+/** Files that have been chosen and are waiting on their category. */
+interface AwaitingCategory {
+  readonly files: readonly File[];
+  readonly source: CaptureSource;
 }

@@ -119,6 +119,84 @@ describe("draining when connectivity returns — FR-EXP-001f, MOB-003", () => {
   });
 });
 
+describe("uploads that used to stall", () => {
+  it("uploads a capture made while the app is already running, with no other wake-up", async () => {
+    // Nothing else fires here: not the online event, not a timer, not a call to
+    // drain(). Before, the capture sat `queued` until the next reload.
+    const { transport, queue, uploader } = build([ok]);
+    uploader.start();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await queue.enqueue(capture);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(transport.sent).toHaveLength(1);
+    expect((await queue.snapshot()).items).toEqual([]);
+  });
+
+  it("stops listening for captures once stopped", async () => {
+    const { transport, queue, uploader } = build([ok]);
+    uploader.start();
+    uploader.stop();
+
+    await queue.enqueue(capture);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(transport.sent).toEqual([]);
+  });
+
+  it("re-offers a capture left `uploading` by an attempt that was cut off", async () => {
+    // A reload mid-request leaves the record `uploading`, which `due` never
+    // offered - so it showed UPLOADING for ever and nothing sent it.
+    const { transport, queue, uploader } = build([ok]);
+    await queue.enqueue(capture);
+    const [record] = await queue.records();
+    await queue.markUploading(record!);
+    expect((await queue.snapshot()).uploading).toBe(1);
+
+    await uploader.drain();
+
+    expect(transport.sent).toHaveLength(1);
+    expect((await queue.snapshot()).items).toEqual([]);
+  });
+
+  it("keeps draining when one attempt throws instead of answering", async () => {
+    const { clock, queue, uploader } = build();
+    const sent: string[] = [];
+    let first = true;
+    const flaky = {
+      async send(request: { path: string }): Promise<TransportResponse> {
+        sent.push(request.path);
+        if (first) {
+          first = false;
+          throw new Error("body could not be read");
+        }
+        return ok;
+      },
+    };
+    const resilient = new QueueUploader({
+      queue,
+      transport: flaky,
+      connectivity: new TestConnectivity(true),
+      clock,
+      scheduler: new TestScheduler(clock),
+      random: () => 0.5,
+    });
+    await queue.enqueue({ ...capture, receiptRef: "a", filename: "a.pdf" });
+    clock.advance(1_000);
+    await queue.enqueue({ ...capture, receiptRef: "b", filename: "b.pdf" });
+
+    await resilient.drain();
+
+    // The throwing one is queued again with its attempt counted; the one behind
+    // it was still sent rather than abandoned.
+    expect(sent).toHaveLength(2);
+    const [left] = (await queue.snapshot()).items;
+    expect(left?.state).toBe("queued");
+    expect(left?.attempts).toBe(1);
+  });
+});
+
 describe("retrying", () => {
   it("keeps a capture queued after a network error and waits before trying again", async () => {
     const { clock, queue, uploader } = build([offline]);

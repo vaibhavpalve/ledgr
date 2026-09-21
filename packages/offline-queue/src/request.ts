@@ -47,6 +47,10 @@ export function buildRequest(
   // request never carries one, which is what makes it create the receipt.
   if (payload.pageIndex > 0 && resolvedItemId !== null) query.set("item", resolvedItemId);
   if (payload.filename !== null) query.set("filename", payload.filename);
+  // Only the page that CREATES the receipt sets its category. A later page joins
+  // an expense that already exists, and the server would have nothing to apply
+  // it to.
+  if (payload.pageIndex === 0 && payload.category) query.set("category", payload.category);
 
   return {
     method: "POST",

@@ -40,6 +40,22 @@ describe("buildRequest", () => {
     expect(forB.path).not.toContain("adm-A");
   });
 
+  it("sends the chosen category with the page that creates the receipt", () => {
+    const request = buildRequest({ ...payload, category: "office_supplies" }, image);
+
+    expect(new URL(request.path, "http://x").searchParams.get("category")).toBe("office_supplies");
+  });
+
+  it("sends no category for a receipt that has none, or for a later page", () => {
+    const none = buildRequest({ ...payload, category: null }, image);
+    const later = buildRequest({ ...payload, pageIndex: 1, category: "lunch" }, image, {
+      resolvedItemId: "item-1",
+    });
+
+    expect(new URL(none.path, "http://x").searchParams.has("category")).toBe(false);
+    expect(new URL(later.path, "http://x").searchParams.has("category")).toBe(false);
+  });
+
   it("sends the same idempotency key every time, which is what stops a double post", () => {
     // NFR-032. A key regenerated per attempt would double-post exactly the
     // receipt whose first response was lost on a flapping connection.

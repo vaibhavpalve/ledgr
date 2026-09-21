@@ -148,6 +148,47 @@ export const PAYMENT_METHODS = [
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /**
+ * FR-EXP-001b's category, as the capture screen offers it BEFORE a file is sent.
+ *
+ * Mirrors `api.expenses.categories.EXPENSE_CATEGORIES` — the server owns the
+ * list and refuses a key that is not on it, and `tests/expenses/test_categories.py`
+ * fails if the two drift. One entry per line, in that file's order, so the
+ * check can read this list without a TypeScript parser.
+ *
+ * `rgsCode` and `vatTreatment` are what the picker DISPLAYS. The server stores
+ * the category only: a VAT treatment cannot be set without the rate, and the
+ * rate follows the receipt's date, which capture does not have yet (CMP-014).
+ * Which ledger account an administration posts to is its own mapping.
+ */
+export const EXPENSE_CATEGORIES = [
+  { key: "inventory_stock", rgsCode: "7000", vatTreatment: "btw_21" },
+  { key: "car_transport", rgsCode: "4300", vatTreatment: "btw_21" },
+  { key: "travel_lodging", rgsCode: "4310", vatTreatment: "btw_9" },
+  { key: "lunch", rgsCode: "4350", vatTreatment: "btw_9" },
+  { key: "dining_out", rgsCode: "4350", vatTreatment: "btw_9" },
+  { key: "entertainment_gifts", rgsCode: "4350", vatTreatment: "btw_21" },
+  { key: "office_supplies", rgsCode: "4400", vatTreatment: "btw_21" },
+  { key: "rent_premises", rgsCode: "4200", vatTreatment: "btw_21" },
+  { key: "utilities", rgsCode: "4600", vatTreatment: "btw_21" },
+  { key: "phone_internet", rgsCode: "4510", vatTreatment: "btw_21" },
+  { key: "marketing_ads", rgsCode: "4700", vatTreatment: "btw_21" },
+  { key: "software_subscriptions", rgsCode: "4720", vatTreatment: "btw_21" },
+  { key: "insurance", rgsCode: "4730", vatTreatment: "btw_vrijgesteld" },
+  { key: "professional_services", rgsCode: "4740", vatTreatment: "btw_21" },
+  { key: "training_education", rgsCode: "4750", vatTreatment: "btw_21" },
+  { key: "staff_costs", rgsCode: "4000", vatTreatment: "btw_21" },
+  { key: "bank_interest", rgsCode: "4760", vatTreatment: "btw_vrijgesteld" },
+  { key: "capital_asset", rgsCode: "0200", vatTreatment: "btw_21" },
+  { key: "other", rgsCode: "4400", vatTreatment: "btw_21" },
+] as const satisfies readonly {
+  readonly key: string;
+  readonly rgsCode: string;
+  readonly vatTreatment: VatTreatment;
+}[];
+
+export type ExpenseCategoryKey = (typeof EXPENSE_CATEGORIES)[number]["key"];
+
+/**
  * FR-EXP-001g's warning that this receipt may already be claimed.
  *
  * Arrives alongside `can_be_marked_ready: true` on purpose: two identical

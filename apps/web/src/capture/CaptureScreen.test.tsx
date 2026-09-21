@@ -105,6 +105,15 @@ async function startSitting() {
   return built;
 }
 
+/**
+ * Answers the dialog that opens whenever receipts are added: the category is
+ * asked BEFORE anything is decoded or queued, so every test that adds a new
+ * receipt goes through it.
+ */
+async function chooseCategory(key = "office_supplies") {
+  fireEvent.click(await screen.findByTestId(`capture-category-${key}`));
+}
+
 describe("starting a sitting — FR-EXP-001a", () => {
   it("opens a session automatically on mount, with no tap", async () => {
     // ADR-047: the "Start" tap is gone. Mounting the screen is enough.
@@ -145,6 +154,7 @@ function fakeSitting(overrides: Partial<Sitting> = {}): Sitting {
     problem: null,
     start: vi.fn(async () => {}),
     capture: vi.fn(async () => null),
+    forget: vi.fn(),
     finalise: vi.fn(async () => false),
     dismissProblem: vi.fn(),
     ...overrides,
@@ -369,6 +379,7 @@ describe("both paths land in the same place — FR-EXP-001", () => {
     fireEvent.change(screen.getByTestId("capture-camera-input"), {
       target: { files: [jpeg()] },
     });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(1));
   });
@@ -379,6 +390,7 @@ describe("both paths land in the same place — FR-EXP-001", () => {
     fireEvent.change(screen.getByTestId("capture-file-input"), {
       target: { files: [jpeg()] },
     });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(1));
   });
@@ -389,6 +401,7 @@ describe("both paths land in the same place — FR-EXP-001", () => {
     fireEvent.drop(screen.getByTestId("capture-drop"), {
       dataTransfer: { files: [jpeg()] },
     });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(1));
   });
@@ -401,10 +414,168 @@ describe("both paths land in the same place — FR-EXP-001", () => {
     fireEvent.change(screen.getByTestId("capture-file-input"), {
       target: { files: [jpeg()] },
     });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(1));
     const [record] = [...store.records.values()];
     expect(record?.state).toBe("queued");
+  });
+});
+
+describe("filing a receipt as it is added — FR-EXP-001b", () => {
+  const pdf = () =>
+    new File([new Uint8Array([37, 80, 68, 70])], "invoice.pdf", { type: "application/pdf" });
+
+  it("asks for the category before anything is queued", async () => {
+    const { store } = await startSitting();
+
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+
+    await screen.findByTestId("capture-category-picker");
+    expect(store.records.size).toBe(0);
+  });
+
+  it("seals the chosen category into the capture, for the server to file it under", async () => {
+    const { store, queue } = await startSitting();
+
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [pdf()] } });
+    await chooseCategory("lunch");
+
+    await waitFor(() => expect(store.records.size).toBe(1));
+    const [record] = [...store.records.values()];
+    const { payload } = await queue.open(record!);
+    expect(payload.category).toBe("lunch");
+    expect(payload.contentType).toBe("application/pdf");
+    expect(payload.filename).toBe("invoice.pdf");
+  });
+
+  it("files a dropped batch under one category, and says how many files it covers", async () => {
+    const { store, queue } = await startSitting();
+    const two = [pdf(), jpeg()];
+
+    fireEvent.drop(screen.getByTestId("capture-drop"), { dataTransfer: { files: two } });
+    expect((await screen.findByTestId("capture-category-count")).textContent).toContain("2");
+    await chooseCategory("utilities");
+
+    await waitFor(() => expect(store.records.size).toBe(2));
+    const categories = await Promise.all(
+      [...store.records.values()].map(
+        async (record) => (await queue.open(record)).payload.category,
+      ),
+    );
+    expect(categories).toEqual(["utilities", "utilities"]);
+  });
+
+  it("adds nothing when the dialog is closed without choosing", async () => {
+    const { store } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await screen.findByTestId("capture-category-picker");
+
+    fireEvent.click(screen.getByTestId("capture-category-cancel"));
+
+    await waitFor(() => expect(screen.queryByTestId("capture-category-picker")).toBeNull());
+    expect(store.records.size).toBe(0);
+  });
+
+  it("closes on Escape too, and adds nothing", async () => {
+    const { store } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    const dialog = await screen.findByTestId("capture-category-picker");
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByTestId("capture-category-picker")).toBeNull());
+    expect(store.records.size).toBe(0);
+  });
+
+  it("does not ask again for another page of a receipt that is already filed", async () => {
+    const { store, queue } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory("insurance");
+    await waitFor(() => screen.getByTestId("capture-add-page"));
+
+    fireEvent.click(screen.getByTestId("capture-add-page"));
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+
+    await waitFor(() => expect(store.records.size).toBe(2));
+    expect(screen.queryByTestId("capture-category-picker")).toBeNull();
+    // Only the page that creates the receipt carries a category.
+    const later = [...store.records.values()].find((record) => record.pageIndex === 1);
+    expect((await queue.open(later!)).payload.category).toBeNull();
+  });
+});
+
+describe("the uploads overview", () => {
+  it("says there is nothing yet before anything is added", async () => {
+    await startSitting();
+
+    expect(screen.getByTestId("capture-review-empty")).toBeTruthy();
+  });
+
+  it("lists each receipt with its file name, its category and where it has got to", async () => {
+    await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), {
+      target: {
+        files: [new File([new Uint8Array([1])], "invoice.pdf", { type: "application/pdf" })],
+      },
+    });
+    await chooseCategory("office_supplies");
+
+    const row = await screen.findByTestId("capture-review-item");
+    expect(row.textContent).toContain("invoice.pdf");
+    expect(screen.getByTestId("capture-review-category").textContent).toBe("Kantoorbenodigdheden");
+    // Nothing has uploaded in this harness, so it is still waiting.
+    expect(row.getAttribute("data-status")).toBe("queued");
+    expect(screen.getByTestId("capture-uploads-summary").textContent).toContain("0 van 1");
+  });
+
+  it("reads a receipt whose captures have all left the queue as uploaded", async () => {
+    const { queue } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
+    await waitFor(() => screen.getByTestId("capture-review-item"));
+
+    // What a delivery does: the queue deletes the record.
+    const [record] = await queue.records();
+    await queue.markDelivered(record!);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("capture-review-item").getAttribute("data-status")).toBe("done"),
+    );
+    expect(screen.getByTestId("capture-uploads-summary").textContent).toContain("1 van 1");
+  });
+
+  it("shows why a refused receipt was refused, and offers to retry or discard it", async () => {
+    const { queue } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
+    await waitFor(() => screen.getByTestId("capture-review-item"));
+
+    const [record] = await queue.records();
+    await queue.markBlocked(record!, "unsupported_type");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("capture-review-item").getAttribute("data-status")).toBe("blocked"),
+    );
+    expect(screen.getByTestId("capture-review-reason").textContent).toContain("JPEG, PNG, HEIC");
+    expect(screen.getByTestId("capture-queue-retry")).toBeTruthy();
+    expect(screen.getByTestId("capture-queue-discard")).toBeTruthy();
+  });
+
+  it("drops a discarded receipt from the list instead of reading it as uploaded", async () => {
+    const { queue, store } = await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
+    await waitFor(() => screen.getByTestId("capture-review-item"));
+    const [record] = await queue.records();
+    await queue.markBlocked(record!, "unsupported_type");
+    await waitFor(() => screen.getByTestId("capture-queue-discard"));
+
+    fireEvent.click(screen.getByTestId("capture-queue-discard"));
+
+    await waitFor(() => expect(screen.queryByTestId("capture-review-item")).toBeNull());
+    expect(store.records.size).toBe(0);
+    expect(screen.getByTestId("capture-review-empty")).toBeTruthy();
   });
 });
 
@@ -413,8 +584,10 @@ describe("the two 'several' — FR-EXP-001 multi-page vs FR-EXP-001a batch", () 
     const { store } = await startSitting();
 
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => expect(store.records.size).toBe(1));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => expect(store.records.size).toBe(2));
 
     const refs = [...store.records.values()].map((record) => record.receiptRef);
@@ -427,6 +600,7 @@ describe("the two 'several' — FR-EXP-001 multi-page vs FR-EXP-001a batch", () 
     // three times, and the mistake is silent — which is why it is a button.
     const { store } = await startSitting();
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-add-page"));
 
     fireEvent.click(screen.getByTestId("capture-add-page"));
@@ -441,6 +615,7 @@ describe("the two 'several' — FR-EXP-001 multi-page vs FR-EXP-001a batch", () 
   it("counts a multi-page receipt as ONE expense", async () => {
     const { store } = await startSitting();
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-add-page"));
     fireEvent.click(screen.getByTestId("capture-add-page"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
@@ -456,12 +631,14 @@ describe("the two 'several' — FR-EXP-001 multi-page vs FR-EXP-001a batch", () 
     // meant to be six claims.
     const { store } = await startSitting();
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-add-page"));
     fireEvent.click(screen.getByTestId("capture-add-page"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
     await waitFor(() => expect(store.records.size).toBe(2));
 
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(3));
     const refs = [...store.records.values()].map((record) => record.receiptRef);
@@ -482,6 +659,7 @@ describe("glare and blur warnings — FR-EXP-001", () => {
     await waitFor(() => screen.getByTestId("capture-drop"));
 
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
 
     await waitFor(() => screen.getByTestId("capture-quality"));
     expect(screen.getByTestId("capture-quality-finding").getAttribute("data-finding")).toBe(
@@ -495,6 +673,7 @@ describe("glare and blur warnings — FR-EXP-001", () => {
     render(<built.Harness />);
     await waitFor(() => screen.getByTestId("capture-drop"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
 
     fireEvent.click(screen.getByTestId("capture-quality-retake"));
@@ -511,6 +690,7 @@ describe("glare and blur warnings — FR-EXP-001", () => {
     shutter.focus();
 
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
 
     // `role="alertdialog"` promises an interruption; before this fix, focus
@@ -531,6 +711,7 @@ describe("glare and blur warnings — FR-EXP-001", () => {
     render(<built.Harness />);
     await waitFor(() => screen.getByTestId("capture-drop"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
 
     fireEvent.click(screen.getByTestId("capture-quality-use"));
@@ -551,6 +732,7 @@ describe("several files at once", () => {
     const { store } = await startSitting();
 
     fireEvent.drop(screen.getByTestId("capture-drop"), { dataTransfer: { files: files(3) } });
+    await chooseCategory();
 
     await waitFor(() => expect(store.records.size).toBe(3));
     const refs = [...store.records.values()].map((record) => record.receiptRef);
@@ -563,6 +745,7 @@ describe("several files at once", () => {
     // number that opens a receipt. Four page zeroes is four claims.
     const { store } = await startSitting();
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: files(1) } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-add-page"));
     fireEvent.click(screen.getByTestId("capture-add-page"));
 
@@ -582,6 +765,7 @@ describe("several files at once", () => {
     await waitFor(() => screen.getByTestId("capture-drop"));
 
     fireEvent.drop(screen.getByTestId("capture-drop"), { dataTransfer: { files: files(3) } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
     fireEvent.click(screen.getByTestId("capture-quality-use"));
 
@@ -601,6 +785,7 @@ describe("several files at once", () => {
     await waitFor(() => screen.getByTestId("capture-drop"));
 
     fireEvent.drop(screen.getByTestId("capture-drop"), { dataTransfer: { files: files(2) } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
     fireEvent.click(screen.getByTestId("capture-quality-retake"));
 
@@ -623,6 +808,7 @@ describe("finishing a sitting — FR-EXP-001a", () => {
     // and the screen must not imply that it has.
     const { store, finaliseSession } = await startSitting();
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => expect(store.records.size).toBe(1));
 
     fireEvent.click(screen.getByTestId("capture-finalise"));
@@ -644,6 +830,7 @@ describe("finishing a sitting — FR-EXP-001a", () => {
     render(<built.Harness />);
     await waitFor(() => screen.getByTestId("capture-drop"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => expect(built.store.records.size).toBe(1));
 
     fireEvent.click(screen.getByTestId("capture-finalise"));
@@ -661,6 +848,7 @@ describe("tenant context — CLAUDE.md rule 1, client side", () => {
     const { store, queue } = await startSitting();
 
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => expect(store.records.size).toBe(1));
 
     const [record] = [...store.records.values()];
@@ -677,11 +865,35 @@ describe("CMP-012/FR-LOC-004: no automated WCAG 2.2 AA violations", () => {
     assertNoAxeViolations(await axeViolations(document.body));
   });
 
+  it("the category dialog, open", async () => {
+    await startSitting();
+    fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await screen.findByTestId("capture-category-picker");
+
+    assertNoAxeViolations(await axeViolations(document.body));
+  });
+
+  it("the uploads overview, with a receipt in each state", async () => {
+    const { queue } = await startSitting();
+    for (const category of ["lunch", "insurance"]) {
+      fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+      await chooseCategory(category);
+      await waitFor(() => screen.getAllByTestId("capture-review-item"));
+    }
+    await waitFor(async () => expect(await queue.records()).toHaveLength(2));
+    const [first] = await queue.records();
+    await queue.markBlocked(first!, "unsupported_type");
+    await waitFor(() => screen.getByTestId("capture-review-reason"));
+
+    assertNoAxeViolations(await axeViolations(document.body));
+  });
+
   it("the quality prompt, open", async () => {
     const built = build({ decode: decoder(["blurred"]) });
     render(<built.Harness />);
     await waitFor(() => screen.getByTestId("capture-drop"));
     fireEvent.change(screen.getByTestId("capture-file-input"), { target: { files: [jpeg()] } });
+    await chooseCategory();
     await waitFor(() => screen.getByTestId("capture-quality"));
 
     assertNoAxeViolations(await axeViolations(document.body));

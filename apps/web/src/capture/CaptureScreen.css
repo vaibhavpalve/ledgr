@@ -33,9 +33,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--ledgr-space-1);
+  gap: var(--ledgr-space-3);
 
-  padding: var(--ledgr-space-5) var(--ledgr-space-4);
+  padding: var(--ledgr-space-6) var(--ledgr-space-4);
   border: 2px dashed var(--ledgr-border-strong);
   border-radius: var(--ledgr-radius-panel);
 
@@ -49,9 +49,46 @@
     background-color var(--ledgr-duration-fast) var(--ledgr-ease-out);
 }
 
-.capture__drop:hover {
+.capture__drop:hover,
+.capture__drop[data-active="true"] {
   border-color: var(--ledgr-accent);
   background-color: var(--ledgr-accent-wash);
+}
+
+.capture__drop-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+  transition:
+    background-color var(--ledgr-duration-fast) var(--ledgr-ease-out),
+    color var(--ledgr-duration-fast) var(--ledgr-ease-out);
+}
+
+.capture__drop:hover .capture__drop-icon,
+.capture__drop[data-active="true"] .capture__drop-icon {
+  background-color: var(--ledgr-surface-paper);
+  color: var(--ledgr-accent);
+}
+
+.capture__drop-hint {
+  margin: 0;
+  max-width: 32ch;
+  text-wrap: balance;
+}
+
+/* The picker button lives inside the zone: dropping and choosing are the same
+   act reached two ways, so they read as one control rather than two. */
+.capture__choose {
+  padding-inline: var(--ledgr-space-5);
+  border-color: var(--ledgr-border-strong);
+}
+
+.capture__choose:hover:not(:disabled) {
+  border-color: var(--ledgr-accent);
 }
 
 /*
@@ -72,9 +109,13 @@
   transform: translateX(-50%);
   z-index: 30;
 
-  width: 5.5rem;
-  height: 5.5rem;
-  padding: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+  /* Room for the icon AND the two-line label: "photograph" is the long word,
+     and at 5.5rem it ran into the edge of the disc. */
+  width: 6.5rem;
+  height: 6.5rem;
+  padding: 0 var(--ledgr-space-2);
   border-radius: var(--ledgr-radius-pill);
 
   background-color: var(--ledgr-accent);
@@ -83,7 +124,7 @@
      from whatever it is currently floating over. */
   border: 4px solid var(--ledgr-surface-paper);
 
-  font-size: var(--ledgr-type-caption);
+  font-size: var(--ledgr-type-micro);
   font-weight: var(--ledgr-weight-bold);
   line-height: var(--ledgr-leading-tight);
   text-align: center;
@@ -123,26 +164,483 @@
 }
 
 /*
- * Every secondary action — choose files, add a page, next receipt, finalise.
- * Still a full 48px touch target (MOB-013), but visibly not the one thing a
- * person standing in a car park is here to do: no fill, quieter type, and
- * they sit in the flow rather than floating.
+ * "Another page of this receipt" / "Next receipt": one choice between two,
+ * drawn as one segmented control rather than two unrelated buttons. Still full
+ * 48px targets (MOB-013).
+ *
+ * `aria-pressed` is what makes each a real toggle, so the selected segment is
+ * styled from that attribute rather than a parallel class — the announced
+ * state and the visible state stay one fact.
  */
-.capture__secondary {
-  min-height: var(--ledgr-touch-min);
+.capture__toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ledgr-space-1);
+  align-self: center;
+  width: min(100%, 26rem);
+
+  padding: var(--ledgr-space-1);
+  background-color: var(--ledgr-surface-raised);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.capture__toggle-option {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--ledgr-text-secondary);
+  font-weight: var(--ledgr-weight-medium);
+  text-align: center;
+}
+
+.capture__toggle-option:hover:not(:disabled) {
+  background-color: var(--ledgr-surface-sunken);
+}
+
+.capture__toggle-option[aria-pressed="true"] {
+  background-color: var(--ledgr-surface-paper);
+  border-color: var(--ledgr-border-subtle);
+  color: var(--ledgr-text-primary);
+  font-weight: var(--ledgr-weight-semibold);
+  box-shadow: var(--ledgr-shadow-sm);
+}
+
+/* Closing the batch is the one action the screen builds towards. */
+.capture__finish {
+  align-self: flex-end;
+  min-width: 12rem;
+  background-color: var(--ledgr-accent);
+  border-color: var(--ledgr-accent);
+  color: var(--ledgr-text-on-accent);
+}
+
+.capture__finish:hover:not(:disabled) {
+  background-color: var(--ledgr-accent-hover);
+  border-color: var(--ledgr-accent-hover);
+}
+
+@media (max-width: 40rem) {
+  .capture__finish {
+    align-self: stretch;
+  }
+}
+
+/* ==========================================================================
+ * UPLOADS OVERVIEW
+ * ==========================================================================
+ *
+ * One row per receipt, answering the three questions somebody has after adding
+ * a pile of them: what is it, how is it filed, has it gone.
+ */
+
+.uploads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+
+  padding: var(--ledgr-space-5);
+  background-color: var(--ledgr-surface-paper);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+}
+
+.uploads__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ledgr-space-1) var(--ledgr-space-4);
+}
+
+.uploads__header h2 {
+  margin: 0;
+  font-size: var(--ledgr-type-section);
+}
+
+.uploads__summary,
+.uploads__count,
+.uploads__storage {
+  margin: 0;
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-caption);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.uploads__summary {
+  font-weight: var(--ledgr-weight-semibold);
+  color: var(--ledgr-text-secondary);
+}
+
+.uploads__empty {
+  margin: 0;
+  padding: var(--ledgr-space-4) 0;
+  color: var(--ledgr-text-muted);
+}
+
+.uploads__offline {
+  display: flex;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+  margin: 0;
+  padding: var(--ledgr-space-2) var(--ledgr-space-3);
+  border-left: 3px solid var(--ledgr-caution);
+  border-radius: var(--ledgr-radius-control);
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+  font-size: var(--ledgr-type-caption);
   font-weight: var(--ledgr-weight-medium);
 }
 
-/*
- * `aria-pressed` is a real toggle on two of these ("add a page" vs "new
- * receipt"), so the selected one is styled from that attribute rather than a
- * parallel class — the announced state and the visible state stay one fact.
- */
-.capture__secondary[aria-pressed="true"] {
-  background-color: var(--ledgr-accent-wash);
-  border-color: var(--ledgr-accent);
-  color: var(--ledgr-accent);
+/* A native <progress>, drawn: it keeps its semantics (and its value for a
+   screen reader) and only loses the operating system's look. */
+.uploads__bar {
+  appearance: none;
+  width: 100%;
+  height: 0.375rem;
+  border: 0;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-surface-raised);
+  overflow: hidden;
+}
+
+.uploads__bar::-webkit-progress-bar {
+  background-color: var(--ledgr-surface-raised);
+}
+
+.uploads__bar::-webkit-progress-value {
+  background-color: var(--ledgr-accent);
+  transition: width var(--ledgr-duration-base) var(--ledgr-ease-out);
+}
+
+.uploads__bar::-moz-progress-bar {
+  background-color: var(--ledgr-accent);
+}
+
+.uploads__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.uploads__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ledgr-space-3) var(--ledgr-space-4);
+  padding: var(--ledgr-space-3) 0;
+  border-top: 1px solid var(--ledgr-border-subtle);
+}
+
+.uploads__file {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--ledgr-radius-control);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+}
+
+.uploads__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+  min-width: 0;
+}
+
+.uploads__name {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: var(--ledgr-weight-semibold);
+}
+
+.uploads__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-1) var(--ledgr-space-3);
+  margin: 0;
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-caption);
+}
+
+.uploads__category {
+  padding: 0.0625rem var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent-hover);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.uploads__category--none {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-muted);
+  font-weight: var(--ledgr-weight-medium);
+}
+
+.uploads__reason {
+  margin: 0;
+  color: var(--ledgr-attention);
+  font-size: var(--ledgr-type-caption);
+  line-height: var(--ledgr-leading-snug);
+}
+
+.uploads__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--ledgr-space-2);
+}
+
+.uploads__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-1);
+  padding: 0.125rem var(--ledgr-space-3) 0.125rem var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-pill);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-semibold);
+  white-space: nowrap;
+}
+
+.uploads__status--queued {
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+}
+
+.uploads__status--uploading {
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent-hover);
+}
+
+.uploads__status--done {
+  background-color: var(--ledgr-positive-wash);
+  color: var(--ledgr-positive);
+}
+
+.uploads__status--blocked {
+  background-color: var(--ledgr-attention-wash);
+  color: var(--ledgr-attention);
+}
+
+.uploads__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.1875rem;
+  border-radius: var(--ledgr-radius-pill);
+  background-color: currentColor;
+  opacity: 0.55;
+}
+
+.uploads__spin {
+  animation: uploads-spin 1s linear infinite;
+}
+
+@keyframes uploads-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uploads__spin {
+    animation: none;
+  }
+}
+
+.uploads__actions {
+  display: inline-flex;
+  gap: var(--ledgr-space-1);
+}
+
+/* Small, but still a 48px-high hit area from the button base rule. */
+.uploads__action {
+  padding-inline: var(--ledgr-space-3);
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--ledgr-accent-hover);
+  font-size: var(--ledgr-type-caption);
+}
+
+@media (max-width: 40rem) {
+  .uploads__row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .uploads__aside {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* ==========================================================================
+ * CATEGORY PICKER
+ * ==========================================================================
+ *
+ * Opens over the screen when receipts are added. A grid, because nineteen
+ * choices are compared by glancing rather than read down a list.
+ */
+
+.category-picker__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ledgr-z-overlay);
+  display: grid;
+  place-items: center;
+  padding: var(--ledgr-space-4);
+  overflow-y: auto;
+  background-color: var(--ledgr-surface-scrim);
+}
+
+.category-picker {
+  position: relative;
+  width: min(100%, 58rem);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--ledgr-space-5);
+  background-color: var(--ledgr-surface-paper);
+  border-radius: var(--ledgr-radius-panel);
+  box-shadow: var(--ledgr-shadow-lg);
+}
+
+.category-picker__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ledgr-space-4);
+  /* Clear of the close button in the corner. */
+  padding-right: var(--ledgr-space-7);
+}
+
+.category-picker__mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--ledgr-radius-control);
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent-hover);
+}
+
+.category-picker__heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+  min-width: 0;
+}
+
+.category-picker__heading h2 {
+  margin: 0;
+  font-family: var(--ledgr-font-serif);
+  font-size: var(--ledgr-type-section);
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-tight);
+}
+
+.category-picker__heading p {
+  margin: 0;
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-small);
+  text-wrap: pretty;
+}
+
+.category-picker__heading .category-picker__count {
+  color: var(--ledgr-accent-hover);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.category-picker__close {
+  position: absolute;
+  top: var(--ledgr-space-4);
+  right: var(--ledgr-space-4);
+  width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border-color: var(--ledgr-border-subtle);
+  background-color: var(--ledgr-surface-raised);
+  color: var(--ledgr-text-secondary);
+}
+
+.category-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--ledgr-space-3);
+  margin: var(--ledgr-space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-picker__option {
+  justify-content: flex-start;
+  gap: var(--ledgr-space-3);
+  width: 100%;
+  min-height: 4rem;
+  padding: var(--ledgr-space-3);
+  border-color: var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  text-align: left;
+}
+
+.category-picker__option:hover:not(:disabled) {
+  border-color: var(--ledgr-accent);
+  background-color: var(--ledgr-accent-wash);
+}
+
+.category-picker__option:focus-visible,
+.category-picker__close:focus-visible {
+  outline: 3px solid var(--ledgr-border-focus);
+  outline-offset: 2px;
+}
+
+.category-picker__glyph {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--ledgr-radius-control);
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-accent-hover);
+}
+
+.category-picker__option:hover .category-picker__glyph {
+  background-color: var(--ledgr-surface-paper);
+}
+
+.category-picker__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.category-picker__name {
+  font-weight: var(--ledgr-weight-semibold);
+  line-height: var(--ledgr-leading-snug);
+}
+
+.category-picker__meta {
+  color: var(--ledgr-text-muted);
+  font-size: var(--ledgr-type-caption);
+  font-weight: var(--ledgr-weight-regular);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (max-width: 40rem) {
+  .category-picker__scrim {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .category-picker {
+    max-height: 92dvh;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
 }
 
 /* ==========================================================================

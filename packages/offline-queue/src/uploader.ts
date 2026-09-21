@@ -27,7 +27,7 @@
 
 import { backoffMs, due, nextDueAt } from "./policy";
 import type { CaptureQueue } from "./queue";
-import type { Cancel, Clock, Connectivity, Scheduler, Transport } from "./ports";
+import type { Cancel, Clock, Connectivity, Scheduler, Transport, TransportResponse } from "./ports";
 import { buildRequest, classify } from "./request";
 
 export interface QueueUploaderOptions {
@@ -50,6 +50,8 @@ export interface QueueUploaderOptions {
 export class QueueUploader {
   private readonly options: QueueUploaderOptions;
   private unsubscribe: Cancel | null = null;
+  private unsubscribeEnqueue: Cancel | null = null;
+  private recovered = false;
   private timer: Cancel | null = null;
   private inFlight: Promise<void> | null = null;
   private askedAgain = false;
@@ -66,6 +68,11 @@ export class QueueUploader {
     this.stopped = false;
     this.options.queue.setOffline(!this.options.connectivity.online);
     this.unsubscribe = this.options.connectivity.onOnline(() => this.drain());
+    // A capture made while the app is already running has to wake the drain
+    // itself - none of the other wake-ups fire for it.
+    this.unsubscribeEnqueue = this.options.queue.onEnqueued(() => {
+      this.drain().catch(() => undefined);
+    });
     // Fire and forget, but never an unhandled rejection: if the store cannot be
     // read (no IndexedDB in some private-browsing modes, or in a test
     // environment), there is nothing to drain and nothing here to tell the
@@ -79,6 +86,8 @@ export class QueueUploader {
     this.stopped = true;
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.unsubscribeEnqueue?.();
+    this.unsubscribeEnqueue = null;
     this.clearTimer();
   }
 
@@ -105,6 +114,13 @@ export class QueueUploader {
 
     this.inFlight = (async () => {
       try {
+        // Once, before anything is attempted: whatever is still `uploading` now
+        // was cut off by a reload, because nothing of this uploader's is in
+        // flight yet. See `CaptureQueue.recoverInterrupted`.
+        if (!this.recovered) {
+          this.recovered = true;
+          await this.options.queue.recoverInterrupted();
+        }
         do {
           this.askedAgain = false;
           await this.pass();
@@ -130,13 +146,27 @@ export class QueueUploader {
 
     for (const record of due(await this.options.queue.records(), this.options.clock.now())) {
       const attempted = await this.options.queue.markUploading(record);
-      const { payload, image } = await this.options.queue.open(attempted);
-      const response = await this.options.transport.send(
-        buildRequest(payload, image, {
-          resolvedItemId: attempted.resolvedItemId,
-          headers: this.options.headers?.() ?? {},
-        }),
-      );
+      let response: TransportResponse;
+      try {
+        const { payload, image } = await this.options.queue.open(attempted);
+        response = await this.options.transport.send(
+          buildRequest(payload, image, {
+            resolvedItemId: attempted.resolvedItemId,
+            headers: this.options.headers?.() ?? {},
+          }),
+        );
+      } catch {
+        // Decrypting or sending threw rather than answering. Left alone, the
+        // record stays `uploading` (which `due` never offers) and the throw
+        // abandons every record behind it - one bad capture stalling the lot,
+        // with the screen saying UPLOADING throughout. Treated as any other
+        // retryable failure instead: back to `queued`, counted, backed off.
+        await this.options.queue.markWaiting(
+          attempted,
+          this.options.clock.now() + backoffMs(attempted.attempts, this.options.random),
+        );
+        continue;
+      }
       const outcome = classify(response);
 
       if (outcome.kind === "delivered") {

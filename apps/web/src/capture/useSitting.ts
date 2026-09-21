@@ -59,6 +59,8 @@ export interface SittingContext {
 export interface LocalReceipt {
   /** The client-local reference the queue groups pages under. */
   readonly ref: string;
+  /** The category picked for it (an `EXPENSE_CATEGORIES` key), or null if none was. */
+  readonly category: string | null;
   readonly pages: readonly LocalPage[];
 }
 
@@ -92,6 +94,12 @@ export interface Sitting {
   readonly problem: SittingProblem | null;
   start(): Promise<void>;
   capture(input: CaptureInput): Promise<EnqueueResult | null>;
+  /**
+   * Drops a receipt from this sitting's list, after its captures were
+   * discarded from the queue. Without this a discarded receipt would vanish
+   * from the queue and be read as "uploaded" - its records are gone either way.
+   */
+  forget(ref: string): void;
   finalise(): Promise<boolean>;
   dismissProblem(): void;
 }
@@ -125,6 +133,11 @@ export interface CaptureInput {
    * a new one. Never inferred — see the module docstring.
    */
   readonly into?: string;
+  /**
+   * The category the person picked, for a NEW receipt. Ignored on a further
+   * page: the receipt already has one, or the person chose to leave it.
+   */
+  readonly category?: string;
 }
 
 export function useSitting({
@@ -266,6 +279,7 @@ export function useSitting({
         source: input.source,
         filename: input.filename,
         contentType: input.contentType,
+        category: input.into === undefined ? (input.category ?? null) : null,
         image: input.bytes,
       });
 
@@ -294,7 +308,7 @@ export function useSitting({
           ? current.map((receipt) =>
               receipt.ref === ref ? { ...receipt, pages: [...receipt.pages, page] } : receipt,
             )
-          : [...current, { ref, pages: [page] }],
+          : [...current, { ref, category: input.category ?? null, pages: [page] }],
       );
       setCurrentReceiptRef(ref);
       return result;
@@ -331,6 +345,13 @@ export function useSitting({
 
   const dismissProblem = useCallback(() => setProblem(null), []);
 
+  const forget = useCallback((ref: string) => {
+    nextPage.current.delete(ref);
+    setReceipts((current) => current.filter((receipt) => receipt.ref !== ref));
+    // A further page must not join a receipt that no longer exists.
+    setCurrentReceiptRef((current) => (current === ref ? null : current));
+  }, []);
+
   return useMemo(
     () => ({
       phase,
@@ -340,6 +361,7 @@ export function useSitting({
       problem,
       start,
       capture,
+      forget,
       finalise,
       dismissProblem,
     }),
@@ -351,6 +373,7 @@ export function useSitting({
       problem,
       start,
       capture,
+      forget,
       finalise,
       dismissProblem,
     ],

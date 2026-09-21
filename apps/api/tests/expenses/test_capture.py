@@ -131,6 +131,7 @@ class FakeCaptureRepository:
         administration_id: uuid.UUID,
         session_id: uuid.UUID,
         user_id: uuid.UUID,
+        category: str | None = None,
     ) -> tuple[uuid.UUID, Expense]:
         item_id = uuid.uuid4()
         position = 1 + sum(1 for s, _, _ in self.items.values() if s == session_id)
@@ -141,6 +142,7 @@ class FakeCaptureRepository:
             capture_item_id=item_id,
             status=ExpenseStatus.DRAFT,
             submitted_by_user_id=user_id,
+            category=category,
         )
         self.expenses[expense.id] = expense
         return item_id, expense
@@ -320,6 +322,59 @@ async def test_the_five_formats_fr_exp_001_names_are_accepted(data: bytes, expec
     _, document, _ = await capture(h, session, data)
 
     assert document.content_type.value == expected
+
+
+async def test_a_chosen_category_files_the_new_expense() -> None:
+    """The capture screen asks for the category first, so the receipt arrives
+    filed. The stored value is the category's English label, taken from the
+    server's list rather than from whatever the client sent.
+    """
+    h = harness()
+    session = await open_session(h)
+
+    await capture(h, session, PDF, category="office_supplies")
+
+    (expense,) = h.repository.expenses.values()
+    assert expense.category == "Office supplies"
+
+
+async def test_a_receipt_captured_without_a_category_has_none() -> None:
+    h = harness()
+    session = await open_session(h)
+
+    await capture(h, session, JPEG)
+
+    (expense,) = h.repository.expenses.values()
+    assert expense.category is None
+
+
+async def test_an_unknown_category_is_refused_before_anything_is_stored() -> None:
+    from api.expenses.categories import UnknownExpenseCategory
+
+    h = harness()
+    session = await open_session(h)
+
+    with pytest.raises(UnknownExpenseCategory):
+        await capture(h, session, PDF, category="not_a_category")
+
+    # Checked first: a refused capture leaves neither a receipt nor a stored
+    # original behind it.
+    assert h.repository.expenses == {}
+    assert h.repository.pages == {}
+
+
+async def test_a_further_page_never_re_files_the_receipt() -> None:
+    """The category applies where an expense is CREATED. A later page joins an
+    expense the person may already have corrected in the form.
+    """
+    h = harness()
+    session = await open_session(h)
+    item, _, _ = await capture(h, session, JPEG, category="lunch")
+
+    await capture(h, session, PNG, item_id=item, category="utilities")
+
+    (expense,) = h.repository.expenses.values()
+    assert expense.category == "Lunch"
 
 
 async def test_a_format_nobody_named_is_refused_by_the_archive() -> None:

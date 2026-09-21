@@ -226,6 +226,11 @@
       "nl": "Deze bon hoort niet bij deze sessie.",
       "en": "That receipt is not part of this session."
     },
+    "errors.expense_category_unknown": {
+      "note": "The `category` sent with a captured receipt is not one of api.expenses.categories. Refused rather than filed under Other, because a wrong category is a wrong ledger account later.",
+      "nl": "Deze uitgavecategorie bestaat niet. Kies een categorie uit de lijst.",
+      "en": "That expense category does not exist. Choose one from the list."
+    },
     "errors.capture_session_empty": {
       "note": "Refused rather than silently completing with nothing: somebody who has just photographed six receipts and is told 'done' has no way to tell that from six uploads that failed.",
       "nl": "Er is nog niets vastgelegd in deze sessie. Leg eerst een bon vast.",

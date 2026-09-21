@@ -132,6 +132,98 @@
       "nl": "Deze foto is identiek aan een eerdere bon in deze reeks.",
       "en": "This photograph is identical to an earlier receipt in this batch."
     },
+    "capture.category.title": {
+      "note": "Heading of the dialog that opens when receipts are added. The category is asked BEFORE the file is sent, so the receipt arrives already filed (FR-EXP-001b).",
+      "nl": "Wat voor uitgave is dit?",
+      "en": "What kind of expense is this?"
+    },
+    "capture.category.subtitle": {
+      "note": "RGS is the Dutch reference chart of accounts (Referentie GrootboekSchema); the abbreviation is kept in both languages like BTW.",
+      "nl": "Kies een categorie — we boeken het op de juiste grootboekrekening (RGS).",
+      "en": "Pick a category — we book it to the right ledger account (RGS)."
+    },
+    "capture.category.close": {
+      "nl": "Sluiten zonder categorie te kiezen",
+      "en": "Close without choosing a category"
+    },
+    "capture.category.applies_to": {
+      "note": "Says how many files the one choice covers, because a drop of several files is filed under one category.",
+      "nl": { "one": "Geldt voor {count} bestand", "other": "Geldt voor alle {count} bestanden" },
+      "en": { "one": "Applies to {count} file", "other": "Applies to all {count} files" }
+    },
+    "capture.category.meta": {
+      "note": "Under each category: its reference ledger account and default BTW. {rgs} is the account number, {vat} is the existing capture.vat.* label.",
+      "identical": true,
+      "nl": "{rgs} · {vat}",
+      "en": "{rgs} · {vat}"
+    },
+    "capture.category.inventory_stock": { "nl": "Voorraad & inkoop", "en": "Inventory & stock" },
+    "capture.category.car_transport": { "nl": "Auto & vervoer", "en": "Car & transport" },
+    "capture.category.travel_lodging": { "nl": "Reizen & verblijf", "en": "Travel & lodging" },
+    "capture.category.lunch": { "identical": true, "nl": "Lunch", "en": "Lunch" },
+    "capture.category.dining_out": { "nl": "Uit eten", "en": "Dining out" },
+    "capture.category.entertainment_gifts": {
+      "nl": "Representatie & cadeaus",
+      "en": "Entertainment & gifts"
+    },
+    "capture.category.office_supplies": { "nl": "Kantoorbenodigdheden", "en": "Office supplies" },
+    "capture.category.rent_premises": { "nl": "Huur & bedrijfsruimte", "en": "Rent & premises" },
+    "capture.category.utilities": { "nl": "Nutsvoorzieningen", "en": "Utilities" },
+    "capture.category.phone_internet": { "nl": "Telefoon & internet", "en": "Phone & internet" },
+    "capture.category.marketing_ads": {
+      "nl": "Marketing & advertenties",
+      "en": "Marketing & ads"
+    },
+    "capture.category.software_subscriptions": {
+      "nl": "Software & abonnementen",
+      "en": "Software & subscriptions"
+    },
+    "capture.category.insurance": { "nl": "Verzekeringen", "en": "Insurance" },
+    "capture.category.professional_services": {
+      "nl": "Professionele diensten",
+      "en": "Professional services"
+    },
+    "capture.category.training_education": {
+      "nl": "Opleiding & training",
+      "en": "Training & education"
+    },
+    "capture.category.staff_costs": { "nl": "Personeelskosten", "en": "Staff costs" },
+    "capture.category.bank_interest": { "nl": "Bank & rente", "en": "Bank & interest" },
+    "capture.category.capital_asset": { "nl": "Bedrijfsmiddel", "en": "Capital asset" },
+    "capture.category.other": { "nl": "Overig", "en": "Other" },
+    "capture.uploads.title": {
+      "note": "Heading of the overview of everything added in this batch, with where each one is on its way.",
+      "identical": true,
+      "nl": "Uploads",
+      "en": "Uploads"
+    },
+    "capture.uploads.summary": {
+      "note": "Progress of the batch. {done} of {total} receipts are on the server.",
+      "nl": "{done} van {total} geüpload",
+      "en": "{done} of {total} uploaded"
+    },
+    "capture.uploads.empty": {
+      "nl": "Nog niets geüpload. Voeg hierboven bonnen toe.",
+      "en": "Nothing uploaded yet. Add receipts above."
+    },
+    "capture.uploads.list_label": {
+      "nl": "Bonnen in deze reeks en hun uploadstatus",
+      "en": "Receipts in this batch and their upload status"
+    },
+    "capture.uploads.no_category": { "nl": "Geen categorie", "en": "No category" },
+    "capture.uploads.status.queued": {
+      "nl": "Wacht op uploaden",
+      "en": "Waiting to upload"
+    },
+    "capture.uploads.status.uploading": {
+      "nl": "Bezig met uploaden",
+      "en": "Uploading"
+    },
+    "capture.uploads.status.done": { "nl": "Geüpload", "en": "Uploaded" },
+    "capture.uploads.status.blocked": {
+      "nl": "Vraagt om aandacht",
+      "en": "Needs attention"
+    },
     "capture.form.title": {
       "nl": "Uitgave aanvullen",
       "en": "Complete this expense"

@@ -57,6 +57,7 @@ from api.authz.service import AuthorizationService
 from api.documents.model import Document
 from api.documents.retention import RetentionBasis
 from api.documents.service import DocumentService
+from api.expenses.categories import category_for_key
 from api.expenses.model import (
     CaptureSession,
     CaptureSource,
@@ -97,6 +98,7 @@ class CaptureRepository(Protocol):
         administration_id: uuid.UUID,
         session_id: uuid.UUID,
         user_id: uuid.UUID,
+        category: str | None = None,
     ) -> tuple[uuid.UUID, Expense]:
         """A new receipt, and the expense it becomes. One statement, because
         FR-EXP-001a's "each becoming a separate expense" must not have a window
@@ -187,6 +189,7 @@ class CaptureService:
         filename: str | None = None,
         declared_content_type: str | None = None,
         item_id: uuid.UUID | None = None,
+        category: str | None = None,
         correlation_id: str | None = None,
     ) -> tuple[uuid.UUID, Document, int]:
         """The one place both paths land.
@@ -204,11 +207,21 @@ class CaptureService:
         elapsed time, similarity - would be wrong silently and in the direction
         that either multiplies or merges somebody's claim.
 
+        `category` files the NEW expense under one of `api.expenses.categories`'s
+        keys. It is checked before anything is stored, so a key this product does
+        not have leaves no document behind. It only applies where an expense is
+        created: on a further page (`item_id` present) there is nothing to file
+        and it is ignored, rather than silently re-filing a receipt the person
+        may already have corrected in the form.
+
         Returns the item, the stored document, and the page number, so a client
         can show the page it just added against the receipt it belongs to.
         """
         await self._require(actor_user_id, administration_id)
         session = await self._open_session_or_refuse(administration_id, session_id)
+        # Resolved up front: `category_for_key` raises for an unknown key, and
+        # that must happen before the archive has stored anything.
+        category_label = category_for_key(category).label if category and item_id is None else None
 
         if item_id is not None and not await self._repository.item_belongs_to_session(
             administration_id=administration_id, session_id=session.id, item_id=item_id
@@ -246,6 +259,7 @@ class CaptureService:
                 administration_id=administration_id,
                 session_id=session.id,
                 user_id=actor_user_id,
+                category=category_label,
             )
 
         page_number = await self._repository.add_page(

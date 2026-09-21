@@ -48,6 +48,7 @@ export class CaptureQueue {
   private readonly options: Required<Omit<CaptureQueueOptions, "onPurge">> &
     Pick<CaptureQueueOptions, "onPurge">;
   private readonly listeners = new Set<(snapshot: QueueSnapshot) => void>();
+  private readonly enqueueListeners = new Set<() => void>();
   private delivered = 0;
   private offline = false;
 
@@ -84,6 +85,7 @@ export class CaptureQueue {
       source: capture.source,
       filename: capture.filename,
       contentType: capture.contentType,
+      category: capture.category ?? null,
       idempotencyKey: this.options.newId(),
       capturedAt: new Date(this.options.clock.now()).toISOString(),
     };
@@ -121,7 +123,39 @@ export class CaptureQueue {
       sealed,
     });
     await this.notify();
+    // "The uploader drains it, immediately when it can" - said above, and it
+    // was not true until now: nothing woke the uploader for a capture made
+    // while the app was already running, so it sat `queued` until the next
+    // reload or online event. This is the wake-up.
+    for (const listener of this.enqueueListeners) listener();
     return { accepted: true, id };
+  }
+
+  /** Told after every capture is stored. Returns an unsubscribe. */
+  onEnqueued(listener: () => void): () => void {
+    this.enqueueListeners.add(listener);
+    return () => {
+      this.enqueueListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Puts records left `uploading` back in the queue.
+   *
+   * `uploading` means "in flight right now", and `policy.due` only offers
+   * `queued` records - so one whose attempt was cut off (the tab closed or
+   * reloaded mid-request, or decrypting it threw) was never offered again and
+   * showed UPLOADING for ever. The uploader calls this once, before its first
+   * drain, when by definition nothing is in flight. The attempt count is kept,
+   * so the interrupted try still counts against the backoff.
+   */
+  async recoverInterrupted(): Promise<void> {
+    const stuck = (await this.options.store.all()).filter((record) => record.state === "uploading");
+    if (stuck.length === 0) return;
+    for (const record of stuck) {
+      await this.options.store.put({ ...record, state: "queued", nextAttemptAt: null });
+    }
+    await this.notify();
   }
 
   /** MOB-003's "visible queue state", and it needs no key. */
@@ -340,6 +374,9 @@ export class CaptureQueue {
       blockedReason: null,
     });
     await this.notify();
+    // A retried capture is work the uploader has to be told about, exactly as a
+    // new one is - otherwise "Try again" re-queues it and nothing sends it.
+    for (const listener of this.enqueueListeners) listener();
   }
 
   setOffline(offline: boolean): void {
