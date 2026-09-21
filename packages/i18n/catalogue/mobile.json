@@ -468,6 +468,34 @@
       "note": "The reference calls this Recent activity; the API can only supply invoices.",
       "nl": "Recente facturen",
       "en": "Recent invoices"
+    },
+    "mobile.home.cash_vs": {
+      "note": "After the change chip on the cash figure; {month} is last month's name.",
+      "nl": "t.o.v. {month}",
+      "en": "vs {month}"
+    },
+    "mobile.home.chart.months": {
+      "nl": "Laatste {count} maanden",
+      "en": "Last {count} months"
+    },
+    "mobile.home.chart.summary": {
+      "nl": "Liquide middelen gingen van {from} in {fromMonth} naar {to} in {toMonth}.",
+      "en": "Cash position went from {from} in {fromMonth} to {to} in {toMonth}."
+    },
+    "mobile.home.btw.due": {
+      "note": "BTW return deadline: the end of the month after the period (api.vat.deadlines).",
+      "nl": "Uiterlijk {date}",
+      "en": "Due {date}"
+    },
+    "mobile.home.btw.days": {
+      "nl": {
+        "one": "nog {count} dag",
+        "other": "nog {count} dagen"
+      },
+      "en": {
+        "one": "{count} day left",
+        "other": "{count} days left"
+      }
     }
   }
 }

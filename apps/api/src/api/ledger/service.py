@@ -47,6 +47,7 @@ from typing import TYPE_CHECKING
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.ledger.model import (
     Account,
+    AccountBalance,
     AccountStatus,
     AccountType,
     ControlKind,
@@ -379,6 +380,16 @@ class LedgerService:
     ) -> Sequence[TrialBalanceRow]:
         return await self._repository.trial_balance(
             administration_id=administration_id, fiscal_year_id=fiscal_year_id
+        )
+
+    async def balances_as_of(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID, as_of: date
+    ) -> Sequence[AccountBalance]:
+        """Each account's balance counting only entries dated on or before `as_of`,
+        within one fiscal year: the same population as `trial_balance`, cut at a day.
+        Read-only. The caller authorizes (the dashboard's own `view report`)."""
+        return await self._repository.balances_as_of(
+            administration_id=administration_id, fiscal_year_id=fiscal_year_id, as_of=as_of
         )
 
     async def subledger_balance(

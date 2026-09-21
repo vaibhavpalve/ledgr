@@ -125,6 +125,52 @@ class DashboardSummary:
     items_needing_action: tuple[ActionItem, ...]
     #: Draft expenses awaiting review: the count the Review nav item shows.
     receipts_to_review: int = 0
+    #: Month-end cash position, oldest first, only for months inside the fiscal year
+    #: (the ledger balances are per fiscal year, so an earlier month has no honest
+    #: figure). The last point is today's, and equals `cash_position`.
+    cash_history: tuple[CashPoint, ...] = ()
+    #: This month's cash position minus last month's; None without a previous month
+    #: in the same fiscal year.
+    cash_change: Decimal | None = None
+    #: The filing period still open today, its due date and the VAT estimate for it.
+    vat_return: VatReturn | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CashPoint:
+    month_end: date
+    balance: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class VatReturn:
+    period_start: date
+    period_end: date
+    due_date: date
+    estimate: Decimal
+
+
+def cash_history_months(
+    *, today: date, fiscal_year_start: date, count: int = 6
+) -> list[tuple[date, date]]:
+    """(month_end, as_of) for the last `count` months up to and including this one,
+    dropping any month that starts before the fiscal year.
+
+    `as_of` is the month's last day, except the current month, which is cut at
+    today so the last point is today's figure. Months before the year began are
+    dropped, not shown as zero: the ledger's balances are per fiscal year, and a
+    zero for a month the year did not cover would be a wrong number, not a low one.
+    """
+    months: list[tuple[date, date]] = []
+    for back in range(count - 1, -1, -1):
+        index = today.year * 12 + (today.month - 1) - back
+        year, month = index // 12, index % 12 + 1
+        if date(year, month, 1) < date(fiscal_year_start.year, fiscal_year_start.month, 1):
+            continue
+        following = date(year + month // 12, month % 12 + 1, 1)
+        month_end = date.fromordinal(following.toordinal() - 1)
+        months.append((month_end, min(month_end, today)))
+    return months
 
 
 def liquid_account_ids(accounts: Sequence[ChartAccount]) -> frozenset[uuid.UUID]:

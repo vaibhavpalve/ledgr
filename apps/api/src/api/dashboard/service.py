@@ -39,16 +39,26 @@ caller's own `actor_user_id` rather than bypassed.
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from datetime import date
 
-from api.dashboard.model import DashboardSummary, summarize
+from api.dashboard.model import (
+    CashPoint,
+    DashboardSummary,
+    VatReturn,
+    cash_history_months,
+    liquid_account_ids,
+    summarize,
+    vat_estimate,
+)
 from api.dashboard.repository import DashboardRepository
 from api.expenses.repository import SqlCaptureRepository
 from api.invoicing.receivables_repository import SqlReceivablesRepository
 from api.invoicing.repository import SqlInvoiceRepository
 from api.ledger.chart import ChartOfAccountsService
-from api.ledger.model import ControlKind
+from api.ledger.model import ZERO, ControlKind
 from api.ledger.service import LedgerService
+from api.vat.deadlines import return_period
 
 #: No pagination exists anywhere in this codebase yet (checked: `list_invoices`
 #: and `list_by_status` both take a bounded `limit` with no cursor). This is
@@ -147,7 +157,7 @@ class DashboardService:
             administration_id=administration_id, as_of=today
         )
 
-        return summarize(
+        summary = summarize(
             trial_balance_rows=trial_balance_rows,
             chart_accounts=chart_accounts,
             receivable_rows=receivable_rows,
@@ -159,4 +169,51 @@ class DashboardService:
             expenses=expenses,
             today=today,
             outstanding_by_invoice={item.invoice_id: item.outstanding for item in open_items},
+        )
+
+        # Cash history and the change on last month. Each point is the same liquid
+        # accounts as the headline, cut at a month-end, so the last point IS the
+        # headline. Months before the fiscal year began are left out (see
+        # `cash_history_months`), and a year that has ended is shown up to its end.
+        liquid_ids = liquid_account_ids(chart_accounts)
+        history: list[CashPoint] = []
+        for month_end, as_of in cash_history_months(today=period_end, fiscal_year_start=start):
+            balances = await self.ledger.balances_as_of(
+                administration_id=administration_id, fiscal_year_id=fiscal_year_id, as_of=as_of
+            )
+            history.append(
+                CashPoint(
+                    month_end=month_end,
+                    balance=sum((b.balance for b in balances if b.account_id in liquid_ids), ZERO),
+                )
+            )
+        cash_change = history[-1].balance - history[-2].balance if len(history) >= 2 else None
+
+        # The next return: the filing period still open today. Not meaningful for a
+        # fiscal year that has already ended.
+        vat_return: VatReturn | None = None
+        if today <= end:
+            scheme = await self.dashboard.fiscal_year_period_scheme(
+                administration_id=administration_id, fiscal_year_id=fiscal_year_id
+            )
+            period = return_period(on=today, scheme=scheme)
+            vat_return = VatReturn(
+                period_start=period.start,
+                period_end=period.end,
+                due_date=period.due,
+                estimate=vat_estimate(
+                    output_vat=await self.dashboard.output_vat_total(
+                        administration_id=administration_id, start=period.start, end=period.end
+                    ),
+                    input_vat=await self.dashboard.input_vat_total(
+                        administration_id=administration_id, start=period.start, end=period.end
+                    ),
+                ),
+            )
+
+        return replace(
+            summary,
+            cash_history=tuple(history),
+            cash_change=cash_change,
+            vat_return=vat_return,
         )

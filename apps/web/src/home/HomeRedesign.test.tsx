@@ -192,4 +192,59 @@ describe("a company with bookings", () => {
     expect(screen.queryByTestId("cash-chart")).toBeNull();
     expect(screen.queryByText(/days/i)).toBeNull();
   });
+
+  it("draws the cash chart and the change on last month when the API supplies a history", async () => {
+    home({
+      ...base,
+      cash_change: "3120.00",
+      cash_history: [
+        { month: "2026-07", balance: "18000.00" },
+        { month: "2026-08", balance: "21190.45" },
+        { month: "2026-09", balance: "24310.45" },
+      ],
+    });
+    await waitFor(() => expect(screen.getByTestId("cash-chart")).not.toBeNull());
+    const chip = document.querySelector(".ui-badge--delta");
+    expect(chip?.textContent?.replace("\u00a0", " ")).toBe("↑ € 3.120,00");
+    expect(screen.getByText(/vs August/)).not.toBeNull();
+  });
+
+  it("marks a fall with a down arrow and the amount without its sign", async () => {
+    home({ ...base, cash_change: "-500.00" });
+    await waitFor(() => expect(screen.getByTestId("home-figures")).not.toBeNull());
+    expect(document.querySelector(".ui-badge--delta")?.textContent).toContain("↓");
+    expect(document.querySelector(".ui-badge--delta")?.textContent).not.toContain("-");
+  });
+
+  it("draws no chart from a single point, which would be a dot", async () => {
+    home({ ...base, cash_history: [{ month: "2026-09", balance: "24310.45" }] });
+    await waitFor(() => expect(screen.getByTestId("home-figures")).not.toBeNull());
+    expect(screen.queryByTestId("cash-chart")).toBeNull();
+  });
+
+  it("shows the next return's due date and the days left from the server's rule", async () => {
+    const now = new Date();
+    const inTen = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10);
+    const iso = `${inTen.getFullYear()}-${String(inTen.getMonth() + 1).padStart(2, "0")}-${String(inTen.getDate()).padStart(2, "0")}`;
+    home({
+      ...base,
+      vat_return: {
+        period_start: "2026-07-01",
+        period_end: "2026-09-30",
+        due_date: iso,
+        estimate: "999.99",
+      },
+    });
+    await waitFor(() => expect(screen.getByTestId("home-btw-due")).not.toBeNull());
+    expect(screen.getByTestId("home-btw-days").textContent).toBe("10 days left");
+    expect(screen.getByTestId("home-btw-period").textContent).toContain("Q3 2026");
+    expect(document.body.textContent).toContain("999,99");
+  });
+
+  it("shows no due date or days when the API sends no return", async () => {
+    home(base);
+    await waitFor(() => expect(screen.getByTestId("home-btw-period")).not.toBeNull());
+    expect(screen.queryByTestId("home-btw-due")).toBeNull();
+    expect(screen.queryByTestId("home-btw-days")).toBeNull();
+  });
 });

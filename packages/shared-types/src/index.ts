@@ -582,12 +582,7 @@ export interface InvoicePaymentsView {
 
 /** Days past the DUE date; `no_due_date` is counted in the totals, never guessed into another bucket. */
 export type AgeBucketCode =
-  | "current"
-  | "days_1_30"
-  | "days_31_60"
-  | "days_61_90"
-  | "over_90"
-  | "no_due_date";
+  "current" | "days_1_30" | "days_31_60" | "days_61_90" | "over_90" | "no_due_date";
 
 /**
  * SI-06 (ADR-072) - `api.invoicing.routes._ageing_json`. `GET .../receivables/ageing?as_of=`.
@@ -596,7 +591,11 @@ export type AgeBucketCode =
 export interface AgeingReportView {
   readonly as_of: string;
   /** In display order, each with its label in the reader's language. */
-  readonly buckets: readonly { readonly bucket: AgeBucketCode; readonly label: string; readonly amount: string }[];
+  readonly buckets: readonly {
+    readonly bucket: AgeBucketCode;
+    readonly label: string;
+    readonly amount: string;
+  }[];
   readonly grand_total: string;
   /** Largest debt first. */
   readonly customers: readonly {
@@ -631,7 +630,8 @@ export interface CustomerStatementView {
   readonly opening_balance: string;
   readonly lines: readonly {
     readonly date: string;
-    readonly kind: "invoice" | "credit_note" | "payment" | "payment_void" | "write_off" | "write_off_void";
+    readonly kind:
+      "invoice" | "credit_note" | "payment" | "payment_void" | "write_off" | "write_off_void";
     readonly label: string;
     readonly reference: string | null;
     readonly invoice_id: string | null;
@@ -751,7 +751,12 @@ export interface RecurringInvoiceView {
   readonly runs_generated: number;
   readonly next_run_on: string | null;
   /** Why the last attempt failed, and its sentence in the reader's language. */
-  readonly last_error: "no_fiscal_year" | "customer_not_found" | "customer_archived" | "customer_details_incomplete" | null;
+  readonly last_error:
+    | "no_fiscal_year"
+    | "customer_not_found"
+    | "customer_archived"
+    | "customer_details_incomplete"
+    | null;
   readonly last_error_message: string | null;
   readonly lines: readonly {
     readonly description: string;
@@ -792,19 +797,11 @@ export interface RecurringRunReportView {
 
 /** Why an invoice was not attempted by a bulk chase (SI-11). */
 export type ChaseSkip =
-  | "blocked"
-  | "needs_confirmation"
-  | "step_changed"
-  | "not_overdue_or_unknown"
-  | "deferred";
+  "blocked" | "needs_confirmation" | "step_changed" | "not_overdue_or_unknown" | "deferred";
 
 /** Why an attempted reminder did not go (SI-11). */
 export type ChaseFailure =
-  | "unreachable"
-  | "not_rendered"
-  | "not_delivered"
-  | "already_sent"
-  | "unavailable";
+  "unreachable" | "not_rendered" | "not_delivered" | "already_sent" | "unavailable";
 
 /**
  * SI-11 (ADR-073) - `api.invoicing.routes._chase_json`. `POST .../dunning/chase`.
@@ -903,6 +900,17 @@ export interface DashboardView {
   readonly items_needing_action: readonly DashboardActionItemView[];
   /** Draft receipts awaiting review, for the Review nav item. Absent from older servers. */
   readonly receipts_to_review?: number;
+  /** Month-end cash, oldest first, ending with today's figure. Fewer than two points early in a fiscal year. */
+  readonly cash_history?: readonly { readonly month: string; readonly balance: string }[];
+  /** This month's cash minus last month's, or null without a previous month in the year. */
+  readonly cash_change?: string | null;
+  /** The filing period still open today, its due date and the VAT estimate for it. */
+  readonly vat_return?: {
+    readonly period_start: string;
+    readonly period_end: string;
+    readonly due_date: string;
+    readonly estimate: string;
+  } | null;
 }
 
 /** Mirrors `api.dashboard.model.ActionItemKind`. */
@@ -1186,7 +1194,6 @@ export interface SwitcherEntry extends ClientBadge {
   expiresAt: string | null;
 }
 
-
 /**
  * SI-08 (ADR-075) - `api.invoicing.routes._quote_json`. An offer or order confirmation that
  * converts into a DRAFT invoice. Totals are NET only: the VAT rate is the one in force on the
@@ -1231,7 +1238,6 @@ export interface QuoteConversionView {
   readonly quote: QuoteView;
 }
 
-
 /**
  * SI-10 (ADR-076) - `api.invoicing.routes._write_off_json`. An issued invoice written off as
  * uncollectable. The WHOLE outstanding balance is written off, never part of it. The VAT
@@ -1272,7 +1278,6 @@ export interface WriteOffListView {
   readonly write_offs: readonly InvoiceWriteOffView[];
   readonly balance: InvoiceBalanceView;
 }
-
 
 /**
  * SI-09 (ADR-077) - `api.invoicing.routes._mandate_json`. A customer's signed SEPA direct debit
@@ -1346,7 +1351,6 @@ export interface SepaBatchResultView {
   readonly skipped: readonly { readonly invoice_id: string; readonly reason: SepaSkipReason }[];
 }
 
-
 /**
  * SI-16 (ADR-078) - `api.invoicing.routes._approval_json`. One request for the owner to approve
  * one draft, bound to a hash of the draft's contents: edit the draft afterwards and the approval
@@ -1382,7 +1386,6 @@ export interface InvoiceApprovalQueueEntryView extends InvoiceApprovalView {
   readonly invoice_date: string;
   readonly invoice_reference: string | null;
 }
-
 
 /**
  * SI-17 (ADR-079) - `api.invoicing.routes._batch_result_json`. One pass that raised an invoice per

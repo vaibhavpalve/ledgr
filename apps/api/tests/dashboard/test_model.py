@@ -17,6 +17,7 @@ from decimal import Decimal
 from api.dashboard.model import (
     ActionItemKind,
     build_action_items,
+    cash_history_months,
     cash_position,
     liquid_account_ids,
     receivables_total,
@@ -417,3 +418,39 @@ def test_an_overdue_row_carries_what_is_still_owed_not_the_invoice_total() -> No
     assert by_id[partly_paid.id].outstanding == Decimal("310.25")
     # No open-item row for it: no amount, rather than a guessed one.
     assert by_id[unknown.id].outstanding is None
+
+
+# --- the month window for the cash history -------------------------------------
+
+
+def test_cash_history_is_the_last_six_months_ending_today() -> None:
+    months = cash_history_months(today=date(2026, 9, 21), fiscal_year_start=date(2026, 1, 1))
+
+    assert [end for end, _ in months] == [
+        date(2026, 4, 30),
+        date(2026, 5, 31),
+        date(2026, 6, 30),
+        date(2026, 7, 31),
+        date(2026, 8, 31),
+        date(2026, 9, 30),
+    ]
+    # The current month is cut at today, so its point is today's figure.
+    assert months[-1][1] == date(2026, 9, 21)
+    assert months[-2][1] == date(2026, 8, 31)
+
+
+def test_months_before_the_fiscal_year_are_dropped_not_shown_as_zero() -> None:
+    months = cash_history_months(today=date(2026, 2, 10), fiscal_year_start=date(2026, 1, 1))
+
+    assert [end for end, _ in months] == [date(2026, 1, 31), date(2026, 2, 28)]
+
+
+def test_the_window_crosses_a_year_boundary_for_a_broken_fiscal_year() -> None:
+    months = cash_history_months(today=date(2026, 2, 10), fiscal_year_start=date(2025, 10, 1))
+
+    assert [end for end, _ in months][:3] == [
+        date(2025, 10, 31),
+        date(2025, 11, 30),
+        date(2025, 12, 31),
+    ]
+    assert months[-1][0] == date(2026, 2, 28)

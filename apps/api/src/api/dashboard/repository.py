@@ -27,6 +27,7 @@ from __future__ import annotations
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,6 +54,21 @@ class DashboardRepository:
         )
         row = result.first()
         return None if row is None else (row.start_date, row.end_date)
+
+    async def fiscal_year_period_scheme(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID
+    ) -> Literal["monthly", "quarterly"]:
+        """The year's period scheme, which stands in for how often the business
+        files BTW until the product has a filing-frequency setting of its own
+        (see `api.vat.deadlines`)."""
+        result = await self._session.execute(
+            text(
+                "SELECT period_scheme FROM fiscal_year "
+                "WHERE id = :fiscal_year_id AND administration_id = :administration_id"
+            ),
+            {"fiscal_year_id": str(fiscal_year_id), "administration_id": str(administration_id)},
+        )
+        return "quarterly" if result.scalar_one() == "quarterly" else "monthly"
 
     async def output_vat_total(
         self, *, administration_id: uuid.UUID, start: date, end: date

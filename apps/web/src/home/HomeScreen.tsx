@@ -16,6 +16,7 @@ import {
   Button,
   Card,
   CardHead,
+  CashChart,
   EmptyState,
   KpiCard,
   Row,
@@ -35,16 +36,16 @@ import type { DashboardApi } from "./api";
  * --- What is real and what is left out (ADR-080) ---
  *
  * Every figure here comes from `GET .../dashboard` or the invoice list. The
- * reference also shows things the API cannot supply yet, and they are left
- * out rather than invented:
+ * reference also shows things that are drawn only when the API supplies them,
+ * and left out rather than invented when it does not:
  *
- *   - the change versus last month on each figure (no history)
- *   - the six-month cash chart (no monthly series)
+ *   - the change on last month (`cash_change`) and the cash chart
+ *     (`cash_history`, at least two months inside the fiscal year)
+ *   - the BTW period, due date and days left (`vat_return`). The rule lives in
+ *     `api.vat.deadlines`, so no statutory date is worked out in the browser
  *   - the amount on a draft invoice (nothing is owed on it yet). A draft receipt
  *     shows its gross and an overdue invoice what is still outstanding
- *   - the BTW filing deadline and days remaining (not on `DashboardView`;
- *     deriving statutory dates in the browser is business logic in the client)
- *   - the bank step of the setup list
+ *   - the bank step of the setup list, which has no screen yet
  *
  * The API has already ordered the attention list (FR-UX-005's ranking is the
  * backend's job) and this component does not re-sort it.
@@ -126,6 +127,20 @@ export function HomeScreen({
     isZero(summary.cash_position) &&
     isZero(summary.receivables) &&
     isZero(summary.vat_estimate);
+  const history = summary?.cash_history ?? [];
+  const change = summary?.cash_change ?? null;
+  const cashChip =
+    !isSetup && change !== null && !isZero(change)
+      ? `${change.startsWith("-") ? "↓" : "↑"} ${money(change.replace(/^-/, ""))}`
+      : null;
+  const previousMonth =
+    history.length >= 2
+      ? monthName(history[history.length - 2]?.month ?? "", language, "long")
+      : "";
+  const vatReturn = summary?.vat_return ?? null;
+  const periodStart = vatReturn?.period_start ?? summary?.vat_period_start ?? "";
+  const periodEnd = vatReturn?.period_end ?? summary?.vat_period_end ?? "";
+  const daysLeft = vatReturn ? daysUntil(vatReturn.due_date) : null;
   const draftReceipts =
     summary?.receipts_to_review ?? items.filter((item) => item.kind === "draft_expense").length;
   const recent = [...invoices]
@@ -185,10 +200,21 @@ export function HomeScreen({
             <KpiCard
               label={t("mobile.home.cash_position_label")}
               value={<span data-testid="home-cash-position">{money(summary.cash_position)}</span>}
+              chip={cashChip}
               caption={
-                <span data-testid="home-cash-position-caption">
-                  {t(isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption")}
-                </span>
+                <>
+                  {cashChip ? (
+                    <>
+                      {t("mobile.home.cash_vs", { month: previousMonth })}
+                      <br />
+                    </>
+                  ) : null}
+                  <span data-testid="home-cash-position-caption">
+                    {t(
+                      isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption",
+                    )}
+                  </span>
+                </>
               }
             />
             <KpiCard
@@ -332,19 +358,59 @@ export function HomeScreen({
                     </EmptyState>
                   </div>
                 </Card>
+              ) : history.length >= 2 ? (
+                <Card padded aria-label={t("mobile.home.cash_position_label")}>
+                  <div className="home__chart-head">
+                    <h2 className="ui-card__title">{t("mobile.home.cash_position_label")}</h2>
+                    <span className="home__chart-note">
+                      {t("mobile.home.chart.months", { count: history.length })}
+                    </span>
+                  </div>
+                  <div className="home__chart-empty">
+                    <CashChart
+                      series={history.map((point) => ({
+                        label: monthName(point.month, language, "short"),
+                        value: point.balance,
+                      }))}
+                      summary={t("mobile.home.chart.summary", {
+                        from: money(history[0]?.balance ?? "0"),
+                        fromMonth: monthName(history[0]?.month ?? "", language, "long"),
+                        to: money(history[history.length - 1]?.balance ?? "0"),
+                        toMonth: monthName(
+                          history[history.length - 1]?.month ?? "",
+                          language,
+                          "long",
+                        ),
+                      })}
+                    />
+                  </div>
+                </Card>
               ) : null}
 
               <Card padded aria-label={t("mobile.home.btw.title")}>
-                <h2 className="ui-card__title">{t("mobile.home.btw.title")}</h2>
+                <div className="home__btw-head">
+                  <h2 className="ui-card__title">{t("mobile.home.btw.title")}</h2>
+                  {daysLeft !== null ? (
+                    <Badge variant="draft" data-testid="home-btw-days">
+                      {t("mobile.home.btw.days", { count: daysLeft })}
+                    </Badge>
+                  ) : null}
+                </div>
                 <p className="home__btw-period" data-testid="home-btw-period">
-                  {periodLabel(summary.vat_period_start, summary.vat_period_end) ??
+                  {periodLabel(periodStart, periodEnd) ??
                     t("mobile.home.vat_estimate_period", {
-                      start: date(summary.vat_period_start),
-                      end: date(summary.vat_period_end),
+                      start: date(periodStart),
+                      end: date(periodEnd),
                     })}
+                  {vatReturn ? (
+                    <span className="home__btw-due" data-testid="home-btw-due">
+                      {t("mobile.home.btw.due", { date: date(vatReturn.due_date) })}
+                    </span>
+                  ) : null}
                 </p>
                 <p className="home__btw-estimate">
-                  <Amount value={summary.vat_estimate} /> {t("mobile.home.btw.estimated")}
+                  <Amount value={vatReturn?.estimate ?? summary.vat_estimate} />{" "}
+                  {t("mobile.home.btw.estimated")}
                 </p>
                 {isSetup ? (
                   <p className="home__btw-note">{t("mobile.home.btw.empty")}</p>
@@ -454,6 +520,29 @@ function greeting(t: ReturnType<typeof useI18n>["t"]): string {
         ? "mobile.home.greeting.afternoon"
         : "mobile.home.greeting.evening";
   return t(key);
+}
+
+/** "April" or "Apr" for a "YYYY-MM" month, in the reader's language. */
+function monthName(month: string, language: string, style: "long" | "short"): string {
+  const [year, number] = month.split("-").map(Number);
+  if (!year || !number) return "";
+  // en-US, not en-GB: en-GB abbreviates September as "Sept", the reference says "Sep".
+  return new Intl.DateTimeFormat(language === "nl" ? "nl-NL" : "en-US", {
+    month: style,
+    timeZone: "UTC",
+  })
+    .format(new Date(Date.UTC(year, number - 1, 1)))
+    .replace(".", "");
+}
+
+/** Whole days from today (the reader's calendar day) to an ISO date; display only. */
+function daysUntil(isoDate: string): number | null {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!parts) return null;
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const due = Date.UTC(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+  return Math.round((due - today) / 86_400_000);
 }
 
 /** "Saturday 19 September 2026", in the reader's language. */

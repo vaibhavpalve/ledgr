@@ -414,6 +414,15 @@ class JournalEntryPage:
 
 
 @dataclass(frozen=True, slots=True)
+class AccountBalance:
+    """One account's balance (debit minus credit) as of a day, within one fiscal
+    year. What `ledger.balances_as_of` returns; only accounts with activity appear."""
+
+    account_id: uuid.UUID
+    balance: Decimal
+
+
+@dataclass(frozen=True, slots=True)
 class TrialBalanceRow:
     account_id: uuid.UUID
     account_code: str

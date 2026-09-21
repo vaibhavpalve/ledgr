@@ -166,6 +166,22 @@
 .home__chart-empty {
   margin-top: var(--space-3);
 }
+.home__chart-head,
+.home__btw-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.home__chart-note {
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.home__btw-due {
+  display: block;
+  font: 400 13px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
 .home__btw-period {
   margin: var(--space-2) 0 0;
   font-family: var(--font-serif);

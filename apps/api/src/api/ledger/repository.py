@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.ledger.model import (
     Account,
+    AccountBalance,
     AccountStatus,
     AccountType,
     ControlKind,
@@ -222,6 +223,10 @@ class LedgerRepository(Protocol):
     async def trial_balance(
         self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID
     ) -> Sequence[TrialBalanceRow]: ...
+
+    async def balances_as_of(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID, as_of: date
+    ) -> Sequence[AccountBalance]: ...
 
     async def subledger_balance(
         self, *, administration_id: uuid.UUID, control_kind: ControlKind
@@ -578,6 +583,25 @@ class SqlLedgerRepository:
                 total_credit=Decimal(row.total_credit),
                 balance=Decimal(row.balance),
             )
+            for row in result
+        ]
+
+    async def balances_as_of(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID, as_of: date
+    ) -> Sequence[AccountBalance]:
+        result = await self._session.execute(
+            text(
+                "SELECT account_id, balance "
+                "FROM ledger.balances_as_of(:administration_id, :fiscal_year_id, :as_of)"
+            ),
+            {
+                "administration_id": str(administration_id),
+                "fiscal_year_id": str(fiscal_year_id),
+                "as_of": as_of,
+            },
+        )
+        return [
+            AccountBalance(account_id=row.account_id, balance=Decimal(row.balance))
             for row in result
         ]
 

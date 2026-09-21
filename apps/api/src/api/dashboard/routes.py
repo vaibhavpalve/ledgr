@@ -140,6 +140,23 @@ def _dashboard_json(summary: DashboardSummary, language: Language) -> dict[str, 
             _action_item_json(item, language) for item in summary.items_needing_action
         ],
         "receipts_to_review": summary.receipts_to_review,
+        # Month-end cash, oldest first, ending with today's figure. Empty or one
+        # point early in a fiscal year: a chart needs two, so a client draws none.
+        "cash_history": [
+            {"month": point.month_end.strftime("%Y-%m"), "balance": str(point.balance)}
+            for point in summary.cash_history
+        ],
+        "cash_change": str(summary.cash_change) if summary.cash_change is not None else None,
+        "vat_return": (
+            {
+                "period_start": summary.vat_return.period_start.isoformat(),
+                "period_end": summary.vat_return.period_end.isoformat(),
+                "due_date": summary.vat_return.due_date.isoformat(),
+                "estimate": str(summary.vat_return.estimate),
+            }
+            if summary.vat_return is not None
+            else None
+        ),
     }
 
 
