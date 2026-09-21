@@ -66,7 +66,12 @@ export class QueueUploader {
     this.stopped = false;
     this.options.queue.setOffline(!this.options.connectivity.online);
     this.unsubscribe = this.options.connectivity.onOnline(() => this.drain());
-    void this.drain();
+    // Fire and forget, but never an unhandled rejection: if the store cannot be
+    // read (no IndexedDB in some private-browsing modes, or in a test
+    // environment), there is nothing to drain and nothing here to tell the
+    // person. Whoever reads the queue for the screen surfaces its own error, and
+    // the next `drain()` (the online event, a retry) tries again.
+    this.drain().catch(() => undefined);
   }
 
   stop(): void {

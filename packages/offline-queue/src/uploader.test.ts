@@ -477,3 +477,31 @@ describe("one drain at a time", () => {
     expect(transport.sent).toHaveLength(1);
   });
 });
+
+describe("when the store cannot be read", () => {
+  it("does not leave an unhandled rejection behind when it starts", async () => {
+    const { queue, uploader } = build();
+    // No IndexedDB in some private-browsing modes; here, a store that refuses.
+    queue.records = () => Promise.reject(new Error("indexedDB is not defined"));
+
+    const unhandled: unknown[] = [];
+    const listener = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", listener);
+    try {
+      uploader.start();
+      // Let the rejected drain settle and any unhandled-rejection event fire.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    } finally {
+      process.off("unhandledRejection", listener);
+    }
+
+    expect(unhandled).toEqual([]);
+  });
+
+  it("still reports the failure to a caller that awaits drain() itself", async () => {
+    const { queue, uploader } = build();
+    queue.records = () => Promise.reject(new Error("store unavailable"));
+
+    await expect(uploader.drain()).rejects.toThrow("store unavailable");
+  });
+});

@@ -105,6 +105,16 @@ async def main() -> None:
         await conn.execute(f"ALTER ROLE ledgr_migrator WITH PASSWORD '{escaped_migrator_password}'")
         print("ledgr_migrator password set", file=sys.stderr)
 
+        # Test-only. Two suites open a REAL ledgr_ops connection through
+        # OPS_DATABASE_URL (get_ops_engine): the document retention sweep and the VAT
+        # ruleset loader. SET ROLE from ledgr_app cannot stand in for it, since
+        # they call `get_ops_engine()` directly. Production never sets a password
+        # here; ledgr_ops has no login there.
+        ops_password = os.environ.get("TEST_LEDGR_OPS_PASSWORD", app_password)
+        escaped_ops_password = ops_password.replace("'", "''")
+        await conn.execute(f"ALTER ROLE ledgr_ops WITH LOGIN PASSWORD '{escaped_ops_password}'")
+        print("ledgr_ops login enabled (test-only)", file=sys.stderr)
+
         # Test-only bridge, the same kind this script already is for
         # ledgr_app's password: several integration tests exercise
         # ledgr_ops-only code paths (BYPASSRLS reads, SECURITY DEFINER

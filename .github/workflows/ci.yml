@@ -213,6 +213,9 @@ jobs:
       TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/ledgr_test
       TEST_LEDGR_APP_PASSWORD: ci-test-password
       DATABASE_URL: postgresql+asyncpg://ledgr_app:ci-test-password@localhost:5432/ledgr_test
+      # A real ledgr_ops login, which bootstrap_test_db.py enables for the test
+      # database only: the document retention sweep and the VAT loader use it.
+      OPS_DATABASE_URL: postgresql+asyncpg://ledgr_ops:ci-test-password@localhost:5432/ledgr_test
       TENANT_ISOLATION_TESTS_ENABLED: "1"
     steps:
       - uses: actions/checkout@v4
@@ -236,6 +239,12 @@ jobs:
       - name: Apply tenancy migrations and set ledgr_app's test password
         working-directory: apps/api
         run: uv run python scripts/bootstrap_test_db.py
+      # The invoicing tests post real invoices, which need the VAT treatments a
+      # fresh database does not have (CMP-014). Without this every one of them
+      # fails on a vat_treatment foreign key.
+      - name: Load the VAT ruleset
+        working-directory: apps/api
+        run: uv run python scripts/load_vat_rules.py --allow-provisional
       - working-directory: apps/api
         run: uv run pytest
 
