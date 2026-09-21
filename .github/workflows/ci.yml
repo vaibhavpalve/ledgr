@@ -262,8 +262,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - working-directory: apps/api
         run: uv sync --frozen
+      # --wheel: the wheel force-includes the i18n catalogue from outside the project
+      # (pyproject.toml), which a source distribution cannot contain, and a plain
+      # uv build builds the wheel FROM the sdist.
       - working-directory: apps/api
-        run: uv build
+        run: uv build --wheel
 
   dependency-scan-api:
     name: Dependency vulnerability scan (api)
