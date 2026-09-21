@@ -44,6 +44,7 @@ from datetime import date
 from api.dashboard.model import DashboardSummary, summarize
 from api.dashboard.repository import DashboardRepository
 from api.expenses.repository import SqlCaptureRepository
+from api.invoicing.receivables_repository import SqlReceivablesRepository
 from api.invoicing.repository import SqlInvoiceRepository
 from api.ledger.chart import ChartOfAccountsService
 from api.ledger.model import ControlKind
@@ -80,12 +81,14 @@ class DashboardService:
         invoices: SqlInvoiceRepository,
         expenses: SqlCaptureRepository,
         dashboard: DashboardRepository,
+        receivables: SqlReceivablesRepository,
     ) -> None:
         self.ledger = ledger
         self.chart = chart
         self.invoices = invoices
         self.expenses = expenses
         self.dashboard = dashboard
+        self.receivables = receivables
 
     async def summary(
         self,
@@ -137,6 +140,13 @@ class DashboardService:
             administration_id=administration_id, status=None, limit=_LIST_LIMIT
         )
 
+        # One query, the same one the ageing report reads, so an overdue row shows
+        # the figure the receivables screen shows for it. The permission is this
+        # route's own `view report`, which that report needs too.
+        open_items = await self.receivables.open_items(
+            administration_id=administration_id, as_of=today
+        )
+
         return summarize(
             trial_balance_rows=trial_balance_rows,
             chart_accounts=chart_accounts,
@@ -148,4 +158,5 @@ class DashboardService:
             invoices=invoices,
             expenses=expenses,
             today=today,
+            outstanding_by_invoice={item.invoice_id: item.outstanding for item in open_items},
         )

@@ -400,3 +400,20 @@ def test_a_draft_receipt_row_carries_its_gross_amount_and_an_invoice_row_its_cus
     invoice = next(item for item in items if item.kind is ActionItemKind.DRAFT_INVOICE)
     assert receipt.gross_amount == Decimal("52.80")
     assert invoice.customer_name == "Studio Noord"
+
+
+def test_an_overdue_row_carries_what_is_still_owed_not_the_invoice_total() -> None:
+    partly_paid = _invoice(status=InvoiceStatus.ISSUED, due_date=date(2026, 1, 1), invoice_number=1)
+    unknown = _invoice(status=InvoiceStatus.ISSUED, due_date=date(2026, 2, 1), invoice_number=2)
+
+    items = build_action_items(
+        invoices=[partly_paid, unknown],
+        expenses=[],
+        today=TODAY,
+        outstanding_by_invoice={partly_paid.id: Decimal("310.25")},
+    )
+
+    by_id = {item.id: item for item in items}
+    assert by_id[partly_paid.id].outstanding == Decimal("310.25")
+    # No open-item row for it: no amount, rather than a guessed one.
+    assert by_id[unknown.id].outstanding is None

@@ -54,7 +54,7 @@ from __future__ import annotations
 
 import enum
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -103,6 +103,9 @@ class ActionItem:
     invoice_reference: str | None = None
     customer_name: str | None = None
     days_overdue: int | None = None
+    #: What the customer still owes on it, after payments and credits (the
+    #: receivables report's own `outstanding`). Not the invoice total.
+    outstanding: Decimal | None = None
     #: DRAFT_EXPENSE only.
     supplier: str | None = None
     gross_amount: Decimal | None = None
@@ -178,6 +181,7 @@ def build_action_items(
     invoices: Sequence[SalesInvoice],
     expenses: Sequence[Expense],
     today: date,
+    outstanding_by_invoice: Mapping[uuid.UUID, Decimal] | None = None,
 ) -> tuple[ActionItem, ...]:
     """FR-UX-005's prioritised list.
 
@@ -226,6 +230,7 @@ def build_action_items(
             invoice_reference=invoice.invoice_reference,
             customer_name=invoice.customer_name,
             days_overdue=(today - invoice.due_date).days,  # type: ignore[operator]
+            outstanding=(outstanding_by_invoice or {}).get(invoice.id),
         )
         for invoice in overdue
     ]
@@ -261,13 +266,19 @@ def summarize(
     invoices: Sequence[SalesInvoice],
     expenses: Sequence[Expense],
     today: date,
+    outstanding_by_invoice: Mapping[uuid.UUID, Decimal] | None = None,
 ) -> DashboardSummary:
     """The one call `DashboardService.summary()` makes once every row is in
     hand. Everything above exists so this function's body is composition, not
     logic.
     """
     liquid_ids = liquid_account_ids(chart_accounts)
-    items = build_action_items(invoices=invoices, expenses=expenses, today=today)
+    items = build_action_items(
+        invoices=invoices,
+        expenses=expenses,
+        today=today,
+        outstanding_by_invoice=outstanding_by_invoice,
+    )
     return DashboardSummary(
         cash_position=cash_position(trial_balance_rows, liquid_ids),
         receivables=receivables_total(receivable_rows),

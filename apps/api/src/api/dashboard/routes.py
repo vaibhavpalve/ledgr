@@ -42,6 +42,7 @@ from api.expenses.repository import SqlCaptureRepository
 from api.i18n.catalogue import translate
 from api.i18n.http import problem, request_language
 from api.i18n.language import Language
+from api.invoicing.receivables_repository import SqlReceivablesRepository
 from api.invoicing.repository import SqlInvoiceRepository
 from api.ledger.chart import build_chart_service
 from api.ledger.service import build_ledger_service
@@ -72,7 +73,17 @@ async def get_dashboard_service(
         invoices=SqlInvoiceRepository(session),
         expenses=SqlCaptureRepository(session),
         dashboard=DashboardRepository(session),
+        receivables=SqlReceivablesRepository(session),
     )
+
+
+def _item_amount(item: ActionItem) -> str | None:
+    """A draft receipt's gross, or an overdue invoice's outstanding balance.
+
+    A draft invoice has none: nothing is owed on it yet.
+    """
+    amount = item.gross_amount if item.gross_amount is not None else item.outstanding
+    return str(amount) if amount is not None else None
 
 
 def _action_item_json(item: ActionItem, language: Language) -> dict[str, object]:
@@ -112,7 +123,7 @@ def _action_item_json(item: ActionItem, language: Language) -> dict[str, object]
         # already on the row). An invoice item carries no amount: its total needs the
         # VAT rules applied line by line, which is not a dashboard-sized query.
         "customer_name": item.customer_name,
-        "amount": str(item.gross_amount) if item.gross_amount is not None else None,
+        "amount": _item_amount(item),
     }
 
 

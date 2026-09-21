@@ -40,11 +40,11 @@ import type { DashboardApi } from "./api";
  *
  *   - the change versus last month on each figure (no history)
  *   - the six-month cash chart (no monthly series)
- *   - what each attention item is worth, and its customer (an item carries only
- *     an id, a kind and one already-translated sentence)
+ *   - the amount on a draft invoice (nothing is owed on it yet). A draft receipt
+ *     shows its gross and an overdue invoice what is still outstanding
  *   - the BTW filing deadline and days remaining (not on `DashboardView`;
  *     deriving statutory dates in the browser is business logic in the client)
- *   - the count on the Review nav item, and the bank step of the setup list
+ *   - the bank step of the setup list
  *
  * The API has already ordered the attention list (FR-UX-005's ranking is the
  * backend's job) and this component does not re-sort it.
