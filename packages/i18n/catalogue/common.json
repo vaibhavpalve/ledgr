@@ -103,6 +103,48 @@
       "nl": "Instellingen",
       "en": "Settings"
     },
+    "common.nav.group.bookkeeping": {
+      "note": "The one heading over the rail's nine sections, from the Boekje design (Boekhouding / Bookkeeping).",
+      "nl": "Boekhouding",
+      "en": "Bookkeeping"
+    },
+    "common.nav.dashboard": {
+      "note": "The first rail item: the dashboard at '/'. 'Overview' is taken by the purchases list (common.nav.overview), which the rail labels common.nav.purchases_all so the two never share a name.",
+      "nl": "Overzicht",
+      "en": "Overview"
+    },
+    "common.nav.sales": { "nl": "Verkoop", "en": "Sales" },
+    "common.nav.purchases": { "nl": "Inkoop", "en": "Purchases" },
+    "common.nav.purchases_all": {
+      "note": "The purchases list ('/overview'), as the last item under Purchases.",
+      "nl": "Alle inkopen",
+      "en": "All purchases"
+    },
+    "common.nav.bank": { "identical": true, "nl": "Bank", "en": "Bank" },
+    "common.nav.journal": {
+      "note": "Memoriaal: journal entries that come from neither a purchase, a sale nor the bank.",
+      "nl": "Memoriaal",
+      "en": "Journal"
+    },
+    "common.nav.assets": {
+      "note": "MVA is materiële vaste activa, the Dutch term for fixed assets.",
+      "nl": "Activa (MVA)",
+      "en": "Assets"
+    },
+    "common.nav.contacts": { "nl": "Relaties", "en": "Contacts" },
+    "common.nav.reports": { "nl": "Rapporten", "en": "Reports" },
+    "common.nav.role.owner": { "nl": "Ondernemer", "en": "Owner" },
+    "common.nav.role.firm": { "identical": true, "nl": "Accountant", "en": "Accountant" },
+    "common.soon.title": {
+      "note": "Heading of the placeholder a rail item opens while its screen is not built.",
+      "nl": "Nog niet beschikbaar",
+      "en": "Not available yet"
+    },
+    "common.soon.body": {
+      "note": "{section} is the rail item's own name. Says plainly that the screen is not built rather than showing an empty one.",
+      "nl": "Het scherm {section} is nog niet gebouwd. Zodra het er is, vind je het hier.",
+      "en": "The {section} screen has not been built yet. When it is, you will find it here."
+    },
     "common.user_menu.open": {
       "note": "Accessible name of the avatar button that opens the user menu.",
       "nl": "Gebruikersmenu openen",

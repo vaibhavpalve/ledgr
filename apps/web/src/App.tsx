@@ -38,6 +38,7 @@ import {
   SettingsLayout,
 } from "./settings/SettingsScreens";
 import { AppShell } from "./shell/AppShell";
+import { ComingSoon } from "./shell/ComingSoon";
 import { useDocumentLanguage } from "./useDocumentLanguage";
 
 /**
@@ -170,6 +171,10 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/customers/:customerId" element={<CustomerDetailScreen />} />
               <Route path="/customers/:customerId/edit" element={<CustomerFormScreen />} />
               <Route path="/ledger" element={<LedgerScreen />} />
+              <Route path="/bank" element={<ComingSoon section="bank" />} />
+              <Route path="/journal" element={<ComingSoon section="journal" />} />
+              <Route path="/assets" element={<ComingSoon section="assets" />} />
+              <Route path="/reports" element={<ComingSoon section="reports" />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

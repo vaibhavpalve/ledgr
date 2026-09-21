@@ -99,6 +99,124 @@
   gap: var(--space-1);
 }
 
+/* ---- The rail, in the Boekje design's shape ------------------------------
+ *
+ * Softer than the shared `.ui-nav`: rounded 11px rows, a tinted (not filled)
+ * current item, a small-caps group heading. Scoped to the rail so nothing else
+ * that uses `.ui-nav` changes, and drawn from the handoff tokens so it follows
+ * light and dark with the rest of the shell.
+ */
+.shell__rail .ui-nav {
+  height: auto;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  font: 600 13.5px/1.25 var(--font-sans);
+}
+.shell__rail .ui-nav svg {
+  width: 18px;
+  height: 18px;
+}
+.shell__rail .ui-nav:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+.shell__rail .ui-nav[aria-current="page"] {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.shell__rail .ui-navgroup {
+  padding: 10px 10px 6px;
+  font: 700 10.5px/16px var(--font-sans);
+  letter-spacing: 0.09em;
+}
+
+/* Purchases: a label with its three screens indented under a guide line. */
+.shell__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.shell__section-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  color: var(--ink-muted);
+  font: 600 13.5px/1.25 var(--font-sans);
+}
+.shell__section-label svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.shell__section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 20px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-subtle);
+}
+.shell__section-items .ui-nav {
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Who is signed in, at the foot. */
+.shell__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--space-2);
+  padding: 11px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+}
+.shell__avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-tint);
+  color: var(--brand);
+  font: 700 14px/1 var(--font-sans);
+}
+.shell__user-text {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+.shell__user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 700 12.5px/1.25 var(--font-sans);
+}
+.shell__user-role {
+  font: 400 11px/1.3 var(--font-sans);
+  color: var(--ink-muted);
+}
+.shell__signout {
+  flex-shrink: 0;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-muted);
+}
+.shell__signout:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink);
+}
+
 @media (forced-colors: active) {
   .ui-nav[aria-current="page"],
   .shell__tab[aria-current="page"] {

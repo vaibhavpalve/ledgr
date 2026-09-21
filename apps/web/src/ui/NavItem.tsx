@@ -18,7 +18,8 @@ export function NavItem({
 }: {
   to: string;
   end?: boolean;
-  icon: LucideIcon;
+  /** Omitted for an item nested under a section, which is indented instead. */
+  icon?: LucideIcon;
   children: ReactNode;
   badge?: ReactNode;
   onNavigate?: () => void;
@@ -26,7 +27,7 @@ export function NavItem({
 }) {
   return (
     <NavLink to={to} end={end} className="ui-nav" onClick={onNavigate} data-testid={testId}>
-      <Icon size={20} strokeWidth={1.7} aria-hidden="true" />
+      {Icon !== undefined ? <Icon size={20} strokeWidth={1.7} aria-hidden="true" /> : null}
       <span className="ui-nav__label">{children}</span>
       {badge}
     </NavLink>

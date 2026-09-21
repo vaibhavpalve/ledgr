@@ -1,17 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen,
+  Building,
   Camera,
+  ChartColumn,
   ChevronDown,
   CircleCheck,
   FileText,
   House,
+  Landmark,
+  LayoutGrid,
   List,
   LogOut,
   Search,
   Settings,
-  User,
+  ScrollText,
+  ShoppingCart,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -59,6 +64,12 @@ import { UserMenu } from "./UserMenu";
  * `<main tabIndex={-1}>` after every pathname change except the first. The skip
  * link targets the same element.
  */
+interface NavOptions {
+  /** Under a section: no icon, indented by the stylesheet. */
+  readonly nested?: boolean;
+  readonly badge?: ReactNode;
+}
+
 interface NavDef {
   readonly id: string;
   readonly to: string;
@@ -92,11 +103,49 @@ const INVOICES: NavDef = {
   labelKey: "common.nav.invoices",
   icon: FileText,
 };
-const CUSTOMERS: NavDef = {
-  id: "customers",
-  to: "/customers",
-  labelKey: "common.nav.customers",
-  icon: User,
+const CLIENTS: NavDef = {
+  id: "clients",
+  to: "/clients",
+  labelKey: "common.nav.clients",
+  icon: Users,
+};
+
+/**
+ * The rail's nine sections, in the order of the Boekje design. Their ids are the
+ * ones the rail has always used (`nav-home`, `nav-invoice`, ...) so nothing that
+ * finds an item by test id changes; only what it is called and where it sits.
+ *
+ * "Purchases" is a section rather than a link: it holds Capture, Review and the
+ * purchases list, the three screens a purchase passes through, so none of them
+ * drops out of the menu when the design's single "Purchases" item replaces them.
+ * Its list is labelled "All purchases", not "Overview", because the first item
+ * already is the overview and two rows may not share a name.
+ */
+const DASHBOARD: NavDef = {
+  id: "home",
+  to: "/",
+  labelKey: "common.nav.dashboard",
+  icon: LayoutGrid,
+  end: true,
+};
+const SALES: NavDef = {
+  id: "invoice",
+  to: "/invoices",
+  labelKey: "common.nav.sales",
+  icon: FileText,
+};
+const PURCHASES_ALL: NavDef = {
+  id: "view",
+  to: "/overview",
+  labelKey: "common.nav.purchases_all",
+  icon: List,
+};
+const BANK: NavDef = { id: "bank", to: "/bank", labelKey: "common.nav.bank", icon: Landmark };
+const JOURNAL: NavDef = {
+  id: "journal",
+  to: "/journal",
+  labelKey: "common.nav.journal",
+  icon: ScrollText,
 };
 const LEDGER: NavDef = {
   id: "ledger",
@@ -104,11 +153,23 @@ const LEDGER: NavDef = {
   labelKey: "common.nav.ledger",
   icon: BookOpen,
 };
-const CLIENTS: NavDef = {
-  id: "clients",
-  to: "/clients",
-  labelKey: "common.nav.clients",
+const ASSETS: NavDef = {
+  id: "assets",
+  to: "/assets",
+  labelKey: "common.nav.assets",
+  icon: Building,
+};
+const CONTACTS: NavDef = {
+  id: "customers",
+  to: "/customers",
+  labelKey: "common.nav.contacts",
   icon: Users,
+};
+const REPORTS: NavDef = {
+  id: "reports",
+  to: "/reports",
+  labelKey: "common.nav.reports",
+  icon: ChartColumn,
 };
 
 /** The bottom bar's five: ADR-046's four tasks plus FR-UX-005's home, unchanged. */
@@ -161,21 +222,37 @@ export function AppShell() {
 
   const isFirm = me.organization.kind === "firm";
   const hasAdministration = administration !== null;
-  const rail = [
-    ...(hasAdministration
-      ? [
-          { heading: t("common.nav.group.daily"), items: [HOME, CAPTURE, REVIEW, OVERVIEW] },
-          { heading: t("common.nav.group.sales"), items: [INVOICES, CUSTOMERS] },
-          { heading: t("common.nav.group.books"), items: [LEDGER] },
-        ]
-      : []),
-    ...(isFirm ? [{ heading: t("common.nav.group.firm"), items: [CLIENTS] }] : []),
-  ];
+  const reviewBadge =
+    reviewCount !== null && reviewCount > 0 ? (
+      <Badge variant="review" data-testid="nav-review-count">
+        {reviewCount}
+      </Badge>
+    ) : undefined;
+  const navItem = (item: NavDef, { nested = false, badge }: NavOptions = {}) => (
+    <NavItem
+      key={item.id}
+      to={item.to}
+      end={item.end}
+      icon={nested ? undefined : item.icon}
+      testId={`nav-${item.id}`}
+      badge={badge}
+    >
+      {t(item.labelKey)}
+    </NavItem>
+  );
+  const initial = (me.user.email.trim()[0] ?? "?").toUpperCase();
+  // Below 64rem the rail is gone and the bottom bar holds five, so everything
+  // else the rail lists is reached from the avatar menu.
   const compactExtras = [
     ...(hasAdministration
       ? [
-          { to: "/customers", label: t("common.nav.customers") },
+          { to: "/invoices", label: t("common.nav.sales") },
+          { to: "/customers", label: t("common.nav.contacts") },
           { to: "/ledger", label: t("common.nav.ledger") },
+          { to: "/bank", label: t("common.nav.bank") },
+          { to: "/journal", label: t("common.nav.journal") },
+          { to: "/assets", label: t("common.nav.assets") },
+          { to: "/reports", label: t("common.nav.reports") },
         ]
       : []),
     ...(isFirm ? [{ to: "/clients", label: t("common.nav.clients") }] : []),
@@ -204,44 +281,66 @@ export function AppShell() {
         <CompanyCard badge={badge} switchable={isFirm} onSwitch={() => navigate("/clients")} />
 
         <nav className="shell__nav" aria-label={t("common.nav.label")}>
-          {rail.map((group) => (
-            <div key={group.heading} className="shell__nav-group">
-              <NavGroup>{group.heading}</NavGroup>
-              {group.items.map((item) => (
-                <NavItem
-                  key={item.id}
-                  to={item.to}
-                  end={item.end}
-                  icon={item.icon}
-                  testId={`nav-${item.id}`}
-                  badge={
-                    item.id === REVIEW.id && reviewCount !== null && reviewCount > 0 ? (
-                      <Badge variant="review" data-testid="nav-review-count">
-                        {reviewCount}
-                      </Badge>
-                    ) : undefined
-                  }
-                >
-                  {t(item.labelKey)}
-                </NavItem>
-              ))}
+          {hasAdministration ? (
+            <div className="shell__nav-group">
+              <NavGroup>{t("common.nav.group.bookkeeping")}</NavGroup>
+              {navItem(DASHBOARD)}
+              {navItem(SALES)}
+              <div className="shell__section" role="group" aria-labelledby="rail-purchases">
+                <span className="shell__section-label" id="rail-purchases">
+                  <ShoppingCart size={20} strokeWidth={1.7} aria-hidden="true" />
+                  {t("common.nav.purchases")}
+                </span>
+                <div className="shell__section-items">
+                  {navItem(CAPTURE, { nested: true })}
+                  {navItem(REVIEW, { nested: true, badge: reviewBadge })}
+                  {navItem(PURCHASES_ALL, { nested: true })}
+                </div>
+              </div>
+              {navItem(BANK)}
+              {navItem(JOURNAL)}
+              {navItem(LEDGER)}
+              {navItem(ASSETS)}
+              {navItem(CONTACTS)}
+              {navItem(REPORTS)}
             </div>
-          ))}
+          ) : null}
+          {isFirm ? (
+            <div className="shell__nav-group">
+              <NavGroup>{t("common.nav.group.firm")}</NavGroup>
+              {navItem(CLIENTS)}
+            </div>
+          ) : null}
         </nav>
 
         <div className="shell__rail-foot">
           <NavItem to="/settings" icon={Settings} testId="nav-settings">
             {t("common.nav.settings")}
           </NavItem>
-          <button
-            type="button"
-            className="ui-nav"
-            data-testid="nav-sign-out"
-            onClick={requestSignOut}
-          >
-            <LogOut size={20} strokeWidth={1.7} aria-hidden="true" />
-            <span className="ui-nav__label">{t("auth.sign_out")}</span>
-          </button>
+          {/* Who is signed in, at the foot of the rail. Sign out sits inside it
+              as an icon: the design has no separate row for it, and it stays one
+              click from here as before. */}
+          <div className="shell__user" data-testid="shell-user">
+            <span className="shell__avatar" aria-hidden="true">
+              {initial}
+            </span>
+            <span className="shell__user-text">
+              <span className="shell__user-name">{me.user.email}</span>
+              <span className="shell__user-role">
+                {isFirm ? t("common.nav.role.firm") : t("common.nav.role.owner")}
+              </span>
+            </span>
+            <button
+              type="button"
+              className="shell__signout"
+              aria-label={t("auth.sign_out")}
+              title={t("auth.sign_out")}
+              data-testid="nav-sign-out"
+              onClick={requestSignOut}
+            >
+              <LogOut size={16} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </aside>
 
