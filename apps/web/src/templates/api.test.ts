@@ -245,7 +245,9 @@ describe("TemplateApi.fetchTemplateAssetBlob", () => {
 
     const blob = await client(fetchImpl).fetchTemplateAssetBlob("adm-A", "asset-1");
 
-    expect(blob).toBeInstanceOf(Blob);
+    // Not 	oBeInstanceOf(Blob): fetch's Response.blob() returns Node's own Blob, which is not
+    // jsdom's global Blob on every Node version, so the class check depends on the runner.
+    expect(Object.prototype.toString.call(blob)).toBe("[object Blob]");
     expect(fetchImpl).toHaveBeenCalledWith(
       "/v1/administrations/adm-A/template-assets/asset-1",
       expect.objectContaining({ headers: expect.objectContaining({ "Accept-Language": "nl" }) }),

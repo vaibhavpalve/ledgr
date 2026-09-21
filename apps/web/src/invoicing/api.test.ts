@@ -113,7 +113,9 @@ describe("SalesInvoiceApi", () => {
 
     const blob = await client(fetchImpl).fetchDocumentBlob("adm-A", "doc-1");
 
-    expect(blob).toBeInstanceOf(Blob);
+    // Not 	oBeInstanceOf(Blob): fetch's Response.blob() returns Node's own Blob, which is not
+    // jsdom's global Blob on every Node version, so the class check depends on the runner.
+    expect(Object.prototype.toString.call(blob)).toBe("[object Blob]");
     expect(fetchImpl).toHaveBeenCalledWith(
       "/v1/administrations/adm-A/documents/doc-1/content",
       expect.objectContaining({ headers: expect.any(Object) }),

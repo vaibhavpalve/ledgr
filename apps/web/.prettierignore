@@ -1,0 +1,4 @@
+node_modules
+dist
+# Vendored third-party licence files (ADR-061, ADR-080); not ours to reformat.
+public/fonts

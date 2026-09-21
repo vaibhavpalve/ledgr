@@ -279,8 +279,14 @@ jobs:
       - working-directory: apps/api
         run: uv sync --frozen
       # SEC-051: fail the build on new critical/high severity findings.
+      # Audit the locked third-party dependencies, not the project itself: pip-audit
+      # looks every installed distribution up on PyPI and stops with "ledgr-api not
+      # found" on our own, which was never published. `uv export` writes the exact
+      # pinned set (with hashes) and `--no-emit-project` leaves ledgr-api out.
       - working-directory: apps/api
-        run: uv run pip-audit --strict
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt -o /tmp/audit-requirements.txt
+          uv run pip-audit --strict --disable-pip --no-deps -r /tmp/audit-requirements.txt
 
   ci:
     name: CI
