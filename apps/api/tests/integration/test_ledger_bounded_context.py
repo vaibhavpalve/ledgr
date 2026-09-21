@@ -338,6 +338,9 @@ async def test_support_tooling_holds_no_write_function(
 
     read_only = granted - reference_data_writes
     assert read_only <= {
+        # FR-UX-005 (0062). A SECURITY INVOKER SELECT over journal_line: read-only,
+        # and row-level security still applies to the caller.
+        "balances_as_of",
         "chart_of_accounts",
         "control_account_reconciliation",
         # FR-ONB-006 (0029). derive_fiscal_periods is `immutable` and touches
