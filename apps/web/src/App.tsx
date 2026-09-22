@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { I18nProvider, useI18n, type FormattingLocale, type Language } from "@ledgr/i18n";
 
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
@@ -11,7 +11,6 @@ import {
   SignupRoute,
   VerifyEmailRoute,
 } from "./auth/routes";
-import { CaptureRoute } from "./capture/CaptureRoute";
 import { ClientsScreen } from "./clients/ClientsScreen";
 import { CustomerDetailScreen } from "./customers/CustomerDetailScreen";
 import { CustomerFormScreen } from "./customers/CustomerFormScreen";
@@ -23,7 +22,7 @@ import { InvoiceListScreen } from "./invoicing/InvoiceListScreen";
 import { NewInvoiceScreen } from "./invoicing/NewInvoiceScreen";
 import { LedgerScreen } from "./ledger/LedgerScreen";
 import { OnboardingRoute } from "./onboarding/OnboardingRoute";
-import { OverviewRoute, ReviewRoute } from "./review/routes";
+import { PurchasesRoute } from "./purchases/PurchasesRoute";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
@@ -159,10 +158,15 @@ function Routed({ services }: { services?: Partial<Services> }) {
 
             <Route element={<RequireAdministration />}>
               <Route path="/" element={<DashboardRoute />} />
-              <Route path="/capture" element={<CaptureRoute />} />
-              <Route path="/review" element={<ReviewRoute />} />
-              <Route path="/review/:expenseId" element={<ReviewRoute />} />
-              <Route path="/overview" element={<OverviewRoute />} />
+              <Route path="/purchases" element={<PurchasesRoute />} />
+              <Route path="/purchases/:expenseId" element={<PurchasesRoute />} />
+              {/* Capture, Review and Overview were three screens for what is now
+                  one. The old addresses still work - bookmarks, the dashboard's
+                  links, a support link somebody sent - and land on it. */}
+              <Route path="/capture" element={<Navigate to="/purchases" replace />} />
+              <Route path="/review" element={<Navigate to="/purchases" replace />} />
+              <Route path="/review/:expenseId" element={<RedirectToPurchase />} />
+              <Route path="/overview" element={<Navigate to="/purchases" replace />} />
               <Route path="/invoices" element={<InvoiceListScreen />} />
               <Route path="/invoices/new" element={<NewInvoiceScreen />} />
               <Route path="/invoices/:invoiceId" element={<InvoiceDetailScreen />} />
@@ -183,6 +187,12 @@ function Routed({ services }: { services?: Partial<Services> }) {
       </Route>
     </Routes>
   );
+}
+
+/** `/review/:id` was one draft opened for review; that is `/purchases/:id` now. */
+function RedirectToPurchase() {
+  const { expenseId } = useParams();
+  return <Navigate to={`/purchases/${encodeURIComponent(expenseId ?? "")}`} replace />;
 }
 
 function readGoogleCallbackParams(): { code: string; state: string } | null {

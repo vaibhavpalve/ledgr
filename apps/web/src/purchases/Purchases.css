@@ -1,0 +1,207 @@
+/*
+ * Purchases: the list of purchase invoices, and one invoice opened for review.
+ *
+ * Drawn after the Boekje design's list - a single white card, small-caps column
+ * heads, a bold supplier over a muted invoice number, coloured status pills and
+ * a heavy right-aligned amount - in the handoff tokens the rest of the shell
+ * uses, so it follows light and dark with them.
+ */
+
+.purchases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+/* On a phone the fixed camera button sits over the bottom of the page; leave it
+   the room so it never covers the last row. */
+@media (max-width: 63.99rem) {
+  .purchases {
+    padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---- The list ------------------------------------------------------------ */
+
+.purchases__card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.purchases__table {
+  width: 100%;
+  min-width: 40rem;
+  border-collapse: collapse;
+}
+
+.purchases__table th {
+  padding: 16px 20px 12px;
+  color: var(--ink-muted);
+  font: 700 11px/16px var(--font-sans);
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.purchases__table td {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+/* The row is one target: the supplier's link is stretched across it. */
+.purchases__table tbody tr {
+  position: relative;
+}
+.purchases__table tbody tr:hover {
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+
+.purchases__supplier {
+  display: block;
+  color: var(--ink);
+  font: 700 15px/20px var(--font-sans);
+  text-decoration: none;
+}
+.purchases__supplier::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.purchases__supplier:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+
+.purchases__sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-muted);
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: 0.02em;
+}
+.purchases__sub:empty {
+  display: none;
+}
+
+.purchases__ledger {
+  color: var(--ink-muted);
+  font: 400 14px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.purchases__ledger-inline {
+  display: none;
+}
+
+/* On a phone the table has to fit, not scroll sideways past its Status and
+   Amount: the Ledger column folds under the supplier and the rest tighten. */
+@media (max-width: 40rem) {
+  .purchases__table {
+    min-width: 0;
+  }
+  .purchases__col-ledger {
+    display: none;
+  }
+  .purchases__ledger-inline {
+    display: block;
+  }
+  .purchases__table th,
+  .purchases__table td {
+    padding-inline: 12px;
+  }
+  .purchases__supplier {
+    font-size: 14px;
+  }
+}
+
+.purchases__num {
+  text-align: right;
+}
+.purchases__amount {
+  color: var(--ink);
+  font: 700 15px/20px var(--font-serif, Georgia, serif);
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.purchases__status {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font: 700 12px/16px var(--font-sans);
+  white-space: nowrap;
+}
+.purchases__status--draft {
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+.purchases__status--ready {
+  background: var(--info-tint);
+  color: var(--info);
+}
+.purchases__status--posted {
+  background: color-mix(in srgb, var(--ledgr-positive-wash, #dcfce7) 100%, transparent);
+  color: var(--ledgr-positive, #15803d);
+}
+
+/* ---- One invoice, opened ------------------------------------------------- */
+
+.purchase-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.purchase-detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  color: var(--ink-muted);
+  font: 600 14px/20px var(--font-sans);
+  text-decoration: none;
+}
+.purchase-detail__back:hover {
+  color: var(--ink);
+}
+
+.purchase-detail__body {
+  display: grid;
+  gap: var(--ledgr-space-5);
+  align-items: start;
+}
+
+/* The fields and what they were read from, side by side once there is room. */
+@media (min-width: 64rem) {
+  .purchase-detail__body--with-original {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .purchase-original {
+    position: sticky;
+    top: 92px;
+  }
+}
+
+.purchase-original {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+.purchase-original h2 {
+  margin: 0;
+  font-size: var(--ledgr-type-body);
+}
+.purchase-original__frame {
+  width: 100%;
+  height: 70vh;
+  min-height: 24rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}

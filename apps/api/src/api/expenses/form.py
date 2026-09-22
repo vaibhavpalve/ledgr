@@ -112,6 +112,10 @@ class ExpenseView:
     #: refused them would be wrong about the money and would teach people to
     #: work around it.
     duplicate_warnings: tuple[DuplicateWarning, ...] = ()
+    #: The first stored original of the receipt, so the review screen can show
+    #: what the fields were read from beside the fields. None for an expense with
+    #: no page yet, which is not a state capture produces.
+    document_id: uuid.UUID | None = None
 
     @property
     def can_be_marked_ready(self) -> bool:
@@ -169,6 +173,12 @@ class ExpenseFormRepository(Protocol):
         ...
 
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None: ...
+
+    async def first_document_id(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> uuid.UUID | None:
+        """The receipt's first stored original (page 1), or None."""
+        ...
 
     async def list_by_status(
         self,
@@ -246,6 +256,7 @@ class ExpenseFormService:
         vat_treatment: VatTreatment | None = UNSET,
         category: str | None = UNSET,
         payment_method: PaymentMethod | None = UNSET,
+        invoice_number: str | None = UNSET,
         correlation_id: str | None = None,
     ) -> ExpenseView:
         """Save any subset of the form.
@@ -282,6 +293,8 @@ class ExpenseFormService:
             changes["category"] = _clean(category)
         if payment_method is not UNSET:
             changes["payment_method"] = payment_method.value if payment_method else None
+        if invoice_number is not UNSET:
+            changes["invoice_number"] = _clean(invoice_number)
 
         # The state the row will be in once these land, so the rate and amounts
         # are computed from the WHOLE form rather than only from what changed.
@@ -434,6 +447,9 @@ class ExpenseFormService:
             missing_fields=expense.missing_fields,
             split=split,
             duplicate_warnings=tuple(warnings),
+            document_id=await self._repository.first_document_id(
+                administration_id=expense.administration_id, item_id=expense.capture_item_id
+            ),
         )
 
     async def _get(self, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense:

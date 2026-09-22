@@ -117,7 +117,7 @@ function TrialBalance({
         title={t("ledger.trial_balance.empty_title")}
         body={t("ledger.trial_balance.empty_body")}
         action={
-          <Link to="/capture" className="button-link button-link--primary">
+          <Link to="/purchases" className="button-link button-link--primary">
             {t("common.nav.capture")}
           </Link>
         }

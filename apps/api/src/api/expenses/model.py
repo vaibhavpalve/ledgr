@@ -33,7 +33,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from api.documents.content_type import DocumentContentType
 
@@ -286,6 +286,11 @@ class Expense:
     #: the form, and never twice (migration 0034).
     journal_entry_id: uuid.UUID | None = None
     posted_at: datetime | None = None
+    #: The supplier's own number. Optional: not part of FR-EXP-001b's minimum.
+    invoice_number: str | None = None
+    #: FR-AP-002. How automatic reading filled the fields (status, provider,
+    #: model, a confidence per field) - never the values. None: not read.
+    extraction: dict[str, Any] | None = None
 
     #: FR-EXP-001b's "minimum", plus FR-EXP-001e's payment method. Named once,
     #: here, because three places need to agree on it: this type's

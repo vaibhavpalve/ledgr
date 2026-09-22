@@ -17,7 +17,7 @@ import { InvoiceStatusChip } from "./InvoiceListScreen";
  *
  * The PDF is fetched as a Blob and shown through an object URL, never an
  * `<iframe src="/v1/...">` at the download endpoint — SEC-005's attachment
- * disposition, the same technique `ViewList`'s `DocumentViewer` already
+ * disposition, the same technique the purchases screen's `OriginalDocument` also
  * uses.
  *
  * A draft cannot be sent from here: the four-call sequence (lines, issue,

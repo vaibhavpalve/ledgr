@@ -33,9 +33,7 @@ interface Option {
 
 export const SEARCHABLE_SCREENS: ReadonlyArray<{ to: string; key: string }> = [
   { to: "/", key: "common.nav.home" },
-  { to: "/capture", key: "common.nav.capture" },
-  { to: "/review", key: "common.nav.review" },
-  { to: "/overview", key: "common.nav.overview" },
+  { to: "/purchases", key: "common.nav.purchases" },
   { to: "/invoices", key: "common.nav.invoices" },
   { to: "/invoices/new", key: "invoice.new.title" },
   { to: "/customers", key: "common.nav.customers" },

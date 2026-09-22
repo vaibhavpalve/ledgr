@@ -25,6 +25,23 @@
 }
 
 /*
+ * Embedded in Purchases: the page around it owns the heading and the list, so
+ * the room the fixed camera button needed is the page's to give (its own bottom
+ * padding on a phone), and on a wide screen there is no camera button at all -
+ * a desktop has no rear camera, and "Choose files" is the same act.
+ */
+.capture--embedded {
+  padding-bottom: 0;
+  gap: var(--ledgr-space-3);
+}
+
+@media (min-width: 64rem) {
+  .capture--embedded .capture__shutter {
+    display: none;
+  }
+}
+
+/*
  * The drop target. Dashed, because a dashed edge means "not filled yet" —
  * the same vocabulary the design canvas uses for a draft register. Solid
  * borders are for things that exist.
@@ -719,6 +736,32 @@
   border-radius: var(--ledgr-radius-panel);
 }
 
+/* What automatic reading did, and the fields it was not sure of. */
+.expense-form__notice {
+  margin: 0;
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+  border-left: 3px solid var(--ledgr-accent);
+  border-radius: var(--ledgr-radius-control);
+  background-color: var(--ledgr-accent-wash);
+  color: var(--ledgr-text-primary);
+  font-size: var(--ledgr-type-small);
+  line-height: var(--ledgr-leading-snug);
+}
+.expense-form__notice--failed {
+  border-left-color: var(--ledgr-caution);
+  background-color: var(--ledgr-caution-wash);
+}
+.expense-form__check {
+  display: inline-block;
+  margin-top: var(--ledgr-space-1);
+  padding: 1px var(--ledgr-space-2);
+  border-radius: var(--ledgr-radius-pill);
+  background-color: var(--ledgr-caution-wash);
+  color: var(--ledgr-caution);
+  font-size: var(--ledgr-type-micro);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
 /*
  * Two columns once there is room for both to stay a comfortable width. On a
  * phone they stack, which is the only sensible reading of a form this dense on
@@ -733,6 +776,7 @@
 
   /* A form's own heading and its submit row are never half-width. */
   .expense-form > h2,
+  .expense-form > .expense-form__notice,
   .expense-form > fieldset,
   .expense-form > [role="alert"],
   .expense-form > button {

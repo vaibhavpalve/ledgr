@@ -94,6 +94,12 @@ export interface ExpenseView {
   readonly vat_amount: string | null;
   readonly net_amount: string | null;
   readonly category: string | null;
+  /** The supplier's own number for the invoice, as printed. */
+  readonly invoice_number?: string | null;
+  /** FR-AP-002: how automatic reading filled the fields. Null when nothing read it. */
+  readonly extraction?: ExtractionView | null;
+  /** The receipt's first stored original, for showing beside the form. */
+  readonly document_id?: string | null;
   readonly payment_method: PaymentMethod | null;
   /** FR-EXP-001b's "defaulting from the user's history". Null once a category has been chosen. */
   readonly suggested_category: string | null;
@@ -105,6 +111,21 @@ export interface ExpenseView {
 }
 
 export type ExpenseStatus = "draft" | "ready" | "posted";
+
+/**
+ * How an invoice was read (`api.expenses.routes._extraction_json`) - never the
+ * values, which are the expense's own fields.
+ *
+ * `fields` holds a 0..1 confidence for each field the reading WROTE, keyed by
+ * `invoice_date`, `supplier`, `invoice_number`, `gross_amount` or `vat_rate`. A
+ * field absent from it was not filled by the reading.
+ */
+export interface ExtractionView {
+  readonly status: "done" | "failed" | "skipped";
+  /** Why it did not happen; a short code, for the screen to choose its sentence. */
+  readonly reason: string | null;
+  readonly fields: Readonly<Record<string, number>>;
+}
 
 /**
  * Mirrors `api.expenses.model.VatTreatment` — WHICH VAT applies, not the rate.
@@ -226,6 +247,13 @@ export interface ExpenseSummaryView {
   readonly supplier: string | null;
   readonly gross_amount: string | null;
   readonly category: string | null;
+  /** The category's key on `EXPENSE_CATEGORIES`; null for free text typed into the form. */
+  readonly category_key?: ExpenseCategoryKey | null;
+  /** The category's reference ledger account (RGS), for the list's Ledger column. */
+  readonly rgs_code?: string | null;
+  readonly invoice_number?: string | null;
+  /** How automatic reading ended (`done`, `failed`, `skipped`), or null if it never ran. */
+  readonly extraction_status?: ExtractionView["status"] | null;
   readonly missing_fields: readonly string[];
   readonly can_be_marked_ready: boolean;
 }

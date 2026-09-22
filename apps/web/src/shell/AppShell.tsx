@@ -3,15 +3,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Building,
-  Camera,
   ChartColumn,
   ChevronDown,
-  CircleCheck,
   FileText,
   House,
   Landmark,
   LayoutGrid,
-  List,
   LogOut,
   Search,
   Settings,
@@ -64,12 +61,6 @@ import { UserMenu } from "./UserMenu";
  * `<main tabIndex={-1}>` after every pathname change except the first. The skip
  * link targets the same element.
  */
-interface NavOptions {
-  /** Under a section: no icon, indented by the stylesheet. */
-  readonly nested?: boolean;
-  readonly badge?: ReactNode;
-}
-
 interface NavDef {
   readonly id: string;
   readonly to: string;
@@ -79,24 +70,6 @@ interface NavDef {
 }
 
 const HOME: NavDef = { id: "home", to: "/", labelKey: "common.nav.home", icon: House, end: true };
-const CAPTURE: NavDef = {
-  id: "capture",
-  to: "/capture",
-  labelKey: "common.nav.capture",
-  icon: Camera,
-};
-const REVIEW: NavDef = {
-  id: "approve",
-  to: "/review",
-  labelKey: "common.nav.review",
-  icon: CircleCheck,
-};
-const OVERVIEW: NavDef = {
-  id: "view",
-  to: "/overview",
-  labelKey: "common.nav.overview",
-  icon: List,
-};
 const INVOICES: NavDef = {
   id: "invoice",
   to: "/invoices",
@@ -115,11 +88,9 @@ const CLIENTS: NavDef = {
  * ones the rail has always used (`nav-home`, `nav-invoice`, ...) so nothing that
  * finds an item by test id changes; only what it is called and where it sits.
  *
- * "Purchases" is a section rather than a link: it holds Capture, Review and the
- * purchases list, the three screens a purchase passes through, so none of them
- * drops out of the menu when the design's single "Purchases" item replaces them.
- * Its list is labelled "All purchases", not "Overview", because the first item
- * already is the overview and two rows may not share a name.
+ * "Purchases" is ONE item: uploading is at the top of its screen and reviewing is
+ * inside each invoice, so Capture, Review and the old Overview no longer have
+ * menu entries of their own (their addresses redirect there).
  */
 const DASHBOARD: NavDef = {
   id: "home",
@@ -134,11 +105,11 @@ const SALES: NavDef = {
   labelKey: "common.nav.sales",
   icon: FileText,
 };
-const PURCHASES_ALL: NavDef = {
-  id: "view",
-  to: "/overview",
-  labelKey: "common.nav.purchases_all",
-  icon: List,
+const PURCHASES: NavDef = {
+  id: "purchases",
+  to: "/purchases",
+  labelKey: "common.nav.purchases",
+  icon: ShoppingCart,
 };
 const BANK: NavDef = { id: "bank", to: "/bank", labelKey: "common.nav.bank", icon: Landmark };
 const JOURNAL: NavDef = {
@@ -172,8 +143,8 @@ const REPORTS: NavDef = {
   icon: ChartColumn,
 };
 
-/** The bottom bar's five: ADR-046's four tasks plus FR-UX-005's home, unchanged. */
-const COMPACT_TABS: readonly NavDef[] = [HOME, CAPTURE, REVIEW, OVERVIEW, INVOICES];
+/** The bottom bar: home, and the three places most of a day is spent (FR-UX-005). */
+const COMPACT_TABS: readonly NavDef[] = [HOME, PURCHASES, INVOICES, LEDGER];
 
 export function AppShell() {
   const { t } = useI18n();
@@ -185,7 +156,7 @@ export function AppShell() {
   const openSearch = useCallback(() => setSearchOpen(true), []);
   useSwitcherShortcut(openSearch);
 
-  // The count beside "Review": draft receipts awaiting a decision, from the same
+  // The count beside "Purchases": invoices still To review, from the same
   // dashboard call Home makes. Secondary chrome, so a failure just shows no badge.
   const { dashboard } = useServices();
   const administrationId = administration?.id ?? null;
@@ -228,12 +199,12 @@ export function AppShell() {
         {reviewCount}
       </Badge>
     ) : undefined;
-  const navItem = (item: NavDef, { nested = false, badge }: NavOptions = {}) => (
+  const navItem = (item: NavDef, badge?: ReactNode) => (
     <NavItem
       key={item.id}
       to={item.to}
       end={item.end}
-      icon={nested ? undefined : item.icon}
+      icon={item.icon}
       testId={`nav-${item.id}`}
       badge={badge}
     >
@@ -241,7 +212,7 @@ export function AppShell() {
     </NavItem>
   );
   const initial = (me.user.email.trim()[0] ?? "?").toUpperCase();
-  // Below 64rem the rail is gone and the bottom bar holds five, so everything
+  // Below 64rem the rail is gone and the bottom bar holds four, so everything
   // else the rail lists is reached from the avatar menu.
   const compactExtras = [
     ...(hasAdministration
@@ -286,17 +257,7 @@ export function AppShell() {
               <NavGroup>{t("common.nav.group.bookkeeping")}</NavGroup>
               {navItem(DASHBOARD)}
               {navItem(SALES)}
-              <div className="shell__section" role="group" aria-labelledby="rail-purchases">
-                <span className="shell__section-label" id="rail-purchases">
-                  <ShoppingCart size={20} strokeWidth={1.7} aria-hidden="true" />
-                  {t("common.nav.purchases")}
-                </span>
-                <div className="shell__section-items">
-                  {navItem(CAPTURE, { nested: true })}
-                  {navItem(REVIEW, { nested: true, badge: reviewBadge })}
-                  {navItem(PURCHASES_ALL, { nested: true })}
-                </div>
-              </div>
+              {navItem(PURCHASES, reviewBadge)}
               {navItem(BANK)}
               {navItem(JOURNAL)}
               {navItem(LEDGER)}

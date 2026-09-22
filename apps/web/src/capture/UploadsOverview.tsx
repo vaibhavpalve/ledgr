@@ -26,25 +26,41 @@ import { expensesThisSittingWouldCreate, type LocalReceipt, type Sitting } from 
  * the sitting as well (`Sitting.forget`): its records are gone too, and would
  * otherwise read as uploaded.
  */
-export function UploadsOverview({ sitting, queue }: { sitting: Sitting; queue: CaptureQueue }) {
+export function UploadsOverview({
+  sitting,
+  queue,
+  pendingOnly = false,
+}: {
+  sitting: Sitting;
+  queue: CaptureQueue;
+  /**
+   * Show only what is still on its way (or needs attention), and nothing at all
+   * once everything has landed. For a screen that lists the uploaded items
+   * itself: repeating them here would be the same invoice twice.
+   */
+  pendingOnly?: boolean;
+}) {
   const { t, number } = useI18n();
   const snapshot = useQueueSnapshot(queue);
 
   const items = snapshot?.items ?? [];
-  const rows = sitting.receipts.map((receipt) => ({
+  const allRows = sitting.receipts.map((receipt) => ({
     receipt,
     progress: progressOf(
       items.filter((item) => item.receiptRef === receipt.ref),
       snapshot !== null,
     ),
   }));
-  const done = rows.filter((row) => row.progress.status === "done").length;
+  const done = allRows.filter((row) => row.progress.status === "done").length;
+  const rows = pendingOnly ? allRows.filter((row) => row.progress.status !== "done") : allRows;
+
+  if (pendingOnly && rows.length === 0 && !snapshot?.offline) return null;
 
   return (
     <section className="uploads" aria-label={t("capture.uploads.title")}>
       <header className="uploads__header">
         <h2>{t("capture.uploads.title")}</h2>
-        {rows.length > 0 ? (
+        {rows.length > 0 && !pendingOnly ? (
           <p
             className="uploads__summary"
             role="status"
@@ -64,40 +80,46 @@ export function UploadsOverview({ sitting, queue }: { sitting: Sitting; queue: C
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="uploads__empty" data-testid="capture-review-empty">
-          {t("capture.uploads.empty")}
-        </p>
+        pendingOnly ? null : (
+          <p className="uploads__empty" data-testid="capture-review-empty">
+            {t("capture.uploads.empty")}
+          </p>
+        )
       ) : (
         <>
-          <progress
-            className="uploads__bar"
-            max={rows.length}
-            value={done}
-            aria-label={t("capture.uploads.summary", { done, total: rows.length })}
-          />
-          <p className="uploads__count" data-testid="capture-expenses-to-create">
-            {t("capture.screen.expenses_to_create", {
-              count: expensesThisSittingWouldCreate(sitting.receipts),
-            })}
-          </p>
+          {pendingOnly ? null : (
+            <>
+              <progress
+                className="uploads__bar"
+                max={rows.length}
+                value={done}
+                aria-label={t("capture.uploads.summary", { done, total: rows.length })}
+              />
+              <p className="uploads__count" data-testid="capture-expenses-to-create">
+                {t("capture.screen.expenses_to_create", {
+                  count: expensesThisSittingWouldCreate(sitting.receipts),
+                })}
+              </p>
+            </>
+          )}
           <ul
             className="uploads__list"
             aria-label={t("capture.uploads.list_label")}
             data-testid="capture-review-list"
           >
-            {rows.map(({ receipt, progress }, index) => (
+            {rows.map((row) => (
               <UploadRow
-                key={receipt.ref}
-                receipt={receipt}
-                position={index + 1}
-                progress={progress}
+                key={row.receipt.ref}
+                receipt={row.receipt}
+                position={allRows.indexOf(row) + 1}
+                progress={row.progress}
                 onRetry={() => {
-                  for (const item of progress.blockedItems) void queue.unblock(item.id);
+                  for (const item of row.progress.blockedItems) void queue.unblock(item.id);
                 }}
                 onDiscard={() => {
                   void (async () => {
-                    for (const item of progress.items) await queue.discard(item.id);
-                    sitting.forget(receipt.ref);
+                    for (const item of row.progress.items) await queue.discard(item.id);
+                    sitting.forget(row.receipt.ref);
                   })();
                 }}
               />

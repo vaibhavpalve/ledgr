@@ -27,8 +27,8 @@
     },
     "capture.screen.drop_hint": {
       "note": "The drop zone. Names the formats FR-EXP-001 accepts, because 'unsupported file' after the fact is a worse way to learn them.",
-      "nl": "Sleep bonnen hierheen — JPEG, PNG, HEIC of PDF",
-      "en": "Drop receipts here — JPEG, PNG, HEIC or PDF"
+      "nl": "Sleep facturen of bonnen hierheen — JPEG, PNG, HEIC of PDF",
+      "en": "Drop invoices or receipts here — JPEG, PNG, HEIC or PDF"
     },
     "capture.screen.add_page": {
       "note": "FR-EXP-001's multi-page. Deliberately worded as belonging to THIS receipt: pressing it must not feel like starting another one, because the difference is one expense or two.",
@@ -132,6 +132,78 @@
       "nl": "Deze foto is identiek aan een eerdere bon in deze reeks.",
       "en": "This photograph is identical to an earlier receipt in this batch."
     },
+    "capture.purchases.count": {
+      "note": "Context line beside the Purchases heading: how many invoices are listed.",
+      "nl": { "one": "{count} inkoopfactuur", "other": "{count} inkoopfacturen" },
+      "en": { "one": "{count} purchase invoice", "other": "{count} purchase invoices" }
+    },
+    "capture.purchases.list_label": {
+      "nl": "Inkoopfacturen",
+      "en": "Purchase invoices"
+    },
+    "capture.purchases.col.supplier": { "nl": "Leverancier", "en": "Supplier" },
+    "capture.purchases.col.ledger": {
+      "note": "RGS is the Dutch reference chart of accounts; the abbreviation is kept in both languages like BTW.",
+      "nl": "Grootboek (RGS)",
+      "en": "Ledger (RGS)"
+    },
+    "capture.purchases.col.status": { "identical": true, "nl": "Status", "en": "Status" },
+    "capture.purchases.col.amount": { "nl": "Bedrag", "en": "Amount" },
+    "capture.purchases.status.draft": {
+      "note": "A captured invoice nobody has confirmed yet. Named for what the person does next.",
+      "nl": "Te beoordelen",
+      "en": "To review"
+    },
+    "capture.purchases.status.ready": { "nl": "Klaar om te boeken", "en": "Ready to book" },
+    "capture.purchases.status.posted": { "nl": "Geboekt", "en": "Booked" },
+    "capture.purchases.unread_title": {
+      "note": "Stands in for the supplier of an invoice with nothing filled in yet.",
+      "nl": "Factuur om aan te vullen",
+      "en": "Invoice to fill in"
+    },
+    "capture.purchases.unread_failed": {
+      "nl": "Automatisch lezen lukte niet",
+      "en": "Could not be read automatically"
+    },
+    "capture.purchases.unread_waiting": {
+      "nl": "Wacht op gegevens",
+      "en": "Waiting for details"
+    },
+    "capture.purchases.empty_title": {
+      "nl": "Nog geen inkoopfacturen",
+      "en": "No purchase invoices yet"
+    },
+    "capture.purchases.empty_body": {
+      "note": "Says what happens when the first one is added, because the drop zone above is the next step.",
+      "nl": "Voeg hierboven je eerste factuur toe. We lezen de datum, het bedrag en de leverancier voor je uit.",
+      "en": "Add your first invoice above. We read the date, amount and supplier for you."
+    },
+    "capture.purchases.back": { "nl": "Terug naar lijst", "en": "Back to list" },
+    "capture.purchases.detail_fallback": { "nl": "Inkoopfactuur", "en": "Purchase invoice" },
+    "capture.purchases.original": { "nl": "Originele factuur", "en": "Original invoice" },
+    "capture.purchases.original_loading": {
+      "nl": "Factuur wordt geladen…",
+      "en": "Loading the invoice…"
+    },
+    "capture.purchases.original_error": {
+      "nl": "De originele factuur kon niet worden geladen.",
+      "en": "The original invoice could not be loaded."
+    },
+    "capture.read.done": {
+      "note": "Shown on an invoice whose fields were filled by automatic reading. Asks for a check, because a reading is a suggestion.",
+      "nl": "We hebben deze factuur automatisch gelezen. Controleer de gemarkeerde velden voordat je indient.",
+      "en": "We read this invoice automatically. Please check the marked fields before you submit."
+    },
+    "capture.read.failed": {
+      "nl": "We konden deze factuur niet automatisch lezen. Vul de gegevens hieronder zelf in.",
+      "en": "We couldn't read this invoice automatically. Please fill in the details below."
+    },
+    "capture.read.check": {
+      "note": "Beside a field the reading was not sure of.",
+      "nl": "Controleer dit",
+      "en": "Check this"
+    },
+    "capture.form.invoice_number": { "nl": "Factuurnummer", "en": "Invoice number" },
     "capture.category.title": {
       "note": "Heading of the dialog that opens when receipts are added. The category is asked BEFORE the file is sent, so the receipt arrives already filed (FR-EXP-001b).",
       "nl": "Wat voor uitgave is dit?",

@@ -181,6 +181,7 @@ export interface ExpenseFormPatch {
   readonly vat_treatment?: VatTreatment | null;
   readonly category?: string | null;
   readonly payment_method?: PaymentMethod | null;
+  readonly invoice_number?: string | null;
 }
 
 async function problemFrom(response: Response): Promise<ApiError> {

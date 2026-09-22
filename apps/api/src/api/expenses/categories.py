@@ -91,6 +91,19 @@ EXPENSE_CATEGORIES: tuple[ExpenseCategory, ...] = (
 )
 
 _BY_KEY = {category.key: category for category in EXPENSE_CATEGORIES}
+_BY_LABEL = {category.label.strip().lower(): category for category in EXPENSE_CATEGORIES}
+
+
+def category_for_label(label: str | None) -> ExpenseCategory | None:
+    """The category a stored expense label belongs to, or None.
+
+    None is a normal answer: `expense.category` is free text, so a label typed
+    into the form (or stored before this list existed) matches nothing, and the
+    caller shows it as it is rather than inventing a category for it.
+    """
+    if not label:
+        return None
+    return _BY_LABEL.get(label.strip().lower())
 
 
 def category_for_key(key: str) -> ExpenseCategory:

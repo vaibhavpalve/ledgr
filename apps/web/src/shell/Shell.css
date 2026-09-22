@@ -131,39 +131,6 @@
   letter-spacing: 0.09em;
 }
 
-/* Purchases: a label with its three screens indented under a guide line. */
-.shell__section {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.shell__section-label {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 9px 11px;
-  color: var(--ink-muted);
-  font: 600 13.5px/1.25 var(--font-sans);
-}
-.shell__section-label svg {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-}
-.shell__section-items {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: 20px;
-  padding-left: 10px;
-  border-left: 1px solid var(--border-subtle);
-}
-.shell__section-items .ui-nav {
-  padding: 7px 11px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
 /* Who is signed in, at the foot. */
 .shell__user {
   display: flex;

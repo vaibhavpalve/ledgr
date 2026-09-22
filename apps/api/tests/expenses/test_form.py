@@ -62,6 +62,8 @@ class FakeFormRepository:
     #: How many times it was asked. The form must not query on every keystroke
     #: - only once the triple is complete.
     duplicate_lookups: int = 0
+    #: item id -> its first stored original, for the review screen's preview.
+    documents: dict[uuid.UUID, uuid.UUID] = field(default_factory=dict)
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
@@ -137,6 +139,11 @@ class FakeFormRepository:
 
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None:
         return self.organization_id if administration_id == self.administration_id else None
+
+    async def first_document_id(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> uuid.UUID | None:
+        return self.documents.get(item_id)
 
     async def list_by_status(
         self, *, administration_id: uuid.UUID, status: str | None, limit: int

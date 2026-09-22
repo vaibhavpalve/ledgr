@@ -111,7 +111,7 @@ describe("a company with no bookings", () => {
     fireEvent.click(screen.getByTestId("home-setup-invoice"));
     expect(onNavigate).toHaveBeenCalledWith("/invoices/new");
     fireEvent.click(screen.getByTestId("home-setup-capture"));
-    expect(onNavigate).toHaveBeenCalledWith("/capture");
+    expect(onNavigate).toHaveBeenCalledWith("/purchases");
   });
 
   it("is not the setup state once a single figure is non-zero", async () => {

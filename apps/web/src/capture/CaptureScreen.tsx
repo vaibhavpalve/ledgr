@@ -59,9 +59,18 @@ export function CaptureScreen({
   sitting,
   queue,
   decode,
+  variant = "page",
 }: {
   sitting: Sitting;
   queue: CaptureQueue;
+  /**
+   * `page` is the whole screen. `embedded` is the intake alone, for a screen
+   * that already has its own heading and lists what was uploaded (Purchases): no
+   * heading, no "finish this batch" (a sitting simply stays open - finalising
+   * posts nothing, ADR-031 §5), and an uploads panel that shows only what is
+   * still on its way.
+   */
+  variant?: "page" | "embedded";
   /**
    * Turns a file into bytes and, where it is an image, a quality reading.
    *
@@ -200,7 +209,9 @@ export function CaptureScreen({
     receive(files, source);
   };
 
-  if (sitting.phase === "finalised") {
+  const embedded = variant === "embedded";
+
+  if (sitting.phase === "finalised" && !embedded) {
     return (
       <section className="capture" aria-label={t("capture.screen.title")}>
         <h1>{t("capture.screen.title")}</h1>
@@ -213,8 +224,11 @@ export function CaptureScreen({
   }
 
   return (
-    <section className="capture" aria-label={t("capture.screen.title")}>
-      <h1>{t("capture.screen.title")}</h1>
+    <section
+      className={embedded ? "capture capture--embedded" : "capture"}
+      aria-label={t("capture.screen.title")}
+    >
+      {embedded ? null : <h1>{t("capture.screen.title")}</h1>}
       <SittingProblemNotice sitting={sitting} />
 
       {pending !== null ? (
@@ -338,17 +352,19 @@ export function CaptureScreen({
         </div>
       ) : null}
 
-      <UploadsOverview sitting={sitting} queue={queue} />
+      <UploadsOverview sitting={sitting} queue={queue} pendingOnly={embedded} />
 
-      <button
-        type="button"
-        className="capture__finish"
-        disabled={sitting.receipts.length === 0}
-        data-testid="capture-finalise"
-        onClick={() => void sitting.finalise()}
-      >
-        {t("capture.screen.finalise")}
-      </button>
+      {embedded ? null : (
+        <button
+          type="button"
+          className="capture__finish"
+          disabled={sitting.receipts.length === 0}
+          data-testid="capture-finalise"
+          onClick={() => void sitting.finalise()}
+        >
+          {t("capture.screen.finalise")}
+        </button>
+      )}
     </section>
   );
 }

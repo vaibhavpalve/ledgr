@@ -126,7 +126,7 @@ describe("HomeScreen — FR-UX-005/MOB-006's prioritised home screen", () => {
       "/invoices/inv-2",
     );
     expect(destinationFor({ kind: "draft_expense", id: "exp-1", description: "" })).toBe(
-      "/review/exp-1",
+      "/purchases/exp-1",
     );
   });
 

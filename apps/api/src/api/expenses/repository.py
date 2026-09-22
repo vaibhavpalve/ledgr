@@ -8,10 +8,12 @@ WITHIN the tenant; they are not the tenant boundary, which is the division
 
 from __future__ import annotations
 
+import json
 import uuid
 from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +36,8 @@ from api.expenses.model import (
 _EXPENSE_COLUMNS = """
     id, administration_id, capture_item_id, status, submitted_by_user_id,
     expense_date, supplier, gross_amount, vat_treatment, vat_rate, vat_amount,
-    net_amount, category, payment_method, journal_entry_id, posted_at
+    net_amount, category, payment_method, journal_entry_id, posted_at,
+    invoice_number, extraction
 """
 
 #: Columns the form may write. Named as a frozenset rather than interpolating
@@ -51,6 +54,7 @@ _WRITABLE_FIELDS = frozenset(
         "vat_amount",
         "category",
         "payment_method",
+        "invoice_number",
     }
 )
 
@@ -76,7 +80,20 @@ def _to_expense(row: object) -> Expense:
         payment_method=PaymentMethod(method) if method else None,
         journal_entry_id=row.journal_entry_id,  # type: ignore[attr-defined]
         posted_at=row.posted_at,  # type: ignore[attr-defined]
+        invoice_number=row.invoice_number,  # type: ignore[attr-defined]
+        extraction=_json_object(row.extraction),  # type: ignore[attr-defined]
     )
+
+
+def _json_object(value: object) -> dict[str, Any] | None:
+    """A `jsonb` column as a dict. `text()` queries hand it back as the raw JSON
+    string (only ORM-typed columns are decoded for us), and a driver that has
+    already decoded it gives a dict - both are accepted."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        value = json.loads(value)
+    return value if isinstance(value, dict) else None
 
 
 def _to_session(row: object) -> CaptureSession:
@@ -363,6 +380,56 @@ class SqlCaptureRepository:
         )
         row = result.first()
         return None if row is None else _to_expense(row)
+
+    async def expense_for_item(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> Expense | None:
+        """The expense a captured receipt became - one per item (migration 0032)."""
+        result = await self._session.execute(
+            text(
+                f"SELECT {_EXPENSE_COLUMNS} FROM expense "
+                f"WHERE capture_item_id = :item AND administration_id = :admin"
+            ),
+            {"item": str(item_id), "admin": str(administration_id)},
+        )
+        row = result.first()
+        return None if row is None else _to_expense(row)
+
+    async def first_document_id(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> uuid.UUID | None:
+        result = await self._session.execute(
+            text(
+                "SELECT document_id FROM capture_page "
+                "WHERE item_id = :item AND administration_id = :admin "
+                "ORDER BY page_number LIMIT 1"
+            ),
+            {"item": str(item_id), "admin": str(administration_id)},
+        )
+        found = result.scalar_one_or_none()
+        return None if found is None else uuid.UUID(str(found))
+
+    async def record_extraction(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        extraction: dict[str, Any],
+    ) -> None:
+        """Stores HOW the fields were filled (migration 0063). Not part of the
+        form's writable set: a person edits the fields, never this record of
+        which ones a machine wrote."""
+        await self._session.execute(
+            text(
+                "UPDATE expense SET extraction = CAST(:extraction AS jsonb), "
+                "updated_at = now() WHERE id = :id AND administration_id = :admin"
+            ),
+            {
+                "extraction": json.dumps(extraction),
+                "id": str(expense_id),
+                "admin": str(administration_id),
+            },
+        )
 
     async def update(
         self,

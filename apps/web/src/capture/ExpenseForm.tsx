@@ -5,6 +5,40 @@ import type { ExpenseView, PaymentMethod, VatTreatment } from "@ledgr/shared-typ
 
 import type { CaptureApi, ExpenseFormPatch } from "./api";
 
+/** Below this, a reading's own confidence in a field is not enough to trust it
+ * unchecked. A number for the review screen to point at, not a rule the server
+ * enforces: nothing is blocked on it. */
+const CHECK_BELOW = 0.8;
+
+/**
+ * "Check this", beside a field the automatic reading wrote and was not sure of.
+ *
+ * Shown only for a field the reading actually filled (it is in `extraction.
+ * fields`) - a field it left empty is not "uncertain", it is just empty. It
+ * stays until the invoice is submitted: the reading's confidence is a fact about
+ * the reading, not about what the person has since decided, so editing a field
+ * does not pretend to have re-read it.
+ */
+function CheckHint({
+  expense,
+  field,
+  testId,
+}: {
+  expense: ExpenseView;
+  field: string;
+  testId: string;
+}) {
+  const { t } = useI18n();
+  const confidence =
+    expense.extraction?.status === "done" ? expense.extraction.fields[field] : undefined;
+  if (confidence === undefined || confidence >= CHECK_BELOW) return null;
+  return (
+    <span className="expense-form__check" data-testid={testId}>
+      {t("capture.read.check")}
+    </span>
+  );
+}
+
 /**
  * FR-EXP-001b's form, with FR-EXP-001e's payment method and FR-EXP-001g's
  * warnings.
@@ -114,6 +148,26 @@ export function ExpenseForm({
     >
       <h2>{t("capture.form.title")}</h2>
 
+      {/*
+        FR-AP-002: what automatic reading did, said once at the top. A reading is
+        a suggestion, so a success asks for a check rather than claiming to be
+        right; a failure says so, because a form that looks like nobody tried to
+        fill it in reads as a bug.
+      */}
+      {expense.extraction?.status === "done" ? (
+        <p className="expense-form__notice" data-testid="expense-read-done">
+          {t("capture.read.done")}
+        </p>
+      ) : null}
+      {expense.extraction?.status === "failed" ? (
+        <p
+          className="expense-form__notice expense-form__notice--failed"
+          data-testid="expense-read-failed"
+        >
+          {t("capture.read.failed")}
+        </p>
+      ) : null}
+
       <label>
         {t("capture.form.date")}
         <input
@@ -122,6 +176,7 @@ export function ExpenseForm({
           value={value("expense_date")}
           onChange={(event) => edit({ expense_date: event.target.value || null })}
         />
+        <CheckHint expense={expense} field="invoice_date" testId="expense-date-check" />
       </label>
 
       <label>
@@ -132,6 +187,18 @@ export function ExpenseForm({
           value={value("supplier")}
           onChange={(event) => edit({ supplier: event.target.value || null })}
         />
+        <CheckHint expense={expense} field="supplier" testId="expense-supplier-check" />
+      </label>
+
+      <label>
+        {t("capture.form.invoice_number")}
+        <input
+          type="text"
+          data-testid="expense-invoice-number"
+          value={value("invoice_number")}
+          onChange={(event) => edit({ invoice_number: event.target.value || null })}
+        />
+        <CheckHint expense={expense} field="invoice_number" testId="expense-invoice-number-check" />
       </label>
 
       <label>
@@ -149,6 +216,7 @@ export function ExpenseForm({
           value={value("gross_amount")}
           onChange={(event) => edit({ gross_amount: event.target.value || null })}
         />
+        <CheckHint expense={expense} field="gross_amount" testId="expense-gross-amount-check" />
       </label>
 
       <label>
@@ -167,6 +235,7 @@ export function ExpenseForm({
             </option>
           ))}
         </select>
+        <CheckHint expense={expense} field="vat_rate" testId="expense-vat-check" />
       </label>
 
       <label>

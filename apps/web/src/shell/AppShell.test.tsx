@@ -85,9 +85,7 @@ describe("the rail — the Boekje design's menu", () => {
     expect(labelsIn(rail)).toEqual([
       "Overview",
       "Sales",
-      "Capture",
-      "Review",
-      "All purchases",
+      "Purchases",
       "Bank",
       "Journal",
       "Grootboek",
@@ -96,19 +94,17 @@ describe("the rail — the Boekje design's menu", () => {
       "Reports",
       "Settings",
     ]);
-    // "Purchases" is the section those three sit under, not a link of its own.
-    expect(within(rail).getByText("Purchases")).toBeTruthy();
   });
 
-  it("keeps Capture, Review and the purchases list together under Purchases", async () => {
+  it("has ONE Purchases item and no sub-menu: capture and review live inside it", async () => {
     const rail = await railAt("/");
 
-    const purchases = within(rail).getByRole("group", { name: "Purchases" });
-    expect(
-      within(purchases)
-        .getAllByRole("link")
-        .map((link) => link.getAttribute("href")),
-    ).toEqual(["/capture", "/review", "/overview"]);
+    const purchases = within(rail).getByRole("link", { name: /^Purchases/ });
+    expect(purchases.getAttribute("href")).toBe("/purchases");
+    // The three screens it replaced have no menu entries of their own.
+    for (const gone of ["Capture", "Review", "All purchases"]) {
+      expect(within(rail).queryByRole("link", { name: gone })).toBeNull();
+    }
   });
 
   it("does not use one name for two rows", async () => {
@@ -140,6 +136,19 @@ describe("the rail — the Boekje design's menu", () => {
     await railAt("/");
 
     assertNoAxeViolations(await axeViolations(document.body));
+  });
+});
+
+describe("the old purchase addresses", () => {
+  it.each([
+    ["/capture", "purchases"],
+    ["/review", "purchases"],
+    ["/overview", "purchases"],
+  ])("%s lands on the purchases screen", async (route, testId) => {
+    stubApi();
+    renderApp({ authenticated: true, language: "en" }, { route });
+
+    expect(await screen.findByTestId(testId)).toBeTruthy();
   });
 });
 

@@ -5,20 +5,19 @@
                  queue is P1 (see FR-AP-002); THE PRODUCT NEVER BLOCKS ON
                  EXTRACTION BEING AVAILABLE.
 
-Extraction is not built. That makes this file's claim easy to satisfy and easy
-to lose: the first commit that adds an OCR call between capture and posting
-would break the requirement without breaking a single existing test, because
-every existing test would still be exercising a system where extraction
-happened to succeed.
+Automatic reading has since been built (ADR-081) - and this file is what says it
+arrived the way it was required to: behind a switch that is OFF by default, in
+its own sub-package, wired in by `routes.py` alone. The claim it protects is
+easy to lose: a commit that put a model call between capture and posting would
+break the requirement without breaking a single other test, because every other
+test would still be exercising a system where extraction happened to succeed.
 
-So this asserts two things that stay true afterwards:
+So this asserts what stays true with extraction present:
 
   1. the WHOLE path - capture, form, confirm, post - runs end to end with
-     nothing pre-filling anything, and
-  2. no module in `api.expenses` reaches for extraction at all.
-
-The second is the one that survives extraction arriving. When it does, it
-belongs behind a switch that is off here, and this test is what will say so.
+     nothing pre-filling anything,
+  2. the domain modules of `api.expenses` do not reach for extraction, and
+  3. extraction is off by default and only the composition root touches it.
 """
 
 from __future__ import annotations
@@ -83,8 +82,49 @@ ALLOWED = (
 )
 
 
+#: Where extraction is ALLOWED to live: its own sub-package (the switch and the
+#: adapters behind it) and `routes.py`, the composition root that wires it in.
+#: Everything else in `api.expenses` is the domain path - capture, the form, VAT,
+#: duplicates, posting - and that stays free of it (see the tests below).
+_EXTRACTION_HOME = EXPENSES_PACKAGE / "extraction"
+_COMPOSITION_ROOT = EXPENSES_PACKAGE / "routes.py"
+
+
 def _python_files() -> list[Path]:
-    return sorted(EXPENSES_PACKAGE.rglob("*.py"))
+    """The domain modules: every expense module that is not extraction itself."""
+    return sorted(
+        path
+        for path in EXPENSES_PACKAGE.rglob("*.py")
+        if _EXTRACTION_HOME not in path.parents and path != _COMPOSITION_ROOT
+    )
+
+
+def test_extraction_is_off_by_default_and_builds_nothing_when_off() -> None:
+    """The switch FR-EXP-001c asks for: reading sends an invoice to a model
+    (PRIV-010/011), so a deployment that has not chosen it reads nothing."""
+    from api.config import Settings
+    from api.expenses.extraction.build import build_extractor
+
+    assert Settings.model_fields["extraction_provider"].default == "none"
+    assert build_extractor(Settings(extraction_provider="none")) is None
+
+
+def test_only_the_composition_root_reaches_into_extraction() -> None:
+    """The domain path may not import it; `routes.py` wires it and nothing else
+    outside its own package does."""
+    importers = []
+    for path in EXPENSES_PACKAGE.rglob("*.py"):
+        if _EXTRACTION_HOME in path.parents:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            module = ""
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+            elif isinstance(node, ast.Import):
+                module = " ".join(alias.name for alias in node.names)
+            if "expenses.extraction" in module:
+                importers.append(path.name)
+    assert set(importers) == {"routes.py"}
 
 
 def test_there_are_expense_modules_to_check() -> None:

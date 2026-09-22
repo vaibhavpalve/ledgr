@@ -33,9 +33,11 @@ middleware and all four coverage checks walk straight past - see
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 from fastapi import Depends, FastAPI, Query, Request
 from pydantic import BaseModel
@@ -51,6 +53,7 @@ from api.authz.dependencies import (
 )
 from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
+from api.config import settings
 from api.db import get_db_session
 from api.documents.content_type import ContentTypeError
 from api.documents.model import (
@@ -62,7 +65,9 @@ from api.documents.model import (
 from api.documents.routes import get_document_service
 from api.documents.service import DocumentService
 from api.expenses.capture import CaptureService
-from api.expenses.categories import UnknownExpenseCategory
+from api.expenses.categories import UnknownExpenseCategory, category_for_label
+from api.expenses.extraction.build import ExtractionNotConfigured, build_extractor
+from api.expenses.extraction.service import InvoiceExtractionService
 from api.expenses.form import ExpenseFormService, ExpenseView
 from api.expenses.model import (
     CaptureSession,
@@ -94,6 +99,8 @@ from api.expenses.vat import VatError
 from api.i18n.http import problem
 from api.ledger.service import build_ledger_service
 from api.tenancy import TenantContext, get_tenant_context
+
+logger = logging.getLogger(__name__)
 
 
 def register(app: FastAPI) -> None:
@@ -156,6 +163,36 @@ def register(app: FastAPI) -> None:
         post_expense,
         methods=["POST"],
         name="post_expense",
+    )
+
+
+async def get_extraction_service(
+    session: AsyncSession = Depends(get_db_session),
+    authorization: AuthorizationService = Depends(get_authorization_service),
+) -> InvoiceExtractionService:
+    """Built per request over the same tenant-scoped session as the capture, so
+    a reading is written in the transaction that stored the invoice.
+
+    A provider that is selected but not configured is treated as no provider
+    (with a warning) rather than failing the capture: FR-EXP-001c says the
+    product never blocks on extraction being available, and a missing project id
+    is a case of that.
+    """
+    audit = AuditLog(SqlAuditRepository(session))
+    repository = SqlCaptureRepository(session)
+    try:
+        extractor = build_extractor(settings)
+    except ExtractionNotConfigured as exc:
+        logger.warning("invoice reading is not available: %s", exc)
+        extractor = None
+    return InvoiceExtractionService(
+        extractor=extractor,
+        form=ExpenseFormService(
+            repository=repository, authorization=authorization, audit_log=audit
+        ),
+        repository=repository,
+        audit_log=audit,
+        timeout_seconds=settings.extraction_timeout_seconds,
     )
 
 
@@ -245,6 +282,7 @@ async def capture_page(
     category: str | None = None,
     tenant: TenantContext = Depends(get_tenant_context),
     service: CaptureService = Depends(get_capture_service),
+    extraction: InvoiceExtractionService = Depends(get_extraction_service),
     _: AuthorizationDecision = Depends(
         require_permission(
             "submit",
@@ -332,6 +370,19 @@ async def capture_page(
         raise problem(
             request, 503, "errors.document_scan_unavailable", reason="scan_unavailable"
         ) from exc
+
+    # A NEW receipt (its first page, no `item` given) is read into its draft
+    # expense. Never for a further page: those join an expense the person may
+    # already have corrected. `read_into_expense` cannot raise for a failed
+    # reading - the invoice is stored either way (FR-EXP-001c).
+    if item is None and page_number == 1:
+        await extraction.read_into_expense(
+            administration_id=administration_id,
+            item_id=item_id,
+            actor_user_id=tenant.user_id,
+            data=data,
+            content_type=document.content_type.value,
+        )
 
     return {
         "item_id": str(item_id),
@@ -471,6 +522,33 @@ class ExpenseFormBody(BaseModel):
     vat_treatment: VatTreatment | None = None
     category: str | None = None
     payment_method: PaymentMethod | None = None
+    invoice_number: str | None = None
+
+
+def _extraction_json(extraction: dict[str, Any] | None) -> dict[str, object] | None:
+    """What the screen may know about a reading: how it ended and how sure it was
+    of each field. `provider`/`model` are for support and stay out of it."""
+    if extraction is None:
+        return None
+    fields = extraction.get("fields")
+    return {
+        "status": extraction.get("status"),
+        "reason": extraction.get("reason"),
+        "fields": fields if isinstance(fields, dict) else {},
+    }
+
+
+def _ledger_json(category: str | None) -> dict[str, object]:
+    """The category's key and reference ledger account, for the list's RGS column.
+
+    Null for a category that is not on the shared list - free text typed into
+    the form - which the list then shows as typed, with no account beside it.
+    """
+    match = category_for_label(category)
+    return {
+        "category_key": match.key if match else None,
+        "rgs_code": match.rgs_code if match else None,
+    }
 
 
 def _expense_json(view: ExpenseView) -> dict[str, object]:
@@ -496,6 +574,11 @@ def _expense_json(view: ExpenseView) -> dict[str, object]:
         "vat_amount": str(expense.vat_amount) if expense.vat_amount is not None else None,
         "net_amount": str(expense.net_amount) if expense.net_amount is not None else None,
         "category": expense.category,
+        "invoice_number": expense.invoice_number,
+        # FR-AP-002: how the fields were filled by automatic reading, if it ran.
+        "extraction": _extraction_json(expense.extraction),
+        # What they were read from, for the review screen to show beside them.
+        "document_id": str(view.document_id) if view.document_id else None,
         "payment_method": expense.payment_method.value if expense.payment_method else None,
         # FR-EXP-001b's "defaulting from the user's history". Null once the
         # person has chosen a category - a default does not correct a choice.
@@ -546,6 +629,9 @@ def _expense_summary_json(expense: Expense) -> dict[str, object]:
         "supplier": expense.supplier,
         "gross_amount": str(expense.gross_amount) if expense.gross_amount is not None else None,
         "category": expense.category,
+        **_ledger_json(expense.category),
+        "invoice_number": expense.invoice_number,
+        "extraction_status": (expense.extraction or {}).get("status"),
         "missing_fields": list(expense.missing_fields),
         "can_be_marked_ready": expense.is_complete,
     }

@@ -157,7 +157,7 @@ export function HomeScreen({
           </p>
         </div>
         <div className="home__actions">
-          <Button onClick={() => onNavigate("/capture")}>
+          <Button onClick={() => onNavigate("/purchases")}>
             <Camera size={18} strokeWidth={1.8} aria-hidden="true" />
             {t("mobile.home.action.capture_receipt")}
           </Button>
@@ -449,7 +449,7 @@ function SetupCard({
     { id: "company", path: null },
     { id: "customer", path: "/customers/new" },
     { id: "invoice", path: "/invoices/new" },
-    { id: "capture", path: "/capture" },
+    { id: "capture", path: "/purchases" },
   ];
   const firstPending = steps.findIndex((step) => step.path !== null);
 

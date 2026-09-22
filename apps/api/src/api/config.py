@@ -99,6 +99,26 @@ class Settings(BaseSettings):
     # "off" setting.
     malware_scanner_provider: Literal["local"] = "local"
 
+    # --- Automatic invoice reading (FR-EXP-001c, FR-AP-002) ---
+    # "none" reads nothing: a captured invoice arrives empty and is filled in by
+    # hand, which FR-EXP-001c guarantees is always a complete path. It is the
+    # default on purpose. Reading sends the invoice to a model, and PRIV-010 /
+    # PRIV-011 keep every sub-processor inside the EU, so switching it on is a
+    # deployment decision (ADR-081) rather than something a fresh install does.
+    #
+    # "vertex-claude" is Claude on Google Vertex AI in an EU region. It reuses
+    # the Google Cloud service account KMS already uses (GOOGLE_APPLICATION_
+    # CREDENTIALS), which needs the Vertex AI API enabled and access to the
+    # model in the project. See api.expenses.extraction.build.
+    extraction_provider: Literal["none", "vertex-claude"] = "none"
+    extraction_gcp_project: str | None = None
+    extraction_gcp_region: str = "europe-west4"
+    # A Vertex model id, e.g. "claude-haiku-4-5@20251001". Not validated here:
+    # what is offered depends on the project and region, and a wrong one fails
+    # as a recorded "failed" reading rather than blocking the capture.
+    extraction_model: str = "claude-haiku-4-5@20251001"
+    extraction_timeout_seconds: float = 30.0
+
     # --- Invoice delivery (FR-AR-005) ---
     # "collecting" is dev/test only: it assembles the message, keeps it, and
     # sends nothing. Production must set "smtp" - see
