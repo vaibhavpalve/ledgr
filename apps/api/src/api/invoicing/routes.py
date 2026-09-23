@@ -104,6 +104,7 @@ from api.invoicing.dunning_service import (
     ReminderNotDelivered,
 )
 from api.invoicing.duplicates import message_for as duplicate_message
+from api.invoicing.list_status import InvoiceListRow
 from api.invoicing.model import (
     AlreadyCredited,
     CreditNoteMismatch,
@@ -906,7 +907,7 @@ async def create_invoice(
 
 
 def _invoice_summary_json(
-    invoice: SalesInvoice, gross_amount: Decimal | None = None
+    invoice: SalesInvoice, row: InvoiceListRow | None = None
 ) -> dict[str, object]:
     """A list row - MOB-005's View tab.
 
@@ -916,12 +917,26 @@ def _invoice_summary_json(
     opening one specific document (`GET .../sales-invoices/{id}`), not to
     rendering a bounded list of them.
 
-    `gross_amount` is the one total a list needs, computed for the whole page in
-    a batch by `InvoicingService.gross_amounts`; a decimal string like every
-    other amount (NFR-031), or null where it cannot be worked out.
+    `row` carries what a list needs beyond the invoice, computed for the whole
+    page in batch by `InvoicingService.list_rows`: the gross amount (a decimal
+    string like every other amount, NFR-031, or null where the VAT cannot be
+    worked out), where the invoice stands with the money, when it was paid and
+    how it was sent. `status` stays draft/issued for existing clients;
+    `payment_status` is the receivables state a person scans a list for.
     """
     return {
-        "gross_amount": str(gross_amount) if gross_amount is not None else None,
+        "gross_amount": str(row.gross_amount) if row and row.gross_amount is not None else None,
+        "payment_status": row.payment_status.value if row else invoice.status.value,
+        "payment_date": row.payment_date.isoformat() if row and row.payment_date else None,
+        "send_channel": row.send_channel if row else None,
+        "send_status": row.send_status if row else None,
+        # The PDF's name as the person would save it; the rendering itself is
+        # fetched through `document_id` (FR-TPL-017), never by this string.
+        "attachment_name": (
+            f"{invoice.invoice_reference}.pdf"
+            if invoice.document_id and invoice.invoice_reference
+            else None
+        ),
         "id": str(invoice.id),
         "status": invoice.status.value,
         "invoice_number": invoice.invoice_number,
@@ -963,8 +978,10 @@ async def list_invoices(
     invoices = await service.list_invoices(
         administration_id=administration_id, actor_user_id=tenant.user_id, limit=limit
     )
-    gross = await service.gross_amounts(administration_id=administration_id, invoices=invoices)
-    return [_invoice_summary_json(invoice, gross.get(invoice.id)) for invoice in invoices]
+    rows = await service.list_rows(
+        administration_id=administration_id, invoices=invoices, today=date.today()
+    )
+    return [_invoice_summary_json(invoice, rows.get(invoice.id)) for invoice in invoices]
 
 
 async def get_invoice(

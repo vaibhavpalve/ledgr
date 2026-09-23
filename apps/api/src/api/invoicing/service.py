@@ -62,6 +62,12 @@ from api.invoicing.duplicates import (
     LineFingerprint,
     find_duplicates,
 )
+from api.invoicing.list_status import (
+    InvoiceListFacts,
+    InvoiceListRow,
+    PaymentStatus,
+    payment_status,
+)
 from api.invoicing.model import (
     AlreadyCredited,
     CreditNoteMismatch,
@@ -223,6 +229,12 @@ class InvoiceRepository(Protocol):
         self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]
     ) -> dict[uuid.UUID, list[InvoiceLineAmounts]]:
         """Treatment, role and net of every line of the given invoices, one query."""
+        ...
+
+    async def list_facts(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID], as_of: date
+    ) -> dict[uuid.UUID, InvoiceListFacts]:
+        """Money-state, last payment date and last delivery, one query each."""
         ...
 
 
@@ -659,6 +671,41 @@ class InvoicingService:
         return await self._repository.list_invoices(
             administration_id=administration_id, limit=limit
         )
+
+    async def list_rows(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        invoices: Sequence[SalesInvoice],
+        today: date,
+    ) -> dict[uuid.UUID, InvoiceListRow]:
+        """Gross amount, payment status, payment date and how it was sent, per row.
+
+        Like `gross_amounts`, takes invoices already authorised through
+        `list_invoices` and reads nothing beyond them.
+        """
+        gross = await self.gross_amounts(administration_id=administration_id, invoices=invoices)
+        facts = await self._repository.list_facts(
+            administration_id=administration_id,
+            invoice_ids=[i.id for i in invoices],
+            as_of=today,
+        )
+        rows: dict[uuid.UUID, InvoiceListRow] = {}
+        for invoice in invoices:
+            fact = facts.get(invoice.id, InvoiceListFacts())
+            status = payment_status(invoice, fact, today)
+            rows[invoice.id] = InvoiceListRow(
+                gross_amount=gross.get(invoice.id),
+                payment_status=status,
+                # Shown once there is something settled to date; an unpaid
+                # invoice has no payment date, not a blank one that looks lost.
+                payment_date=fact.last_paid_on
+                if status in (PaymentStatus.PAID, PaymentStatus.PARTIALLY_PAID)
+                else None,
+                send_channel=fact.delivery_channel,
+                send_status=fact.delivery_status,
+            )
+        return rows
 
     async def gross_amounts(
         self, *, administration_id: uuid.UUID, invoices: Sequence[SalesInvoice]

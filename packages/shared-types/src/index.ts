@@ -524,7 +524,28 @@ export interface SalesInvoiceSummaryView {
   readonly document_id: string | null;
   /** Decimal string (NFR-031); null where the VAT cannot be worked out. */
   readonly gross_amount: string | null;
+  /**
+   * Where the invoice stands with the money - what a list is scanned for.
+   * `status` above stays draft/issued; this is the receivables state.
+   */
+  readonly payment_status: SalesInvoicePaymentStatus;
+  /** Latest non-voided payment date; null until something is paid. */
+  readonly payment_date: string | null;
+  /** How the latest delivery went out; null if it was never sent. */
+  readonly send_channel: "email" | "peppol" | "post" | null;
+  readonly send_status: "queued" | "sent" | "delivered" | "bounced" | "failed" | null;
+  /** The issued PDF's name as it would be saved; null on a draft. */
+  readonly attachment_name: string | null;
 }
+
+export type SalesInvoicePaymentStatus =
+  | "draft"
+  | "credit_note"
+  | "open"
+  | "overdue"
+  | "partially_paid"
+  | "paid"
+  | "settled";
 
 /**
  * FR-AR-003's "what would stop this being issued" — `api.invoicing.routes.

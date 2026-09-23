@@ -37,6 +37,110 @@
       "nl": "Bedrag",
       "en": "Amount"
     },
+    "invoice.list.column.attachment": {
+      "note": "The issued PDF's file name. Empty on a draft: the PDF is rendered at issue (FR-TPL-017).",
+      "nl": "Bijlage",
+      "en": "Attachment"
+    },
+    "invoice.list.column.send_method": {
+      "nl": "Verzendwijze",
+      "en": "Send method"
+    },
+    "invoice.list.column.payment_date": {
+      "nl": "Betaaldatum",
+      "en": "Payment date"
+    },
+    "invoice.list.column.actions": {
+      "note": "Screen-reader label for the actions column, which has no visible heading.",
+      "nl": "Acties",
+      "en": "Actions"
+    },
+    "invoice.list.tabs": {
+      "nl": "Weergave van facturen",
+      "en": "Invoice views"
+    },
+    "invoice.list.tab.all": {
+      "nl": "Documenten",
+      "en": "Documents"
+    },
+    "invoice.list.tab.overdue": {
+      "nl": "Verlopen ({count})",
+      "en": "Overdue ({count})"
+    },
+    "invoice.list.tab.draft": {
+      "nl": "Concepten ({count})",
+      "en": "Drafts ({count})"
+    },
+    "invoice.list.empty_view": {
+      "nl": "Geen facturen in deze weergave.",
+      "en": "No invoices in this view."
+    },
+    "invoice.list.payment_status.draft": {
+      "nl": "Concept",
+      "en": "Draft"
+    },
+    "invoice.list.payment_status.open": {
+      "note": "Issued, not yet due, nothing paid. 'Open' is the ordinary word in both languages.",
+      "identical": true,
+      "nl": "Open",
+      "en": "Open"
+    },
+    "invoice.list.payment_status.overdue": {
+      "note": "Still owed and past its due date - the same test the ageing report and the reminder ladder use (FR-AR-012).",
+      "nl": "Verlopen",
+      "en": "Overdue"
+    },
+    "invoice.list.payment_status.partially_paid": {
+      "nl": "Deels betaald",
+      "en": "Partially paid"
+    },
+    "invoice.list.payment_status.paid": {
+      "nl": "Betaald",
+      "en": "Paid"
+    },
+    "invoice.list.payment_status.settled": {
+      "note": "Owes nothing but was not paid: credited in full or written off (FR-AR-013).",
+      "nl": "Afgehandeld",
+      "en": "Settled"
+    },
+    "invoice.list.payment_status.credit_note": {
+      "nl": "Creditnota",
+      "en": "Credit note"
+    },
+    "invoice.list.send.email": {
+      "nl": "E-mail",
+      "en": "Email"
+    },
+    "invoice.list.send.peppol": {
+      "note": "A product name; the same in both languages.",
+      "identical": true,
+      "nl": "Peppol",
+      "en": "Peppol"
+    },
+    "invoice.list.send.post": {
+      "note": "'Post' is the Dutch word for mail as well.",
+      "identical": true,
+      "nl": "Post",
+      "en": "Post"
+    },
+    "invoice.list.send.not_sent": {
+      "nl": "Niet verzonden",
+      "en": "Not sent"
+    },
+    "invoice.list.send.problem": {
+      "note": "The last delivery attempt bounced or failed. The user-facing sentence, never the provider's error (FR-UX-007).",
+      "nl": "{channel}: niet afgeleverd",
+      "en": "{channel}: not delivered"
+    },
+    "invoice.list.delete": {
+      "note": "Discards a DRAFT. An issued invoice cannot be deleted - its number is part of a gapless series (FR-AR-004).",
+      "nl": "Verwijderen",
+      "en": "Delete"
+    },
+    "invoice.list.delete_confirm": {
+      "nl": "Definitief verwijderen",
+      "en": "Delete permanently"
+    },
     "invoice.list.column.status": {
       "note": "Identical in both: 'status' is the ordinary Dutch word as well, and 'toestand' would be stilted.",
       "identical": true,

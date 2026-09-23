@@ -300,6 +300,59 @@
   text-align: left;
 }
 
+/* Views over one list: "Documents / Overdue (4) / Drafts (1)". */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-4);
+  margin-bottom: var(--ledgr-space-3);
+  border-bottom: 1px solid var(--ledgr-border-subtle);
+}
+
+.tabs__tab {
+  min-height: 0;
+  padding: var(--ledgr-space-2) 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ledgr-text-secondary);
+  font-size: var(--ledgr-type-small);
+  font-weight: var(--ledgr-weight-semibold);
+}
+
+.tabs__tab[aria-selected="true"] {
+  color: var(--ledgr-text-primary);
+  border-bottom-color: var(--ledgr-accent);
+}
+
+/* A chip led by a dot, so the status is not colour alone: the word is still there. */
+.chip--dot::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.table__actions {
+  white-space: nowrap;
+}
+
+.table__link-button {
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--ledgr-accent);
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.table__link-button--danger {
+  color: var(--ledgr-attention);
+}
+
 /* A drawer for detail beside a list (the ledger's entry detail). */
 .drawer-backdrop {
   position: fixed;

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.i18n.language import Language
 from api.invoicing.duplicates import DuplicateCandidate, InvoiceFingerprint, LineFingerprint
+from api.invoicing.list_status import InvoiceListFacts
 from api.invoicing.model import InvoiceLine, InvoiceStatus, SalesInvoice
 from api.invoicing.statutory import SupplierDetails
 from api.invoicing.vat import InvoiceLineAmounts
@@ -455,6 +456,70 @@ class SqlInvoiceRepository:
             {"admin": str(administration_id), "limit": limit},
         )
         return [_invoice(row) for row in result]
+
+    async def list_facts(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID], as_of: date
+    ) -> dict[uuid.UUID, InvoiceListFacts]:
+        """Money-state, last payment date and last delivery for a page of invoices.
+
+        Three queries for the whole page, not three per invoice. "Still owed"
+        comes from `invoicing.receivable_items` - the function the ageing report
+        and the dunning ladder use - so a row cannot say overdue where they say
+        it is not. Every table read here also carries the administration
+        predicate beside RLS (CLAUDE.md rule 1).
+        """
+        if not invoice_ids:
+            return {}
+        ids = [str(i) for i in invoice_ids]
+        params = {"admin": str(administration_id), "ids": ids}
+
+        owed = await self._session.execute(
+            text(
+                "SELECT invoice_id, paid, outstanding "
+                "  FROM invoicing.receivable_items(:admin, :as_of) "
+                " WHERE invoice_id = ANY(CAST(:ids AS uuid[]))"
+            ),
+            {**params, "as_of": as_of},
+        )
+        outstanding = {row.invoice_id: (row.paid, row.outstanding) for row in owed}
+
+        payments = await self._session.execute(
+            text(
+                "SELECT invoice_id, max(paid_on) AS paid_on "
+                "  FROM sales_invoice_payment "
+                " WHERE administration_id = :admin "
+                "   AND invoice_id = ANY(CAST(:ids AS uuid[])) "
+                "   AND voided_at IS NULL "
+                " GROUP BY invoice_id"
+            ),
+            params,
+        )
+        last_paid = {row.invoice_id: row.paid_on for row in payments}
+
+        deliveries = await self._session.execute(
+            text(
+                "SELECT DISTINCT ON (invoice_id) invoice_id, channel, status "
+                "  FROM invoice_delivery "
+                " WHERE administration_id = :admin "
+                "   AND invoice_id = ANY(CAST(:ids AS uuid[])) "
+                " ORDER BY invoice_id, requested_at DESC"
+            ),
+            params,
+        )
+        last_delivery = {row.invoice_id: (row.channel, row.status) for row in deliveries}
+
+        facts: dict[uuid.UUID, InvoiceListFacts] = {}
+        for invoice_id in invoice_ids:
+            paid, owing = outstanding.get(invoice_id, (Decimal(0), None))
+            channel, status = last_delivery.get(invoice_id, (None, None))
+            facts[invoice_id] = InvoiceListFacts(
+                outstanding=owing,
+                paid=paid,
+                last_paid_on=last_paid.get(invoice_id),
+                delivery_channel=channel,
+                delivery_status=status,
+            )
+        return facts
 
     async def line_amounts_for(
         self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]

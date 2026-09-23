@@ -127,6 +127,11 @@ export class SalesInvoiceApi {
     return this.call<SalesInvoiceSummaryView[]>("GET", this.basePath(administrationId));
   }
 
+  /** Drafts only: an issued number is part of a gapless series (FR-AR-004), so the server refuses. */
+  discardInvoice(administrationId: string, invoiceId: string): Promise<unknown> {
+    return this.call("DELETE", this.invoicePath(administrationId, invoiceId));
+  }
+
   getInvoice(administrationId: string, invoiceId: string): Promise<SalesInvoiceView> {
     return this.call<SalesInvoiceView>("GET", this.invoicePath(administrationId, invoiceId));
   }

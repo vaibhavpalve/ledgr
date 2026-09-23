@@ -44,6 +44,11 @@ const invoice = (id: string, date: string, ref: string | null): SalesInvoiceSumm
   customer_id: null,
   document_id: null,
   gross_amount: null,
+  payment_status: ref ? "open" : "draft",
+  payment_date: null,
+  send_channel: null,
+  send_status: null,
+  attachment_name: null,
 });
 
 function home(

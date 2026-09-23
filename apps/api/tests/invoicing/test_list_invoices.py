@@ -20,6 +20,7 @@ import pytest
 from api.audit.log import AuditLog
 from api.authz.service import AuthorizationService
 from api.i18n.language import Language
+from api.invoicing.list_status import InvoiceListFacts
 from api.invoicing.model import InvoiceStatus, NotAuthorizedToInvoice, SalesInvoice
 from api.invoicing.service import InvoicingService
 from api.invoicing.vat import InvoiceLineAmounts
@@ -76,6 +77,12 @@ class FakeListRepository:
     #: invoice id -> its lines' (treatment, role, net), for `gross_amounts`.
     lines: dict[uuid.UUID, list[InvoiceLineAmounts]] = field(default_factory=dict)
     rates: dict[str, Decimal | None] = field(default_factory=dict)
+    facts: dict[uuid.UUID, InvoiceListFacts] = field(default_factory=dict)
+
+    async def list_facts(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID], as_of: date
+    ) -> dict[uuid.UUID, InvoiceListFacts]:
+        return {i: self.facts[i] for i in invoice_ids if i in self.facts}
 
     async def line_amounts_for(
         self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]
