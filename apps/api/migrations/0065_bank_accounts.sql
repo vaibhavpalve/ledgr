@@ -129,7 +129,7 @@ create index bank_statement_import_account_idx
     on bank_statement_import(bank_account_id, imported_at);
 
 alter table bank_statement_import owner to ledgr_migrator;
-grant select, insert on bank_statement_import to ledgr_app;
+grant select, insert, update on bank_statement_import to ledgr_app;
 grant select on bank_statement_import to ledgr_ops;
 
 alter table bank_statement_import enable row level security;
@@ -139,6 +139,11 @@ create policy bank_statement_import_select on bank_statement_import
     for select using (app.has_administration_access(administration_id));
 create policy bank_statement_import_insert on bank_statement_import
     for insert with check (app.has_administration_access(administration_id));
+-- finalize_import() sets transaction_count/duplicate_count once the CSV parse
+-- completes, so ledgr_app needs UPDATE here too - not just insert-then-forget.
+create policy bank_statement_import_update on bank_statement_import
+    for update using (app.has_administration_access(administration_id))
+    with check (app.has_administration_access(administration_id));
 
 -- ===========================================================================
 -- bank_transaction

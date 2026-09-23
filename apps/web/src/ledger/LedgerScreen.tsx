@@ -469,7 +469,7 @@ function EntryDrawer({
   onClose: () => void;
 }) {
   const { t, money, date } = useI18n();
-  const { ledger, journal } = useServices();
+  const { ledger } = useServices();
   const [entry, setEntry] = useState<JournalEntryView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);

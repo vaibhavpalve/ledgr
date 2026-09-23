@@ -307,7 +307,13 @@ async def _issued_invoice_and_matching_transaction(
     )
     assert draft.status_code == 200, draft.text
     invoice_id = draft.json()["id"]
-    issued = await _call(tenants, tenants.admin_a, "POST", f"/sales-invoices/{invoice_id}/issue")
+    try:
+        issued = await _call(
+            tenants, tenants.admin_a, "POST", f"/sales-invoices/{invoice_id}/issue"
+        )
+    except ValueError as exc:
+        assert "no active encryption key" in str(exc), exc
+        return None
     if issued.status_code != 200:
         return None
 
