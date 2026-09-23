@@ -1300,6 +1300,49 @@ export interface DepreciationRunView {
   readonly posted_at: string;
 }
 
+/** `GET .../bank-accounts` rows — `api.bank.model.BankAccount`. */
+export interface BankAccountView {
+  readonly id: string;
+  readonly name: string;
+  readonly iban: string | null;
+  readonly currency: string;
+  readonly ledger_account_id: string;
+  readonly status: "active" | "archived";
+}
+
+/** `GET .../bank-accounts/{id}/transactions` rows — `api.bank.model.BankTransaction`. */
+export interface BankTransactionView {
+  readonly id: string;
+  readonly bank_account_id: string;
+  readonly booking_date: string;
+  readonly value_date: string | null;
+  readonly amount: string;
+  readonly currency: string;
+  readonly counterparty_name: string | null;
+  readonly counterparty_iban: string | null;
+  readonly description: string | null;
+  readonly status: "unmatched" | "reconciled";
+  readonly matched_sales_invoice_id: string | null;
+  readonly journal_entry_id: string | null;
+  readonly reconciled_at: string | null;
+}
+
+/** `GET .../bank-transactions/{id}/match-candidates` rows — `api.bank.model.MatchCandidate`. */
+export interface BankMatchCandidateView {
+  readonly invoice_id: string;
+  readonly invoice_reference: string | null;
+  readonly customer_name: string;
+  readonly outstanding: string;
+  readonly invoice_date: string;
+}
+
+/** `POST .../bank-accounts/{id}/import` — `api.bank.model.ImportResult`. */
+export interface BankImportResultView {
+  readonly import_id: string;
+  readonly transaction_count: number;
+  readonly duplicate_count: number;
+}
+
 /** One row of `GET .../periods` — `api.ledger.periods.Period`. */
 export interface PeriodView {
   readonly id: string;

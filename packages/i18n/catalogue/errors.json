@@ -943,6 +943,34 @@
     "errors.asset_fully_depreciated": {
       "nl": "Dit activum is al volledig afgeschreven; er is niets meer om te boeken.",
       "en": "This asset is already fully depreciated; there is nothing left to post."
+    },
+    "errors.bank_account_not_found": {
+      "note": "Answers 'no such bank account' and 'not yours' identically - the same RLS posture errors.customer_not_found takes.",
+      "nl": "Deze bankrekening bestaat niet.",
+      "en": "That bank account does not exist."
+    },
+    "errors.bank_transaction_not_found": {
+      "nl": "Deze banktransactie bestaat niet.",
+      "en": "That bank transaction does not exist."
+    },
+    "errors.bank_transaction_already_reconciled": {
+      "nl": "Deze banktransactie is al verwerkt.",
+      "en": "This bank transaction has already been reconciled."
+    },
+    "errors.bank_no_active_journal": {
+      "note": "FR-GL-002. No single active bank journal, or several - both mean there is no journal this reconciliation obviously belongs in.",
+      "nl": "Deze administratie heeft geen (of meer dan een) actief bankdagboek. Stel er precies een in.",
+      "en": "This administration has no single active bank journal. Set up exactly one."
+    },
+    "errors.bank_field_invalid": {
+      "note": "api.bank.model.InvalidBankField, covering every field-level refusal on the Bank screen. {field} travels beside the sentence as a machine field, never inside it.",
+      "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",
+      "en": "That value is not valid. Check the highlighted field."
+    },
+    "errors.bank_statement_invalid": {
+      "note": "api.bank.csv_parser.CsvStatementError: a missing required column, or a row whose date/amount could not be parsed. {detail} is the parser's own already-specific English reason, for a log rather than the sentence (FR-UX-007).",
+      "nl": "Dit bestand kan niet worden geimporteerd. Controleer of het de kolommen date, amount, counterparty_name, counterparty_iban en description heeft.",
+      "en": "This file could not be imported. Check that it has the columns date, amount, counterparty_name, counterparty_iban and description."
     }
   }
 }

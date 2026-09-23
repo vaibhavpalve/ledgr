@@ -24,6 +24,7 @@ from api.authz.engagement_revocation import (
 from api.authz.firm_access_repository import SqlEngagementRevocationRepository
 from api.authz.model import AuthorizationDecision
 from api.authz_middleware import AuthorizationEnforcementMiddleware
+from api.bank import routes as bank_routes
 from api.customers import routes as customer_routes
 from api.dashboard import routes as dashboard_routes
 from api.db import get_db_session
@@ -135,6 +136,11 @@ ledger_routes.register(app)
 # docstring for why depreciation/disposal post through LedgerService rather
 # than inventing a second write path into the ledger.
 asset_routes.register(app)
+# The Bank screen (migration 0065): bank accounts, CSV statement import and
+# reconciliation. Same registration reason; every permission it checks
+# already existed in Appendix A before this module did - see
+# api.bank.routes' module docstring.
+bank_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

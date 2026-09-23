@@ -1,15 +1,14 @@
 import { useI18n } from "@ledgr/i18n";
-import { Landmark, ChartColumn, type LucideIcon } from "lucide-react";
+import { ChartColumn, type LucideIcon } from "lucide-react";
 
 import { EmptyState, PageHeader } from "./ScreenState";
 
 /**
- * The four rail items whose screens do not exist yet, each with the label and
+ * The rail items whose screens do not exist yet, each with the label and
  * glyph the rail gives it. One list, so a screen that is later built is removed
  * here and from `App.tsx`'s routes and nothing else.
  */
 export const COMING_SOON = {
-  bank: { labelKey: "common.nav.bank", icon: Landmark },
   reports: { labelKey: "common.nav.reports", icon: ChartColumn },
 } as const satisfies Record<string, { labelKey: string; icon: LucideIcon }>;
 

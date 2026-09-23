@@ -153,16 +153,16 @@ describe("the old purchase addresses", () => {
 });
 
 describe("rail items whose screens are not built yet", () => {
-  it.each([
-    ["/bank", "coming-soon-bank", "Bank"],
-    ["/reports", "coming-soon-reports", "Reports"],
-  ])("%s says so instead of opening an empty screen", async (route, testId, name) => {
-    stubApi();
-    renderApp({ authenticated: true, language: "en" }, { route });
+  it.each([["/reports", "coming-soon-reports", "Reports"]])(
+    "%s says so instead of opening an empty screen",
+    async (route, testId, name) => {
+      stubApi();
+      renderApp({ authenticated: true, language: "en" }, { route });
 
-    const screenEl = await screen.findByTestId(testId);
-    expect(within(screenEl).getByRole("heading", { name })).toBeTruthy();
-    expect(screenEl.textContent).toContain("Not available yet");
-    expect(screenEl.textContent).toContain(`The ${name} screen has not been built yet`);
-  });
+      const screenEl = await screen.findByTestId(testId);
+      expect(within(screenEl).getByRole("heading", { name })).toBeTruthy();
+      expect(screenEl.textContent).toContain("Not available yet");
+      expect(screenEl.textContent).toContain(`The ${name} screen has not been built yet`);
+    },
+  );
 });

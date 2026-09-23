@@ -12,6 +12,7 @@ import {
   VerifyEmailRoute,
 } from "./auth/routes";
 import { AssetsScreen } from "./assets/AssetsScreen";
+import { BankScreen } from "./bank/BankScreen";
 import { ClientsScreen } from "./clients/ClientsScreen";
 import { CustomerDetailScreen } from "./customers/CustomerDetailScreen";
 import { CustomerFormScreen } from "./customers/CustomerFormScreen";
@@ -177,7 +178,7 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/customers/:customerId" element={<CustomerDetailScreen />} />
               <Route path="/customers/:customerId/edit" element={<CustomerFormScreen />} />
               <Route path="/ledger" element={<LedgerScreen />} />
-              <Route path="/bank" element={<ComingSoon section="bank" />} />
+              <Route path="/bank" element={<BankScreen />} />
               <Route path="/journal" element={<JournalScreen />} />
               <Route path="/assets" element={<AssetsScreen />} />
               <Route path="/reports" element={<ComingSoon section="reports" />} />

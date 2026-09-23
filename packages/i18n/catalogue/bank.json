@@ -1,0 +1,107 @@
+{
+  "namespace": "bank",
+  "note": "The /bank screen: bank accounts, CSV statement import, reconciliation. No live feed (PSD2/AISP) is built yet - import is a canonical CSV a person exports from their own bank (see api.bank.csv_parser and ADR-084).",
+  "messages": {
+    "bank.title": {
+      "identical": true,
+      "nl": "Bank",
+      "en": "Bank"
+    },
+    "bank.new_account": {
+      "nl": "Nieuwe bankrekening",
+      "en": "New bank account"
+    },
+    "bank.empty_title": {
+      "nl": "Nog geen bankrekening",
+      "en": "No bank account yet"
+    },
+    "bank.empty_body": {
+      "nl": "Voeg een bankrekening toe en importeer een bankafschrift om transacties te verwerken.",
+      "en": "Add a bank account and import a statement to process transactions."
+    },
+    "bank.accounts_label": {
+      "nl": "Bankrekeningen",
+      "en": "Bank accounts"
+    },
+    "bank.field.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "bank.field.iban": {
+      "nl": "IBAN (optioneel)",
+      "en": "IBAN (optional)"
+    },
+    "bank.field.ledger_account": {
+      "nl": "Grootboekrekening",
+      "en": "Ledger account"
+    },
+    "bank.field.filename": {
+      "nl": "Bestandsnaam",
+      "en": "Filename"
+    },
+    "bank.field.csv": {
+      "nl": "CSV-inhoud",
+      "en": "CSV content"
+    },
+    "bank.field.offset_account": {
+      "nl": "Tegenrekening",
+      "en": "Offset account"
+    },
+    "bank.status_label": {
+      "nl": "Weergave",
+      "en": "View"
+    },
+    "bank.status.unmatched": {
+      "nl": "Niet verwerkt",
+      "en": "Unmatched"
+    },
+    "bank.status.reconciled": {
+      "nl": "Verwerkt",
+      "en": "Reconciled"
+    },
+    "bank.import": {
+      "nl": "Afschrift importeren",
+      "en": "Import statement"
+    },
+    "bank.import_hint": {
+      "note": "Documents the canonical-CSV P0 substitute plainly, on the screen itself.",
+      "nl": "Er is nog geen directe bankkoppeling. Exporteer een CSV-bestand van uw bank met de kolommen date, amount, counterparty_name, counterparty_iban en description, en plak de inhoud hieronder.",
+      "en": "There is no direct bank connection yet. Export a CSV file from your bank with the columns date, amount, counterparty_name, counterparty_iban and description, and paste its contents below."
+    },
+    "bank.import_result": {
+      "note": "{count} new transactions, {duplicates} already-imported lines skipped.",
+      "nl": {
+        "one": "{count} transactie geimporteerd ({duplicates} al eerder geimporteerd).",
+        "other": "{count} transacties geimporteerd ({duplicates} al eerder geimporteerd)."
+      },
+      "en": {
+        "one": "{count} transaction imported ({duplicates} already imported before).",
+        "other": "{count} transactions imported ({duplicates} already imported before)."
+      }
+    },
+    "bank.no_transactions_title": {
+      "nl": "Geen transacties",
+      "en": "No transactions"
+    },
+    "bank.no_transactions_body": {
+      "nl": "Importeer een bankafschrift om transacties te zien.",
+      "en": "Import a bank statement to see transactions."
+    },
+    "bank.reconcile": {
+      "nl": "Verwerken",
+      "en": "Reconcile"
+    },
+    "bank.suggested_invoices": {
+      "nl": "Mogelijk deze factuur:",
+      "en": "Possibly this invoice:"
+    },
+    "bank.match": {
+      "nl": "Koppelen",
+      "en": "Match"
+    },
+    "bank.generic_reconcile_hint": {
+      "nl": "Geen van deze facturen? Kies een tegenrekening om deze transactie rechtstreeks te boeken.",
+      "en": "None of these invoices? Choose an offset account to post this transaction directly."
+    }
+  }
+}
