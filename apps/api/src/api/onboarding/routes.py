@@ -46,6 +46,7 @@ ride on the permissions `FiscalYearService` already evaluates.
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Sequence
 from datetime import date
@@ -110,6 +111,10 @@ from api.tenancy import TenantContext, get_tenant_context
 #: ledger without also holding Accountant on it" is satisfied by exactly this
 #: shape: an explicit, visible, administration-scoped grant. See ADR-059.
 FOUNDING_FIRM_ROLE = "Accountant"
+
+#: The free-text address columns of `administration` (0038). `country` is separate: it is a
+#: code, and NOT NULL.
+ADDRESS_TEXT_FIELDS = ("address_line1", "address_line2", "postal_code", "city")
 
 #: The five forms FR-ONB-004 names, spelled as a person would type them. The
 #: database's `legal_form_alias` accepts more (KvK vocabulary, abbreviations);
@@ -211,6 +216,15 @@ class UpdateAdministrationBody(BaseModel):
     #: (the owner) or from a draft the owner approved. Changing it needs the same
     #: authority as the rest of this route - a bookkeeper cannot switch the check off.
     invoice_approval_required: bool | None = None
+    #: FR-AR-003 / Wet OB art. 35a(1)(e). The seller's address is a statutory field on every
+    #: invoice, and the invoice gate refuses to issue without street, postcode and city. An
+    #: empty string clears a field (the line 2 is optional); `country` is ISO 3166-1 alpha-2
+    #: and cannot be cleared - the column is NOT NULL and defaults to NL (0038).
+    address_line1: str | None = None
+    address_line2: str | None = None
+    postal_code: str | None = None
+    city: str | None = None
+    country: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -844,6 +858,19 @@ async def update_administration(
         # A flag has no "cleared" state; null means "leave it", not "unset it".
         del changes["invoice_approval_required"]
 
+    if "country" in changes:
+        # NOT NULL with a CHECK (0038): null or empty means "leave it", anything else must be a
+        # two-letter code, normalised to upper case rather than refused for its casing.
+        country = (changes["country"] or "").strip().upper()
+        if not country:
+            del changes["country"]
+        elif not re.fullmatch(r"[A-Z]{2}", country):
+            raise problem(
+                request, 422, "errors.country_invalid", reason="country_invalid", field="country"
+            )
+        else:
+            changes["country"] = country
+
     assignments = {
         "legal_name": "legal_name = :legal_name",
         "trade_name": "trade_name = :trade_name",
@@ -852,11 +879,20 @@ async def update_administration(
         "iban": "iban = :iban",
         "sepa_creditor_id": "sepa_creditor_id = :sepa_creditor_id",
         "invoice_approval_required": "invoice_approval_required = :invoice_approval_required",
+        "address_line1": "address_line1 = :address_line1",
+        "address_line2": "address_line2 = :address_line2",
+        "postal_code": "postal_code = :postal_code",
+        "city": "city = :city",
+        "country": "country = :country",
     }
     set_clause = ", ".join(assignments[name] for name in changes)
     params: dict[str, object] = {"id": str(administration_id)}
     for name, value in changes.items():
-        if name in ("iban", "sepa_creditor_id"):
+        if name in ADDRESS_TEXT_FIELDS:
+            # Blank is missing, never stored: FR-AR-003 asks whether the field is present, and a
+            # stored "" or " " would read as present to anything that only checks for null.
+            params[name] = value.strip() or None if isinstance(value, str) else None
+        elif name in ("iban", "sepa_creditor_id"):
             # Already normalised above (or explicitly cleared) - stripping
             # again would be harmless but re-deriving the same value twice
             # invites the two derivations drifting apart.
@@ -877,7 +913,8 @@ async def update_administration(
         await session.execute(
             text(
                 "SELECT id, legal_name, trade_name, legal_form, kvk_number, vat_number, "
-                "       formatting_locale, iban, sepa_creditor_id, invoice_approval_required "
+                "       formatting_locale, iban, sepa_creditor_id, invoice_approval_required, "
+                "       address_line1, address_line2, postal_code, city, country "
                 "  FROM administration WHERE id = :id"
             ),
             {"id": str(administration_id)},
@@ -898,4 +935,9 @@ async def update_administration(
         "iban": row.iban,
         "sepa_creditor_id": row.sepa_creditor_id,
         "invoice_approval_required": row.invoice_approval_required,
+        "address_line1": row.address_line1,
+        "address_line2": row.address_line2,
+        "postal_code": row.postal_code,
+        "city": row.city,
+        "country": row.country,
     }

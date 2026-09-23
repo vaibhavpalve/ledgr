@@ -202,6 +202,39 @@
       "nl": "Voor de QR-code 'betalen met de bank' op uw facturen. Laat leeg om geen QR-code te tonen.",
       "en": "For the 'pay by bank' QR code on your invoices. Leave empty to show no QR code."
     },
+    "settings.organization.address": {
+      "note": "FR-AR-003. The seller's own address - not a customer's.",
+      "nl": "Bedrijfsadres",
+      "en": "Business address"
+    },
+    "settings.organization.address_hint": {
+      "note": "Why it is asked: an invoice cannot be issued without it, and the invoice screen sends people here.",
+      "nl": "Verplicht op elke factuur (art. 35a Wet OB). Zonder straat, postcode en plaats kunt u geen factuur uitgeven.",
+      "en": "Required on every invoice (art. 35a Wet OB). You cannot issue an invoice without the street, postcode and city."
+    },
+    "settings.organization.address_line1": {
+      "nl": "Straat en huisnummer",
+      "en": "Street and number"
+    },
+    "settings.organization.address_line2": {
+      "nl": "Adresregel 2 (optioneel)",
+      "en": "Address line 2 (optional)"
+    },
+    "settings.organization.postal_code": {
+      "note": "Identical in both: 'postcode' is the ordinary English word on a Dutch-facing form as well.",
+      "identical": true,
+      "nl": "Postcode",
+      "en": "Postcode"
+    },
+    "settings.organization.city": {
+      "nl": "Plaats",
+      "en": "City"
+    },
+    "settings.organization.country": {
+      "note": "A two-letter ISO code (NL, DE, BE), which is why the field is two characters wide.",
+      "nl": "Land (2 letters, bijv. NL)",
+      "en": "Country (2 letters, e.g. NL)"
+    },
     "settings.invoice_design.title": {
       "nl": "Factuurontwerp",
       "en": "Invoice design"

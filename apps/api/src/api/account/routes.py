@@ -34,8 +34,9 @@ caller's own memberships, the same argument /v1/switcher makes.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import date
+from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from sqlalchemy import text
@@ -108,6 +109,9 @@ def administration_entry_json(
     #: administration (api.onboarding.routes' own call site) has none yet,
     #: and settings' own PATCH .../administrations/{id} is where it is set.
     iban: str | None = None,
+    #: 0038's seller address, so Settings can show what is saved and an invoice's "your
+    #: address is missing" can be fixed where it says. Defaulted for the same reason as `iban`.
+    address: Mapping[str, str | None] | None = None,
 ) -> dict[str, object]:
     """The `administrations[]` entry of §4.1, also the body POST
     /v1/administrations answers with. Colour and initials come from the
@@ -124,6 +128,11 @@ def administration_entry_json(
         "vat_number": vat_number,
         "formatting_locale": formatting_locale,
         "iban": iban,
+        "address_line1": (address or {}).get("address_line1"),
+        "address_line2": (address or {}).get("address_line2"),
+        "postal_code": (address or {}).get("postal_code"),
+        "city": (address or {}).get("city"),
+        "country": (address or {}).get("country") or "NL",
         "colour": entry.badge.colour_token,
         "initials": entry.badge.initials,
         "role": entry.role_name,
@@ -148,6 +157,7 @@ def administration_entry_json(
 _OWNED_ADMINISTRATIONS_SQL = """
     SELECT a.id, a.legal_name, a.trade_name, a.legal_form, a.kvk_number, a.vat_number,
            a.formatting_locale, a.colour_token, a.iban,
+           a.address_line1, a.address_line2, a.postal_code, a.city, a.country,
            g.role_name, g.role_is_system
     FROM administration a
     LEFT JOIN LATERAL (
@@ -173,7 +183,7 @@ class _AdministrationRow:
     """What both branches below reduce to before rendering: the badge plus
     the three columns the badge does not carry."""
 
-    __slots__ = ("entry", "formatting_locale", "iban", "legal_form", "vat_number")
+    __slots__ = ("address", "entry", "formatting_locale", "iban", "legal_form", "vat_number")
 
     def __init__(
         self,
@@ -183,12 +193,14 @@ class _AdministrationRow:
         vat_number: str | None,
         formatting_locale: str,
         iban: str | None = None,
+        address: Mapping[str, str | None] | None = None,
     ) -> None:
         self.entry = entry
         self.legal_form = legal_form
         self.vat_number = vat_number
         self.formatting_locale = formatting_locale
         self.iban = iban
+        self.address = address
 
 
 async def _owned_administrations(
@@ -222,28 +234,48 @@ async def _owned_administrations(
                 vat_number=row.vat_number,
                 formatting_locale=row.formatting_locale,
                 iban=row.iban,
+                address=_address_of(row),
             )
         )
     return rows
 
 
+def _address_of(row: Any) -> dict[str, str | None]:
+    return {
+        "address_line1": row.address_line1,
+        "address_line2": row.address_line2,
+        "postal_code": row.postal_code,
+        "city": row.city,
+        "country": row.country,
+    }
+
+
 async def _administration_details(
     session: AsyncSession, administration_ids: Sequence[uuid.UUID]
-) -> dict[uuid.UUID, tuple[str | None, str | None, str, str | None]]:
-    """legal_form, vat_number, formatting_locale and iban for the switcher's
-    entries, which carry a badge and not the whole row. RLS scopes the read.
+) -> dict[uuid.UUID, tuple[str | None, str | None, str, str | None, dict[str, str | None]]]:
+    """legal_form, vat_number, formatting_locale, iban and the seller address for the
+    switcher's entries, which carry a badge and not the whole row. RLS scopes the read.
     """
     if not administration_ids:
         return {}
     result = await session.execute(
         text(
-            "SELECT id, legal_form, vat_number, formatting_locale, iban FROM administration "
+            "SELECT id, legal_form, vat_number, formatting_locale, iban, "
+            "       address_line1, address_line2, postal_code, city, country "
+            "FROM administration "
             "WHERE id = ANY(cast(:ids as uuid[]))"
         ),
         {"ids": [str(administration_id) for administration_id in administration_ids]},
     )
     return {
-        row.id: (row.legal_form, row.vat_number, row.formatting_locale, row.iban) for row in result
+        row.id: (
+            row.legal_form,
+            row.vat_number,
+            row.formatting_locale,
+            row.iban,
+            _address_of(row),
+        )
+        for row in result
     }
 
 
@@ -317,8 +349,9 @@ async def get_me(
         )
         rows = []
         for entry in entries:
-            legal_form, vat_number, formatting_locale, iban = details.get(
-                entry.badge.administration_id, (None, None, DEFAULT_FORMATTING_LOCALE, None)
+            legal_form, vat_number, formatting_locale, iban, address = details.get(
+                entry.badge.administration_id,
+                (None, None, DEFAULT_FORMATTING_LOCALE, None, {}),
             )
             rows.append(
                 _AdministrationRow(
@@ -327,6 +360,7 @@ async def get_me(
                     vat_number=vat_number,
                     formatting_locale=formatting_locale,
                     iban=iban,
+                    address=address,
                 )
             )
     else:
@@ -357,6 +391,7 @@ async def get_me(
                 fiscal_years=years,
                 today=today,
                 iban=row.iban,
+                address=row.address,
             )
         )
 

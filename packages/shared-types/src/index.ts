@@ -1077,6 +1077,16 @@ export interface AdministrationView {
   readonly formatting_locale: string;
   /** SI-02: the administration's own bank account, for the "pay by bank" QR code on an invoice PDF. `null` means no QR code is rendered. */
   readonly iban: string | null;
+  /**
+   * The seller's own address (FR-AR-003, Wet OB art. 35a(1)(e)): every invoice must show it,
+   * and issuing is refused without street, postcode and city. `null` means not entered yet.
+   */
+  readonly address_line1: string | null;
+  readonly address_line2: string | null;
+  readonly postal_code: string | null;
+  readonly city: string | null;
+  /** ISO 3166-1 alpha-2; never null (defaults to NL). */
+  readonly country: string;
   readonly colour: ClientColour;
   readonly initials: string;
   readonly role: string;

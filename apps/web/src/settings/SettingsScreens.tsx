@@ -661,6 +661,34 @@ export function OrganizationSettings() {
   );
 }
 
+const ADDRESS_FIELDS = [
+  "address_line1",
+  "address_line2",
+  "postal_code",
+  "city",
+  "country",
+] as const;
+type AddressField = (typeof ADDRESS_FIELDS)[number];
+type AddressForm = Record<AddressField, string>;
+
+const ADDRESS_AUTOCOMPLETE: Record<AddressField, string> = {
+  address_line1: "address-line1",
+  address_line2: "address-line2",
+  postal_code: "postal-code",
+  city: "address-level2",
+  country: "country",
+};
+
+function savedAddress(administration: AdministrationView): AddressForm {
+  return {
+    address_line1: administration.address_line1 ?? "",
+    address_line2: administration.address_line2 ?? "",
+    postal_code: administration.postal_code ?? "",
+    city: administration.city ?? "",
+    country: administration.country,
+  };
+}
+
 function AdministrationEditor({
   administration,
   onSaved,
@@ -675,15 +703,21 @@ function AdministrationEditor({
   const [vatNumber, setVatNumber] = useState(administration.vat_number ?? "");
   const [iban, setIban] = useState(administration.iban ?? "");
   const [locale, setLocale] = useState(administration.formatting_locale);
+  // FR-AR-003: the seller's address, required on every invoice. Kept as one object so
+  // the dirty check and the patch below iterate the same five fields.
+  const saved = savedAddress(administration);
+  const [address, setAddress] = useState<AddressForm>(saved);
   const [state, setState] = useState<"idle" | "saving" | "saved">("idle");
   const [problem, setProblem] = useState<string | null>(null);
 
+  const addressChanged = ADDRESS_FIELDS.filter((field) => address[field] !== saved[field]);
   const dirty =
     legalName !== administration.legal_name ||
     tradeName !== (administration.trade_name ?? "") ||
     vatNumber !== (administration.vat_number ?? "") ||
     iban !== (administration.iban ?? "") ||
-    locale !== administration.formatting_locale;
+    locale !== administration.formatting_locale ||
+    addressChanged.length > 0;
 
   const submit = async () => {
     setState("saving");
@@ -701,6 +735,13 @@ function AdministrationEditor({
           ? { iban: iban.trim() === "" ? null : iban.trim() }
           : {}),
         ...(locale !== administration.formatting_locale ? { formatting_locale: locale } : {}),
+        ...Object.fromEntries(
+          addressChanged.map((field) => [
+            field,
+            // A blank clears a text field; the country is a code and is never cleared.
+            field === "country" ? address.country.trim() : address[field].trim() || null,
+          ]),
+        ),
       });
       setState("saved");
       onSaved();
@@ -784,6 +825,24 @@ function AdministrationEditor({
           />
           <p className="caption">{t("settings.organization.iban_hint")}</p>
         </div>
+        <fieldset className="form__field form__field--wide" data-testid="administration-address">
+          <legend>{t("settings.organization.address")}</legend>
+          <p className="caption">{t("settings.organization.address_hint")}</p>
+          {ADDRESS_FIELDS.map((field) => (
+            <div className="form__field" key={field}>
+              <label htmlFor={`${prefix}-${field}`}>{t(`settings.organization.${field}`)}</label>
+              <input
+                id={`${prefix}-${field}`}
+                type="text"
+                value={address[field]}
+                autoComplete={ADDRESS_AUTOCOMPLETE[field]}
+                maxLength={field === "country" ? 2 : undefined}
+                data-testid={`administration-${field.replace("_", "-")}`}
+                onChange={(e) => setAddress((current) => ({ ...current, [field]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </fieldset>
         <div className="form__field">
           {/* Same list, same reason, one source: see FormattingLocaleField's
               own docstring for the locale this screen used to offer and the

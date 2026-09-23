@@ -52,6 +52,13 @@ export interface AdministrationPatch {
   formatting_locale?: string;
   /** SI-02. Validated server-side (mod-97 checksum); `null` clears it. */
   iban?: string | null;
+  /** FR-AR-003. The seller's address on every invoice; `null` (or blank) clears a field. */
+  address_line1?: string | null;
+  address_line2?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
+  /** Two-letter ISO code. Cannot be cleared; the server normalises the case. */
+  country?: string;
 }
 
 export class OnboardingApi {
