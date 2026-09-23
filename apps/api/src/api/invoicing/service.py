@@ -52,6 +52,7 @@ from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditO
 from api.authz.model import AdministrationScope, AuthorizationRequest, ResourceAttributes
 from api.authz.service import AuthorizationService
 from api.customers.service import InvoiceCustomerSnapshot
+from api.expenses.vat import VatError
 from api.i18n.language import DEFAULT_LANGUAGE, Language
 from api.invoicing.duplicates import (
     WINDOW_DAYS,
@@ -216,6 +217,12 @@ class InvoiceRepository(Protocol):
         half-finished mobile-created invoice is resumable rather than
         disappearing until issued.
         """
+        ...
+
+    async def line_amounts_for(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, list[InvoiceLineAmounts]]:
+        """Treatment, role and net of every line of the given invoices, one query."""
         ...
 
 
@@ -652,6 +659,37 @@ class InvoicingService:
         return await self._repository.list_invoices(
             administration_id=administration_id, limit=limit
         )
+
+    async def gross_amounts(
+        self, *, administration_id: uuid.UUID, invoices: Sequence[SalesInvoice]
+    ) -> dict[uuid.UUID, Decimal | None]:
+        """Gross (net + VAT) per invoice, for a list row - the same `totals_for`
+        the detail view uses, so a list and the invoice it opens cannot differ.
+
+        Takes invoices the caller has already had authorised through
+        `list_invoices`; it reads nothing beyond them. Rates are resolved once per
+        (treatment, invoice date) rather than per invoice. An invoice whose VAT
+        cannot be worked out (a rate the ruleset does not cover on its date) maps
+        to None - a list shows "no amount" rather than a wrong one (CMP-014).
+        """
+        lines = await self._repository.line_amounts_for(
+            administration_id=administration_id, invoice_ids=[i.id for i in invoices]
+        )
+        rate_cache: dict[tuple[str, date], dict[str, Decimal | None]] = {}
+        gross: dict[uuid.UUID, Decimal | None] = {}
+        for invoice in invoices:
+            amounts = lines.get(invoice.id, [])
+            treatments = sorted({a.treatment for a in amounts})
+            key = (",".join(treatments), invoice.invoice_date)
+            if key not in rate_cache:
+                rate_cache[key] = await self._repository.rates_on(
+                    treatments=treatments, on_date=invoice.invoice_date
+                )
+            try:
+                gross[invoice.id] = totals_for(amounts, rate_for=rate_cache[key]).gross
+            except VatError:
+                gross[invoice.id] = None
+        return gross
 
     async def _build_view(self, invoice: SalesInvoice) -> InvoiceView:
         treatments = sorted({line.vat_treatment for line in invoice.lines})

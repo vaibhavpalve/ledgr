@@ -10,8 +10,10 @@ expense form's tests already use.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 
 import pytest
 
@@ -20,6 +22,8 @@ from api.authz.service import AuthorizationService
 from api.i18n.language import Language
 from api.invoicing.model import InvoiceStatus, NotAuthorizedToInvoice, SalesInvoice
 from api.invoicing.service import InvoicingService
+from api.invoicing.vat import InvoiceLineAmounts
+from api.vat.rules import TreatmentRole
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
@@ -69,6 +73,20 @@ class FakeListRepository:
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None:
         return self.organizations.get(administration_id)
 
+    #: invoice id -> its lines' (treatment, role, net), for `gross_amounts`.
+    lines: dict[uuid.UUID, list[InvoiceLineAmounts]] = field(default_factory=dict)
+    rates: dict[str, Decimal | None] = field(default_factory=dict)
+
+    async def line_amounts_for(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, list[InvoiceLineAmounts]]:
+        return {i: self.lines[i] for i in invoice_ids if i in self.lines}
+
+    async def rates_on(
+        self, *, treatments: Sequence[str], on_date: date
+    ) -> dict[str, Decimal | None]:
+        return {t: self.rates.get(t) for t in treatments}
+
 
 def _service(
     repository: FakeListRepository, *, role: str = "Bookkeeper"
@@ -115,6 +133,36 @@ async def test_list_invoices_includes_drafts() -> None:
     )
 
     assert {invoice.status for invoice in result} == {InvoiceStatus.DRAFT, InvoiceStatus.ISSUED}
+
+
+async def test_gross_amount_is_net_plus_vat_per_invoice() -> None:
+    """The list shows the same total the detail screen does: 100.00 + 21% = 121.00,
+    two lines in one treatment summed before VAT is rounded, an invoice with no
+    lines is 0.00, and a rate the ruleset lacks gives None rather than a guess.
+    """
+    repository = FakeListRepository(rates={"NL_STANDARD": Decimal("21"), "NL_GAP": None})
+    service, _, administration = _service(repository)
+    organization = uuid.uuid4()
+    priced = _invoice(administration, organization)
+    empty = _invoice(administration, organization)
+    unrated = _invoice(administration, organization)
+    repository.lines[priced.id] = [
+        InvoiceLineAmounts(
+            treatment="NL_STANDARD", role=TreatmentRole.STANDARD, net=Decimal("60.00")
+        ),
+        InvoiceLineAmounts(
+            treatment="NL_STANDARD", role=TreatmentRole.STANDARD, net=Decimal("40.00")
+        ),
+    ]
+    repository.lines[unrated.id] = [
+        InvoiceLineAmounts(treatment="NL_GAP", role=TreatmentRole.STANDARD, net=Decimal("10.00")),
+    ]
+
+    gross = await service.gross_amounts(
+        administration_id=administration, invoices=[priced, empty, unrated]
+    )
+
+    assert gross == {priced.id: Decimal("121.00"), empty.id: Decimal("0.00"), unrated.id: None}
 
 
 async def test_a_role_without_create_sales_invoice_cannot_list() -> None:

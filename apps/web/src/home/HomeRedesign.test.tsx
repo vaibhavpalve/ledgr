@@ -43,6 +43,7 @@ const invoice = (id: string, date: string, ref: string | null): SalesInvoiceSumm
   customer_name: "Studio Noord",
   customer_id: null,
   document_id: null,
+  gross_amount: null,
 });
 
 function home(

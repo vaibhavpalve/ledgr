@@ -522,6 +522,8 @@ export interface SalesInvoiceSummaryView {
   readonly customer_name: string;
   readonly customer_id: string | null;
   readonly document_id: string | null;
+  /** Decimal string (NFR-031); null where the VAT cannot be worked out. */
+  readonly gross_amount: string | null;
 }
 
 /**

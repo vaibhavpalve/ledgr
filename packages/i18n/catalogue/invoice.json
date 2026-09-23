@@ -32,6 +32,11 @@
       "nl": "Vervaldatum",
       "en": "Due date"
     },
+    "invoice.list.column.amount": {
+      "note": "Gross, VAT included - the total the customer pays, matching the detail screen's total.",
+      "nl": "Bedrag",
+      "en": "Amount"
+    },
     "invoice.list.column.status": {
       "note": "Identical in both: 'status' is the ordinary Dutch word as well, and 'toestand' would be stilted.",
       "identical": true,

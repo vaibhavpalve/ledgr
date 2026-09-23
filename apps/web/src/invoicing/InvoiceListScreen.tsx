@@ -14,15 +14,14 @@ import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/Sc
  * first-class (a half-finished invoice is resumable, ADR-046 §3), with a
  * status chip per row and the one primary action: a new invoice.
  *
- * The summary row (`_invoice_summary_json`) carries no amount — the per-
- * invoice reads are what the list endpoint deliberately skips — so this
- * list shows number, customer, dates and status, and the amount lives on
- * the detail screen. A `gross_amount` on the summary is the one ask this
- * screen has of the backend (recorded in the report), and the column is
- * ready for it.
+ * The summary row (`_invoice_summary_json`) carries `gross_amount`, computed
+ * server-side by the same VAT arithmetic as the detail screen, so a row and
+ * the invoice it opens agree. It is null where the VAT cannot be worked out;
+ * that shows as a dash rather than a wrong figure. The string goes through
+ * `money()` untouched (NFR-031).
  */
 export function InvoiceListScreen() {
-  const { t, date } = useI18n();
+  const { t, date, money } = useI18n();
   const navigate = useNavigate();
   const { administration } = useAdministration();
   const { invoices } = useServices();
@@ -88,6 +87,9 @@ export function InvoiceListScreen() {
                 <th scope="col">{t("invoice.list.column.customer")}</th>
                 <th scope="col">{t("invoice.list.column.date")}</th>
                 <th scope="col">{t("invoice.list.column.due")}</th>
+                <th scope="col" className="table__num">
+                  {t("invoice.list.column.amount")}
+                </th>
                 <th scope="col">{t("invoice.list.column.status")}</th>
               </tr>
             </thead>
@@ -108,6 +110,9 @@ export function InvoiceListScreen() {
                   <td className="ledgr-num">{date(invoice.invoice_date)}</td>
                   <td className="ledgr-num table__muted">
                     {invoice.due_date === null ? "—" : date(invoice.due_date)}
+                  </td>
+                  <td className="table__num" data-testid="invoice-amount">
+                    {invoice.gross_amount === null ? "—" : money(invoice.gross_amount)}
                   </td>
                   <td>
                     <InvoiceStatusChip status={invoice.status} />

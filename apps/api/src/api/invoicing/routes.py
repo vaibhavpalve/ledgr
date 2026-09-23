@@ -905,16 +905,23 @@ async def create_invoice(
     return _view_json(view, request_language(request))
 
 
-def _invoice_summary_json(invoice: SalesInvoice) -> dict[str, object]:
+def _invoice_summary_json(
+    invoice: SalesInvoice, gross_amount: Decimal | None = None
+) -> dict[str, object]:
     """A list row - MOB-005's View tab.
 
     Deliberately lighter than `_view_json`: no VAT groups, no
-    `statutory_failures`, no computed totals. Those come from `_build_view`,
-    which resolves rates and runs FR-AR-003's gate per invoice - a per-invoice
-    cost that belongs to opening one specific document (`GET
-    .../sales-invoices/{id}`), not to rendering a bounded list of them.
+    `statutory_failures`. Those come from `_build_view`, which resolves rates
+    and runs FR-AR-003's gate per invoice - a per-invoice cost that belongs to
+    opening one specific document (`GET .../sales-invoices/{id}`), not to
+    rendering a bounded list of them.
+
+    `gross_amount` is the one total a list needs, computed for the whole page in
+    a batch by `InvoicingService.gross_amounts`; a decimal string like every
+    other amount (NFR-031), or null where it cannot be worked out.
     """
     return {
+        "gross_amount": str(gross_amount) if gross_amount is not None else None,
         "id": str(invoice.id),
         "status": invoice.status.value,
         "invoice_number": invoice.invoice_number,
@@ -956,7 +963,8 @@ async def list_invoices(
     invoices = await service.list_invoices(
         administration_id=administration_id, actor_user_id=tenant.user_id, limit=limit
     )
-    return [_invoice_summary_json(invoice) for invoice in invoices]
+    gross = await service.gross_amounts(administration_id=administration_id, invoices=invoices)
+    return [_invoice_summary_json(invoice, gross.get(invoice.id)) for invoice in invoices]
 
 
 async def get_invoice(

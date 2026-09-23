@@ -20,6 +20,7 @@ from api.i18n.language import Language
 from api.invoicing.duplicates import DuplicateCandidate, InvoiceFingerprint, LineFingerprint
 from api.invoicing.model import InvoiceLine, InvoiceStatus, SalesInvoice
 from api.invoicing.statutory import SupplierDetails
+from api.invoicing.vat import InvoiceLineAmounts
 from api.vat.rules import EffectiveRules, TreatmentRole
 from api.vat.rules_repository import SqlVatRulesRepository
 
@@ -454,3 +455,36 @@ class SqlInvoiceRepository:
             {"admin": str(administration_id), "limit": limit},
         )
         return [_invoice(row) for row in result]
+
+    async def line_amounts_for(
+        self, *, administration_id: uuid.UUID, invoice_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, list[InvoiceLineAmounts]]:
+        """What `totals_for` needs per invoice, for many invoices in one query.
+
+        Just treatment, role and net - not the full line - so a list row can show
+        its gross amount without the per-invoice `get()` a list deliberately
+        avoids. The administration predicate is kept beside the RLS policy: a
+        second line of defence, never the only one.
+        """
+        if not invoice_ids:
+            return {}
+        result = await self._session.execute(
+            text(
+                """
+                SELECT l.invoice_id, l.vat_treatment, l.line_net, t.role
+                  FROM sales_invoice_line l
+                  JOIN vat_treatment t ON t.code = l.vat_treatment
+                 WHERE l.invoice_id = ANY(CAST(:ids AS uuid[]))
+                   AND l.administration_id = :admin
+                """
+            ),
+            {"ids": [str(i) for i in invoice_ids], "admin": str(administration_id)},
+        )
+        amounts: dict[uuid.UUID, list[InvoiceLineAmounts]] = {}
+        for row in result:
+            amounts.setdefault(row.invoice_id, []).append(
+                InvoiceLineAmounts(
+                    treatment=row.vat_treatment, role=TreatmentRole(row.role), net=row.line_net
+                )
+            )
+        return amounts
