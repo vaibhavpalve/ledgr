@@ -78,6 +78,18 @@ def checksum(migration: Path) -> str:
     return hashlib.sha256(migration.read_text(encoding="utf-8-sig").encode("utf-8")).hexdigest()
 
 
+def accepted_checksums(migration: Path) -> set[str]:
+    """Every checksum that means "this file is unchanged".
+
+    Rows recorded on 2026-09-19..20 (0052-0061) hash the file's bytes with the
+    CRLF it had on a Windows checkout, whereas `checksum` hashes the
+    newline-normalised text. Same SQL, different digest - flagging that as an
+    edit made production refuse every later migration. A line-ending difference
+    is not an edit, so the raw-bytes digest is accepted as well.
+    """
+    return {checksum(migration), hashlib.sha256(migration.read_bytes()).hexdigest()}
+
+
 def _migrations() -> list[Path]:
     return sorted(MIGRATIONS_DIR.glob("*.sql"))
 
@@ -157,7 +169,9 @@ async def main() -> None:
         # Checked before anything is applied: a tampered history is a reason to
         # stop and look, not to carry on adding to it.
         drifted = [
-            m.name for m in migrations if m.name in applied and applied[m.name] != checksum(m)
+            m.name
+            for m in migrations
+            if m.name in applied and applied[m.name] not in accepted_checksums(m)
         ]
         if drifted:
             print(

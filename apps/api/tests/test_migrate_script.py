@@ -121,6 +121,23 @@ def test_editing_a_migration_changes_its_checksum(tmp_path: Path) -> None:
     assert module.checksum(migration) != before
 
 
+def test_a_crlf_digest_recorded_earlier_is_not_mistaken_for_an_edit(tmp_path: Path) -> None:
+    """0052-0061 were recorded from the CRLF bytes; the same file must still
+    read as unchanged, while a real edit must not.
+    """
+    import hashlib
+
+    module = _load()
+    migration = tmp_path / "0001_a.sql"
+    migration.write_bytes(b"begin;\r\ncommit;\r\n")
+    recorded_then = hashlib.sha256(migration.read_bytes()).hexdigest()
+
+    assert recorded_then in module.accepted_checksums(migration)
+
+    migration.write_bytes(b"begin;\r\nalter table t add column c int;\r\ncommit;\r\n")
+    assert recorded_then not in module.accepted_checksums(migration)
+
+
 def test_the_real_migrations_sort_into_numeric_order() -> None:
     """Zero-padded names make lexicographic order the applied order. A file
     added as `051_x.sql` would sort before `0001_` and silently reorder
