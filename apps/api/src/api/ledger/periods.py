@@ -45,7 +45,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.authz.model import (
@@ -55,6 +55,9 @@ from api.authz.model import (
 )
 from api.authz.service import AuthorizationService
 from api.ledger.model import LedgerError
+
+if TYPE_CHECKING:  # pragma: no cover
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 #: Appendix A, "Lock / unlock periods": Full for Owner and Accountant only.
 LOCK_PERIOD = ("lock", "period")
@@ -167,6 +170,10 @@ class PeriodRepository(Protocol):
     """
 
     async def period(self, period_id: uuid.UUID) -> Period | None: ...
+
+    async def periods_for_year(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID
+    ) -> Sequence[Period]: ...
 
     async def organization_of(self, administration_id: uuid.UUID) -> uuid.UUID: ...
 
@@ -527,6 +534,18 @@ class PeriodService:
     async def period(self, period_id: uuid.UUID) -> Period | None:
         return await self._repository.period(period_id)
 
+    async def periods_for_year(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID
+    ) -> Sequence[Period]:
+        """The Journal screen's period picker and lock/unlock list. A plain
+        read, like `period()` above - the route's own `require_permission`
+        gates it, the same way `get_trial_balance` gates `LedgerService.
+        trial_balance` without PeriodService checking anything itself.
+        """
+        return await self._repository.periods_for_year(
+            administration_id=administration_id, fiscal_year_id=fiscal_year_id
+        )
+
     async def open_suppletie_for(self, period_id: uuid.UUID) -> Suppletie | None:
         return await self._repository.open_suppletie_for(period_id)
 
@@ -535,3 +554,19 @@ class PeriodService:
         if period is None:
             raise PeriodError(f"period {period_id} does not exist")
         return period
+
+
+def build_period_service(
+    session: AsyncSession, authorization: AuthorizationService, audit_log: AuditLog
+) -> PeriodService:
+    """A wired PeriodService, for callers outside this bounded context - the
+    same widening `api.ledger.service.build_ledger_service` makes, and for
+    the same reason: a caller that reached for `SqlPeriodRepository` directly
+    would have reached past the narrow API this class is.
+
+    The repository import is function-local so the only place naming it
+    stays this one line.
+    """
+    from api.ledger.periods_repository import SqlPeriodRepository
+
+    return PeriodService(SqlPeriodRepository(session), authorization, audit_log)

@@ -31,6 +31,7 @@ import customersFile from "../catalogue/customers.json";
 import errorsFile from "../catalogue/errors.json";
 import invoiceFile from "../catalogue/invoice.json";
 import glossaryFile from "../catalogue/glossary.json";
+import journalFile from "../catalogue/journal.json";
 import ledgerFile from "../catalogue/ledger.json";
 import mobileFile from "../catalogue/mobile.json";
 import onboardingFile from "../catalogue/onboarding.json";
@@ -88,6 +89,7 @@ const FILES: readonly CatalogueFile[] = [
   onboardingFile as CatalogueFile,
   settingsFile as CatalogueFile,
   ledgerFile as CatalogueFile,
+  journalFile as CatalogueFile,
   customersFile as CatalogueFile,
 ];
 

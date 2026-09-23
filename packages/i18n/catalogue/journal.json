@@ -1,0 +1,171 @@
+{
+  "namespace": "journal",
+  "note": "The /journal screen: FR-GL-001/004's manual entry (memoriaal), FR-GL-003's reversal trigger, and FR-GL-007's period lock/unlock. 'Memoriaal' is the word on screen (see common.nav.journal); journal entries booked from neither a purchase, a sale nor the bank.",
+  "messages": {
+    "journal.title": {
+      "note": "Kept Dutch in the English UI per glossary.json's memoriaal entry, the same way ledger.title keeps grootboek.",
+      "identical": true,
+      "nl": "Memoriaal",
+      "en": "Memoriaal"
+    },
+    "journal.tab.new": {
+      "nl": "Nieuwe boeking",
+      "en": "New entry"
+    },
+    "journal.tab.periods": {
+      "nl": "Periodes",
+      "en": "Periods"
+    },
+    "journal.form.no_journal_title": {
+      "nl": "Geen memoriaal dagboek",
+      "en": "No memorial journal"
+    },
+    "journal.form.no_journal_body": {
+      "note": "FR-GL-002. Mirrors errors.no_purchase_journal's shape: refused rather than guessed.",
+      "nl": "Deze administratie heeft geen memoriaal dagboek om handmatige boekingen in vast te leggen. Laat uw boekhouder er een aanmaken.",
+      "en": "This administration has no memorial journal to record manual entries in. Ask your bookkeeper to create one."
+    },
+    "journal.form.journal_label": {
+      "nl": "Dagboek",
+      "en": "Journal"
+    },
+    "journal.form.period_label": {
+      "nl": "Periode",
+      "en": "Period"
+    },
+    "journal.form.date_label": {
+      "nl": "Boekingsdatum",
+      "en": "Entry date"
+    },
+    "journal.form.description_label": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "journal.form.reference_label": {
+      "nl": "Referentie (optioneel)",
+      "en": "Reference (optional)"
+    },
+    "journal.form.line.account_label": {
+      "nl": "Rekening",
+      "en": "Account"
+    },
+    "journal.form.line.description_label": {
+      "nl": "Omschrijving regel (optioneel)",
+      "en": "Line description (optional)"
+    },
+    "journal.form.line.debit_label": {
+      "nl": "Debet",
+      "en": "Debit"
+    },
+    "journal.form.line.credit_label": {
+      "identical": true,
+      "nl": "Credit",
+      "en": "Credit"
+    },
+    "journal.form.line.remove": {
+      "nl": "Regel verwijderen",
+      "en": "Remove line"
+    },
+    "journal.form.add_line": {
+      "nl": "Regel toevoegen",
+      "en": "Add line"
+    },
+    "journal.form.total_debit": {
+      "nl": "Totaal debet",
+      "en": "Total debit"
+    },
+    "journal.form.total_credit": {
+      "nl": "Totaal credit",
+      "en": "Total credit"
+    },
+    "journal.form.balanced": {
+      "nl": "In evenwicht",
+      "en": "Balanced"
+    },
+    "journal.form.unbalanced": {
+      "nl": "Nog niet in evenwicht",
+      "en": "Not yet balanced"
+    },
+    "journal.form.submit": {
+      "nl": "Boeking vastleggen",
+      "en": "Post entry"
+    },
+    "journal.form.submitting": {
+      "nl": "Bezig met boeken…",
+      "en": "Posting…"
+    },
+    "journal.form.posted_title": {
+      "nl": "Boeking vastgelegd",
+      "en": "Entry posted"
+    },
+    "journal.form.posted_body": {
+      "note": "{journal} is the journal code, {number} the entry number.",
+      "nl": "{journal}-{number} is geboekt.",
+      "en": "{journal}-{number} has been posted."
+    },
+    "journal.form.post_another": {
+      "nl": "Nog een boeking maken",
+      "en": "Post another entry"
+    },
+    "journal.form.view_in_ledger": {
+      "note": "FR-LOC-001c: 'grootboek' stays Dutch in the English UI, matching ledger.title.",
+      "nl": "Bekijk in het grootboek",
+      "en": "View in the grootboek"
+    },
+    "journal.periods.empty_title": {
+      "nl": "Geen periodes",
+      "en": "No periods"
+    },
+    "journal.periods.empty_body": {
+      "nl": "Dit boekjaar heeft nog geen periodes.",
+      "en": "This fiscal year has no periods yet."
+    },
+    "journal.periods.column.period": {
+      "nl": "Periode",
+      "en": "Period"
+    },
+    "journal.periods.column.range": {
+      "nl": "Van – tot",
+      "en": "From – to"
+    },
+    "journal.periods.column.status": {
+      "identical": true,
+      "nl": "Status",
+      "en": "Status"
+    },
+    "journal.periods.status.open": {
+      "identical": true,
+      "nl": "Open",
+      "en": "Open"
+    },
+    "journal.periods.status.locked": {
+      "nl": "Afgesloten",
+      "en": "Locked"
+    },
+    "journal.periods.status.vat_filed": {
+      "note": "FR-GL-007's terminal state - btw-aangifte gedaan.",
+      "nl": "Btw aangegeven",
+      "en": "VAT filed"
+    },
+    "journal.periods.lock": {
+      "nl": "Afsluiten",
+      "en": "Lock"
+    },
+    "journal.periods.unlock": {
+      "nl": "Heropenen",
+      "en": "Reopen"
+    },
+    "journal.periods.unlock_reason_label": {
+      "nl": "Reden voor heropenen",
+      "en": "Reason for reopening"
+    },
+    "journal.periods.unlock_confirm": {
+      "nl": "Periode heropenen",
+      "en": "Reopen period"
+    },
+    "journal.periods.unlock_cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    }
+  }
+}

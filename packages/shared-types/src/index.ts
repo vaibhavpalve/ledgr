@@ -1241,6 +1241,50 @@ export interface JournalEntryView extends JournalEntrySummaryView {
   readonly lines: readonly JournalLineView[];
 }
 
+/** `GET .../journals` — `api.ledger.model.Journal`, the Journal screen's picker. */
+export interface JournalDefView {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly journal_type: "sales" | "purchase" | "bank" | "cash" | "memorial" | "opening" | "closing";
+  readonly status: "active" | "blocked";
+}
+
+/**
+ * What `POST .../journal-entries` and `.../reverse` return —
+ * `api.ledger.routes._entry_json`. Deliberately its own shape rather than
+ * `JournalEntryView`: a manual post/reverse response carries `journal_id`,
+ * `period_id` and `fiscal_year_id` (what the caller just chose) rather than
+ * the read side's joined `journal_code`/`total`.
+ */
+export interface PostedJournalEntryView {
+  readonly id: string;
+  readonly entry_number: number;
+  readonly entry_date: string;
+  readonly description: string;
+  readonly document_reference: string | null;
+  readonly journal_id: string;
+  readonly period_id: string;
+  readonly fiscal_year_id: string;
+  readonly posted_at: string;
+  readonly reverses_entry_id: string | null;
+  readonly lines: readonly JournalLineView[];
+}
+
+/** One row of `GET .../periods` — `api.ledger.periods.Period`. */
+export interface PeriodView {
+  readonly id: string;
+  readonly fiscal_year_id: string;
+  readonly period_number: number;
+  readonly start_date: string;
+  readonly end_date: string;
+  readonly status: "open" | "locked" | "vat_filed";
+  readonly locked_at: string | null;
+  readonly locked_by_user_id: string | null;
+  readonly filed_at: string | null;
+  readonly filing_reference: string | null;
+}
+
 export interface SwitcherEntry extends ClientBadge {
   /**
    * The role's NAME, which is its identifier — authorization matches on it and

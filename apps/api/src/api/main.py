@@ -34,6 +34,7 @@ from api.i18n.http import problem
 from api.i18n.language import SUPPORTED_LANGUAGE_CODES, parse_language
 from api.idempotency_middleware import IdempotencyMiddleware
 from api.invoicing import routes as invoice_routes
+from api.ledger import routes as ledger_routes
 from api.ledger_reads import routes as ledger_read_routes
 from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
@@ -124,6 +125,10 @@ dashboard_routes.register(app)
 account_routes.register(app)
 onboarding_routes.register(app)
 ledger_read_routes.register(app)
+# The Journal screen's writes: manual postings, reversals and period
+# locking - all on an engine ledger_read_routes only ever read. Same
+# registration reason; see api.ledger.routes' module docstring.
+ledger_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

@@ -884,6 +884,41 @@
       "note": "IAM-018: one answer for an unknown e-mail, no authenticator enrolled and a wrong code, so the screen cannot be used to find out which accounts exist.",
       "nl": "Het e-mailadres of de code klopt niet. Gebruik de huidige code uit uw authenticator-app.",
       "en": "The email or code is not right. Use the current code from your authenticator app."
+    },
+    "errors.journal_field_invalid": {
+      "note": "The Journal screen's manual entry form (api.ledger.routes). {field} travels beside the sentence as a machine field, the same convention errors.customer_field_invalid uses, and never inside it.",
+      "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",
+      "en": "That value is not valid. Check the highlighted field."
+    },
+    "errors.journal_entry_invalid": {
+      "note": "FR-GL-001. A manual entry that does not balance, has fewer than two lines, or carries a line with both or neither of debit/credit filled in. {detail} is the ledger's own already-specific English reason, travelling beside the sentence for a log rather than inside it (FR-UX-007).",
+      "nl": "Deze boeking is niet in evenwicht of ontbreekt regels. Controleer of het totaal debet gelijk is aan het totaal credit.",
+      "en": "This entry is not balanced or is missing lines. Check that total debit equals total credit."
+    },
+    "errors.period_not_found": {
+      "note": "Answers 'no such period' and 'another administration's period' identically - the same RLS posture errors.journal_entry_not_found takes.",
+      "nl": "Deze periode bestaat niet in deze administratie.",
+      "en": "This period does not exist in this administration."
+    },
+    "errors.period_invalid": {
+      "note": "api.ledger.periods.PeriodError, covering a period-locking rule with no more specific key of its own (the entry-date-out-of-period case already has errors.no_open_period at the point an entry is posted). {detail} is the specific English reason, for a log rather than the sentence.",
+      "nl": "Deze actie is niet mogelijk voor deze periode.",
+      "en": "This action is not possible for this period."
+    },
+    "errors.period_hard_locked": {
+      "note": "FR-GL-007. A VAT-filed period is terminal - there is no unlock, only a suppletie (FR-VAT-005, not yet built), so the message does not offer one.",
+      "nl": "Deze periode is btw-aangegeven en definitief afgesloten. Een correctie kan alleen via een suppletie.",
+      "en": "This period has been filed for VAT and is permanently locked. A correction can only be made through a suppletie."
+    },
+    "errors.journal_entry_already_reversed": {
+      "note": "FR-GL-003. api.ledger.service.AlreadyReversed - an entry may be reversed once. Names the fact rather than the entry that already did it; the reversing entry is visible on the original's own detail view.",
+      "nl": "Deze boeking is al gecorrigeerd met een tegenboeking.",
+      "en": "This entry has already been reversed with a correcting entry."
+    },
+    "errors.period_unlock_reason_required": {
+      "note": "FR-GL-007. api.ledger.periods.PeriodService.unlock requires a stated reason - it is recorded in the audit log and is what the unlock authority is answerable for.",
+      "nl": "Geef een reden op om deze periode te heropenen.",
+      "en": "Give a reason for reopening this period."
     }
   }
 }

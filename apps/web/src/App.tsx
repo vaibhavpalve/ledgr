@@ -20,6 +20,7 @@ import { applyAccountLanguage, initialLanguage, persistLanguage } from "./i18n";
 import { InvoiceDetailScreen } from "./invoicing/InvoiceDetailScreen";
 import { InvoiceListScreen } from "./invoicing/InvoiceListScreen";
 import { NewInvoiceScreen } from "./invoicing/NewInvoiceScreen";
+import { JournalScreen } from "./journal/JournalScreen";
 import { LedgerScreen } from "./ledger/LedgerScreen";
 import { OnboardingRoute } from "./onboarding/OnboardingRoute";
 import { PurchasesRoute } from "./purchases/PurchasesRoute";
@@ -176,7 +177,7 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/customers/:customerId/edit" element={<CustomerFormScreen />} />
               <Route path="/ledger" element={<LedgerScreen />} />
               <Route path="/bank" element={<ComingSoon section="bank" />} />
-              <Route path="/journal" element={<ComingSoon section="journal" />} />
+              <Route path="/journal" element={<JournalScreen />} />
               <Route path="/assets" element={<ComingSoon section="assets" />} />
               <Route path="/reports" element={<ComingSoon section="reports" />} />
             </Route>

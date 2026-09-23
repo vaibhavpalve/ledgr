@@ -344,6 +344,11 @@ class LedgerService:
         """
         return await self._repository.set_journal_status(journal_id=journal_id, status="blocked")
 
+    async def journals(self, *, administration_id: uuid.UUID) -> Sequence[Journal]:
+        """The Journal screen's picker: every journal this administration has,
+        active or blocked (a blocked one still explains an old entry's row)."""
+        return await self._repository.journals(administration_id=administration_id)
+
     async def create_party(
         self,
         *,

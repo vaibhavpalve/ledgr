@@ -86,6 +86,23 @@ class SqlPeriodRepository:
         row = result.first()
         return _period(row) if row is not None else None
 
+    async def periods_for_year(
+        self, *, administration_id: uuid.UUID, fiscal_year_id: uuid.UUID
+    ) -> Sequence[Period]:
+        result = await self._session.execute(
+            text(
+                f"SELECT {_PERIOD_COLUMNS} FROM period "
+                "WHERE administration_id = :administration_id "
+                "  AND fiscal_year_id = :fiscal_year_id "
+                "ORDER BY period_number"
+            ),
+            {
+                "administration_id": str(administration_id),
+                "fiscal_year_id": str(fiscal_year_id),
+            },
+        )
+        return [_period(row) for row in result]
+
     async def organization_of(self, administration_id: uuid.UUID) -> uuid.UUID:
         result = await self._session.execute(
             text("SELECT organization_id FROM administration WHERE id = :id"),

@@ -152,9 +152,44 @@
       "en": "Posted — final"
     },
     "ledger.entry.immutable_note": {
-      "note": "FR-GL-003 in the reader's own words. A reversing-entry action is not built yet, so this says what a correction IS rather than offering a button that does nothing.",
+      "note": "FR-GL-003 in the reader's own words - what a correction IS, beside the reversal action itself.",
       "nl": "Geboekte regels worden nooit gewijzigd of verwijderd. Een correctie is zelf een boeking (tegenboeking).",
       "en": "Posted lines are never edited or deleted. A correction is itself an entry (a reversing entry)."
+    },
+    "ledger.entry.reverse_action": {
+      "note": "FR-GL-003. Absent when the entry already has a reversal, or is itself one.",
+      "nl": "Tegenboeking maken",
+      "en": "Create reversing entry"
+    },
+    "ledger.entry.reverse_dialog_title": {
+      "nl": "Tegenboeking maken",
+      "en": "Create a reversing entry"
+    },
+    "ledger.entry.reverse_date_label": {
+      "nl": "Datum van de tegenboeking",
+      "en": "Date of the reversing entry"
+    },
+    "ledger.entry.reverse_description_label": {
+      "nl": "Omschrijving (optioneel)",
+      "en": "Description (optional)"
+    },
+    "ledger.entry.reverse_no_open_period": {
+      "note": "The chosen date falls in no open period of this fiscal year - checked client-side before the call, from the same period list the Journal screen uses.",
+      "nl": "Voor deze datum is geen open periode. Kies een andere datum.",
+      "en": "There is no open period for this date. Choose a different date."
+    },
+    "ledger.entry.reverse_confirm": {
+      "nl": "Tegenboeking vastleggen",
+      "en": "Post reversal"
+    },
+    "ledger.entry.reverse_cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    },
+    "ledger.entry.reverse_success": {
+      "note": "{journal}/{number} are the reversing entry's own journal code and entry number.",
+      "nl": "Tegenboeking {journal}-{number} is geboekt.",
+      "en": "Reversing entry {journal}-{number} has been posted."
     },
     "ledger.chart.empty_title": {
       "nl": "Geen rekeningschema",

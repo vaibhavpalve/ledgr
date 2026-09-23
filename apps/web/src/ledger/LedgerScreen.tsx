@@ -5,6 +5,7 @@ import type {
   ChartAccountView,
   JournalEntrySummaryView,
   JournalEntryView,
+  PeriodView,
   TrialBalanceView,
 } from "@ledgr/shared-types";
 
@@ -320,6 +321,7 @@ function Journal({
       {openId !== null ? (
         <EntryDrawer
           administrationId={administrationId}
+          fiscalYearId={fiscalYearId}
           entryId={openId}
           onClose={() => setOpenId(null)}
         />
@@ -328,17 +330,146 @@ function Journal({
   );
 }
 
+/**
+ * FR-GL-003, at the one place a posted entry can be acted on. Needs the open
+ * period this fiscal year is currently posting into, so it loads the period
+ * list the same way the Journal screen's period panel does — a reversal has
+ * to land in an OPEN period, and the entry's own period is usually the one
+ * already locked by the time somebody notices the mistake.
+ */
+function ReverseAction({
+  administrationId,
+  fiscalYearId,
+  entry,
+}: {
+  administrationId: string;
+  fiscalYearId: string;
+  entry: JournalEntryView;
+}) {
+  const { t } = useI18n();
+  const { journal } = useServices();
+  const [open, setOpen] = useState(false);
+  const [periods, setPeriods] = useState<readonly PeriodView[] | null>(null);
+  const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [description, setDescription] = useState("");
+  const [sending, setSending] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{ journal: string; number: number } | null>(null);
+
+  useEffect(() => {
+    if (!open || periods !== null) return;
+    let cancelled = false;
+    journal
+      .listPeriods(administrationId, fiscalYearId)
+      .then((result) => {
+        if (!cancelled) setPeriods(result.filter((p) => p.status === "open"));
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setProblem(describeError(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [journal, administrationId, fiscalYearId, open, periods]);
+
+  const submit = useCallback(async () => {
+    const target = periods?.find((p) => entryDate >= p.start_date && entryDate <= p.end_date);
+    if (target === undefined) {
+      setProblem(t("ledger.entry.reverse_no_open_period"));
+      return;
+    }
+    setSending(true);
+    setProblem(null);
+    try {
+      const reversal = await journal.reverseEntry(administrationId, entry.id, {
+        periodId: target.id,
+        entryDate,
+        description: description.trim() === "" ? null : description,
+      });
+      setSuccess({ journal: entry.journal_code, number: reversal.entry_number });
+    } catch (error) {
+      setProblem(describeError(error));
+    } finally {
+      setSending(false);
+    }
+  }, [journal, administrationId, entry, entryDate, description, periods, t]);
+
+  if (success !== null) {
+    return (
+      <p className="alert alert--positive" data-testid="reverse-success">
+        {t("ledger.entry.reverse_success", { journal: success.journal, number: success.number })}
+      </p>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div className="form__actions">
+        <button type="button" onClick={() => setOpen(true)} data-testid="entry-reverse-action">
+          <Icon name="reverse" size={16} /> {t("ledger.entry.reverse_action")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel form" data-testid="entry-reverse-form">
+      <h3>{t("ledger.entry.reverse_dialog_title")}</h3>
+      {problem !== null ? <ErrorState message={problem} /> : null}
+      {periods === null ? (
+        <LoadingSkeleton rows={2} />
+      ) : (
+        <>
+          <label className="form__field">
+            <span>{t("ledger.entry.reverse_date_label")}</span>
+            <input
+              type="date"
+              value={entryDate}
+              onChange={(event) => setEntryDate(event.target.value)}
+              data-testid="entry-reverse-date"
+            />
+          </label>
+          <label className="form__field">
+            <span>{t("ledger.entry.reverse_description_label")}</span>
+            <input
+              type="text"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              data-testid="entry-reverse-description"
+            />
+          </label>
+          <div className="form__actions">
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => void submit()}
+              data-testid="entry-reverse-confirm"
+            >
+              {t("ledger.entry.reverse_confirm")}
+            </button>
+            <button type="button" className="button--quiet" onClick={() => setOpen(false)}>
+              {t("ledger.entry.reverse_cancel")}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function EntryDrawer({
   administrationId,
+  fiscalYearId,
   entryId,
   onClose,
 }: {
   administrationId: string;
+  fiscalYearId: string;
   entryId: string;
   onClose: () => void;
 }) {
   const { t, money, date } = useI18n();
-  const { ledger } = useServices();
+  const { ledger, journal } = useServices();
   const [entry, setEntry] = useState<JournalEntryView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -441,6 +572,13 @@ function EntryDrawer({
               </table>
             </div>
             <p className="caption">{t("ledger.entry.immutable_note")}</p>
+            {entry.reverses_entry_id === null ? (
+              <ReverseAction
+                administrationId={administrationId}
+                fiscalYearId={fiscalYearId}
+                entry={entry}
+              />
+            ) : null}
           </>
         ) : null}
       </div>

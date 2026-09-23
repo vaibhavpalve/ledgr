@@ -207,6 +207,8 @@ class LedgerRepository(Protocol):
 
     async def set_journal_status(self, *, journal_id: uuid.UUID, status: str) -> Journal: ...
 
+    async def journals(self, *, administration_id: uuid.UUID) -> Sequence[Journal]: ...
+
     async def create_party(
         self,
         *,
@@ -515,6 +517,35 @@ class SqlLedgerRepository:
             journal_type=JournalType(row.journal_type),
             status=row.status,
         )
+
+    async def journals(self, *, administration_id: uuid.UUID) -> Sequence[Journal]:
+        """The pickable journals for a manual-entry form (the Journal screen).
+
+        A plain SELECT, not a `ledger.*` function: this is a read of reference
+        rows `ledgr_app` already holds SELECT on (0020), not a write to a
+        posting table - the bounded-context rule this file's docstring
+        describes is about writes, and every read on this class already takes
+        the same shape (trial_balance, entries, ...).
+        """
+        result = await self._session.execute(
+            text(
+                "SELECT id, administration_id, code, name, journal_type, status "
+                "FROM ledger_journal WHERE administration_id = :administration_id "
+                "ORDER BY code"
+            ),
+            {"administration_id": str(administration_id)},
+        )
+        return [
+            Journal(
+                id=row.id,
+                administration_id=row.administration_id,
+                code=row.code,
+                name=row.name,
+                journal_type=JournalType(row.journal_type),
+                status=row.status,
+            )
+            for row in result
+        ]
 
     async def create_party(
         self,

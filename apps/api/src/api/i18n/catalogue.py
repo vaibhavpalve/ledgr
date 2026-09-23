@@ -67,6 +67,7 @@ CATALOGUE_FILES = (
     # asserts.
     "customers.json",
     "ledger.json",
+    "journal.json",
     "onboarding.json",
     "settings.json",
 )

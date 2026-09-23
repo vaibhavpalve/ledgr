@@ -48,6 +48,17 @@ PUBLIC_MODULES = frozenset(
         # is a pure function an onboarding flow calls to preview a year before
         # any of it exists - it touches no tenant and no table.
         "api.ledger.fiscal",
+        # The Journal screen's HTTP surface (manual postings, reversal, period
+        # lock/unlock). Public because api.main imports it to register its
+        # routes, the same reason every other routes.py in this codebase is
+        # reached from outside its own package. It composes LedgerService and
+        # PeriodService; it does not import the repository modules directly
+        # for the posting tables (test_only_the_ledger_service_imports_the_
+        # ledger_repository already restricts those to service.py) - its own
+        # import of periods_repository is for PeriodService's constructor,
+        # the same composition api.ledger_reads.routes does for
+        # ledger.service.build_ledger_service.
+        "api.ledger.routes",
     }
 )
 
