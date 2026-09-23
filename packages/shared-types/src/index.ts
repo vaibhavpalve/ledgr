@@ -1271,6 +1271,35 @@ export interface PostedJournalEntryView {
   readonly lines: readonly JournalLineView[];
 }
 
+/** `GET .../assets/{id}` and list rows — `api.assets.model.FixedAsset`. */
+export interface FixedAssetView {
+  readonly id: string;
+  readonly name: string;
+  readonly category: string | null;
+  readonly acquisition_date: string;
+  readonly acquisition_cost: string;
+  readonly residual_value: string;
+  readonly useful_life_months: number;
+  readonly depreciation_method: "straight_line";
+  readonly asset_account_id: string;
+  readonly depreciation_expense_account_id: string;
+  readonly accumulated_depreciation_account_id: string;
+  readonly status: "active" | "disposed";
+  readonly disposal_date: string | null;
+  readonly disposal_proceeds: string | null;
+  readonly disposal_journal_entry_id: string | null;
+}
+
+/** `GET .../assets/{id}/depreciation-runs` — `api.assets.model.DepreciationRun`. */
+export interface DepreciationRunView {
+  readonly id: string;
+  readonly fixed_asset_id: string;
+  readonly period_id: string;
+  readonly amount: string;
+  readonly journal_entry_id: string;
+  readonly posted_at: string;
+}
+
 /** One row of `GET .../periods` — `api.ledger.periods.Period`. */
 export interface PeriodView {
   readonly id: string;

@@ -68,6 +68,7 @@ CATALOGUE_FILES = (
     "customers.json",
     "ledger.json",
     "journal.json",
+    "assets.json",
     "onboarding.json",
     "settings.json",
 )

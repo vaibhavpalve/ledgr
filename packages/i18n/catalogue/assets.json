@@ -1,0 +1,137 @@
+{
+  "namespace": "assets",
+  "note": "The /assets screen: PRD §13's fixed-asset register, ungraded by Appendix A. 'Activa (MVA)' is the word on screen (see common.nav.assets); MVA is materiële vaste activa.",
+  "messages": {
+    "assets.title": {
+      "note": "Kept Dutch in the English UI per glossary.json, the same way ledger.title keeps grootboek.",
+      "identical": true,
+      "nl": "Activa",
+      "en": "Activa"
+    },
+    "assets.new": {
+      "nl": "Nieuw activum",
+      "en": "New asset"
+    },
+    "assets.empty_title": {
+      "nl": "Nog geen activa",
+      "en": "No assets yet"
+    },
+    "assets.empty_body": {
+      "nl": "Vaste activa zoals inventaris, machines of vervoermiddelen komen hier te staan, met hun afschrijvingen.",
+      "en": "Fixed assets such as equipment, machinery or vehicles appear here, along with their depreciation."
+    },
+    "assets.column.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "assets.column.category": {
+      "nl": "Categorie",
+      "en": "Category"
+    },
+    "assets.column.acquired": {
+      "nl": "Aanschafdatum",
+      "en": "Acquired"
+    },
+    "assets.column.cost": {
+      "nl": "Aanschafwaarde",
+      "en": "Cost"
+    },
+    "assets.column.status": {
+      "identical": true,
+      "nl": "Status",
+      "en": "Status"
+    },
+    "assets.status.active": {
+      "nl": "Actief",
+      "en": "Active"
+    },
+    "assets.status.disposed": {
+      "nl": "Afgestoten",
+      "en": "Disposed"
+    },
+    "assets.field.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "assets.field.category": {
+      "nl": "Categorie (optioneel)",
+      "en": "Category (optional)"
+    },
+    "assets.field.acquisition_date": {
+      "nl": "Aanschafdatum",
+      "en": "Acquisition date"
+    },
+    "assets.field.cost": {
+      "nl": "Aanschafwaarde",
+      "en": "Acquisition cost"
+    },
+    "assets.field.residual_value": {
+      "nl": "Restwaarde",
+      "en": "Residual value"
+    },
+    "assets.field.useful_life_months": {
+      "nl": "Afschrijvingstermijn (maanden)",
+      "en": "Useful life (months)"
+    },
+    "assets.field.asset_account": {
+      "nl": "Activarekening",
+      "en": "Asset account"
+    },
+    "assets.field.accumulated_account": {
+      "nl": "Rekening cumulatieve afschrijving",
+      "en": "Accumulated depreciation account"
+    },
+    "assets.field.expense_account": {
+      "nl": "Afschrijvingskostenrekening",
+      "en": "Depreciation expense account"
+    },
+    "assets.field.disposal_date": {
+      "nl": "Datum van afstoting",
+      "en": "Disposal date"
+    },
+    "assets.field.proceeds": {
+      "nl": "Verkoopopbrengst",
+      "en": "Proceeds"
+    },
+    "assets.field.proceeds_account": {
+      "nl": "Rekening voor de opbrengst (optioneel)",
+      "en": "Account for the proceeds (optional)"
+    },
+    "assets.field.gain_loss_account": {
+      "nl": "Rekening boekwinst/-verlies (optioneel)",
+      "en": "Gain/loss on disposal account (optional)"
+    },
+    "assets.form.save": {
+      "nl": "Activum opslaan",
+      "en": "Save asset"
+    },
+    "assets.form.saving": {
+      "nl": "Bezig met opslaan…",
+      "en": "Saving…"
+    },
+    "assets.detail_title": {
+      "nl": "Activum",
+      "en": "Asset"
+    },
+    "assets.accumulated_depreciation": {
+      "nl": "Cumulatieve afschrijving",
+      "en": "Accumulated depreciation"
+    },
+    "assets.no_runs_yet": {
+      "nl": "Nog geen afschrijvingen geboekt",
+      "en": "No depreciation posted yet"
+    },
+    "assets.depreciate": {
+      "nl": "Afschrijving boeken",
+      "en": "Post depreciation"
+    },
+    "assets.dispose": {
+      "nl": "Afstoten",
+      "en": "Dispose"
+    },
+    "assets.period_id_hint": {
+      "nl": "Periode",
+      "en": "Period"
+    }
+  }
+}

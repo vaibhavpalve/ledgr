@@ -204,12 +204,35 @@ APPROVE_SALES_INVOICE = Capability(
     ),
 )
 
+VIEW_FIXED_ASSET = Capability(
+    label="View fixed assets",
+    scope="administration",
+    read=(Permission("view", "fixed_asset", "View fixed assets"),),
+    note=(
+        "Not an Appendix A row: the fixed-asset register (PRD §13) is ungraded there. Split "
+        "from 'Manage fixed assets' the way 'View purchase invoices' is split from 'Code "
+        "purchase invoices' - so a Viewer can read the register without holding the write."
+    ),
+)
+
+MANAGE_FIXED_ASSET = Capability(
+    label="Manage fixed assets",
+    scope="administration",
+    full=(Permission("manage", "fixed_asset", "Create, depreciate and dispose fixed assets"),),
+    note=(
+        "Not an Appendix A row. Full only, like 'Code purchase invoices' - 'View fixed assets' "
+        "above is the read row for this resource."
+    ),
+)
+
 EXTENSION_CAPABILITIES: tuple[Capability, ...] = (
     UPLOAD_DOCUMENT,
     VIEW_DOCUMENT,
     MANAGE_CUSTOMER,
     VIEW_VAT_RETURN,
     APPROVE_SALES_INVOICE,
+    VIEW_FIXED_ASSET,
+    MANAGE_FIXED_ASSET,
 )
 
 
@@ -551,6 +574,8 @@ ROLES: tuple[Role, ...] = (
             "Manage customers",
             "View filed returns",
             "Approve sales invoices",
+            "View fixed assets",
+            "Manage fixed assets",
         ),
     ),
     Role("Organization Admin", "organization", "Org Admin"),
@@ -582,6 +607,8 @@ ROLES: tuple[Role, ...] = (
             "View source documents",
             "Manage customers",
             "View filed returns",
+            "View fixed assets",
+            "Manage fixed assets",
         ),
     ),
     Role(
@@ -593,6 +620,8 @@ ROLES: tuple[Role, ...] = (
             "View source documents",
             "Manage customers",
             "View filed returns",
+            "View fixed assets",
+            "Manage fixed assets",
         ),
     ),
     # Approver reads the documents behind what they approve; they do not
@@ -621,7 +650,7 @@ ROLES: tuple[Role, ...] = (
         "Viewer",
         "administration",
         "Viewer",
-        extra_capabilities=("View source documents", "View filed returns"),
+        extra_capabilities=("View source documents", "View filed returns", "View fixed assets"),
     ),
     # §8.4: "Scoped API access to named endpoints", "Explicitly cannot:
     # interactive login; broaden its own scope." Named endpoints are per

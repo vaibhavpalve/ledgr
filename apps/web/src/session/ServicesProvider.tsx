@@ -3,6 +3,7 @@ import { useI18n } from "@ledgr/i18n";
 import type { CaptureQueue } from "@ledgr/offline-queue";
 
 import { AccountApi } from "../account/api";
+import { AssetsApi } from "../assets/api";
 import { useAuth } from "../auth/AuthProvider";
 import { CaptureApi } from "../capture/api";
 import { browserDecode, type DecodeFile } from "../capture/decode";
@@ -43,6 +44,7 @@ export interface Services {
   readonly customers: CustomerApi;
   readonly ledger: LedgerApi;
   readonly journal: JournalApi;
+  readonly assets: AssetsApi;
   readonly templates: TemplateApi;
   readonly queue: CaptureQueue;
   readonly decode: DecodeFile;
@@ -74,6 +76,7 @@ export function ServicesProvider({
       customers: lazy("customers", () => new CustomerApi(options)),
       ledger: lazy("ledger", () => new LedgerApi(options)),
       journal: lazy("journal", () => new JournalApi(options)),
+      assets: lazy("assets", () => new AssetsApi(options)),
       templates: lazy("templates", () => new TemplateApi(options)),
       // Built lazily and only when nothing was injected: `captureQueue()`
       // opens IndexedDB, which jsdom does not have.

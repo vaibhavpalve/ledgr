@@ -155,7 +155,6 @@ describe("the old purchase addresses", () => {
 describe("rail items whose screens are not built yet", () => {
   it.each([
     ["/bank", "coming-soon-bank", "Bank"],
-    ["/assets", "coming-soon-assets", "Assets"],
     ["/reports", "coming-soon-reports", "Reports"],
   ])("%s says so instead of opening an empty screen", async (route, testId, name) => {
     stubApi();

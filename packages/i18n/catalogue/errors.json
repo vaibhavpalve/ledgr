@@ -919,6 +919,30 @@
       "note": "FR-GL-007. api.ledger.periods.PeriodService.unlock requires a stated reason - it is recorded in the audit log and is what the unlock authority is answerable for.",
       "nl": "Geef een reden op om deze periode te heropenen.",
       "en": "Give a reason for reopening this period."
+    },
+    "errors.asset_not_found": {
+      "note": "Answers 'no such asset' and 'not yours' identically - the same RLS posture errors.customer_not_found takes.",
+      "nl": "Dit vaste activum bestaat niet.",
+      "en": "That fixed asset does not exist."
+    },
+    "errors.asset_field_invalid": {
+      "note": "api.assets.model.InvalidAssetField, covering every field-level refusal on the Assets screen (name, dates, accounts, amounts). {field} travels beside the sentence as a machine field, never inside it - the same convention errors.customer_field_invalid uses.",
+      "nl": "Dit gegeven klopt niet. Controleer het gemarkeerde veld.",
+      "en": "That value is not valid. Check the highlighted field."
+    },
+    "errors.asset_already_disposed": {
+      "note": "A disposed asset's cost and accumulated depreciation are already cleared; there is nothing left to depreciate or dispose of a second time.",
+      "nl": "Dit activum is al afgestoten.",
+      "en": "This asset has already been disposed of."
+    },
+    "errors.asset_depreciation_already_posted": {
+      "note": "0064's fixed_asset_depreciation_run_once_idx: a second attempt at the same asset's same period would double the expense.",
+      "nl": "Voor deze periode is al een afschrijving geboekt voor dit activum.",
+      "en": "A depreciation charge has already been posted for this asset in this period."
+    },
+    "errors.asset_fully_depreciated": {
+      "nl": "Dit activum is al volledig afgeschreven; er is niets meer om te boeken.",
+      "en": "This asset is already fully depreciated; there is nothing left to post."
     }
   }
 }

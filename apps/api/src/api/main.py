@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.account import routes as account_routes
 from api.account import security_routes as account_security_routes
+from api.assets import routes as asset_routes
 from api.audit.log import AuditCategory
 from api.audit.middleware import AuditMiddleware
 from api.auth import routes as auth_routes
@@ -129,6 +130,11 @@ ledger_read_routes.register(app)
 # locking - all on an engine ledger_read_routes only ever read. Same
 # registration reason; see api.ledger.routes' module docstring.
 ledger_routes.register(app)
+# The Assets screen (migration 0064): the fixed-asset register, depreciation
+# and disposal. Same registration reason; see api.assets.routes' module
+# docstring for why depreciation/disposal post through LedgerService rather
+# than inventing a second write path into the ledger.
+asset_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

@@ -1,5 +1,5 @@
 import { useI18n } from "@ledgr/i18n";
-import { Building, Landmark, ChartColumn, type LucideIcon } from "lucide-react";
+import { Landmark, ChartColumn, type LucideIcon } from "lucide-react";
 
 import { EmptyState, PageHeader } from "./ScreenState";
 
@@ -10,7 +10,6 @@ import { EmptyState, PageHeader } from "./ScreenState";
  */
 export const COMING_SOON = {
   bank: { labelKey: "common.nav.bank", icon: Landmark },
-  assets: { labelKey: "common.nav.assets", icon: Building },
   reports: { labelKey: "common.nav.reports", icon: ChartColumn },
 } as const satisfies Record<string, { labelKey: string; icon: LucideIcon }>;
 
