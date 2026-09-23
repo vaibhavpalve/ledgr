@@ -1246,7 +1246,8 @@ export interface JournalDefView {
   readonly id: string;
   readonly code: string;
   readonly name: string;
-  readonly journal_type: "sales" | "purchase" | "bank" | "cash" | "memorial" | "opening" | "closing";
+  readonly journal_type:
+    "sales" | "purchase" | "bank" | "cash" | "memorial" | "opening" | "closing";
   readonly status: "active" | "blocked";
 }
 

@@ -161,7 +161,7 @@ describe("uploads that used to stall", () => {
   });
 
   it("keeps draining when one attempt throws instead of answering", async () => {
-    const { clock, queue, uploader } = build();
+    const { clock, queue } = build();
     const sent: string[] = [];
     let first = true;
     const flaky = {

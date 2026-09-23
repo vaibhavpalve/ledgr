@@ -14,11 +14,7 @@
  * calls `Number()` on one, and neither should a caller.
  */
 
-import type {
-  JournalDefView,
-  PeriodView,
-  PostedJournalEntryView,
-} from "@ledgr/shared-types";
+import type { JournalDefView, PeriodView, PostedJournalEntryView } from "@ledgr/shared-types";
 
 import { callJson, pathOf, queryOf, unwrapList, type ApiOptions } from "../api/http";
 

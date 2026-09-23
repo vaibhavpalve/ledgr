@@ -94,7 +94,11 @@ export class AssetsApi {
     return unwrapList<DepreciationRunView>(raw, "runs");
   }
 
-  depreciate(administrationId: string, assetId: string, periodId: string): Promise<DepreciationRunView> {
+  depreciate(
+    administrationId: string,
+    assetId: string,
+    periodId: string,
+  ): Promise<DepreciationRunView> {
     return callJson<DepreciationRunView>(
       this.options,
       "POST",
@@ -103,7 +107,11 @@ export class AssetsApi {
     );
   }
 
-  dispose(administrationId: string, assetId: string, disposal: DraftDisposal): Promise<FixedAssetView> {
+  dispose(
+    administrationId: string,
+    assetId: string,
+    disposal: DraftDisposal,
+  ): Promise<FixedAssetView> {
     return callJson<FixedAssetView>(
       this.options,
       "POST",

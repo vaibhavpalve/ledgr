@@ -161,9 +161,7 @@ function BalanceSheet({
               <strong>{t("reports.total_liabilities_and_equity")}</strong>
             </td>
             <td className="table__num" data-testid="total-liabilities-and-equity">
-              <strong>
-                {money(sumDecimals([sheet.total_liabilities, sheet.total_equity]))}
-              </strong>
+              <strong>{money(sumDecimals([sheet.total_liabilities, sheet.total_equity]))}</strong>
             </td>
           </tr>
         </tbody>

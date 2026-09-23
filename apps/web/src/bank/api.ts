@@ -76,8 +76,14 @@ export class BankApi {
     >(
       this.options,
       "GET",
-      pathOf("v1", "administrations", administrationId, "bank-accounts", bankAccountId, "transactions") +
-        queryOf({ status }),
+      pathOf(
+        "v1",
+        "administrations",
+        administrationId,
+        "bank-accounts",
+        bankAccountId,
+        "transactions",
+      ) + queryOf({ status }),
     );
     return unwrapList<BankTransactionView>(raw, "transactions");
   }

@@ -40,7 +40,10 @@ export function AssetsScreen() {
     let cancelled = false;
     setItems(null);
     setProblem(null);
-    Promise.all([assets.listAssets(administration.id), ledger.listChartOfAccounts(administration.id)])
+    Promise.all([
+      assets.listAssets(administration.id),
+      ledger.listChartOfAccounts(administration.id),
+    ])
       .then(([a, c]) => {
         if (cancelled) return;
         setItems(a);
@@ -171,7 +174,9 @@ function CreateAssetForm({
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [acquisitionDate, setAcquisitionDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [acquisitionDate, setAcquisitionDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [cost, setCost] = useState("");
   const [residual, setResidual] = useState("0");
   const [usefulLife, setUsefulLife] = useState("60");
@@ -258,7 +263,11 @@ function CreateAssetForm({
           </label>
           <label className="form__field">
             <span>{t("assets.field.category")}</span>
-            <input type="text" value={category} onChange={(event) => setCategory(event.target.value)} />
+            <input
+              type="text"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            />
           </label>
           <div className="form__row">
             <label className="form__field">
@@ -470,10 +479,18 @@ function AssetDrawer({
 
             {asset.status === "active" ? (
               <div className="form__actions">
-                <button type="button" onClick={() => setDepreciating(true)} data-testid="asset-depreciate-open">
+                <button
+                  type="button"
+                  onClick={() => setDepreciating(true)}
+                  data-testid="asset-depreciate-open"
+                >
                   {t("assets.depreciate")}
                 </button>
-                <button type="button" onClick={() => setDisposing(true)} data-testid="asset-dispose-open">
+                <button
+                  type="button"
+                  onClick={() => setDisposing(true)}
+                  data-testid="asset-dispose-open"
+                >
                   {t("assets.dispose")}
                 </button>
               </div>
@@ -513,7 +530,10 @@ function AssetDrawer({
   );
 }
 
-function useOpenPeriods(administrationId: string, fiscalYearId: string): readonly PeriodView[] | null {
+function useOpenPeriods(
+  administrationId: string,
+  fiscalYearId: string,
+): readonly PeriodView[] | null {
   const { journal } = useServices();
   const [periods, setPeriods] = useState<readonly PeriodView[] | null>(null);
 
@@ -660,7 +680,17 @@ function DisposeForm({
     } finally {
       setSending(false);
     }
-  }, [assets, administrationId, asset.id, periodId, disposalDate, proceeds, proceedsAccountId, gainLossAccountId, onDone]);
+  }, [
+    assets,
+    administrationId,
+    asset.id,
+    periodId,
+    disposalDate,
+    proceeds,
+    proceedsAccountId,
+    gainLossAccountId,
+    onDone,
+  ]);
 
   return (
     <div className="panel form" data-testid="asset-dispose-form">
@@ -686,7 +716,11 @@ function DisposeForm({
       </label>
       <label className="form__field">
         <span>{t("assets.field.disposal_date")}</span>
-        <input type="date" value={disposalDate} onChange={(event) => setDisposalDate(event.target.value)} />
+        <input
+          type="date"
+          value={disposalDate}
+          onChange={(event) => setDisposalDate(event.target.value)}
+        />
       </label>
       <label className="form__field">
         <span>{t("assets.field.proceeds")}</span>
@@ -717,7 +751,10 @@ function DisposeForm({
       </label>
       <label className="form__field">
         <span>{t("assets.field.gain_loss_account")}</span>
-        <select value={gainLossAccountId} onChange={(event) => setGainLossAccountId(event.target.value)}>
+        <select
+          value={gainLossAccountId}
+          onChange={(event) => setGainLossAccountId(event.target.value)}
+        >
           <option value="" />
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
@@ -742,4 +779,3 @@ function DisposeForm({
     </div>
   );
 }
-

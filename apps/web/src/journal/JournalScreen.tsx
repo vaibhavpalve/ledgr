@@ -75,7 +75,11 @@ function emptyLine(): DraftLine {
   return { key: crypto.randomUUID(), accountId: "", debit: "", credit: "", description: "" };
 }
 
-function updateLine(lines: readonly DraftLine[], index: number, patch: Partial<DraftLine>): DraftLine[] {
+function updateLine(
+  lines: readonly DraftLine[],
+  index: number,
+  patch: Partial<DraftLine>,
+): DraftLine[] {
   return lines.map((line, i) => (i === index ? { ...line, ...patch } : line));
 }
 
@@ -126,7 +130,8 @@ function NewEntryForm({
 
   if (loadProblem !== null)
     return <ErrorState message={loadProblem} onRetry={() => setAttempt((n) => n + 1)} />;
-  if (journals === null || periods === null || accounts === null) return <LoadingSkeleton rows={6} />;
+  if (journals === null || periods === null || accounts === null)
+    return <LoadingSkeleton rows={6} />;
 
   const memorialJournals = journals.filter((j) => j.journal_type === "memorial");
   if (memorialJournals.length === 0) {
@@ -218,7 +223,16 @@ function EntryForm({
         setSending(false);
       }
     },
-    [journal, administrationId, journalId, periodId, entryDate, description, documentReference, lines],
+    [
+      journal,
+      administrationId,
+      journalId,
+      periodId,
+      entryDate,
+      description,
+      documentReference,
+      lines,
+    ],
   );
 
   if (periods.length === 0) {
@@ -259,7 +273,11 @@ function EntryForm({
   }
 
   return (
-    <form className="panel form" onSubmit={(event) => void submit(event)} data-testid="journal-form">
+    <form
+      className="panel form"
+      onSubmit={(event) => void submit(event)}
+      data-testid="journal-form"
+    >
       {problem !== null ? <ErrorState message={problem} /> : null}
       <div className="form__row">
         <label className="form__field">
@@ -346,7 +364,9 @@ function EntryForm({
                   <select
                     value={line.accountId}
                     onChange={(event) =>
-                      setLines((current) => updateLine(current, index, { accountId: event.target.value }))
+                      setLines((current) =>
+                        updateLine(current, index, { accountId: event.target.value }),
+                      )
                     }
                     data-testid={`journal-line-account-${index}`}
                   >

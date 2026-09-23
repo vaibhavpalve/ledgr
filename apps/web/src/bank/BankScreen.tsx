@@ -34,7 +34,10 @@ export function BankScreen() {
     let cancelled = false;
     setAccounts(null);
     setProblem(null);
-    Promise.all([bank.listAccounts(administration.id), ledger.listChartOfAccounts(administration.id)])
+    Promise.all([
+      bank.listAccounts(administration.id),
+      ledger.listChartOfAccounts(administration.id),
+    ])
       .then(([a, c]) => {
         if (cancelled) return;
         setAccounts(a);
@@ -92,7 +95,11 @@ export function BankScreen() {
       ) : null}
 
       {selected !== null && chartAccounts !== null ? (
-        <AccountTransactions administrationId={administration.id} account={selected} accounts={chartAccounts} />
+        <AccountTransactions
+          administrationId={administration.id}
+          account={selected}
+          accounts={chartAccounts}
+        />
       ) : null}
 
       {creating && chartAccounts !== null ? (
@@ -280,7 +287,11 @@ function AccountTransactions({
       {problem !== null ? <ErrorState message={problem} onRetry={reload} /> : null}
       {transactions === null && problem === null ? <LoadingSkeleton rows={5} /> : null}
       {transactions !== null && transactions.length === 0 ? (
-        <EmptyState title={t("bank.no_transactions_title")} body={t("bank.no_transactions_body")} testId="bank-transactions-empty" />
+        <EmptyState
+          title={t("bank.no_transactions_title")}
+          body={t("bank.no_transactions_body")}
+          testId="bank-transactions-empty"
+        />
       ) : null}
       {transactions !== null && transactions.length > 0 ? (
         <div className="table-wrap">
@@ -302,14 +313,20 @@ function AccountTransactions({
                     <td className="ledgr-num">{date(transaction.booking_date)}</td>
                     <td>
                       {transaction.counterparty_name ?? "—"}
-                      {transaction.description ? <span className="caption"> · {transaction.description}</span> : null}
+                      {transaction.description ? (
+                        <span className="caption"> · {transaction.description}</span>
+                      ) : null}
                     </td>
                     <td className="table__num">{money(transaction.amount)}</td>
                     <td>
                       {transaction.status === "unmatched" ? (
                         <button
                           type="button"
-                          onClick={() => setOpenId((current) => (current === transaction.id ? null : transaction.id))}
+                          onClick={() =>
+                            setOpenId((current) =>
+                              current === transaction.id ? null : transaction.id,
+                            )
+                          }
                           data-testid={`bank-reconcile-open-${transaction.id}`}
                         >
                           {t("bank.reconcile")}
@@ -401,7 +418,12 @@ function ImportStatementForm({
         />
       </label>
       <div className="form__actions">
-        <button type="button" disabled={sending} onClick={() => void submit()} data-testid="bank-import-submit">
+        <button
+          type="button"
+          disabled={sending}
+          onClick={() => void submit()}
+          data-testid="bank-import-submit"
+        >
           {sending ? t("journal.form.submitting") : t("bank.import")}
         </button>
         {result !== null ? (
@@ -474,7 +496,12 @@ function ReconcilePanel({
     setSending(true);
     setProblem(null);
     try {
-      await bank.reconcileGeneric(administrationId, transaction.id, offsetAccountId, description || null);
+      await bank.reconcileGeneric(
+        administrationId,
+        transaction.id,
+        offsetAccountId,
+        description || null,
+      );
       onDone();
     } catch (error) {
       setProblem(describeError(error));
@@ -524,7 +551,11 @@ function ReconcilePanel({
         </label>
         <label className="form__field">
           <span>{t("journal.form.description_label")}</span>
-          <input type="text" value={description} onChange={(event) => setDescription(event.target.value)} />
+          <input
+            type="text"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
         </label>
       </div>
       <div className="form__actions">
