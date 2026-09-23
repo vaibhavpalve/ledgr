@@ -26,6 +26,7 @@ import { JournalScreen } from "./journal/JournalScreen";
 import { LedgerScreen } from "./ledger/LedgerScreen";
 import { OnboardingRoute } from "./onboarding/OnboardingRoute";
 import { PurchasesRoute } from "./purchases/PurchasesRoute";
+import { ReportsScreen } from "./reports/ReportsScreen";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
@@ -40,7 +41,6 @@ import {
   SettingsLayout,
 } from "./settings/SettingsScreens";
 import { AppShell } from "./shell/AppShell";
-import { ComingSoon } from "./shell/ComingSoon";
 import { useDocumentLanguage } from "./useDocumentLanguage";
 
 /**
@@ -181,7 +181,7 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/bank" element={<BankScreen />} />
               <Route path="/journal" element={<JournalScreen />} />
               <Route path="/assets" element={<AssetsScreen />} />
-              <Route path="/reports" element={<ComingSoon section="reports" />} />
+              <Route path="/reports" element={<ReportsScreen />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

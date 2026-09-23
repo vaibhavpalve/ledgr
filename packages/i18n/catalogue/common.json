@@ -135,16 +135,6 @@
     "common.nav.reports": { "nl": "Rapporten", "en": "Reports" },
     "common.nav.role.owner": { "nl": "Ondernemer", "en": "Owner" },
     "common.nav.role.firm": { "identical": true, "nl": "Accountant", "en": "Accountant" },
-    "common.soon.title": {
-      "note": "Heading of the placeholder a rail item opens while its screen is not built.",
-      "nl": "Nog niet beschikbaar",
-      "en": "Not available yet"
-    },
-    "common.soon.body": {
-      "note": "{section} is the rail item's own name. Says plainly that the screen is not built rather than showing an empty one.",
-      "nl": "Het scherm {section} is nog niet gebouwd. Zodra het er is, vind je het hier.",
-      "en": "The {section} screen has not been built yet. When it is, you will find it here."
-    },
     "common.user_menu.open": {
       "note": "Accessible name of the avatar button that opens the user menu.",
       "nl": "Gebruikersmenu openen",

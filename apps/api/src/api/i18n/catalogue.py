@@ -70,6 +70,7 @@ CATALOGUE_FILES = (
     "journal.json",
     "assets.json",
     "bank.json",
+    "reports.json",
     "onboarding.json",
     "settings.json",
 )

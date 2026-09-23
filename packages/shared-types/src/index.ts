@@ -1343,6 +1343,40 @@ export interface BankImportResultView {
   readonly duplicate_count: number;
 }
 
+/** One line of a report - `api.reports.model.ReportLine`. */
+export interface ReportLineView {
+  readonly account_id: string;
+  readonly account_code: string;
+  readonly account_name: string;
+  readonly amount: string;
+}
+
+/** `GET .../reports/balance-sheet` — `api.reports.model.BalanceSheet`. */
+export interface BalanceSheetView {
+  readonly fiscal_year_id: string;
+  readonly as_of: string;
+  readonly assets: readonly ReportLineView[];
+  readonly liabilities: readonly ReportLineView[];
+  readonly equity: readonly ReportLineView[];
+  readonly current_year_result: string;
+  readonly total_assets: string;
+  readonly total_liabilities: string;
+  readonly total_equity: string;
+  readonly is_balanced: boolean;
+}
+
+/** `GET .../reports/income-statement` — `api.reports.model.IncomeStatement`. */
+export interface IncomeStatementView {
+  readonly fiscal_year_id: string;
+  readonly period_start: string;
+  readonly period_end: string;
+  readonly revenue: readonly ReportLineView[];
+  readonly expense: readonly ReportLineView[];
+  readonly total_revenue: string;
+  readonly total_expense: string;
+  readonly net_result: string;
+}
+
 /** One row of `GET .../periods` — `api.ledger.periods.Period`. */
 export interface PeriodView {
   readonly id: string;

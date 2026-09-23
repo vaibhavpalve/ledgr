@@ -33,6 +33,7 @@ import invoiceFile from "../catalogue/invoice.json";
 import assetsFile from "../catalogue/assets.json";
 import bankFile from "../catalogue/bank.json";
 import glossaryFile from "../catalogue/glossary.json";
+import reportsFile from "../catalogue/reports.json";
 import journalFile from "../catalogue/journal.json";
 import ledgerFile from "../catalogue/ledger.json";
 import mobileFile from "../catalogue/mobile.json";
@@ -94,6 +95,7 @@ const FILES: readonly CatalogueFile[] = [
   journalFile as CatalogueFile,
   assetsFile as CatalogueFile,
   bankFile as CatalogueFile,
+  reportsFile as CatalogueFile,
   customersFile as CatalogueFile,
 ];
 

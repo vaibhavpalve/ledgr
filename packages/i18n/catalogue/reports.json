@@ -1,0 +1,71 @@
+{
+  "namespace": "reports",
+  "note": "The /reports screen: balance sheet and income statement, both computed from ledger.balances_as_of (0062). No new permission - both ride Appendix A's existing 'View reports' row.",
+  "messages": {
+    "reports.title": {
+      "nl": "Rapporten",
+      "en": "Reports"
+    },
+    "reports.tab.balance-sheet": {
+      "nl": "Balans",
+      "en": "Balance sheet"
+    },
+    "reports.tab.income-statement": {
+      "nl": "Winst- en verliesrekening",
+      "en": "Income statement"
+    },
+    "reports.as_of": {
+      "nl": "Balans per {date}",
+      "en": "Balance sheet as of {date}"
+    },
+    "reports.period": {
+      "nl": "Periode {start} – {end}",
+      "en": "Period {start} – {end}"
+    },
+    "reports.section.assets": {
+      "nl": "Activa",
+      "en": "Assets"
+    },
+    "reports.section.liabilities": {
+      "nl": "Schulden",
+      "en": "Liabilities"
+    },
+    "reports.section.equity": {
+      "nl": "Eigen vermogen",
+      "en": "Equity"
+    },
+    "reports.section.revenue": {
+      "nl": "Opbrengsten",
+      "en": "Revenue"
+    },
+    "reports.section.expense": {
+      "nl": "Kosten",
+      "en": "Expenses"
+    },
+    "reports.total_assets": {
+      "nl": "Totaal activa",
+      "en": "Total assets"
+    },
+    "reports.total_liabilities_and_equity": {
+      "nl": "Totaal schulden en eigen vermogen",
+      "en": "Total liabilities and equity"
+    },
+    "reports.current_year_result": {
+      "note": "Folded into equity for an interim balance sheet - the year's result so far.",
+      "nl": "Resultaat lopend boekjaar",
+      "en": "Current year result"
+    },
+    "reports.total_revenue": {
+      "nl": "Totaal opbrengsten",
+      "en": "Total revenue"
+    },
+    "reports.total_expense": {
+      "nl": "Totaal kosten",
+      "en": "Total expenses"
+    },
+    "reports.net_result": {
+      "nl": "Resultaat",
+      "en": "Net result"
+    }
+  }
+}

@@ -41,6 +41,7 @@ from api.ledger_reads import routes as ledger_read_routes
 from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
 from api.onboarding import routes as onboarding_routes
+from api.reports import routes as report_routes
 from api.security.csrf import CsrfProtectionMiddleware
 from api.security.headers import SecurityHeadersMiddleware
 from api.spa import register as register_spa
@@ -141,6 +142,10 @@ asset_routes.register(app)
 # already existed in Appendix A before this module did - see
 # api.bank.routes' module docstring.
 bank_routes.register(app)
+# The Reports screen: balance sheet and income statement, built entirely on
+# LedgerService.balances_as_of - no new table, no new permission. Same
+# registration reason; see api.reports.routes' module docstring.
+report_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless
