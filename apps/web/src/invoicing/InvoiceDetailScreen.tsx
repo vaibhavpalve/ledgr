@@ -7,6 +7,7 @@ import { describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
+import { formatQuantity, formatUnitPrice } from "./amounts";
 import { InvoiceStatusChip } from "./InvoiceListScreen";
 
 /**
@@ -27,7 +28,7 @@ import { InvoiceStatusChip } from "./InvoiceListScreen";
  * decides what a resend means).
  */
 export function InvoiceDetailScreen() {
-  const { t, money, date } = useI18n();
+  const { t, money, number, date } = useI18n();
   const { invoiceId = "" } = useParams();
   const { administration } = useAdministration();
   const { invoices } = useServices();
@@ -246,8 +247,10 @@ export function InvoiceDetailScreen() {
               {invoice.lines.map((line) => (
                 <tr key={line.id}>
                   <td>{line.description}</td>
-                  <td className="table__num">{line.quantity}</td>
-                  <td className="table__num">{money(line.unit_price)}</td>
+                  <td className="table__num">{formatQuantity(line.quantity, { number })}</td>
+                  <td className="table__num">
+                    {formatUnitPrice(line.unit_price, { money, number })}
+                  </td>
                   <td>{t(`capture.vat.${line.vat_treatment}`)}</td>
                   <td className="table__num">{money(line.line_net)}</td>
                 </tr>
