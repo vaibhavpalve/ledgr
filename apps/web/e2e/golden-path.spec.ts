@@ -224,6 +224,12 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await go(page, "/ledger");
   await expect(page.locator("table").first()).toBeVisible();
   await shot(page, "17-ledger");
+  const downloading = page.waitForEvent("download");
+  await page.getByTestId("ledger-export-trial-balance").click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(
+    /^saldibalans_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}\.csv$/,
+  );
   await go(page, "/reports?view=income-statement");
   await expect(page.locator("table").first()).toBeVisible();
   await shot(page, "18-income-statement");

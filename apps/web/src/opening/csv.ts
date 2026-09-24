@@ -60,9 +60,7 @@ function isAmount(value: string): boolean {
 export function readTrialBalance(text: string, language: string): ImportResult | null {
   // A byte-order mark (Excel's UTF-8 CSV) would otherwise glue itself to the first header.
   const body = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-  const rows = body
-    .split(/\r?\n/)
-    .filter((row) => row.trim() !== "");
+  const rows = body.split(/\r?\n/).filter((row) => row.trim() !== "");
   const header = rows[0];
   if (header === undefined) return null;
   const delimiter = delimiterOf(header);

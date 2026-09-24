@@ -30,6 +30,7 @@ from api.dashboard import routes as dashboard_routes
 from api.db import get_db_session
 from api.documents import routes as document_routes
 from api.expenses import routes as expense_routes
+from api.exports import routes as export_routes
 from api.firm.switcher import ClientSwitcher, SwitcherEntry
 from api.firm.switcher_repository import SqlSwitcherRepository
 from api.i18n.http import problem
@@ -154,6 +155,8 @@ vat_return_routes.register(app)
 # The opening balance (beginbalans), posted through LedgerService into an opening journal - see
 # api.opening.routes and ADR-088.
 opening_routes.register(app)
+# CSV exports of the books (grootboekmutaties, saldibalans), audited as exports - ADR-089.
+export_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

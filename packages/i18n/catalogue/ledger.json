@@ -289,6 +289,16 @@
     "ledger.opening.to_journal": {
       "nl": "Naar memoriaal",
       "en": "Go to journal"
+    },
+    "ledger.export.journal": {
+      "note": "ADR-089: every posted line of the fiscal year as CSV.",
+      "nl": "Mutaties (CSV)",
+      "en": "Postings (CSV)"
+    },
+    "ledger.export.trial-balance": {
+      "note": "ADR-089: the trial balance as CSV.",
+      "nl": "Saldibalans (CSV)",
+      "en": "Trial balance (CSV)"
     }
   }
 }

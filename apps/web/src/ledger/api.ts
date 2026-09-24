@@ -26,12 +26,34 @@ import type {
   TrialBalanceView,
 } from "@ledgr/shared-types";
 
-import { callJson, pathOf, queryOf, unwrapList, type ApiOptions } from "../api/http";
+import { callJson, pathOf, problemFrom, queryOf, unwrapList, type ApiOptions } from "../api/http";
 
 export { ApiError, OfflineError } from "../api/http";
 
+export type ExportKind = "journal" | "trial-balance";
+
 export class LedgerApi {
   constructor(private readonly options: ApiOptions) {}
+
+  /**
+   * ADR-089's CSV exports, fetched with the authenticated fetch (the bearer token is not a
+   * cookie, so a plain link would be refused) and handed back as a file to save.
+   */
+  async downloadExport(
+    administrationId: string,
+    kind: ExportKind,
+    fiscalYearId: string,
+  ): Promise<{ blob: Blob; filename: string }> {
+    const fetchImpl = this.options.fetchImpl ?? fetch;
+    const path =
+      pathOf("v1", "administrations", administrationId, "exports", `${kind}.csv`) +
+      queryOf({ fiscal_year_id: fiscalYearId });
+    const response = await fetchImpl(path);
+    if (!response.ok) throw await problemFrom(response);
+    const disposition = response.headers.get("Content-Disposition") ?? "";
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? `${kind}.csv`;
+    return { blob: await response.blob(), filename };
+  }
 
   async listChartOfAccounts(administrationId: string): Promise<ChartAccountView[]> {
     const raw = await callJson<

@@ -12,6 +12,7 @@ import type {
 import { describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
+import { ExportButtons } from "./ExportButtons";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { useModalFocus } from "../useModalFocus";
@@ -55,13 +56,16 @@ export function LedgerScreen() {
           end: fiscalYear.end_date.slice(0, 4),
         })}
         action={
-          <Link
-            to="/ledger/opening-balance"
-            className="button-link"
-            data-testid="ledger-opening-balance"
-          >
-            {t("ledger.opening.action")}
-          </Link>
+          <span className="ledger-actions">
+            <ExportButtons />
+            <Link
+              to="/ledger/opening-balance"
+              className="button-link"
+              data-testid="ledger-opening-balance"
+            >
+              {t("ledger.opening.action")}
+            </Link>
+          </span>
         }
       />
       <nav className="subnav" aria-label={t("ledger.views_label")}>

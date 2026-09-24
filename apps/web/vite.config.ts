@@ -26,6 +26,9 @@ export default defineConfig({
       "/v1": apiTarget,
       "/health": apiTarget,
     },
+    // Playwright writes screenshots and downloads under e2e/ while the dev server runs; a
+    // download's temporary .crdownload file vanishing under the watcher crashed Vite mid-run.
+    watch: { ignored: ["**/e2e/**"] },
   },
   test: {
     environment: "jsdom",
