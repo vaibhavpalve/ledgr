@@ -277,9 +277,9 @@ jobs:
       TEST_LEDGR_APP_PASSWORD: ci-test-password
       DATABASE_URL: postgresql+asyncpg://ledgr_app:ci-test-password@localhost:5432/ledgr_test
       OPS_DATABASE_URL: postgresql+asyncpg://ledgr_ops:ci-test-password@localhost:5432/ledgr_test
-      JWT_SIGNING_KEY: ci-e2e-signing-key-not-a-secret-000000
+      # The signing key and the local KEK are left to api.config's dev/test defaults, as in
+      # test-api: a literal here reads as a leaked key to the secret scan.
       KMS_PROVIDER: local
-      LOCAL_DEV_KEK: ci-e2e-kek-32-bytes-not-secret!!
       BREACH_CHECKER_PROVIDER: local
       EMAIL_PROVIDER: collecting
       EXPOSE_DEV_OUTBOX: "true"
