@@ -1016,6 +1016,66 @@
       "note": "ADR-087. The Belastingdienst reference is longer than any reference they issue.",
       "nl": "Het kenmerk van de Belastingdienst is te lang.",
       "en": "The Belastingdienst reference is too long."
+    },
+    "errors.opening_already_posted": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Het boekjaar heeft al een beginbalans. Wilt u die wijzigen, boek hem dan terug in het memoriaal en voer hem opnieuw in.",
+      "en": "This fiscal year already has an opening balance. To change it, reverse it in the journal and enter it again."
+    },
+    "errors.opening_amount_invalid": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Een bedrag in de beginbalans is ongeldig. Gebruik positieve bedragen met hoogstens twee decimalen.",
+      "en": "An amount in the opening balance is not valid. Use positive amounts with at most two decimals."
+    },
+    "errors.opening_account_unknown": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Een rekening in de beginbalans hoort niet bij deze administratie.",
+      "en": "An account in the opening balance does not belong to this administration."
+    },
+    "errors.opening_both_sides": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Rekening {code} heeft zowel een debet- als een creditbedrag. Vul er één in.",
+      "en": "Account {code} has both a debit and a credit amount. Enter one."
+    },
+    "errors.opening_not_balance_sheet": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Rekening {code} is een resultaatrekening. Een beginbalans bevat alleen balansrekeningen.",
+      "en": "Account {code} is a profit-and-loss account. An opening balance holds balance-sheet accounts only."
+    },
+    "errors.opening_control_account": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Rekening {code} is een debiteuren- of crediteurenrekening. Openstaande posten voert u in als facturen, niet als beginbalans.",
+      "en": "Account {code} is a receivables or payables account. Open items are entered as invoices, not in the opening balance."
+    },
+    "errors.opening_account_blocked": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Rekening {code} is geblokkeerd.",
+      "en": "Account {code} is blocked."
+    },
+    "errors.opening_duplicate_account": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Rekening {code} staat twee keer in de beginbalans.",
+      "en": "Account {code} appears twice in the opening balance."
+    },
+    "errors.opening_empty": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "De beginbalans heeft geen bedragen.",
+      "en": "The opening balance has no amounts."
+    },
+    "errors.opening_not_balanced": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "De beginbalans is niet in evenwicht (verschil {difference}). Kies een eigenvermogensrekening voor het verschil of pas de bedragen aan.",
+      "en": "The opening balance does not balance (difference {difference}). Choose an equity account for the difference or correct the amounts."
+    },
+    "errors.opening_balance_account_invalid": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "Het verschil kan alleen naar een actieve eigenvermogensrekening die niet al in de beginbalans staat.",
+      "en": "The difference can only go to an active equity account that is not already in the opening balance."
+    },
+    "errors.opening_period_closed": {
+      "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
+      "nl": "De eerste periode van dit boekjaar is afgesloten, dus er kan geen beginbalans meer in.",
+      "en": "The first period of this fiscal year is closed, so no opening balance can be posted into it."
     }
   }
 }

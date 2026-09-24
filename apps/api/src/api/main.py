@@ -41,6 +41,7 @@ from api.ledger_reads import routes as ledger_read_routes
 from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
 from api.onboarding import routes as onboarding_routes
+from api.opening import routes as opening_routes
 from api.reports import routes as report_routes
 from api.security.csrf import CsrfProtectionMiddleware
 from api.security.headers import SecurityHeadersMiddleware
@@ -150,6 +151,9 @@ report_routes.register(app)
 # The BTW screen (migration 0068): the return computed from the ledger, its pre-filing checks,
 # the drill-down and filing - see api.vat_returns.routes and ADR-087.
 vat_return_routes.register(app)
+# The opening balance (beginbalans), posted through LedgerService into an opening journal - see
+# api.opening.routes and ADR-088.
+opening_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

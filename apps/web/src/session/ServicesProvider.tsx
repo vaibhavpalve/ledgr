@@ -16,6 +16,7 @@ import { SalesInvoiceApi } from "../invoicing/api";
 import { JournalApi } from "../journal/api";
 import { LedgerApi } from "../ledger/api";
 import { OnboardingApi } from "../onboarding/api";
+import { OpeningApi } from "../opening/api";
 import { ReportsApi } from "../reports/api";
 import { TemplateApi } from "../templates/api";
 import { VatApi } from "../vat/api";
@@ -52,6 +53,7 @@ export interface Services {
   readonly reports: ReportsApi;
   readonly templates: TemplateApi;
   readonly vat: VatApi;
+  readonly opening: OpeningApi;
   readonly queue: CaptureQueue;
   readonly decode: DecodeFile;
 }
@@ -87,6 +89,7 @@ export function ServicesProvider({
       reports: lazy("reports", () => new ReportsApi(options)),
       templates: lazy("templates", () => new TemplateApi(options)),
       vat: lazy("vat", () => new VatApi(options)),
+      opening: lazy("opening", () => new OpeningApi(options)),
       // Built lazily and only when nothing was injected: `captureQueue()`
       // opens IndexedDB, which jsdom does not have.
       queue: lazy("queue", () => captureQueue()),

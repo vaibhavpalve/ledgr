@@ -202,6 +202,93 @@
     "ledger.chart.blocked": {
       "nl": "Geblokkeerd",
       "en": "Blocked"
+    },
+    "ledger.opening.title": {
+      "nl": "Beginbalans",
+      "en": "Opening balance"
+    },
+    "ledger.opening.action": {
+      "nl": "Beginbalans",
+      "en": "Opening balance"
+    },
+    "ledger.opening.as_of": {
+      "nl": "Per {date}",
+      "en": "As of {date}"
+    },
+    "ledger.opening.intro": {
+      "nl": "Vul in wat de onderneming meebrengt aan het begin van dit boekjaar: banksaldo, kas, bezittingen, leningen en eigen vermogen. Zonder beginbalans lijkt het alsof u met niets begint, en wordt bijvoorbeeld uw banksaldo negatief na de eerste betaling.",
+      "en": "Enter what the business brings into the start of this fiscal year: bank balance, cash, assets, loans and equity. Without an opening balance the books start at nothing, and your bank balance turns negative after the first payment."
+    },
+    "ledger.opening.import": {
+      "nl": "Saldibalans importeren",
+      "en": "Import a trial balance"
+    },
+    "ledger.opening.import_hint": {
+      "nl": "CSV uit uw vorige pakket (Moneybird, Exact, e-Boekhouden): een kolom met het rekeningnummer en debet/credit of saldo.",
+      "en": "CSV from your previous package (Moneybird, Exact, e-Boekhouden): a column with the account number and debit/credit or balance."
+    },
+    "ledger.opening.import_unrecognised": {
+      "nl": "Dit bestand heeft geen kolom met rekeningnummers en bedragen die we herkennen.",
+      "en": "This file has no column of account numbers and amounts we recognise."
+    },
+    "ledger.opening.import_read": {
+      "nl": {
+        "one": "{count} rekening ingevuld.",
+        "other": "{count} rekeningen ingevuld."
+      },
+      "en": {
+        "one": "{count} account filled in.",
+        "other": "{count} accounts filled in."
+      }
+    },
+    "ledger.opening.import_missing": {
+      "nl": "Niet in dit rekeningschema, of geen balansrekening: {codes}. Controleer of die bedragen elders horen.",
+      "en": "Not in this chart, or not a balance-sheet account: {codes}. Check where those amounts belong."
+    },
+    "ledger.opening.import_unreadable": {
+      "nl": "Geen bedrag gevonden voor: {codes}.",
+      "en": "No amount found for: {codes}."
+    },
+    "ledger.opening.debit": {
+      "nl": "Debet",
+      "en": "Debit"
+    },
+    "ledger.opening.credit": {
+      "identical": true,
+      "nl": "Credit",
+      "en": "Credit"
+    },
+    "ledger.opening.total": {
+      "nl": "Totaal",
+      "en": "Total"
+    },
+    "ledger.opening.difference": {
+      "nl": "Verschil van {amount} boeken op",
+      "en": "Post the difference of {amount} to"
+    },
+    "ledger.opening.balanced": {
+      "nl": "De beginbalans is in evenwicht.",
+      "en": "The opening balance balances."
+    },
+    "ledger.opening.invalid": {
+      "nl": "Een of meer bedragen zijn geen geldig bedrag.",
+      "en": "One or more amounts are not a valid amount."
+    },
+    "ledger.opening.submit": {
+      "nl": "Beginbalans boeken",
+      "en": "Post the opening balance"
+    },
+    "ledger.opening.posted": {
+      "nl": "De beginbalans is geboekt in boeking {number}.",
+      "en": "The opening balance is posted as entry {number}."
+    },
+    "ledger.opening.posted_hint": {
+      "nl": "Wilt u hem wijzigen? Boek hem terug in het memoriaal en voer hem opnieuw in.",
+      "en": "To change it, reverse it in the journal and enter it again."
+    },
+    "ledger.opening.to_journal": {
+      "nl": "Naar memoriaal",
+      "en": "Go to journal"
     }
   }
 }

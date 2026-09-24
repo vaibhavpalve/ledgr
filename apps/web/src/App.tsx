@@ -28,6 +28,7 @@ import { OnboardingRoute } from "./onboarding/OnboardingRoute";
 import { PurchasesRoute } from "./purchases/PurchasesRoute";
 import { ReportsScreen } from "./reports/ReportsScreen";
 import { VatRoute } from "./vat/VatScreen";
+import { OpeningBalanceScreen } from "./opening/OpeningBalanceScreen";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
@@ -179,6 +180,7 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/customers/:customerId" element={<CustomerDetailScreen />} />
               <Route path="/customers/:customerId/edit" element={<CustomerFormScreen />} />
               <Route path="/ledger" element={<LedgerScreen />} />
+              <Route path="/ledger/opening-balance" element={<OpeningBalanceScreen />} />
               <Route path="/bank" element={<BankScreen />} />
               <Route path="/journal" element={<JournalScreen />} />
               <Route path="/assets" element={<AssetsScreen />} />

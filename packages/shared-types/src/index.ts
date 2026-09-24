@@ -1780,3 +1780,38 @@ export interface ExpensePostingView {
   readonly entry_date: string;
   readonly status: "posted";
 }
+
+/* The opening balance (beginbalans) - api.opening.routes (ADR-088). Amounts are decimal strings. */
+
+export interface OpeningAccountView {
+  readonly id: string;
+  readonly code: string;
+  readonly name: string;
+  readonly account_type: "asset" | "liability" | "equity" | "revenue" | "expense";
+}
+
+export interface OpeningEntryView {
+  readonly id: string;
+  readonly entry_number: number;
+  readonly entry_date: string;
+  readonly lines: readonly {
+    readonly account_id: string;
+    readonly account_code: string;
+    readonly account_name: string;
+    readonly debit: string;
+    readonly credit: string;
+  }[];
+}
+
+/** `GET .../opening-balance?fiscal_year_id=` */
+export interface OpeningBalanceView {
+  readonly fiscal_year_id: string;
+  /** The fiscal year's first day: the date the opening balance is posted on. */
+  readonly entry_date: string;
+  /** Balance-sheet accounts that can carry an opening line (no control accounts). */
+  readonly accounts: readonly OpeningAccountView[];
+  /** Equity accounts a difference may go to. */
+  readonly balance_accounts: readonly OpeningAccountView[];
+  /** The posted opening entry that still stands, or null. */
+  readonly posted: OpeningEntryView | null;
+}

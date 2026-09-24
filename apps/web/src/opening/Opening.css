@@ -1,0 +1,59 @@
+/* The opening balance (ADR-088). Handoff tokens only. */
+
+.opening {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.opening__back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.opening__intro {
+  margin: 0;
+  max-width: 65ch;
+  color: var(--ink-muted);
+}
+
+.opening__import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+}
+
+.opening__import label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.opening__amount {
+  width: 100%;
+  max-width: 9rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.opening__amount[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.opening__finish {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-4);
+}
+
+.opening__balanced {
+  margin: 0;
+  color: var(--ink-muted);
+}

@@ -136,6 +136,18 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await expect(page.getByTestId("administration-save")).toBeDisabled();
   await shot(page, "07-settings-organization");
 
+  // --- The opening balance: what the business brings in -----------------------------
+  await go(page, "/ledger");
+  await page.getByTestId("ledger-opening-balance").click();
+  await expect(page.getByTestId("opening-form")).toBeVisible();
+  await page.getByTestId("opening-debit-1100").fill("12.500,00");
+  await page.getByTestId("opening-credit-0500").fill("10.000,00");
+  await expect(page.getByTestId("opening-balance-account")).toBeVisible();
+  await shot(page, "07a-opening-balance");
+  await page.getByTestId("opening-submit").click();
+  await expect(page.getByTestId("opening-posted")).toBeVisible();
+  await shot(page, "07b-opening-balance-posted");
+
   // --- A customer -----------------------------------------------------------------
   await go(page, "/customers/new");
   await expect(page.getByTestId("customer-form")).toBeVisible();
@@ -204,6 +216,8 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   // --- The dashboard now has figures -------------------------------------------------
   await go(page, "/");
   await expect(page.getByTestId("home-figures")).toBeVisible();
+  // 12.500 brought in, 121 paid for the receipt: the bank is not negative any more.
+  await expect(page.getByTestId("home-cash-position")).toContainText("12.379,00");
   await shot(page, "16-dashboard");
 
   // --- The books ----------------------------------------------------------------------

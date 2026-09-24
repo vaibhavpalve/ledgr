@@ -54,6 +54,15 @@ export function LedgerScreen() {
           start: fiscalYear.start_date.slice(0, 4),
           end: fiscalYear.end_date.slice(0, 4),
         })}
+        action={
+          <Link
+            to="/ledger/opening-balance"
+            className="button-link"
+            data-testid="ledger-opening-balance"
+          >
+            {t("ledger.opening.action")}
+          </Link>
+        }
       />
       <nav className="subnav" aria-label={t("ledger.views_label")}>
         {VIEWS.map((candidate) => (
