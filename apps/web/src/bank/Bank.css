@@ -1,0 +1,98 @@
+/* The bank screen's suggested matches (ADR-091). */
+
+.bank-certain {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.bank-suggestion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+  margin-top: var(--ledgr-space-1);
+}
+
+.bank-suggestion .caption {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bank-suggestion__match {
+  padding: var(--ledgr-space-1) var(--ledgr-space-3);
+  font-size: var(--ledgr-type-small);
+}
+
+/*
+ * On a phone a four-column table leaves the description a word wide and pushes the action off
+ * the edge. Each line becomes a card instead: who and why on top, the date and amount beneath,
+ * the action last, full width.
+ */
+@media (max-width: 47.99rem) {
+  .bank-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .bank-table,
+  .bank-table tbody {
+    display: block;
+  }
+  .bank-table .bank-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "what what"
+      "date amount"
+      "action action";
+    gap: var(--ledgr-space-1) var(--ledgr-space-3);
+    padding: var(--ledgr-space-3);
+    border-bottom: 1px solid var(--ledgr-border-subtle);
+  }
+  .bank-table .bank-row > td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .bank-row__what {
+    grid-area: what;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .bank-row__date {
+    grid-area: date;
+    color: var(--ledgr-text-secondary);
+  }
+  .bank-row__amount {
+    grid-area: amount;
+    font-weight: var(--ledgr-weight-semibold);
+  }
+  .bank-row__action {
+    grid-area: action;
+    margin-top: var(--ledgr-space-2);
+  }
+  .bank-row__action > button {
+    width: 100%;
+  }
+  .bank-table .bank-row__panel,
+  .bank-table .bank-row__panel > td {
+    display: block;
+  }
+  .bank-table .bank-row__panel > td {
+    padding: 0 var(--ledgr-space-3) var(--ledgr-space-3);
+  }
+}
+
+.bank-row__panel .panel {
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+}
+
+.bank-candidates {
+  display: grid;
+  gap: var(--ledgr-space-2);
+  padding-left: 0;
+  list-style: none;
+}

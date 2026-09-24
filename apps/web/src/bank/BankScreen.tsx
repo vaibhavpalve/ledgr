@@ -12,11 +12,13 @@ import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
+import "./Bank.css";
 
 /**
- * `/bank` — bank accounts, CSV statement import, and reconciliation. No live
- * feed (PSD2/AISP) exists yet: import is a canonical CSV a person exports
- * from their own bank (`api.bank.csv_parser`'s documented P0 substitute).
+ * `/bank` — bank accounts, statement import, and reconciliation. No live feed (PSD2/AISP) exists
+ * yet: a person imports the statement file their bank exports (CAMT.053, MT940 or the bank's CSV,
+ * ADR-091). Each unmatched incoming line shows its best open invoice and how sure that is; the
+ * certain ones can be matched in one go.
  */
 export function BankScreen() {
   const { t } = useI18n();
@@ -227,7 +229,63 @@ function AccountTransactions({
   const [importing, setImporting] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const [matching, setMatching] = useState(false);
+  const [matchResult, setMatchResult] = useState<{
+    tone: "positive" | "attention";
+    text: string;
+  } | null>(null);
+
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
+
+  const matchOne = useCallback(
+    async (transactionId: string, invoiceId: string) => {
+      setMatching(true);
+      setMatchResult(null);
+      try {
+        await bank.reconcileWithInvoice(administrationId, transactionId, invoiceId);
+        reload();
+      } catch (error) {
+        setMatchResult({ tone: "attention", text: describeError(error) });
+      } finally {
+        setMatching(false);
+      }
+    },
+    [bank, administrationId, reload],
+  );
+
+  // FR-BNK-004 (ADR-091): only HIGH suggestions, one at a time, each through the same
+  // reconcile-with-invoice call a person's click makes. A refusal (the invoice was paid meanwhile)
+  // leaves that line for a person and does not stop the rest.
+  const certainLines = (transactions ?? []).filter(
+    (transaction) =>
+      transaction.status === "unmatched" && transaction.suggestion?.confidence === "high",
+  );
+  const matchAllCertain = useCallback(async () => {
+    setMatching(true);
+    setMatchResult(null);
+    let matched = 0;
+    let failed = 0;
+    for (const transaction of certainLines) {
+      const suggestion = transaction.suggestion;
+      if (!suggestion) continue;
+      try {
+        await bank.reconcileWithInvoice(administrationId, transaction.id, suggestion.invoice_id);
+        matched += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setMatching(false);
+    setMatchResult(
+      failed === 0
+        ? { tone: "positive", text: t("bank.match_certain_done", { count: matched }) }
+        : {
+            tone: "attention",
+            text: t("bank.match_certain_partial", { count: matched, failed }),
+          },
+    );
+    reload();
+  }, [bank, administrationId, certainLines, reload, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -284,6 +342,29 @@ function AccountTransactions({
         />
       ) : null}
 
+      {matchResult !== null ? (
+        <p
+          className={`alert alert--${matchResult.tone}`}
+          role="status"
+          data-testid="bank-match-result"
+        >
+          {matchResult.text}
+        </p>
+      ) : null}
+      {certainLines.length > 0 ? (
+        <div className="alert alert--positive bank-certain" data-testid="bank-certain">
+          <span>{t("bank.certain_banner", { count: certainLines.length })}</span>
+          <button
+            type="button"
+            className="button--primary"
+            disabled={matching}
+            onClick={() => void matchAllCertain()}
+            data-testid="bank-match-certain"
+          >
+            {matching ? t("journal.form.submitting") : t("bank.match_certain")}
+          </button>
+        </div>
+      ) : null}
       {problem !== null ? <ErrorState message={problem} onRetry={reload} /> : null}
       {transactions === null && problem === null ? <LoadingSkeleton rows={5} /> : null}
       {transactions !== null && transactions.length === 0 ? (
@@ -295,7 +376,7 @@ function AccountTransactions({
       ) : null}
       {transactions !== null && transactions.length > 0 ? (
         <div className="table-wrap">
-          <table className="table" data-testid="bank-transactions">
+          <table className="table bank-table" data-testid="bank-transactions">
             <thead>
               <tr>
                 <th scope="col">{t("ledger.column.date")}</th>
@@ -309,16 +390,24 @@ function AccountTransactions({
             <tbody>
               {transactions.map((transaction) => (
                 <Fragment key={transaction.id}>
-                  <tr data-testid="bank-transaction-row">
-                    <td className="ledgr-num">{date(transaction.booking_date)}</td>
-                    <td>
+                  <tr className="bank-row" data-testid="bank-transaction-row">
+                    <td className="ledgr-num bank-row__date">{date(transaction.booking_date)}</td>
+                    <td className="bank-row__what">
                       {transaction.counterparty_name ?? "—"}
                       {transaction.description ? (
                         <span className="caption"> · {transaction.description}</span>
                       ) : null}
+                      {transaction.status === "unmatched" && transaction.suggestion ? (
+                        <SuggestionLine
+                          suggestion={transaction.suggestion}
+                          disabled={matching}
+                          onMatch={(invoiceId) => void matchOne(transaction.id, invoiceId)}
+                          testId={`bank-suggestion-${transaction.id}`}
+                        />
+                      ) : null}
                     </td>
-                    <td className="table__num">{money(transaction.amount)}</td>
-                    <td>
+                    <td className="table__num bank-row__amount">{money(transaction.amount)}</td>
+                    <td className="bank-row__action">
                       {transaction.status === "unmatched" ? (
                         <button
                           type="button"
@@ -337,7 +426,7 @@ function AccountTransactions({
                     </td>
                   </tr>
                   {openId === transaction.id ? (
-                    <tr>
+                    <tr className="bank-row__panel">
                       <td colSpan={4}>
                         <ReconcilePanel
                           administrationId={administrationId}
@@ -361,6 +450,20 @@ function AccountTransactions({
   );
 }
 
+/**
+ * FR-BNK-002 (ADR-091): the statement file as the bank exported it - CAMT.053, MT940, or the
+ * bank's CSV. Choosing the file imports it; there is nothing to fill in. Decoded as UTF-8, and as
+ * Windows-1252 when it is not valid UTF-8 (ING's CSV), so a name like "Privé" survives.
+ */
+async function readStatement(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer();
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
 function ImportStatementForm({
   administrationId,
   bankAccountId,
@@ -374,58 +477,64 @@ function ImportStatementForm({
 }) {
   const { t } = useI18n();
   const { bank } = useServices();
-  const [filename, setFilename] = useState("statement.csv");
-  const [csv, setCsv] = useState("date,amount,counterparty_name,counterparty_iban,description\n");
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
-  const submit = useCallback(async () => {
-    setSending(true);
-    setProblem(null);
-    try {
-      const imported = await bank.importStatement(administrationId, bankAccountId, csv, filename);
-      setResult(
-        t("bank.import_result", {
-          count: imported.transaction_count,
-          duplicates: imported.duplicate_count,
-        }),
-      );
-    } catch (error) {
-      setProblem(describeError(error));
-    } finally {
-      setSending(false);
-    }
-  }, [bank, administrationId, bankAccountId, csv, filename, t]);
+  const submit = useCallback(
+    async (file: File) => {
+      setSending(true);
+      setProblem(null);
+      setResult(null);
+      try {
+        const text = await readStatement(file);
+        const imported = await bank.importStatement(
+          administrationId,
+          bankAccountId,
+          text,
+          file.name,
+        );
+        setResult(
+          t("bank.import_result", {
+            count: imported.transaction_count,
+            duplicates: imported.duplicate_count,
+          }),
+        );
+      } catch (error) {
+        setProblem(describeError(error));
+      } finally {
+        setSending(false);
+      }
+    },
+    [bank, administrationId, bankAccountId, t],
+  );
 
   return (
     <div className="panel form" data-testid="bank-import-form">
       <h3>{t("bank.import")}</h3>
       <p className="caption">{t("bank.import_hint")}</p>
       {problem !== null ? <ErrorState message={problem} /> : null}
-      {result !== null ? <p className="alert alert--positive">{result}</p> : null}
-      <label className="form__field">
-        <span>{t("bank.field.filename")}</span>
-        <input type="text" value={filename} onChange={(event) => setFilename(event.target.value)} />
-      </label>
-      <label className="form__field form__field--grow">
-        <span>{t("bank.field.csv")}</span>
-        <textarea
-          rows={6}
-          value={csv}
-          onChange={(event) => setCsv(event.target.value)}
-          data-testid="bank-import-csv"
+      {result !== null ? (
+        <p className="alert alert--positive" role="status" data-testid="bank-import-result">
+          {result}
+        </p>
+      ) : null}
+      <label className="button-link">
+        {sending ? t("journal.form.submitting") : t("bank.import_choose")}
+        <input
+          type="file"
+          accept=".xml,.sta,.940,.mt940,.swi,.csv,.txt,text/csv,text/xml,application/xml"
+          className="ledgr-visually-hidden"
+          disabled={sending}
+          data-testid="bank-import-file"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void submit(file);
+            event.target.value = "";
+          }}
         />
       </label>
       <div className="form__actions">
-        <button
-          type="button"
-          disabled={sending}
-          onClick={() => void submit()}
-          data-testid="bank-import-submit"
-        >
-          {sending ? t("journal.form.submitting") : t("bank.import")}
-        </button>
         {result !== null ? (
           <button type="button" onClick={onImported} data-testid="bank-import-done">
             {t("common.action.close")}
@@ -436,6 +545,57 @@ function ImportStatementForm({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+const CONFIDENCE_CHIP = {
+  high: "chip chip--positive",
+  medium: "chip chip--caution",
+  low: "chip",
+} as const;
+
+function ConfidenceChip({ candidate }: { candidate: BankMatchCandidateView }) {
+  const { t } = useI18n();
+  const why = candidate.reasons.map((reason) => t(`bank.reason.${reason}`)).join(", ");
+  return (
+    <span className={CONFIDENCE_CHIP[candidate.confidence]} title={why}>
+      {t(`bank.confidence.${candidate.confidence}`)}
+    </span>
+  );
+}
+
+/** The best open invoice for one bank line, with a one-click match (FR-BNK-003, ADR-091). */
+function SuggestionLine({
+  suggestion,
+  disabled,
+  onMatch,
+  testId,
+}: {
+  suggestion: BankMatchCandidateView;
+  disabled: boolean;
+  onMatch: (invoiceId: string) => void;
+  testId: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="bank-suggestion" data-testid={testId}>
+      <ConfidenceChip candidate={suggestion} />
+      <span className="caption">
+        {t("bank.suggestion", {
+          reference: suggestion.invoice_reference ?? "—",
+          customer: suggestion.customer_name,
+        })}
+      </span>
+      <button
+        type="button"
+        className="bank-suggestion__match"
+        disabled={disabled}
+        onClick={() => onMatch(suggestion.invoice_id)}
+        data-testid={`${testId}-match`}
+      >
+        {t("bank.match")}
+      </button>
     </div>
   );
 }
@@ -455,7 +615,8 @@ function ReconcilePanel({
   const { bank } = useServices();
   const isInflow = !transaction.amount.startsWith("-");
   const [candidates, setCandidates] = useState<readonly BankMatchCandidateView[] | null>(null);
-  const [offsetAccountId, setOffsetAccountId] = useState(accounts[0]?.id ?? "");
+  // No default: the first account in the chart (a fixed-asset account) is never a safe guess.
+  const [offsetAccountId, setOffsetAccountId] = useState("");
   const [description, setDescription] = useState(transaction.description ?? "");
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -516,9 +677,11 @@ function ReconcilePanel({
       {isInflow && candidates !== null && candidates.length > 0 ? (
         <div>
           <p className="caption">{t("bank.suggested_invoices")}</p>
-          <ul>
+          <ul className="bank-candidates">
             {candidates.map((candidate) => (
               <li key={candidate.invoice_id}>
+                <ConfidenceChip candidate={candidate} />{" "}
+                {candidate.invoice_reference ? `${candidate.invoice_reference} · ` : ""}
                 {candidate.customer_name} — {money(candidate.outstanding)}{" "}
                 <button
                   type="button"
@@ -542,6 +705,9 @@ function ReconcilePanel({
             onChange={(event) => setOffsetAccountId(event.target.value)}
             data-testid={`bank-offset-account-${transaction.id}`}
           >
+            <option value="" disabled>
+              {t("bank.offset_account_choose")}
+            </option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.code} — {account.name}
@@ -561,7 +727,7 @@ function ReconcilePanel({
       <div className="form__actions">
         <button
           type="button"
-          disabled={sending}
+          disabled={sending || offsetAccountId === ""}
           onClick={() => void reconcileGeneric()}
           data-testid={`bank-reconcile-confirm-${transaction.id}`}
         >

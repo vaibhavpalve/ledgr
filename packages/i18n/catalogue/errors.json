@@ -973,9 +973,9 @@
       "en": "That value is not valid. Check the highlighted field."
     },
     "errors.bank_statement_invalid": {
-      "note": "api.bank.csv_parser.CsvStatementError: a missing required column, or a row whose date/amount could not be parsed. {detail} is the parser's own already-specific English reason, for a log rather than the sentence (FR-UX-007).",
-      "nl": "Dit bestand kan niet worden geimporteerd. Controleer of het de kolommen date, amount, counterparty_name, counterparty_iban en description heeft.",
-      "en": "This file could not be imported. Check that it has the columns date, amount, counterparty_name, counterparty_iban and description."
+      "note": "ADR-091: a row of a recognised statement whose date or amount does not read. {row} is the row or entry number, {field} which of the two.",
+      "nl": "Regel {row} van dit afschrift kan niet worden gelezen ({field}). Er is niets ingelezen; download het afschrift opnieuw of kies een ander formaat.",
+      "en": "Row {row} of this statement cannot be read ({field}). Nothing was imported; download the statement again or choose another format."
     },
     "errors.vat_period_not_found": {
       "note": "ADR-087. The period in the path is not this administration's, or does not exist - indistinguishable on purpose.",
@@ -1076,6 +1076,25 @@
       "note": "ADR-088, the opening balance. {code} is the account's code where the problem is one account.",
       "nl": "De eerste periode van dit boekjaar is afgesloten, dus er kan geen beginbalans meer in.",
       "en": "The first period of this fiscal year is closed, so no opening balance can be posted into it."
+    },
+    "errors.bank_statement_unknown_format": {
+      "note": "ADR-091: not CAMT.053, MT940 or a bank CSV LEDGR recognises.",
+      "nl": "Dit bestand is geen bankafschrift dat LEDGR kan lezen. Kies CAMT.053 (aanbevolen), MT940 of de CSV-export van ING, Rabobank, bunq, Knab of ABN AMRO.",
+      "en": "This file is not a bank statement LEDGR can read. Choose CAMT.053 (recommended), MT940 or the CSV export of ING, Rabobank, bunq, Knab or ABN AMRO."
+    },
+    "errors.bank_statement_other_account": {
+      "note": "ADR-091: the file names an account and it is not this bank account's IBAN.",
+      "nl": "Dit afschrift is van rekening {iban}, niet van deze bankrekening. Er is niets ingelezen.",
+      "en": "This statement is for account {iban}, not this bank account. Nothing was imported."
+    },
+    "errors.bank_statement_ambiguous_account": {
+      "nl": "Dit bestand bevat meerdere rekeningen. Download per rekening een apart afschrift.",
+      "en": "This file holds more than one account. Download a separate statement per account."
+    },
+    "errors.bank_statement_unsafe": {
+      "note": "ADR-091: an XML statement with a DTD or entity declaration - refused as unsafe.",
+      "nl": "Dit bestand bevat XML-onderdelen die een bankafschrift nooit heeft en wordt daarom niet ingelezen.",
+      "en": "This file contains XML a bank statement never has, so it is not imported."
     }
   }
 }

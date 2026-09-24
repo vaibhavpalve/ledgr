@@ -1,6 +1,6 @@
 {
   "namespace": "bank",
-  "note": "The /bank screen: bank accounts, CSV statement import, reconciliation. No live feed (PSD2/AISP) is built yet - import is a canonical CSV a person exports from their own bank (see api.bank.csv_parser and ADR-084).",
+  "note": "The /bank screen: bank accounts, statement import, reconciliation and suggested matches. No live feed (PSD2/AISP) is built yet - import reads the file a person exports from their own bank: CAMT.053, MT940 or the bank's CSV (api.bank.statement_formats, ADR-084, ADR-091).",
   "messages": {
     "bank.title": {
       "identical": true,
@@ -47,6 +47,11 @@
       "nl": "Tegenrekening",
       "en": "Offset account"
     },
+    "bank.offset_account_choose": {
+      "note": "Placeholder of the offset-account picker; nothing is preselected so nothing is booked to a guessed account.",
+      "nl": "Kies een rekening",
+      "en": "Choose an account"
+    },
     "bank.status_label": {
       "nl": "Weergave",
       "en": "View"
@@ -64,15 +69,15 @@
       "en": "Import statement"
     },
     "bank.import_hint": {
-      "note": "Documents the canonical-CSV P0 substitute plainly, on the screen itself.",
-      "nl": "Er is nog geen directe bankkoppeling. Exporteer een CSV-bestand van uw bank met de kolommen date, amount, counterparty_name, counterparty_iban en description, en plak de inhoud hieronder.",
-      "en": "There is no direct bank connection yet. Export a CSV file from your bank with the columns date, amount, counterparty_name, counterparty_iban and description, and paste its contents below."
+      "note": "ADR-091: the formats the import reads, as a person finds them in their bank's export menu.",
+      "nl": "Download een afschrift in uw internetbankieren en kies het hier. LEDGR leest CAMT.053 (aanbevolen), MT940 en de CSV-export van ING, Rabobank, bunq, Knab en ABN AMRO. Een afschrift dat al eerder is ingelezen, wordt niet dubbel geboekt.",
+      "en": "Download a statement from your online banking and choose it here. LEDGR reads CAMT.053 (recommended), MT940 and the CSV export of ING, Rabobank, bunq, Knab and ABN AMRO. A statement imported before is not booked twice."
     },
     "bank.import_result": {
       "note": "{count} new transactions, {duplicates} already-imported lines skipped.",
       "nl": {
-        "one": "{count} transactie geimporteerd ({duplicates} al eerder geimporteerd).",
-        "other": "{count} transacties geimporteerd ({duplicates} al eerder geimporteerd)."
+        "one": "{count} transactie geïmporteerd ({duplicates} al eerder geïmporteerd).",
+        "other": "{count} transacties geïmporteerd ({duplicates} al eerder geïmporteerd)."
       },
       "en": {
         "one": "{count} transaction imported ({duplicates} already imported before).",
@@ -102,6 +107,81 @@
     "bank.generic_reconcile_hint": {
       "nl": "Geen van deze facturen? Kies een tegenrekening om deze transactie rechtstreeks te boeken.",
       "en": "None of these invoices? Choose an offset account to post this transaction directly."
+    },
+    "bank.import_choose": {
+      "nl": "Afschrift kiezen",
+      "en": "Choose a statement"
+    },
+    "bank.suggestion": {
+      "note": "The best open invoice for one bank line (ADR-091). {reference} is the invoice number.",
+      "nl": "Factuur {reference} van {customer}",
+      "en": "Invoice {reference} to {customer}"
+    },
+    "bank.confidence.high": {
+      "note": "Certain enough to be matched in bulk: the invoice number is in the payment, or the payer's name matches and no other invoice has this amount.",
+      "nl": "Zeker",
+      "en": "Certain"
+    },
+    "bank.confidence.medium": {
+      "nl": "Waarschijnlijk",
+      "en": "Likely"
+    },
+    "bank.confidence.low": {
+      "note": "Only the amount matches.",
+      "nl": "Alleen bedrag",
+      "en": "Amount only"
+    },
+    "bank.reason.reference": {
+      "nl": "factuurnummer in de omschrijving",
+      "en": "invoice number in the description"
+    },
+    "bank.reason.name": {
+      "nl": "naam van de betaler",
+      "en": "payer's name"
+    },
+    "bank.reason.only_candidate": {
+      "nl": "enige openstaande factuur van dit bedrag",
+      "en": "only open invoice of this amount"
+    },
+    "bank.reason.ambiguous": {
+      "nl": "past ook bij een andere factuur of betaling",
+      "en": "also fits another invoice or payment"
+    },
+    "bank.certain_banner": {
+      "note": "Above the bank lines when some have a certain match (ADR-091).",
+      "nl": {
+        "one": "{count} betaling past zeker bij een openstaande factuur.",
+        "other": "{count} betalingen passen zeker bij een openstaande factuur."
+      },
+      "en": {
+        "one": "{count} payment certainly matches an open invoice.",
+        "other": "{count} payments certainly match an open invoice."
+      }
+    },
+    "bank.match_certain": {
+      "nl": "Alle zekere koppelen",
+      "en": "Match all certain"
+    },
+    "bank.match_certain_done": {
+      "nl": {
+        "one": "{count} betaling gekoppeld en als ontvangst geboekt.",
+        "other": "{count} betalingen gekoppeld en als ontvangst geboekt."
+      },
+      "en": {
+        "one": "{count} payment matched and booked as received.",
+        "other": "{count} payments matched and booked as received."
+      }
+    },
+    "bank.match_certain_partial": {
+      "note": "Some certain matches were refused, e.g. the invoice was paid meanwhile; those lines stay for a person.",
+      "nl": {
+        "one": "{count} betaling gekoppeld; {failed} niet gelukt, bekijk die zelf.",
+        "other": "{count} betalingen gekoppeld; {failed} niet gelukt, bekijk die zelf."
+      },
+      "en": {
+        "one": "{count} payment matched; {failed} failed, please review those yourself.",
+        "other": "{count} payments matched; {failed} failed, please review those yourself."
+      }
     }
   }
 }

@@ -277,6 +277,24 @@ async def _issued_invoice_and_matching_transaction(
     """
     world = await _bank_world(tenants)
     invoice_world = await _world(tenants)
+    # A seeded administration has no data-encryption key; onboarding provisions one in the same
+    # transaction as the administration (api.onboarding.routes), so give this one the same.
+    from sqlalchemy import text as sql_text
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from api.crypto.envelope import EnvelopeEncryptionService
+    from api.crypto.kms import build_kms
+    from api.crypto.repository import SqlAdministrationKeyRepository
+    from api.db import engine as app_engine
+
+    async with AsyncSession(app_engine) as session, session.begin():
+        await session.execute(
+            sql_text("SELECT set_config('app.current_org_id', :org, true)"),
+            {"org": str(tenants.org_a)},
+        )
+        await EnvelopeEncryptionService(
+            build_kms(), SqlAdministrationKeyRepository(session)
+        ).provision_key(tenants.admin_a)
     await _exec(
         tenants,
         "UPDATE administration SET address_line1 = 'Keizersgracht 1', postal_code = '1015 CS', "
@@ -332,8 +350,13 @@ async def _issued_invoice_and_matching_transaction(
     listing = await _call(
         tenants, tenants.admin_a, "GET", f"/bank-accounts/{account_id}/transactions"
     )
-    transaction_id = listing.json()["transactions"][0]["id"]
-    return invoice_id, transaction_id
+    [line] = listing.json()["transactions"]
+    # ADR-091: the payer's name is the customer's (less "B.V.") and no other invoice is open for
+    # 605.00 - certain enough to be matched in bulk.
+    assert line["suggestion"]["invoice_id"] == invoice_id, line
+    assert line["suggestion"]["confidence"] == "high", line
+    assert set(line["suggestion"]["reasons"]) == {"name", "only_candidate"}, line
+    return invoice_id, line["id"]
 
 
 @pytest.mark.isolation(
@@ -378,3 +401,46 @@ async def test_reconcile_with_invoice_records_a_payment(two_organizations: Seede
     )
     assert reconciled.status_code == 200, reconciled.text
     assert reconciled.json()["matched_sales_invoice_id"] == invoice_id
+
+
+async def test_a_camt053_statement_imports_and_another_accounts_is_refused(
+    two_organizations: SeededTenants,
+) -> None:
+    """ADR-091: the bank's own CAMT.053 export, unchanged - and a statement whose account is not
+    this bank account's is refused before anything is written."""
+    from tests.bank.test_statement_formats import CAMT_02
+
+    world = await _bank_world(two_organizations)
+    created = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        "/bank-accounts",
+        {
+            "name": "ABN AMRO",
+            "iban": "NL91 ABNA 0417 1643 00",
+            "ledger_account_id": str(world["bank_ledger_account"]),
+        },
+    )
+    account_id = created.json()["id"]
+    imported = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        f"/bank-accounts/{account_id}/import",
+        {"filename": "camt053.xml", "csv": CAMT_02},
+    )
+    assert imported.status_code == 200, imported.text
+    assert imported.json()["transaction_count"] == 2  # the pending entry is not imported
+
+    other = CAMT_02.replace("NL91 ABNA 0417 1643 00", "NL02RABO0123456789")
+    refused = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        f"/bank-accounts/{account_id}/import",
+        {"filename": "camt053.xml", "csv": other},
+    )
+    assert refused.status_code == 422, refused.text
+    assert refused.json()["detail"]["reason"] == "bank_statement_other_account"
+    assert refused.json()["detail"]["iban"] == "NL02RABO0123456789"

@@ -1353,15 +1353,31 @@ export interface BankTransactionView {
   readonly matched_sales_invoice_id: string | null;
   readonly journal_entry_id: string | null;
   readonly reconciled_at: string | null;
+  /**
+   * The best open invoice for an unmatched incoming line, or null (ADR-091). Only the list
+   * carries it; the reconcile responses leave it out.
+   */
+  readonly suggestion?: BankMatchCandidateView | null;
 }
 
-/** `GET .../bank-transactions/{id}/match-candidates` rows — `api.bank.model.MatchCandidate`. */
+/** How sure a match is — `api.bank.matching.Confidence` (FR-BNK-003, ADR-091). */
+export type BankMatchConfidence = "high" | "medium" | "low";
+
+/**
+ * Why: the invoice number in the description, the payer's name, no other invoice of that amount;
+ * "ambiguous" when a HIGH match competed with another and was lowered to a proposal.
+ */
+export type BankMatchReason = "reference" | "name" | "only_candidate" | "ambiguous";
+
+/** `GET .../bank-transactions/{id}/match-candidates` rows — `api.bank.matching.ScoredCandidate`. */
 export interface BankMatchCandidateView {
   readonly invoice_id: string;
   readonly invoice_reference: string | null;
   readonly customer_name: string;
   readonly outstanding: string;
   readonly invoice_date: string;
+  readonly confidence: BankMatchConfidence;
+  readonly reasons: readonly BankMatchReason[];
 }
 
 /** `POST .../bank-accounts/{id}/import` — `api.bank.model.ImportResult`. */

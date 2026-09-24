@@ -218,11 +218,59 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await expect(page.getByTestId("purchase-row").first()).toContainText(/Geboekt|Booked/);
   await shot(page, "15-purchases-booked");
 
+  // --- The bank: the statement the bank exported, and the hotel's payment matched --------
+  await go(page, "/bank");
+  await expect(page.getByTestId("bank-empty")).toBeVisible();
+  await page.getByTestId("bank-new-account").click();
+  await page.getByTestId("bank-field-name").fill("ABN AMRO zakelijk");
+  await page.getByLabel(/^IBAN/).fill("NL91ABNA0417164300");
+  const ledgerPick = page.getByTestId("bank-field-ledger-account");
+  const bankAccount = await ledgerPick
+    .locator("option", { hasText: /^1100 / })
+    .getAttribute("value");
+  await ledgerPick.selectOption(bankAccount ?? "");
+  await page.getByTestId("bank-account-submit").click();
+  await expect(page.getByTestId("bank-transactions-empty")).toBeVisible();
+  await page.getByTestId("bank-import-open").click();
+  await page.getByTestId("bank-import-file").setInputFiles({
+    name: "camt053.xml",
+    mimeType: "application/xml",
+    buffer: Buffer.from(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"><BkToCstmrStmt><Stmt>
+<Acct><Id><IBAN>NL91ABNA0417164300</IBAN></Id></Acct>
+<Ntry><Amt Ccy="EUR">1149.50</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts>
+<BookgDt><Dt>${iso}</Dt></BookgDt><NtryDtls><TxDtls><RltdPties>
+<Dbtr><Nm>HOTEL DE GOUDEN LEEUW BV</Nm></Dbtr>
+<DbtrAcct><Id><IBAN>NL02RABO0123456789</IBAN></Id></DbtrAcct></RltdPties>
+<RmtInf><Ustrd>Broodlevering september</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
+</Stmt></BkToCstmrStmt></Document>`,
+    ),
+  });
+  await expect(page.getByTestId("bank-import-result")).toBeVisible();
+  await shot(page, "15a-bank-imported");
+  await page.getByTestId("bank-import-done").click();
+  // The payer's name is the customer's and no other invoice is open for 1.149,50: certain.
+  await expect(page.getByTestId("bank-certain")).toBeVisible();
+  await expect(page.getByTestId("bank-transaction-row").first()).toContainText(/Zeker|Certain/);
+  await shot(page, "15b-bank-suggestion");
+  const reconcileOpen = page.locator('[data-testid^="bank-reconcile-open-"]').first();
+  await reconcileOpen.click();
+  await expect(page.locator('[data-testid^="bank-reconcile-panel-"]')).toContainText(
+    /Zeker|Certain/,
+  );
+  await shot(page, "15b2-bank-reconcile-panel");
+  await reconcileOpen.click();
+  await page.getByTestId("bank-match-certain").click();
+  await expect(page.getByTestId("bank-match-result")).toBeVisible();
+  await expect(page.getByTestId("bank-transactions-empty")).toBeVisible();
+  await shot(page, "15c-bank-matched");
+
   // --- The dashboard now has figures -------------------------------------------------
   await go(page, "/");
   await expect(page.getByTestId("home-figures")).toBeVisible();
-  // 12.500 brought in, 121 paid for the receipt: the bank is not negative any more.
-  await expect(page.getByTestId("home-cash-position")).toContainText("12.379,00");
+  // 12.500 brought in, 121 paid for the receipt, 1.149,50 received from the hotel.
+  await expect(page.getByTestId("home-cash-position")).toContainText("13.528,50");
   await shot(page, "16-dashboard");
 
   // --- The books ----------------------------------------------------------------------

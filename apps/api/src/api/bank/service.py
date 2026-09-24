@@ -17,14 +17,14 @@ from collections.abc import Sequence
 from datetime import datetime
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
-from api.bank.csv_parser import StatementRow, parse_statement_csv
+from api.bank.csv_parser import CsvStatementError, StatementRow
+from api.bank.matching import ScoredCandidate, score, suggest
 from api.bank.model import (
     BankAccount,
     BankAccountNotFound,
     BankTransaction,
     ImportResult,
     InvalidBankField,
-    MatchCandidate,
     NoActiveBankJournal,
     NoOpenPeriod,
     TransactionAlreadyReconciled,
@@ -32,10 +32,20 @@ from api.bank.model import (
     TransactionStatus,
 )
 from api.bank.repository import SqlBankRepository
+from api.bank.statement_formats import normalise_iban, parse_statement
 from api.invoicing.model import InvoicingError
 from api.invoicing.payments import PaymentMethod, SalesPaymentService
 from api.ledger.model import EntryInput, LineInput
 from api.ledger.service import LedgerService
+
+
+class StatementForAnotherAccount(CsvStatementError):
+    """The file names an account, and it is not this bank account's. Importing it would put
+    another account's movements into this one's reconciliation."""
+
+    def __init__(self, iban: str) -> None:
+        super().__init__(f"this statement is for {iban}")
+        self.iban = iban
 
 
 class BankService:
@@ -126,10 +136,16 @@ class BankService:
         filename: str | None,
         actor_user_id: uuid.UUID,
     ) -> ImportResult:
-        await self._account_or_refuse(
+        account = await self._account_or_refuse(
             administration_id=administration_id, bank_account_id=bank_account_id
         )
-        rows = parse_statement_csv(csv_text)  # raises CsvStatementError, left to the caller
+        # FR-BNK-002 / ADR-091: whatever the bank exported - CAMT.053, MT940 or its CSV. Raises
+        # CsvStatementError, left to the caller.
+        parsed = parse_statement(csv_text)
+        own = normalise_iban(account.iban)
+        if parsed.account_iban is not None and own is not None and parsed.account_iban != own:
+            raise StatementForAnotherAccount(parsed.account_iban)
+        rows = parsed.rows
 
         import_id = await self._repository.create_import(
             organization_id=organization_id,
@@ -206,14 +222,31 @@ class BankService:
 
     async def match_candidates(
         self, *, administration_id: uuid.UUID, transaction: BankTransaction
-    ) -> Sequence[MatchCandidate]:
+    ) -> Sequence[ScoredCandidate]:
+        """FR-BNK-003: equal-amount open invoices, scored (api.bank.matching)."""
         if not transaction.is_inflow:
             # A customer's payment is always money IN; an outflow has no
             # sales-invoice candidate by construction.
             return ()
-        return await self._repository.match_candidates(
+        candidates = await self._repository.match_candidates(
             administration_id=administration_id, amount=transaction.amount
         )
+        return score(transaction, candidates)
+
+    async def suggestions(
+        self, *, administration_id: uuid.UUID, transactions: Sequence[BankTransaction]
+    ) -> dict[uuid.UUID, ScoredCandidate]:
+        """The best match for each unmatched incoming line, from one read of the open invoices -
+        what the list shows beside each line and what "match all certain" applies (ADR-091)."""
+        waiting = [
+            t for t in transactions if t.is_inflow and t.status is TransactionStatus.UNMATCHED
+        ]
+        if not waiting:
+            return {}
+        open_invoices = await self._repository.open_invoice_balances(
+            administration_id=administration_id
+        )
+        return suggest(waiting, open_invoices)
 
     # -- reconciliation -------------------------------------------------------
 

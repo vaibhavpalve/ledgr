@@ -37,7 +37,8 @@ from api.authz.dependencies import (
 )
 from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
-from api.bank.csv_parser import CsvStatementError
+from api.bank.csv_parser import CsvStatementError, InvalidRow, MissingColumns
+from api.bank.matching import ScoredCandidate
 from api.bank.model import (
     BankAccount,
     BankAccountNotFound,
@@ -53,7 +54,12 @@ from api.bank.model import (
     TransactionStatus,
 )
 from api.bank.repository import SqlBankRepository
-from api.bank.service import BankService
+from api.bank.service import BankService, StatementForAnotherAccount
+from api.bank.statement_formats import (
+    AmbiguousAccount,
+    UnknownStatementFormat,
+    UnsafeStatement,
+)
 from api.db import get_db_session
 from api.i18n.http import problem
 from api.invoicing.payments import SalesPaymentService
@@ -165,13 +171,17 @@ def _transaction_json(transaction: BankTransaction) -> dict[str, object]:
     }
 
 
-def _candidate_json(candidate: MatchCandidate) -> dict[str, object]:
+def _candidate_json(scored: ScoredCandidate) -> dict[str, object]:
+    candidate: MatchCandidate = scored.candidate
     return {
         "invoice_id": str(candidate.invoice_id),
         "invoice_reference": candidate.invoice_reference,
         "customer_name": candidate.customer_name,
         "outstanding": str(candidate.outstanding),
         "invoice_date": candidate.invoice_date.isoformat(),
+        # FR-BNK-003's confidence, and why (ADR-091).
+        "confidence": scored.confidence.value,
+        "reasons": list(scored.reasons),
     }
 
 
@@ -209,13 +219,45 @@ def _refuse(request: Request, exc: Exception) -> Exception:
         return problem(
             request, 422, "errors.bank_field_invalid", reason="bank_field_invalid", field=exc.field
         )
-    if isinstance(exc, CsvStatementError):
+    if isinstance(exc, StatementForAnotherAccount):
+        return problem(
+            request,
+            422,
+            "errors.bank_statement_other_account",
+            reason="bank_statement_other_account",
+            iban=exc.iban,
+        )
+    if isinstance(exc, (UnknownStatementFormat, MissingColumns)):
+        return problem(
+            request,
+            422,
+            "errors.bank_statement_unknown_format",
+            reason="bank_statement_unknown_format",
+        )
+    if isinstance(exc, AmbiguousAccount):
+        return problem(
+            request,
+            422,
+            "errors.bank_statement_ambiguous_account",
+            reason="bank_statement_ambiguous_account",
+        )
+    if isinstance(exc, UnsafeStatement):
+        return problem(request, 422, "errors.bank_statement_unsafe", reason="bank_statement_unsafe")
+    if isinstance(exc, InvalidRow):
         return problem(
             request,
             422,
             "errors.bank_statement_invalid",
             reason="bank_statement_invalid",
-            detail=str(exc),
+            row=exc.row_number,
+            field=exc.field,
+        )
+    if isinstance(exc, CsvStatementError):
+        return problem(
+            request,
+            422,
+            "errors.bank_statement_unknown_format",
+            reason="bank_statement_unknown_format",
         )
     if isinstance(exc, BankError):
         return problem(request, 422, "errors.bank_field_invalid", reason="bank_field_invalid")
@@ -337,7 +379,8 @@ async def import_statement(
             filename=body.filename,
             actor_user_id=tenant.user_id,
         )
-    except BankError as exc:
+    # A statement refusal is not a BankError; uncaught, a file the parser refused was a 500.
+    except (BankError, CsvStatementError) as exc:
         raise _refuse(request, exc) from exc
     return _import_json(result)
 
@@ -369,7 +412,18 @@ async def list_transactions(
     transactions = await service.list_transactions(
         administration_id=administration_id, bank_account_id=bank_account_id, status=parsed_status
     )
-    return {"transactions": [_transaction_json(t) for t in transactions]}
+    suggestions = await service.suggestions(
+        administration_id=administration_id, transactions=transactions
+    )
+    return {
+        "transactions": [
+            {
+                **_transaction_json(t),
+                "suggestion": (_candidate_json(suggestions[t.id]) if t.id in suggestions else None),
+            }
+            for t in transactions
+        ]
+    }
 
 
 async def get_match_candidates(

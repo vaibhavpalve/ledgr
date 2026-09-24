@@ -300,6 +300,28 @@ class SqlBankRepository:
             for row in result
         ]
 
+    async def open_invoice_balances(self, *, administration_id: uuid.UUID) -> list[MatchCandidate]:
+        """Every sales invoice with something outstanding - read once for a whole page of bank
+        lines (ADR-091), rather than one query per line."""
+        result = await self._session.execute(
+            text(
+                "SELECT invoice_id, invoice_reference, customer_name, outstanding, invoice_date "
+                "FROM invoicing.invoice_balances(:admin, NULL) "
+                "WHERE outstanding > 0 ORDER BY invoice_date"
+            ),
+            {"admin": str(administration_id)},
+        )
+        return [
+            MatchCandidate(
+                invoice_id=row.invoice_id,
+                invoice_reference=row.invoice_reference,
+                customer_name=row.customer_name,
+                outstanding=Decimal(row.outstanding),
+                invoice_date=row.invoice_date,
+            )
+            for row in result
+        ]
+
     async def period_for_date(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
         result = await self._session.execute(
             text(
