@@ -87,6 +87,7 @@ describe("the rail — the Boekje design's menu", () => {
       "Sales",
       "Purchases",
       "Bank",
+      "BTW",
       "Journal",
       "Grootboek",
       "Assets",

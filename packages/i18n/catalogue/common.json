@@ -133,6 +133,7 @@
     },
     "common.nav.contacts": { "nl": "Relaties", "en": "Contacts" },
     "common.nav.reports": { "nl": "Rapporten", "en": "Reports" },
+    "common.nav.vat": { "identical": true, "nl": "BTW", "en": "BTW" },
     "common.nav.role.owner": { "nl": "Ondernemer", "en": "Owner" },
     "common.nav.role.firm": { "identical": true, "nl": "Accountant", "en": "Accountant" },
     "common.user_menu.open": {

@@ -71,6 +71,7 @@ CATALOGUE_FILES = (
     "assets.json",
     "bank.json",
     "reports.json",
+    "vat.json",
     "onboarding.json",
     "settings.json",
 )

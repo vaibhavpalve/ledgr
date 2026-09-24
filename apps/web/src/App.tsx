@@ -27,6 +27,7 @@ import { LedgerScreen } from "./ledger/LedgerScreen";
 import { OnboardingRoute } from "./onboarding/OnboardingRoute";
 import { PurchasesRoute } from "./purchases/PurchasesRoute";
 import { ReportsScreen } from "./reports/ReportsScreen";
+import { VatRoute } from "./vat/VatScreen";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
@@ -182,6 +183,8 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/journal" element={<JournalScreen />} />
               <Route path="/assets" element={<AssetsScreen />} />
               <Route path="/reports" element={<ReportsScreen />} />
+              <Route path="/vat" element={<VatRoute />} />
+              <Route path="/vat/:periodId" element={<VatRoute />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

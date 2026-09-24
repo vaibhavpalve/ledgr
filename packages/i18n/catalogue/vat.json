@@ -1,0 +1,330 @@
+{
+  "namespace": "vat",
+  "note": "The /vat screen: the BTW return computed from the ledger, its pre-filing checks (FR-VAT-002), the drill-down to postings (FR-VAT-011) and filing (FR-VAT-003, manual channel). See ADR-087. Rubriek descriptions come from the ruleset (vat_rubriek), not from here.",
+  "messages": {
+    "vat.title": {
+      "nl": "Btw-aangifte",
+      "en": "BTW return"
+    },
+    "vat.intro": {
+      "note": "Under the title on the overview. Says where the figures come from and what the product does and does not do - it prepares, the person files.",
+      "nl": "Uw aangifte wordt berekend uit uw boekhouding. Controleer haar, neem de bedragen over in Mijn Belastingdienst Zakelijk en leg de indiening hier vast.",
+      "en": "Your BTW return is calculated from your books. Check it, enter the figures in Mijn Belastingdienst Zakelijk, and record the filing here."
+    },
+    "vat.period.quarter": {
+      "nl": "{quarter}e kwartaal {year}",
+      "en": "Q{quarter} {year}"
+    },
+    "vat.period.range": {
+      "nl": "{start} t/m {end}",
+      "en": "{start} to {end}"
+    },
+    "vat.status.filed": {
+      "nl": "Ingediend",
+      "en": "Filed"
+    },
+    "vat.status.ready": {
+      "nl": "Klaar om in te dienen",
+      "en": "Ready to file"
+    },
+    "vat.status.running": {
+      "note": "The period has not ended yet, so there is nothing to file - only a running estimate.",
+      "nl": "Loopt nog",
+      "en": "In progress"
+    },
+    "vat.status.attention": {
+      "nl": "Actie nodig",
+      "en": "Needs attention"
+    },
+    "vat.to_pay": {
+      "nl": "Te betalen",
+      "en": "To pay"
+    },
+    "vat.to_reclaim": {
+      "nl": "Terug te vragen",
+      "en": "To reclaim"
+    },
+    "vat.nothing_due": {
+      "nl": "Niets te betalen",
+      "en": "Nothing to pay"
+    },
+    "vat.estimate": {
+      "note": "Beside the amount of a period still running: the figure will change as more is booked.",
+      "nl": "Tot nu toe",
+      "en": "So far"
+    },
+    "vat.due": {
+      "nl": "Uiterlijk {date}",
+      "en": "Due {date}"
+    },
+    "vat.due_in": {
+      "nl": "nog {days} dagen",
+      "en": "{days} days left"
+    },
+    "vat.due_today": {
+      "nl": "vandaag",
+      "en": "today"
+    },
+    "vat.overdue": {
+      "nl": "{days} dagen te laat",
+      "en": "{days} days overdue"
+    },
+    "vat.open": {
+      "nl": "Bekijken",
+      "en": "Open"
+    },
+    "vat.open_from_home": {
+      "note": "A link under the dashboard's BTW estimate, to the return it is an estimate of.",
+      "nl": "Naar de btw-aangifte",
+      "en": "Open the BTW return"
+    },
+    "vat.back": {
+      "nl": "Alle aangiften",
+      "en": "All returns"
+    },
+    "vat.empty_title": {
+      "nl": "Geen aangifteperiodes",
+      "en": "No return periods"
+    },
+    "vat.empty_body": {
+      "nl": "Dit boekjaar heeft nog geen periodes. Open een boekjaar bij Instellingen en de aangifteperiodes verschijnen hier.",
+      "en": "This fiscal year has no periods yet. Open a fiscal year in Settings and its return periods appear here."
+    },
+    "vat.summary.output": {
+      "nl": "Verschuldigde btw (5a)",
+      "en": "BTW due (5a)"
+    },
+    "vat.summary.input": {
+      "nl": "Voorbelasting (5b)",
+      "en": "Input BTW (5b)"
+    },
+    "vat.summary.total": {
+      "nl": "Totaal (5a min 5b)",
+      "en": "Total (5a minus 5b)"
+    },
+    "vat.column.box": {
+      "nl": "Rubriek",
+      "en": "Box"
+    },
+    "vat.column.description": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "vat.column.turnover": {
+      "nl": "Omzet",
+      "en": "Turnover"
+    },
+    "vat.column.vat": {
+      "nl": "Btw",
+      "en": "BTW"
+    },
+    "vat.rounding_note": {
+      "note": "Under the table. The Belastingdienst lets a filer round in their own favour; the exact figure is on each box's drill-down.",
+      "nl": "Bedragen zijn afgerond op hele euro's in uw voordeel: omzet en verschuldigde btw naar beneden, voorbelasting naar boven.",
+      "en": "Amounts are rounded to whole euros in your favour: turnover and BTW due down, input BTW up."
+    },
+    "vat.exact": {
+      "identical": true,
+      "nl": "Exact: {amount}",
+      "en": "Exact: {amount}"
+    },
+    "vat.exempt_turnover": {
+      "nl": "Vrijgestelde omzet ({amount}) geeft u niet aan en staat daarom niet in de aangifte.",
+      "en": "Exempt turnover ({amount}) is not declared, so it is not on the BTW return."
+    },
+    "vat.copy": {
+      "note": "A button beside each figure, to paste it into Mijn Belastingdienst. Copies the whole-euro amount without separators.",
+      "nl": "Kopieer {box}",
+      "en": "Copy {box}"
+    },
+    "vat.copied": {
+      "nl": "Gekopieerd",
+      "en": "Copied"
+    },
+    "vat.drill.show": {
+      "nl": "Boekingen in {box}",
+      "en": "Postings in {box}"
+    },
+    "vat.drill.empty": {
+      "nl": "Er zijn geen boekingen in deze rubriek.",
+      "en": "There are no postings in this box."
+    },
+    "vat.drill.column.entry": {
+      "nl": "Boeking",
+      "en": "Entry"
+    },
+    "vat.drill.column.date": {
+      "nl": "Datum",
+      "en": "Date"
+    },
+    "vat.drill.column.description": {
+      "nl": "Omschrijving",
+      "en": "Description"
+    },
+    "vat.drill.column.account": {
+      "nl": "Rekening",
+      "en": "Account"
+    },
+    "vat.drill.column.part": {
+      "nl": "Deel",
+      "en": "Part"
+    },
+    "vat.drill.column.amount": {
+      "nl": "Bedrag",
+      "en": "Amount"
+    },
+    "vat.drill.part.turnover": {
+      "nl": "omzet",
+      "en": "turnover"
+    },
+    "vat.drill.part.vat": {
+      "nl": "btw",
+      "en": "BTW"
+    },
+    "vat.drill.part.base": {
+      "note": "A reverse-charged purchase: the line is the base, and the self-assessed BTW on it has no posting of its own.",
+      "nl": "grondslag verlegde btw",
+      "en": "base of reverse-charged BTW"
+    },
+    "vat.checks.title": {
+      "nl": "Controle voor het indienen",
+      "en": "Before you file"
+    },
+    "vat.checks.clean": {
+      "nl": "Geen openstaande punten. Deze aangifte kan worden ingediend.",
+      "en": "Nothing outstanding. This return can be filed."
+    },
+    "vat.check.period_not_ended": {
+      "nl": "Deze periode loopt nog tot en met {end}. U kunt de aangifte indienen vanaf de dag erna.",
+      "en": "This period runs until {end}. You can file the return from the next day."
+    },
+    "vat.check.unplaced_treatment": {
+      "nl": "Er zijn boekingen met een btw-behandeling die niet in een rubriek past ({detail}). Bij de margeregeling geeft u de marge aan, niet de verkoopprijs: laat deze aangifte door uw boekhouder opstellen.",
+      "en": "Some postings carry a BTW treatment that fits no box ({detail}). Under the margin scheme you declare the margin, not the sale price: have your bookkeeper prepare this return."
+    },
+    "vat.check.provisional_ruleset": {
+      "nl": "De btw-regels in LEDGR zijn nog niet gecontroleerd tegen de officiële publicatie van de Belastingdienst. Laat de bedragen controleren voordat u indient.",
+      "en": "The BTW rules in LEDGR have not yet been checked against the Belastingdienst's official publication. Have the figures checked before you file."
+    },
+    "vat.check.unposted_purchases": {
+      "nl": "{count} inkoopfacturen of bonnen zijn nog niet geboekt. Hun voorbelasting telt pas mee als ze geboekt zijn.",
+      "en": "{count} purchase invoices or receipts are not booked yet. Their input BTW only counts once they are."
+    },
+    "vat.check.draft_sales_invoices": {
+      "nl": "{count} conceptfacturen hebben een datum in deze periode. Ze tellen niet mee tot ze zijn verstuurd.",
+      "en": "{count} draft invoices are dated in this period. They do not count until they are sent."
+    },
+    "vat.check.unreconciled_bank": {
+      "nl": "{count} banktransacties in deze periode zijn nog niet verwerkt.",
+      "en": "{count} bank transactions in this period are not processed yet."
+    },
+    "vat.check.untagged_vat_postings": {
+      "nl": "{count} boekingen op een btw-rekening hebben geen btw-code (samen {amount}). Die staan niet in de aangifte.",
+      "en": "{count} postings on a BTW account have no BTW code ({amount} in total). They are not on the return."
+    },
+    "vat.check.earlier_period_unfiled": {
+      "nl": "Een eerdere periode met btw-boekingen is nog niet aangegeven.",
+      "en": "An earlier period with BTW postings has not been filed yet."
+    },
+    "vat.fix.purchases": {
+      "nl": "Naar inkopen",
+      "en": "Go to purchases"
+    },
+    "vat.fix.invoices": {
+      "nl": "Naar verkoop",
+      "en": "Go to sales"
+    },
+    "vat.fix.bank": {
+      "nl": "Naar bank",
+      "en": "Go to bank"
+    },
+    "vat.fix.journal": {
+      "nl": "Naar memoriaal",
+      "en": "Go to journal"
+    },
+    "vat.fix.earlier": {
+      "nl": "Naar die periode",
+      "en": "Go to that period"
+    },
+    "vat.blocking": {
+      "nl": "Blokkeert indienen",
+      "en": "Blocks filing"
+    },
+    "vat.warning": {
+      "nl": "Waarschuwing",
+      "en": "Warning"
+    },
+    "vat.file.title": {
+      "nl": "Indienen",
+      "en": "File this return"
+    },
+    "vat.file.step1": {
+      "nl": "Log in op Mijn Belastingdienst Zakelijk en open de aangifte omzetbelasting over {period}.",
+      "en": "Sign in to Mijn Belastingdienst Zakelijk and open the omzetbelasting return for {period}."
+    },
+    "vat.file.step2": {
+      "nl": "Neem de bedragen hierboven over, rubriek voor rubriek. Met de kopieerknop plakt u ze zonder typefouten.",
+      "en": "Enter the figures above, box by box. The copy buttons paste them without typos."
+    },
+    "vat.file.step3": {
+      "nl": "Dien de aangifte in en noteer het kenmerk dat u terugkrijgt.",
+      "en": "Submit the return and note the reference you get back."
+    },
+    "vat.file.step4": {
+      "nl": "Leg de indiening hier vast. De periode wordt dan definitief afgesloten.",
+      "en": "Record the filing here. The period is then closed for good."
+    },
+    "vat.file.reference": {
+      "nl": "Kenmerk van de Belastingdienst (optioneel)",
+      "en": "Belastingdienst reference (optional)"
+    },
+    "vat.file.acknowledge": {
+      "nl": "Ik heb deze waarschuwing gezien en dien toch in.",
+      "en": "I have seen this warning and am filing anyway."
+    },
+    "vat.file.submit": {
+      "nl": "Vastleggen als ingediend",
+      "en": "Record as filed"
+    },
+    "vat.file.blocked": {
+      "nl": "Los eerst de blokkerende punten hierboven op.",
+      "en": "Resolve the blocking items above first."
+    },
+    "vat.file.confirm_title": {
+      "nl": "Periode definitief afsluiten?",
+      "en": "Close this period for good?"
+    },
+    "vat.file.confirm_body": {
+      "nl": "Na het vastleggen kan niemand meer boeken in {period}. Een correctie gaat daarna via een suppletie of via de volgende aangifte.",
+      "en": "Once recorded, nobody can post in {period} any more. A correction then goes through a suppletie or the next return."
+    },
+    "vat.file.confirm": {
+      "nl": "Ja, vastleggen",
+      "en": "Yes, record it"
+    },
+    "vat.file.cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    },
+    "vat.file.not_permitted": {
+      "nl": "Alleen de eigenaar of de accountant kan een aangifte als ingediend vastleggen.",
+      "en": "Only the owner or the accountant can record a return as filed."
+    },
+    "vat.filed.banner": {
+      "nl": "Ingediend op {date}.",
+      "en": "Filed on {date}."
+    },
+    "vat.filed.reference": {
+      "nl": "Kenmerk {reference}",
+      "en": "Reference {reference}"
+    },
+    "vat.filed.no_reference": {
+      "nl": "Geen kenmerk vastgelegd",
+      "en": "No reference recorded"
+    },
+    "vat.filed.locked": {
+      "nl": "Deze periode is definitief afgesloten. Een correctie gaat via een suppletie of via de volgende aangifte.",
+      "en": "This period is closed for good. A correction goes through a suppletie or the next return."
+    }
+  }
+}

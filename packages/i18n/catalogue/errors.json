@@ -976,6 +976,46 @@
       "note": "api.bank.csv_parser.CsvStatementError: a missing required column, or a row whose date/amount could not be parsed. {detail} is the parser's own already-specific English reason, for a log rather than the sentence (FR-UX-007).",
       "nl": "Dit bestand kan niet worden geimporteerd. Controleer of het de kolommen date, amount, counterparty_name, counterparty_iban en description heeft.",
       "en": "This file could not be imported. Check that it has the columns date, amount, counterparty_name, counterparty_iban and description."
+    },
+    "errors.vat_period_not_found": {
+      "note": "ADR-087. The period in the path is not this administration's, or does not exist - indistinguishable on purpose.",
+      "nl": "Deze aangifteperiode bestaat niet.",
+      "en": "This return period does not exist."
+    },
+    "errors.vat_box_unknown": {
+      "note": "ADR-087. A drill-down for a rubriek that is not on the OB-aangifte.",
+      "nl": "Rubriek {code} staat niet op de btw-aangifte.",
+      "en": "Box {code} is not on the BTW return."
+    },
+    "errors.vat_return_already_filed": {
+      "note": "ADR-087. Filing a period twice. A correction to a filed return is a suppletie, so the sentence says so.",
+      "nl": "De aangifte over deze periode is al ingediend. Een correctie gaat via een suppletie of via de aangifte van de volgende periode.",
+      "en": "The return for this period has already been filed. A correction goes through a suppletie or the next period's return."
+    },
+    "errors.vat_return_not_fileable": {
+      "note": "ADR-087 / FR-VAT-002. A blocking check fired; `checks` carries their codes and the screen names each one.",
+      "nl": "Deze aangifte kan nog niet worden ingediend. Los eerst de blokkerende punten op.",
+      "en": "This return cannot be filed yet. Resolve the blocking items first."
+    },
+    "errors.vat_warnings_not_acknowledged": {
+      "note": "ADR-087 / FR-VAT-002. A warning the filer has not ticked; `checks` carries which.",
+      "nl": "Bevestig eerst dat u de waarschuwingen heeft gezien.",
+      "en": "Confirm that you have seen the warnings first."
+    },
+    "errors.vat_figures_changed": {
+      "note": "ADR-087. Something was posted into the period between review and filing, so the figures on screen are no longer the ledger's.",
+      "nl": "De bedragen zijn veranderd sinds u de aangifte bekeek. Controleer de aangifte opnieuw en dien haar dan in.",
+      "en": "The figures changed since you reviewed the return. Check it again, then file."
+    },
+    "errors.vat_expected_total_invalid": {
+      "note": "ADR-087. expected_total was not a decimal string.",
+      "nl": "Het gecontroleerde totaal is geen geldig bedrag.",
+      "en": "The reviewed total is not a valid amount."
+    },
+    "errors.vat_filing_reference_invalid": {
+      "note": "ADR-087. The Belastingdienst reference is longer than any reference they issue.",
+      "nl": "Het kenmerk van de Belastingdienst is te lang.",
+      "en": "The Belastingdienst reference is too long."
     }
   }
 }

@@ -18,6 +18,7 @@ import { LedgerApi } from "../ledger/api";
 import { OnboardingApi } from "../onboarding/api";
 import { ReportsApi } from "../reports/api";
 import { TemplateApi } from "../templates/api";
+import { VatApi } from "../vat/api";
 
 /**
  * The composition root for every API client the authenticated app uses —
@@ -50,6 +51,7 @@ export interface Services {
   readonly bank: BankApi;
   readonly reports: ReportsApi;
   readonly templates: TemplateApi;
+  readonly vat: VatApi;
   readonly queue: CaptureQueue;
   readonly decode: DecodeFile;
 }
@@ -84,6 +86,7 @@ export function ServicesProvider({
       bank: lazy("bank", () => new BankApi(options)),
       reports: lazy("reports", () => new ReportsApi(options)),
       templates: lazy("templates", () => new TemplateApi(options)),
+      vat: lazy("vat", () => new VatApi(options)),
       // Built lazily and only when nothing was injected: `captureQueue()`
       // opens IndexedDB, which jsdom does not have.
       queue: lazy("queue", () => captureQueue()),

@@ -10,6 +10,7 @@ import {
   Landmark,
   LayoutGrid,
   LogOut,
+  Percent,
   Search,
   Settings,
   ScrollText,
@@ -142,6 +143,12 @@ const REPORTS: NavDef = {
   labelKey: "common.nav.reports",
   icon: ChartColumn,
 };
+const VAT: NavDef = {
+  id: "vat",
+  to: "/vat",
+  labelKey: "common.nav.vat",
+  icon: Percent,
+};
 
 /** The bottom bar: home, and the three places most of a day is spent (FR-UX-005). */
 const COMPACT_TABS: readonly NavDef[] = [HOME, PURCHASES, INVOICES, LEDGER];
@@ -221,6 +228,7 @@ export function AppShell() {
           { to: "/customers", label: t("common.nav.contacts") },
           { to: "/ledger", label: t("common.nav.ledger") },
           { to: "/bank", label: t("common.nav.bank") },
+          { to: "/vat", label: t("common.nav.vat") },
           { to: "/journal", label: t("common.nav.journal") },
           { to: "/assets", label: t("common.nav.assets") },
           { to: "/reports", label: t("common.nav.reports") },
@@ -259,6 +267,7 @@ export function AppShell() {
               {navItem(SALES)}
               {navItem(PURCHASES, reviewBadge)}
               {navItem(BANK)}
+              {navItem(VAT)}
               {navItem(JOURNAL)}
               {navItem(LEDGER)}
               {navItem(ASSETS)}

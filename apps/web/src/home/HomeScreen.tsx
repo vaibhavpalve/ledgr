@@ -245,6 +245,15 @@ export function HomeScreen({
                   <span data-testid="home-vat-estimate-caption">
                     {t(isSetup ? "mobile.home.kpi.vat_empty" : "mobile.home.vat_estimate_caption")}
                   </span>
+                  <br />
+                  <button
+                    type="button"
+                    className="ui-textbutton"
+                    data-testid="home-vat-open"
+                    onClick={() => onNavigate("/vat")}
+                  >
+                    {t("vat.open_from_home")}
+                  </button>
                 </>
               }
             />

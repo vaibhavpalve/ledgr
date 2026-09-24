@@ -47,6 +47,7 @@ from api.security.headers import SecurityHeadersMiddleware
 from api.spa import register as register_spa
 from api.templates import routes as template_routes
 from api.tenancy import TenantContext, TenantContextMiddleware, get_tenant_context
+from api.vat_returns import routes as vat_return_routes
 
 app = FastAPI(title="LEDGR API")
 # Order matters: the LAST middleware added runs FIRST (Starlette wraps
@@ -146,6 +147,9 @@ bank_routes.register(app)
 # LedgerService.balances_as_of - no new table, no new permission. Same
 # registration reason; see api.reports.routes' module docstring.
 report_routes.register(app)
+# The BTW screen (migration 0068): the return computed from the ledger, its pre-filing checks,
+# the drill-down and filing - see api.vat_returns.routes and ADR-087.
+vat_return_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

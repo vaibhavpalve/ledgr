@@ -177,6 +177,12 @@ class Settings(BaseSettings):
     # api.customers.peppol for why that distinction is load-bearing.
     peppol_directory_provider: Literal["none"] = "none"
 
+    # FR-VAT-003's filing channel (ADR-087). "manual" is the only one that exists: the filer
+    # submits the figures in Mijn Belastingdienst Zakelijk and records the reference they were
+    # given. Digipoort needs a PKIoverheid services certificate only the business can obtain;
+    # api.vat_returns.filing is where it plugs in.
+    vat_filing_provider: Literal["manual"] = "manual"
+
     # --- Localisation (FR-LOC-001) ---
     # Where packages/i18n/catalogue lives. Unset resolves it automatically:
     # the copy packaged into the wheel first, then the checkout five

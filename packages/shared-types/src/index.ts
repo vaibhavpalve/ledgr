@@ -539,13 +539,7 @@ export interface SalesInvoiceSummaryView {
 }
 
 export type SalesInvoicePaymentStatus =
-  | "draft"
-  | "credit_note"
-  | "open"
-  | "overdue"
-  | "partially_paid"
-  | "paid"
-  | "settled";
+  "draft" | "credit_note" | "open" | "overdue" | "partially_paid" | "paid" | "settled";
 
 /**
  * FR-AR-003's "what would stop this being issued" — `api.invoicing.routes.
@@ -1694,4 +1688,86 @@ export interface InvoiceBatchResultView {
   readonly batch: InvoiceBatchView;
   readonly already_exists: boolean;
   readonly items: readonly InvoiceBatchItemView[];
+}
+
+/* ------------------------------------------------------------------------- */
+/* The BTW return - api.vat_returns (ADR-087). Amounts are decimal strings.  */
+/* ------------------------------------------------------------------------- */
+
+/** One rubriek of the OB-aangifte. `null` means the box has no such column, not zero. */
+export interface VatBoxView {
+  readonly code: string;
+  readonly kind: "turnover" | "vat" | "input" | "subtotal";
+  readonly description_nl: string;
+  readonly description_en: string | null;
+  readonly turnover: string | null;
+  readonly turnover_rounded: string | null;
+  readonly vat: string | null;
+  readonly vat_rounded: string | null;
+  readonly treatments: readonly string[];
+}
+
+/** FR-VAT-002. `code` is also the i18n key suffix `vat.check.<code>`. */
+export interface VatCheckView {
+  readonly code:
+    | "period_not_ended"
+    | "unplaced_treatment"
+    | "provisional_ruleset"
+    | "unposted_purchases"
+    | "draft_sales_invoices"
+    | "unreconciled_bank"
+    | "untagged_vat_postings"
+    | "earlier_period_unfiled";
+  readonly severity: "blocking" | "warning";
+  readonly count: number | null;
+  readonly amount: string | null;
+  readonly detail: readonly string[];
+}
+
+export interface VatFilingView {
+  readonly filed_at: string;
+  readonly filed_by_user_id: string;
+  readonly filing_channel: "manual" | "digipoort";
+  readonly filing_reference: string | null;
+  readonly warnings_acknowledged: readonly string[];
+  readonly ruleset_provisional: boolean;
+}
+
+/** One period's return: `GET .../vat-returns/{period_id}`, and each row of the overview. */
+export interface VatReturnView {
+  readonly period_id: string;
+  readonly fiscal_year_id: string;
+  readonly period_number: number;
+  readonly start_date: string;
+  readonly end_date: string;
+  readonly period_status: "open" | "locked" | "vat_filed";
+  readonly due_date: string;
+  /** `filed`: stored as filed. `ready`: no blocking check. `open`: something blocks filing. */
+  readonly status: "filed" | "ready" | "open";
+  readonly boxes: readonly VatBoxView[];
+  /** 5a, 5b, and 5a minus 5b - whole euros. A negative total is a refund. */
+  readonly output_vat: string;
+  readonly input_vat: string;
+  readonly total_due: string;
+  /** Exempt turnover, which is not entered on the return. `null` once filed. */
+  readonly exempt_turnover: string | null;
+  readonly checks: readonly VatCheckView[];
+  readonly can_be_filed: boolean;
+  readonly filed: VatFilingView | null;
+}
+
+/** FR-VAT-011: one journal line behind a box. */
+export interface VatBoxLineView {
+  readonly entry_id: string;
+  readonly entry_number: number;
+  readonly entry_date: string;
+  readonly description: string;
+  readonly document_reference: string | null;
+  readonly source_system: string | null;
+  readonly account_code: string;
+  readonly account_name: string;
+  readonly vat_treatment: string;
+  /** `turnover`, `vat`, or `base` (a reverse-charged purchase behind self-assessed VAT). */
+  readonly column: string;
+  readonly amount: string;
 }
