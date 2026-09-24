@@ -86,6 +86,19 @@ export class AccountApi {
   resendVerificationEmail(): Promise<void> {
     return callJson<void>(this.options, "POST", "/v1/auth/verify-email/resend");
   }
+
+  /** ADR-090: whether this person receives reminder e-mails (BTW deadlines, receipts). */
+  async getReminders(): Promise<boolean> {
+    const body = await callJson<{ enabled: boolean }>(this.options, "GET", "/v1/me/reminders");
+    return body.enabled;
+  }
+
+  async setReminders(enabled: boolean): Promise<boolean> {
+    const body = await callJson<{ enabled: boolean }>(this.options, "PUT", "/v1/me/reminders", {
+      enabled,
+    });
+    return body.enabled;
+  }
 }
 
 /** Tolerant of the two spellings a session row might arrive in. */

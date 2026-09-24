@@ -136,6 +136,12 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #              Note this is a PUT and therefore still carries idempotency
 #              (NFR-032, no exemption) and still passes the MFA gate. What it
 #              is exempt from is the permission check alone.
+#   /v1/me/reminders
+#              ADR-090: whether the caller receives reminder e-mails. The /v1/me/language case
+#              exactly - a property of the person, read and written only on the caller's own row
+#              (the user id from the verified token, no route naming another user's), with no
+#              tenant resource for a permission to be about. PUT still carries idempotency and
+#              the MFA gate.
 #   /v1/me
 #              The caller's own identity and memberships: their user row,
 #              their organization, the administrations they ALREADY hold a
@@ -210,6 +216,7 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/switcher/search",
         "/v1/switcher/active",
         "/v1/me/language",
+        "/v1/me/reminders",
         "/v1/me",
         "/v1/me/sessions",
         "/v1/me/sessions/{session_id}",

@@ -125,6 +125,11 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await page.goto(`/verify-email?token=${token}`);
   await expect(page.getByTestId("verify-email-done")).toBeVisible();
 
+  // --- Settings: reminder e-mails, on by default and the person's to switch off ----
+  await go(page, "/settings/profile");
+  await expect(page.getByTestId("profile-reminders")).toBeChecked();
+  await shot(page, "06a-settings-profile");
+
   // --- Settings: the address every invoice must carry --------------------------
   await go(page, "/settings/organization");
   await expect(page.getByTestId("administration-address")).toBeVisible();

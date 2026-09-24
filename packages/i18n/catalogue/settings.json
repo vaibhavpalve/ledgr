@@ -248,6 +248,19 @@
       "note": "The name a brand-new administration's first template gets, created on first visit.",
       "nl": "Standaard",
       "en": "Standard"
+    },
+    "settings.profile.reminders": {
+      "nl": "Herinneringen",
+      "en": "Reminders"
+    },
+    "settings.profile.reminders_label": {
+      "nl": "Stuur mij herinneringen per e-mail",
+      "en": "Send me reminders by e-mail"
+    },
+    "settings.profile.reminders_hint": {
+      "note": "ADR-090.",
+      "nl": "Als de btw-aangifte eraan komt of te laat is, en als bonnen wachten op boeking. Alleen voor eigenaren en accountants.",
+      "en": "When a BTW return is coming due or overdue, and when receipts are waiting to be booked. For owners and accountants only."
     }
   }
 }

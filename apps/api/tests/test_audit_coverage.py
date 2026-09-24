@@ -43,6 +43,11 @@ MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #       the context an auditor needs to read the rest of their activity.
 #       Which language they read it in is not.
 #
+#   /v1/me/reminders (ADR-090)
+#       Whether a person receives reminder e-mails about their own deadlines. The same case as
+#       the language: a preference about how the product talks to this person, changing no data,
+#       no books and nobody's access - nothing IAM-090 asks about.
+#
 #   api.auth.routes' sign-up/sign-in/MFA surface (IAM-010/IAM-011/IAM-012)
 #       Every one of these runs before any permission can be evaluated - the
 #       route IS how a permission-bearing identity gets established, so
@@ -96,6 +101,7 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
     {
         "/v1/administrations/{administration_id}/customers/kvk-lookup",
         "/v1/me/language",
+        "/v1/me/reminders",
         "/v1/me/sessions/{session_id}",
         "/v1/me/passkeys/{passkey_id}",
         "/v1/me/password",

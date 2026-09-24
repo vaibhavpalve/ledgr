@@ -41,6 +41,7 @@ import onboardingFile from "../catalogue/onboarding.json";
 import rolesFile from "../catalogue/roles.json";
 import settingsFile from "../catalogue/settings.json";
 import vatFile from "../catalogue/vat.json";
+import remindersFile from "../catalogue/reminders.json";
 
 /** A single form, or the two CLDR categories Dutch and English share. */
 export type MessageText = string | { readonly one: string; readonly other: string };
@@ -98,6 +99,7 @@ const FILES: readonly CatalogueFile[] = [
   bankFile as CatalogueFile,
   reportsFile as CatalogueFile,
   vatFile as CatalogueFile,
+  remindersFile as CatalogueFile,
   customersFile as CatalogueFile,
 ];
 

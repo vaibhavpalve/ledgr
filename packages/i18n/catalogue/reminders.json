@@ -1,0 +1,50 @@
+{
+  "namespace": "reminders",
+  "note": "Reminder e-mails (ADR-090), sent by scripts/send_reminders.py in the recipient's own language. Plain text: every line here is a paragraph of a mail, not a UI label.",
+  "messages": {
+    "reminders.greeting": {
+      "nl": "Hallo,",
+      "en": "Hello,"
+    },
+    "reminders.vat_due.subject": {
+      "note": "BTW return due within a week. {name} is the administration, {due} the due date.",
+      "nl": "Btw-aangifte {name}: uiterlijk {due} indienen",
+      "en": "BTW return for {name}: file by {due}"
+    },
+    "reminders.vat_due.body": {
+      "nl": "De btw-aangifte van {name} over {start} t/m {end} moet uiterlijk {due} bij de Belastingdienst binnen zijn. De aangifte staat klaar in uw boekhouding: controleer haar en dien haar in.",
+      "en": "The BTW return of {name} for {start} to {end} must reach the Belastingdienst by {due}. The return is ready in your books: check it and file it."
+    },
+    "reminders.vat_overdue.subject": {
+      "nl": "Btw-aangifte {name} is te laat",
+      "en": "BTW return for {name} is overdue"
+    },
+    "reminders.vat_overdue.body": {
+      "nl": "De btw-aangifte van {name} over {start} t/m {end} had uiterlijk {due} ingediend moeten zijn en is nog niet vastgelegd als ingediend. Dien haar zo snel mogelijk in; bij te laat indienen kan de Belastingdienst een boete opleggen.",
+      "en": "The BTW return of {name} for {start} to {end} was due by {due} and has not been recorded as filed. File it as soon as you can; the Belastingdienst can fine a late return."
+    },
+    "reminders.receipts.subject": {
+      "nl": "Bonnen van {name} wachten op boeking",
+      "en": "Receipts for {name} are waiting to be booked"
+    },
+    "reminders.receipts.body": {
+      "note": "{count} purchases captured but not booked for at least three days.",
+      "nl": {
+        "one": "Er staat {count} inkoopfactuur of bon van {name} klaar die nog niet is geboekt. Tot die geboekt is, telt de voorbelasting niet mee in de btw-aangifte.",
+        "other": "Er staan {count} inkoopfacturen of bonnen van {name} klaar die nog niet zijn geboekt. Tot die geboekt zijn, telt de voorbelasting niet mee in de btw-aangifte."
+      },
+      "en": {
+        "one": "{count} purchase invoice or receipt of {name} is waiting and not booked yet. Until it is, its input BTW is not on the BTW return.",
+        "other": "{count} purchase invoices or receipts of {name} are waiting and not booked yet. Until they are, their input BTW is not on the BTW return."
+      }
+    },
+    "reminders.why": {
+      "nl": "U ontvangt deze herinnering omdat u eigenaar of accountant bent in {product}. Herinneringen uitzetten kan bij uw profiel:",
+      "en": "You receive this reminder because you are an owner or accountant in {product}. You can turn reminders off in your profile:"
+    },
+    "reminders.signoff": {
+      "nl": "Met vriendelijke groet,",
+      "en": "Kind regards,"
+    }
+  }
+}

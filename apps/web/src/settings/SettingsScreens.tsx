@@ -65,6 +65,67 @@ export function SettingsLayout() {
 
 /* ------------------------------------------------------------------------ */
 
+/**
+ * ADR-090: reminder e-mails about the person's own deadlines, on by default and theirs to turn
+ * off. Saved as it is switched; a failure puts the switch back and says so.
+ */
+function ReminderPreference() {
+  const { t } = useI18n();
+  const { account } = useServices();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    account
+      .getReminders()
+      .then((value) => {
+        if (!cancelled) setEnabled(value);
+      })
+      .catch(() => {
+        if (!cancelled) setEnabled(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account]);
+
+  const change = async (next: boolean) => {
+    setProblem(null);
+    setEnabled(next);
+    try {
+      setEnabled(await account.setReminders(next));
+    } catch (error) {
+      setEnabled(!next);
+      setProblem(describeError(error));
+    }
+  };
+
+  return (
+    <div>
+      <dt className="label">{t("settings.profile.reminders")}</dt>
+      <dd>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={enabled ?? false}
+            disabled={enabled === null}
+            data-testid="profile-reminders"
+            onChange={(event) => void change(event.target.checked)}
+          />{" "}
+          {t("settings.profile.reminders_label")}
+        </label>
+      </dd>
+      <dd className="caption">{t("settings.profile.reminders_hint")}</dd>
+      {problem !== null ? (
+        <dd role="alert" className="field-error">
+          {problem}
+        </dd>
+      ) : null}
+    </div>
+  );
+}
+
 export function ProfileSettings() {
   const { t } = useI18n();
   const { me } = useSession();
@@ -130,6 +191,7 @@ export function ProfileSettings() {
           </dd>
           <dd className="caption">{t("settings.profile.language_hint")}</dd>
         </div>
+        <ReminderPreference />
         <div>
           <dt className="label">{t("settings.organization.title")}</dt>
           <dd>{me.organization.name}</dd>

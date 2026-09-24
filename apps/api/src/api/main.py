@@ -43,6 +43,7 @@ from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
 from api.onboarding import routes as onboarding_routes
 from api.opening import routes as opening_routes
+from api.reminders import routes as reminder_routes
 from api.reports import routes as report_routes
 from api.security.csrf import CsrfProtectionMiddleware
 from api.security.headers import SecurityHeadersMiddleware
@@ -157,6 +158,9 @@ vat_return_routes.register(app)
 opening_routes.register(app)
 # CSV exports of the books (grootboekmutaties, saldibalans), audited as exports - ADR-089.
 export_routes.register(app)
+# The caller's own reminder-e-mail preference (ADR-090); the reminders themselves are sent by
+# scripts/send_reminders.py.
+reminder_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless
