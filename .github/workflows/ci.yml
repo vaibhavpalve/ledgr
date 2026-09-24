@@ -245,8 +245,98 @@ jobs:
       - name: Load the VAT ruleset
         working-directory: apps/api
         run: uv run python scripts/load_vat_rules.py --allow-provisional
+      # Onboarding seeds a company's chart from the current RGS version. Without it every test
+      # that onboards a real company (posting defaults, opening balance, exports, reminders)
+      # skips - silently, which is how a broken onboarding once passed every check.
+      - name: Load the RGS dataset
+        working-directory: apps/api
+        run: uv run python scripts/load_rgs_version.py --allow-provisional --publish
       - working-directory: apps/api
         run: uv run pytest
+
+  e2e:
+    name: Golden path in a real browser (desktop + phone)
+    runs-on: ubuntu-latest
+    needs: [test-api, build-web]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ledgr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ledgr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/ledgr_test
+      TEST_LEDGR_APP_PASSWORD: ci-test-password
+      DATABASE_URL: postgresql+asyncpg://ledgr_app:ci-test-password@localhost:5432/ledgr_test
+      OPS_DATABASE_URL: postgresql+asyncpg://ledgr_ops:ci-test-password@localhost:5432/ledgr_test
+      JWT_SIGNING_KEY: ci-e2e-signing-key-not-a-secret-000000
+      KMS_PROVIDER: local
+      LOCAL_DEV_KEK: ci-e2e-kek-32-bytes-not-secret!!
+      BREACH_CHECKER_PROVIDER: local
+      EMAIL_PROVIDER: collecting
+      EXPOSE_DEV_OUTBOX: "true"
+      WEBAUTHN_ORIGIN: http://localhost:5173
+      WEBAUTHN_RP_ID: localhost
+      APP_BASE_URL: http://localhost:5173
+      LEDGR_API_URL: http://127.0.0.1:8000
+      E2E_BASE_URL: http://localhost:5173
+      E2E_API_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: ${{ env.UV_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - working-directory: apps/api
+        run: uv sync --frozen
+      - name: Database - migrations, VAT rules, RGS
+        working-directory: apps/api
+        run: |
+          uv run python scripts/bootstrap_test_db.py
+          uv run python scripts/load_vat_rules.py --allow-provisional
+          uv run python scripts/load_rgs_version.py --allow-provisional --publish
+      - name: Start the API
+        working-directory: apps/api
+        run: |
+          nohup uv run uvicorn api.main:app --app-dir src --host 127.0.0.1 --port 8000 > api.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8000/health && break; sleep 1; done
+      - run: pnpm install --frozen-lockfile
+      - name: Start the web dev server
+        working-directory: apps/web
+        run: |
+          nohup pnpm exec vite --port 5173 --strictPort > vite.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:5173/ > /dev/null && break; sleep 1; done
+      - working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+      - working-directory: apps/web
+        run: pnpm run test:e2e
+      - name: Screenshots, traces and server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e
+          path: |
+            apps/web/e2e/screenshots
+            apps/web/e2e/.results
+            apps/api/api.log
+            apps/web/vite.log
 
   build-api:
     name: Build (api)
@@ -307,6 +397,7 @@ jobs:
       - lint-api
       - typecheck-api
       - test-api
+      - e2e
       - build-api
       - dependency-scan-api
     steps:
