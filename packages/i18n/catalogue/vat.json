@@ -32,6 +32,11 @@
       "nl": "Loopt nog",
       "en": "In progress"
     },
+    "vat.status.empty": {
+      "note": "A period that has ended with nothing booked with BTW in it. Neutral on purpose: it is not an overdue return, and it can still be filed as a nil return.",
+      "nl": "Geen btw-boekingen",
+      "en": "No BTW postings"
+    },
     "vat.status.attention": {
       "nl": "Actie nodig",
       "en": "Needs attention"
@@ -105,10 +110,6 @@
     "vat.column.box": {
       "nl": "Rubriek",
       "en": "Box"
-    },
-    "vat.column.description": {
-      "nl": "Omschrijving",
-      "en": "Description"
     },
     "vat.column.turnover": {
       "nl": "Omzet",

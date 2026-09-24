@@ -114,17 +114,22 @@ export function CashChart({ series, summary }: { series: readonly CashPoint[]; s
           onBlur={() => setHover(null)}
         />
       ))}
-      <table className="ui-visually-hidden">
-        <caption>{summary}</caption>
-        <tbody>
-          {series.map((p, i) => (
-            <tr key={p.label + i}>
-              <th scope="row">{p.label}</th>
-              <td>{money(p.value)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Hidden through a wrapper, not on the table itself: a table ignores `width: 1px` and
+          `overflow: hidden` and lays out at its content's width, so the "hidden" table sat
+          off to the right of the dashboard and made the whole page scroll sideways. */}
+      <div className="ui-visually-hidden">
+        <table>
+          <caption>{summary}</caption>
+          <tbody>
+            {series.map((p, i) => (
+              <tr key={p.label + i}>
+                <th scope="row">{p.label}</th>
+                <td>{money(p.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

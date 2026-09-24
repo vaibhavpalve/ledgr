@@ -156,8 +156,8 @@ describe("one BTW return", () => {
     const row1e = await screen.findByTestId("vat-box-1e");
     // The empty cell is hidden from assistive technology too: "no such column" is not a zero.
     const cells = row1e.querySelectorAll("td");
-    expect(cells[3]?.textContent).toBe("");
-    expect(cells[3]?.getAttribute("aria-hidden")).toBe("true");
+    expect(cells[2]?.textContent).toBe("");
+    expect(cells[2]?.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("vat-total").textContent).toMatch(/188/);
   });
 

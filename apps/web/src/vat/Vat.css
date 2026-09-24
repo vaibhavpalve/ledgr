@@ -66,7 +66,8 @@
   box-shadow: var(--shadow-md);
 }
 
-.vat__period--running {
+.vat__period--running,
+.vat__period--empty {
   background: var(--surface);
 }
 
@@ -76,6 +77,7 @@
 
 .vat__period-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--ledgr-space-2);
@@ -185,7 +187,36 @@
   overflow-x: auto;
 }
 
-.vat__boxes .table {
+.vat__desc-inline {
+  margin-left: var(--ledgr-space-3);
+}
+
+.vat__boxes > .table {
+  table-layout: fixed;
+}
+.vat__boxes > .table > thead th.table__num {
+  width: 9rem;
+}
+
+/* A phone: the description drops under the code, and the amount columns narrow - both stay on
+   screen. Fixed layout means an opened drill-down scrolls inside its own cell. */
+@media (max-width: 47.99rem) {
+  .vat__desc-inline {
+    display: block;
+    margin: 2px 0 0;
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+  }
+  .vat__boxes > .table > thead th.table__num {
+    width: 6.5rem;
+  }
+  .vat__drill-row > td {
+    padding-left: var(--ledgr-space-2);
+    padding-right: var(--ledgr-space-2);
+  }
+}
+
+.vat__drill {
   min-width: 36rem;
 }
 

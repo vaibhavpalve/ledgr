@@ -242,6 +242,10 @@
 /* A data table: hairline rules, right-aligned figures, sticky head. */
 .table-wrap {
   overflow-x: auto;
+  /* A scroll container clips only the absolutely positioned descendants it is the containing
+     block of. Without this, a visually hidden label in a table's last column escaped the wrap
+     and made the whole page scroll sideways on a phone. */
+  position: relative;
 }
 
 .table {

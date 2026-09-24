@@ -7,6 +7,10 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
+// Where the dev server proxies the API. Defaults to the local stack's :8000; the Playwright
+// golden path (e2e/) points it at an API of its own so a run never touches the dev database.
+const apiTarget = process.env.LEDGR_API_URL ?? "http://localhost:8000";
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -19,12 +23,14 @@ export default defineConfig({
     // ran navigator.credentials.create()/get(), which a proxy gives for
     // free and a cross-origin CORS setup would not.
     proxy: {
-      "/v1": "http://localhost:8000",
-      "/health": "http://localhost:8000",
+      "/v1": apiTarget,
+      "/health": apiTarget,
     },
   },
   test: {
     environment: "jsdom",
     globals: true,
+    // e2e/ is Playwright's, run against a live stack by `pnpm test:e2e`, not by vitest.
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
   },
 });

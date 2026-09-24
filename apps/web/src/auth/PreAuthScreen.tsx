@@ -7,7 +7,7 @@ import { LanguageSwitcher } from "../LanguageSwitcher";
 import { ThemeButton } from "../theme/ThemeButton";
 import { Logo } from "../ui";
 
-export type PreAuthScreenKind = "login" | "signup" | "mfa" | "recover";
+export type PreAuthScreenKind = "login" | "signup" | "mfa" | "recover" | "verify";
 
 const HEADING_KEY: Record<PreAuthScreenKind, string> = {
   login: "auth.sign_in.title",
@@ -18,6 +18,9 @@ const HEADING_KEY: Record<PreAuthScreenKind, string> = {
   // since nothing about that layout is specific to signing in or signing up.
   mfa: "auth.mfa.heading",
   recover: "auth.recover.heading",
+  // IAM-010b's link lands here. It used the login frame, so a person who had just
+  // confirmed their address was greeted with "Welcome back - sign in".
+  verify: "auth.verify_email.heading",
 };
 
 const POINTS = ["permanent", "exact", "passkey"] as const;

@@ -31,11 +31,21 @@ export function VatRoute() {
 // Shared wording
 // ---------------------------------------------------------------------------
 
-type UiStatus = "filed" | "ready" | "running" | "attention";
+type UiStatus = "filed" | "ready" | "running" | "attention" | "empty";
+
+/** Nothing in any box: nothing was booked with BTW in the period. */
+function isEmpty(row: VatReturnView): boolean {
+  return row.boxes.every(
+    (box) => Number(box.turnover ?? "0") === 0 && Number(box.vat ?? "0") === 0,
+  );
+}
 
 function uiStatus(row: VatReturnView): UiStatus {
   if (row.status === "filed") return "filed";
   if (row.checks.some((check) => check.code === "period_not_ended")) return "running";
+  // A past period with nothing booked is not an overdue return shouting in red: a business
+  // that started in September has nothing for January. It can still be opened and filed as nil.
+  if (isEmpty(row)) return "empty";
   return row.can_be_filed ? "ready" : "attention";
 }
 
@@ -44,6 +54,7 @@ const STATUS_BADGE: Record<UiStatus, BadgeVariant> = {
   ready: "review",
   running: "neutral",
   attention: "overdue",
+  empty: "neutral",
 };
 
 function parseDay(iso: string): Date {
@@ -87,16 +98,16 @@ function usePeriodLabel(): PeriodLabeller {
 function DueText({ row }: { row: VatReturnView }) {
   const { t, date } = useI18n();
   const days = daysFromToday(row.due_date);
-  const relative =
-    row.status === "filed"
-      ? null
-      : days === 0
-        ? t("vat.due_today")
-        : days > 0
-          ? t("vat.due_in", { days })
-          : t("vat.overdue", { days: -days });
+  const quiet = row.status === "filed" || uiStatus(row) === "empty";
+  const relative = quiet
+    ? null
+    : days === 0
+      ? t("vat.due_today")
+      : days > 0
+        ? t("vat.due_in", { days })
+        : t("vat.overdue", { days: -days });
   return (
-    <span className={`vat__due${days < 0 && row.status !== "filed" ? " vat__due--late" : ""}`}>
+    <span className={`vat__due${days < 0 && !quiet ? " vat__due--late" : ""}`}>
       {t("vat.due", { date: date(row.due_date) })}
       {relative !== null ? ` · ${relative}` : null}
     </span>
@@ -435,7 +446,6 @@ function BoxesTable({ row, canCopy }: { row: VatReturnView; canCopy: boolean }) 
         <thead>
           <tr>
             <th scope="col">{t("vat.column.box")}</th>
-            <th scope="col">{t("vat.column.description")}</th>
             <th scope="col" className="table__num">
               {t("vat.column.turnover")}
             </th>
@@ -472,14 +482,16 @@ function BoxesTable({ row, canCopy }: { row: VatReturnView; canCopy: boolean }) 
                       )}
                       <strong>{box.code}</strong>
                     </button>
+                    {/* One column for the box: its code and what it is, so the two amount
+                        columns stay on screen at any width. */}
+                    <span className="vat__desc-inline">{description}</span>
                   </td>
-                  <td>{description}</td>
                   {cell(box, "turnover")}
                   {cell(box, "vat")}
                 </tr>
                 {isOpen ? (
                   <tr className="vat__drill-row">
-                    <td colSpan={4}>
+                    <td colSpan={3}>
                       <BoxLines periodId={row.period_id} code={box.code} />
                     </td>
                   </tr>
@@ -490,7 +502,6 @@ function BoxesTable({ row, canCopy }: { row: VatReturnView; canCopy: boolean }) 
         </tbody>
         <tfoot>
           <tr>
-            <td />
             <td>
               <strong>{t("vat.summary.total")}</strong>
             </td>
@@ -540,39 +551,41 @@ function BoxLines({ periodId, code }: { periodId: string; code: string }) {
   if (lines === null) return <LoadingSkeleton rows={2} />;
   if (lines.length === 0) return <p className="caption">{t("vat.drill.empty")}</p>;
   return (
-    <table className="table vat__drill" data-testid={`vat-drill-${code}`}>
-      <thead>
-        <tr>
-          <th scope="col">{t("vat.drill.column.entry")}</th>
-          <th scope="col">{t("vat.drill.column.date")}</th>
-          <th scope="col">{t("vat.drill.column.description")}</th>
-          <th scope="col">{t("vat.drill.column.account")}</th>
-          <th scope="col">{t("vat.drill.column.part")}</th>
-          <th scope="col" className="table__num">
-            {t("vat.drill.column.amount")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {lines.map((line, index) => (
-          <tr key={`${line.entry_id}-${index}`}>
-            <td className="ledgr-num">{line.entry_number}</td>
-            <td className="ledgr-num">{date(line.entry_date)}</td>
-            <td>
-              {line.description}
-              {line.document_reference ? (
-                <span className="table__muted"> · {line.document_reference}</span>
-              ) : null}
-            </td>
-            <td>
-              <span className="ledgr-num">{line.account_code}</span> {line.account_name}
-            </td>
-            <td>{t(`vat.drill.part.${line.column}`)}</td>
-            <td className="table__num">{money(line.amount)}</td>
+    <div className="table-wrap">
+      <table className="table vat__drill" data-testid={`vat-drill-${code}`}>
+        <thead>
+          <tr>
+            <th scope="col">{t("vat.drill.column.entry")}</th>
+            <th scope="col">{t("vat.drill.column.date")}</th>
+            <th scope="col">{t("vat.drill.column.description")}</th>
+            <th scope="col">{t("vat.drill.column.account")}</th>
+            <th scope="col">{t("vat.drill.column.part")}</th>
+            <th scope="col" className="table__num">
+              {t("vat.drill.column.amount")}
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {lines.map((line, index) => (
+            <tr key={`${line.entry_id}-${index}`}>
+              <td className="ledgr-num">{line.entry_number}</td>
+              <td className="ledgr-num">{date(line.entry_date)}</td>
+              <td>
+                {line.description}
+                {line.document_reference ? (
+                  <span className="table__muted"> · {line.document_reference}</span>
+                ) : null}
+              </td>
+              <td>
+                <span className="ledgr-num">{line.account_code}</span> {line.account_name}
+              </td>
+              <td>{t(`vat.drill.part.${line.column}`)}</td>
+              <td className="table__num">{money(line.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

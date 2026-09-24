@@ -245,15 +245,6 @@ export function HomeScreen({
                   <span data-testid="home-vat-estimate-caption">
                     {t(isSetup ? "mobile.home.kpi.vat_empty" : "mobile.home.vat_estimate_caption")}
                   </span>
-                  <br />
-                  <button
-                    type="button"
-                    className="ui-textbutton"
-                    data-testid="home-vat-open"
-                    onClick={() => onNavigate("/vat")}
-                  >
-                    {t("vat.open_from_home")}
-                  </button>
                 </>
               }
             />
@@ -429,6 +420,15 @@ export function HomeScreen({
                     {t("mobile.home.btw.receipts_to_review", { count: draftReceipts })}
                   </p>
                 ) : null}
+                {/* The estimate's own return, one click away: the card was a dead end. */}
+                <Button
+                  size="sm"
+                  className="home__btw-open"
+                  data-testid="home-vat-open"
+                  onClick={() => onNavigate("/vat")}
+                >
+                  {t("vat.open_from_home")}
+                </Button>
               </Card>
             </div>
           </div>

@@ -47,3 +47,7 @@ apps/web/vite.config.js
 apps/web/vite.config.d.ts
 apps/api/pytest_debug.txt
 
+
+# Playwright golden path (apps/web/e2e): run artefacts, not source.
+apps/web/e2e/.results/
+apps/web/e2e/screenshots/

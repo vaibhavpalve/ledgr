@@ -10,7 +10,11 @@
     // `tsc -b` type-checked vitest's own .d.ts chain and failed on chai
     // shipping no types. Third-party declaration files are not this repo's to
     // fix, and checking them is what the flag exists to skip.
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // `composite` makes `tsc -b` emit, and next to the source it emitted vite.config.js - which
+    // Vite resolves BEFORE vite.config.ts, so every edit to the .ts was silently ignored by the
+    // dev server until the next build regenerated the .js. Emitting out of the way ends that.
+    "outDir": "node_modules/.tmp/tsconfig-node"
   },
   "include": ["vite.config.ts"]
 }

@@ -166,6 +166,9 @@ export function GoogleCallbackRoute({
   );
 }
 
+/** One verification request per token, whoever asks for it - see `VerifyEmailRoute`. */
+const VERIFICATIONS = new Map<string, Promise<unknown>>();
+
 /**
  * IAM-010b: the link in the verification e-mail lands here with `?token=`.
  * Works signed in or out — the token identifies the address, not the
@@ -184,9 +187,16 @@ export function VerifyEmailRoute() {
   useEffect(() => {
     if (token === null) return;
     let cancelled = false;
-    const api = new AccountApi({ language: () => language, fetchImpl });
-    api
-      .verifyEmail(token)
+    // The token is single-use, and StrictMode runs this effect twice in
+    // development: a second POST found the token already spent and reported the
+    // link as expired to the person who had just confirmed it. Both runs share
+    // one request per token (the SessionProvider pattern).
+    let request = VERIFICATIONS.get(token);
+    if (request === undefined) {
+      request = new AccountApi({ language: () => language, fetchImpl }).verifyEmail(token);
+      VERIFICATIONS.set(token, request);
+    }
+    request
       .then(() => {
         if (!cancelled) setOutcome("verified");
       })
@@ -203,9 +213,8 @@ export function VerifyEmailRoute() {
   }, [token]);
 
   return (
-    <PreAuthScreen screen="login">
+    <PreAuthScreen screen="verify">
       <div className="auth-form" data-testid="verify-email">
-        <h2>{t("auth.verify_email.heading")}</h2>
         {outcome === "pending" ? (
           <p role="status" data-testid="verify-email-pending">
             {t("auth.verify_email.pending")}
@@ -222,10 +231,11 @@ export function VerifyEmailRoute() {
           </p>
         ) : null}
         {outcome === "failed" ? (
-          <div role="alert" className="alert alert--attention" data-testid="verify-email-failed">
-            <p>{problem}</p>
-            <p>{t("auth.verify_email.failed_hint")}</p>
-          </div>
+          // One sentence: the server's already says what happened and where to
+          // get a new link. The hint is only for a failure that came with none.
+          <p role="alert" className="alert alert--attention" data-testid="verify-email-failed">
+            {problem || t("auth.verify_email.failed_hint")}
+          </p>
         ) : null}
         <Link to={status === "authenticated" ? "/" : "/login"} className="auth-form__link">
           {status === "authenticated"

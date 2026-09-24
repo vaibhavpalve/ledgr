@@ -532,6 +532,11 @@
 
 .shell__main {
   flex-grow: 1;
+  /* A grid/flex item's default `min-width: auto` is its content's min-content width, and
+     `overflow` does not change that: one wide table (the invoice list on a phone) grew the whole
+     column to 905px inside a 412px screen, and the page scrolled sideways under its own scroll
+     wrapper. Zero lets each .table-wrap do the scrolling it exists for. */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -543,6 +548,13 @@
   width: 100%;
   max-width: 76rem;
 }
+/* Focus moves here on every navigation so a screen reader starts at the new page (WCAG 2.4.3).
+   That focus is programmatic and the element is not a control: a ring around the whole page
+   after every click reads as a rendering fault, not as a focus indicator. The skip link that
+   also targets it has its own visible state. */
+.shell__main:focus {
+  outline: none;
+}
 
 /* ==========================================================================
  * BOTTOM BAR (compact only)
@@ -551,7 +563,11 @@
 .shell__tabs {
   position: fixed;
   left: 0;
-  right: 0;
+  /* The device width, not `right: 0`. A fixed box stretched to the layout viewport follows a
+     phone browser that has zoomed out to fit something wide - and then IS the wide thing, so the
+     page never zooms back in. Measured on the invoice list: a 412px screen held at 893px by
+     this bar alone. */
+  width: 100vw;
   bottom: 0;
   z-index: 10;
   display: flex;
