@@ -35,9 +35,13 @@ together, the rate is a fact about the treatment on the receipt's DATE (CMP-014)
 and at capture there is no date yet. A treatment with no rate is refused by the
 database.
 
-`rgs_code` is the reference ledger account (RGS) the category is meant to post
-to. It is display data here. Which account an administration actually posts to
-is that administration's own mapping and is not decided by this file.
+`rgs_code` is the account code the picker shows beside each category: the one
+the default mapping (migration 0067, ADR-086) books it to in a seeded chart.
+Which account an administration actually posts to is that administration's own
+mapping and is not decided by this file - but a new administration's mapping is
+0067's, and the picker used to show codes it did not use ("Office supplies 4400"
+booked to 4100), so tests/integration/test_posting_defaults.py now asserts the
+two agree.
 
 `apps/web` / `packages/shared-types` carries the same list for the picker, and
 `tests/expenses/test_categories.py` fails if the two drift.
@@ -66,27 +70,27 @@ class UnknownExpenseCategory(CaptureError):
 EXPENSE_CATEGORIES: tuple[ExpenseCategory, ...] = (
     ExpenseCategory("inventory_stock", "Inventory & stock", "7000", VatTreatment.BTW_21),
     ExpenseCategory("car_transport", "Car & transport", "4300", VatTreatment.BTW_21),
-    ExpenseCategory("travel_lodging", "Travel & lodging", "4310", VatTreatment.BTW_9),
-    ExpenseCategory("lunch", "Lunch", "4350", VatTreatment.BTW_9),
-    ExpenseCategory("dining_out", "Dining out", "4350", VatTreatment.BTW_9),
-    ExpenseCategory("entertainment_gifts", "Entertainment & gifts", "4350", VatTreatment.BTW_21),
-    ExpenseCategory("office_supplies", "Office supplies", "4400", VatTreatment.BTW_21),
-    ExpenseCategory("rent_premises", "Rent & premises", "4200", VatTreatment.BTW_21),
-    ExpenseCategory("utilities", "Utilities", "4600", VatTreatment.BTW_21),
-    ExpenseCategory("phone_internet", "Phone & internet", "4510", VatTreatment.BTW_21),
-    ExpenseCategory("marketing_ads", "Marketing & ads", "4700", VatTreatment.BTW_21),
+    ExpenseCategory("travel_lodging", "Travel & lodging", "4200", VatTreatment.BTW_9),
+    ExpenseCategory("lunch", "Lunch", "4200", VatTreatment.BTW_9),
+    ExpenseCategory("dining_out", "Dining out", "4200", VatTreatment.BTW_9),
+    ExpenseCategory("entertainment_gifts", "Entertainment & gifts", "4200", VatTreatment.BTW_21),
+    ExpenseCategory("office_supplies", "Office supplies", "4100", VatTreatment.BTW_21),
+    ExpenseCategory("rent_premises", "Rent & premises", "4000", VatTreatment.BTW_21),
+    ExpenseCategory("utilities", "Utilities", "4000", VatTreatment.BTW_21),
+    ExpenseCategory("phone_internet", "Phone & internet", "4100", VatTreatment.BTW_21),
+    ExpenseCategory("marketing_ads", "Marketing & ads", "4200", VatTreatment.BTW_21),
     ExpenseCategory(
-        "software_subscriptions", "Software & subscriptions", "4720", VatTreatment.BTW_21
+        "software_subscriptions", "Software & subscriptions", "4100", VatTreatment.BTW_21
     ),
     # Insurance and banking are VAT-EXEMPT in the Netherlands rather than
     # zero-rated: nothing is charged and nothing can be reclaimed, which is a
     # different treatment from a 0% supply even though both show "0%".
-    ExpenseCategory("insurance", "Insurance", "4730", VatTreatment.BTW_VRIJGESTELD),
-    ExpenseCategory("professional_services", "Professional services", "4740", VatTreatment.BTW_21),
-    ExpenseCategory("training_education", "Training & education", "4750", VatTreatment.BTW_21),
-    ExpenseCategory("staff_costs", "Staff costs", "4000", VatTreatment.BTW_21),
-    ExpenseCategory("bank_interest", "Bank & interest", "4760", VatTreatment.BTW_VRIJGESTELD),
-    ExpenseCategory("capital_asset", "Capital asset", "0200", VatTreatment.BTW_21),
+    ExpenseCategory("insurance", "Insurance", "4400", VatTreatment.BTW_VRIJGESTELD),
+    ExpenseCategory("professional_services", "Professional services", "4400", VatTreatment.BTW_21),
+    ExpenseCategory("training_education", "Training & education", "4400", VatTreatment.BTW_21),
+    ExpenseCategory("staff_costs", "Staff costs", "4600", VatTreatment.BTW_21),
+    ExpenseCategory("bank_interest", "Bank & interest", "4900", VatTreatment.BTW_VRIJGESTELD),
+    ExpenseCategory("capital_asset", "Capital asset", "0250", VatTreatment.BTW_21),
     ExpenseCategory("other", "Other", "4400", VatTreatment.BTW_21),
 )
 

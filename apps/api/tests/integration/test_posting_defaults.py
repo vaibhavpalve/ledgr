@@ -126,6 +126,27 @@ async def test_every_capture_category_resolves_to_an_account(
     } <= purposes
 
 
+async def test_the_code_the_picker_shows_is_the_account_the_category_books_to(
+    two_organizations: SeededTenants,
+) -> None:
+    """The capture screen shows "Office supplies 4100": that must be where it lands."""
+    administration_id = await _onboard(two_organizations)
+    rows = await _rows(
+        "SELECT e.category_key, a.code FROM expense_posting_account e "
+        "JOIN ledger_account a ON a.id = e.account_id "
+        "WHERE e.administration_id = :a AND e.purpose = 'expense_category' "
+        "AND e.category_key IS NOT NULL",
+        a=administration_id,
+    )
+    booked = {str(label).lower(): code for label, code in rows}
+    wrong = {
+        c.label: (c.rgs_code, booked.get(c.label.lower()))
+        for c in EXPENSE_CATEGORIES
+        if booked.get(c.label.lower()) != c.rgs_code
+    }
+    assert wrong == {}, f"shown code vs booked account (BV chart): {wrong}"
+
+
 async def test_provisioning_again_changes_nothing(two_organizations: SeededTenants) -> None:
     administration_id = await _onboard(two_organizations)
     before = await _snapshot(administration_id)

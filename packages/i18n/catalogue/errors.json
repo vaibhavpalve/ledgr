@@ -437,7 +437,7 @@
     },
     "errors.quote_expired": {
       "note": "SI-08. The offer no longer stands. Names the way out: extend the validity, which revives it.",
-      "nl": "Deze offerte is verlopen en kan niet meer worden verstuurd of geaccepteerd. Verleng de geldigheidsdatum als je haar nog wilt honoreren.",
+      "nl": "Deze offerte is verlopen en kan niet meer worden verstuurd of geaccepteerd. Verleng de geldigheidsdatum als u haar nog wilt honoreren.",
       "en": "This quote has expired and can no longer be sent or accepted. Extend the validity date if you still want to honour it."
     },
     "errors.quote_not_editable": {

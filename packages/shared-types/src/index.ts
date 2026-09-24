@@ -184,22 +184,22 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export const EXPENSE_CATEGORIES = [
   { key: "inventory_stock", rgsCode: "7000", vatTreatment: "btw_21" },
   { key: "car_transport", rgsCode: "4300", vatTreatment: "btw_21" },
-  { key: "travel_lodging", rgsCode: "4310", vatTreatment: "btw_9" },
-  { key: "lunch", rgsCode: "4350", vatTreatment: "btw_9" },
-  { key: "dining_out", rgsCode: "4350", vatTreatment: "btw_9" },
-  { key: "entertainment_gifts", rgsCode: "4350", vatTreatment: "btw_21" },
-  { key: "office_supplies", rgsCode: "4400", vatTreatment: "btw_21" },
-  { key: "rent_premises", rgsCode: "4200", vatTreatment: "btw_21" },
-  { key: "utilities", rgsCode: "4600", vatTreatment: "btw_21" },
-  { key: "phone_internet", rgsCode: "4510", vatTreatment: "btw_21" },
-  { key: "marketing_ads", rgsCode: "4700", vatTreatment: "btw_21" },
-  { key: "software_subscriptions", rgsCode: "4720", vatTreatment: "btw_21" },
-  { key: "insurance", rgsCode: "4730", vatTreatment: "btw_vrijgesteld" },
-  { key: "professional_services", rgsCode: "4740", vatTreatment: "btw_21" },
-  { key: "training_education", rgsCode: "4750", vatTreatment: "btw_21" },
-  { key: "staff_costs", rgsCode: "4000", vatTreatment: "btw_21" },
-  { key: "bank_interest", rgsCode: "4760", vatTreatment: "btw_vrijgesteld" },
-  { key: "capital_asset", rgsCode: "0200", vatTreatment: "btw_21" },
+  { key: "travel_lodging", rgsCode: "4200", vatTreatment: "btw_9" },
+  { key: "lunch", rgsCode: "4200", vatTreatment: "btw_9" },
+  { key: "dining_out", rgsCode: "4200", vatTreatment: "btw_9" },
+  { key: "entertainment_gifts", rgsCode: "4200", vatTreatment: "btw_21" },
+  { key: "office_supplies", rgsCode: "4100", vatTreatment: "btw_21" },
+  { key: "rent_premises", rgsCode: "4000", vatTreatment: "btw_21" },
+  { key: "utilities", rgsCode: "4000", vatTreatment: "btw_21" },
+  { key: "phone_internet", rgsCode: "4100", vatTreatment: "btw_21" },
+  { key: "marketing_ads", rgsCode: "4200", vatTreatment: "btw_21" },
+  { key: "software_subscriptions", rgsCode: "4100", vatTreatment: "btw_21" },
+  { key: "insurance", rgsCode: "4400", vatTreatment: "btw_vrijgesteld" },
+  { key: "professional_services", rgsCode: "4400", vatTreatment: "btw_21" },
+  { key: "training_education", rgsCode: "4400", vatTreatment: "btw_21" },
+  { key: "staff_costs", rgsCode: "4600", vatTreatment: "btw_21" },
+  { key: "bank_interest", rgsCode: "4900", vatTreatment: "btw_vrijgesteld" },
+  { key: "capital_asset", rgsCode: "0250", vatTreatment: "btw_21" },
   { key: "other", rgsCode: "4400", vatTreatment: "btw_21" },
 ] as const satisfies readonly {
   readonly key: string;
@@ -1770,4 +1770,13 @@ export interface VatBoxLineView {
   /** `turnover`, `vat`, or `base` (a reverse-charged purchase behind self-assessed VAT). */
   readonly column: string;
   readonly amount: string;
+}
+
+/** `POST .../expenses/{id}/posting` - an expense booked into the ledger (FR-EXP-001e). */
+export interface ExpensePostingView {
+  readonly expense_id: string;
+  readonly journal_entry_id: string;
+  readonly entry_number: number;
+  readonly entry_date: string;
+  readonly status: "posted";
 }

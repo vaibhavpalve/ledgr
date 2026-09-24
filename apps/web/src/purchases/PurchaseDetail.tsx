@@ -8,15 +8,24 @@ import { ExpenseForm } from "../capture/ExpenseForm";
 import { useServices } from "../session/ServicesProvider";
 import { useAdministration } from "../session/SessionProvider";
 import { ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
+import { canBook } from "./booking";
 import { OriginalDocument } from "./OriginalDocument";
 
 /**
- * One purchase invoice: the review, inside the invoice.
+ * One purchase invoice: the review, inside the invoice, and the booking.
  *
  * What used to be a separate "Review" screen is this: the fields, pre-filled from
  * the reading and flagged where it was not sure, beside the original they were
- * read from. Confirming here (the form's Submit) is the review, and returns to
- * the list.
+ * read from. Confirming here (the form's Submit) is the review.
+ *
+ * --- Submitting books it ---
+ *
+ * A purchase only counts - in the costs, the cash and the BTW return's input VAT -
+ * once it is in the ledger. For someone who may post (Owner, Accountant,
+ * Bookkeeper), Submit therefore marks the invoice ready AND books it, one click;
+ * for anyone else it stops at ready and says who books it. A purchase that is
+ * already ready (submitted earlier, or by someone else) shows the booking step on
+ * its own. The server is what decides either way (`post journal_entry`).
  *
  * The invoice is fetched in full because the list only carries the summary -
  * enough for a row, not for the form (duplicate warnings, the suggested category
@@ -30,6 +39,9 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
   const [expense, setExpense] = useState<ExpenseView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [booking, setBooking] = useState(false);
+  const [bookProblem, setBookProblem] = useState<string | null>(null);
+  const mayBook = canBook(administration.role);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +59,22 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
       cancelled = true;
     };
   }, [administration.id, capture, expenseId, attempt]);
+
+  const book = async (target: ExpenseView) => {
+    setBooking(true);
+    setBookProblem(null);
+    try {
+      await capture.postExpense(administration.id, target.id);
+      navigate("/purchases");
+    } catch (error) {
+      // The server's own sentence: a missing mapping, a closed period and an
+      // unverified e-mail address are each a different next step.
+      setBookProblem(error instanceof Error ? error.message : "");
+      setExpense({ ...target });
+    } finally {
+      setBooking(false);
+    }
+  };
 
   const back = (
     <Link to="/purchases" className="purchase-detail__back" data-testid="purchase-back">
@@ -79,6 +107,31 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
         title={expense.supplier ?? t("capture.purchases.detail_fallback")}
         {...(expense.invoice_number ? { context: expense.invoice_number } : {})}
       />
+      {expense.status === "ready" ? (
+        <div className="purchase-detail__book" data-testid="purchase-book">
+          {mayBook ? (
+            <>
+              <p>{t("capture.book.ready_note")}</p>
+              <button
+                type="button"
+                className="button--primary"
+                disabled={booking}
+                data-testid="purchase-book-button"
+                onClick={() => void book(expense)}
+              >
+                {booking ? t("capture.book.booking") : t("capture.book.button")}
+              </button>
+            </>
+          ) : (
+            <p>{t("capture.book.not_permitted")}</p>
+          )}
+          {bookProblem !== null ? (
+            <p className="alert alert--attention" role="alert" data-testid="purchase-book-problem">
+              {bookProblem}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <div
         className={
           expense.document_id
@@ -92,8 +145,10 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
           api={capture}
           onChanged={(next) => {
             setExpense(next);
-            // Submitted: the review is done, and it is on the list as ready.
-            if (next.status !== "draft") navigate("/purchases");
+            if (next.status !== "ready") return;
+            // Submitted. Whoever may post books it in the same click; anyone else
+            // stays here, where the booking step says who does.
+            if (mayBook) void book(next);
           }}
         />
         {expense.document_id ? (

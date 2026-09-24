@@ -29,6 +29,8 @@
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   overflow-x: auto;
+  /* Clips absolutely positioned descendants too (see .table-wrap in AppShell.css). */
+  position: relative;
 }
 
 .purchases__table {
@@ -204,4 +206,22 @@
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--surface-raised);
+}
+
+/* ---- Booking a ready purchase (FR-EXP-001e) --------------------------------- */
+
+.purchase-detail__book {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-3);
+  padding: var(--ledgr-space-4);
+  border: 1px solid var(--brand);
+  border-radius: var(--radius-lg);
+  background: var(--brand-tint);
+}
+
+.purchase-detail__book p {
+  flex: 1 1 20rem;
+  margin: 0;
 }

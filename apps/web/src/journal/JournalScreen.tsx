@@ -14,6 +14,7 @@ import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { sumDecimals } from "../ledger/api";
+import { toDecimalInput } from "../ui/decimal";
 
 /**
  * `/journal` — "Memoriaal": FR-GL-001/FR-GL-004's manual entry, FR-GL-007's
@@ -84,7 +85,10 @@ function updateLine(
 }
 
 function totalOf(lines: readonly DraftLine[], side: "debit" | "credit"): string {
-  return sumDecimals(lines.map((line) => (line[side].trim() === "" ? "0" : line[side])));
+  // Typed as a person writes it ("1.250,00"); summed as the decimal it is.
+  return sumDecimals(
+    lines.map((line) => (line[side].trim() === "" ? "0" : toDecimalInput(line[side]))),
+  );
 }
 
 function NewEntryForm({
@@ -171,7 +175,7 @@ function EntryForm({
   accounts: readonly ChartAccountView[];
   money: (value: string) => string;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { journal } = useServices();
 
   const [journalId, setJournalId] = useState(journals[0]?.id ?? "");
@@ -211,8 +215,8 @@ function EntryForm({
           documentReference: documentReference.trim() === "" ? null : documentReference,
           lines: lines.map((line) => ({
             accountId: line.accountId,
-            debit: line.debit.trim() === "" ? "0.00" : line.debit,
-            credit: line.credit.trim() === "" ? "0.00" : line.credit,
+            debit: line.debit.trim() === "" ? "0.00" : toDecimalInput(line.debit, language),
+            credit: line.credit.trim() === "" ? "0.00" : toDecimalInput(line.credit, language),
             description: line.description.trim() === "" ? null : line.description,
           })),
         });
@@ -231,6 +235,7 @@ function EntryForm({
       entryDate,
       description,
       documentReference,
+      language,
       lines,
     ],
   );

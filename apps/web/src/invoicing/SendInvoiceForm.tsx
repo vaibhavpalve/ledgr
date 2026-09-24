@@ -11,6 +11,7 @@ import {
   type InvoiceLineBody,
   type SalesInvoiceApi,
 } from "./api";
+import { toDecimalInput } from "../ui/decimal";
 
 /**
  * MOB-005's Send-invoice tab: "the phone renders and sends" using the
@@ -78,7 +79,7 @@ export function SendInvoiceForm({
   /** After a send: open the invoice's own screen (its PDF, its timeline). */
   onOpenInvoice?: (invoiceId: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   const [invoiceId, setInvoiceId] = useState<string | null>(null);
   // "" = type the details; otherwise a customer's id from the master.
@@ -129,10 +130,11 @@ export function SendInvoiceForm({
 
       const lineBodies: InvoiceLineBody[] = lines.map((line) => ({
         description: line.description,
-        quantity: line.quantity,
-        unit_price: line.unitPrice,
+        // Typed as a person writes it ("95,00"), sent as the API reads it.
+        quantity: toDecimalInput(line.quantity, language),
+        unit_price: toDecimalInput(line.unitPrice, language),
         vat_treatment: line.vatTreatment,
-        discount_percent: line.discountPercent || "0",
+        discount_percent: toDecimalInput(line.discountPercent, language) || "0",
       }));
       await api.setInvoiceLines(administrationId, id, lineBodies);
       await api.issueInvoice(administrationId, id);
@@ -171,6 +173,7 @@ export function SendInvoiceForm({
     fiscalYearId,
     invoiceDate,
     invoiceId,
+    language,
     lines,
   ]);
 

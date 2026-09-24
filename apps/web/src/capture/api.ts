@@ -24,6 +24,7 @@
 
 import type {
   CaptureSessionView,
+  ExpensePostingView,
   ExpenseStatus,
   ExpenseSummaryView,
   ExpenseView,
@@ -135,6 +136,18 @@ export class CaptureApi {
   /** Release the claim. Refuses, naming fields, until the minimum is given. */
   markReady(administrationId: string, expenseId: string): Promise<ExpenseView> {
     return this.call<ExpenseView>("POST", `${this.expensePath(administrationId, expenseId)}/ready`);
+  }
+
+  /**
+   * Book a ready expense into the ledger - `api.expenses.routes.post_expense`. Needs Appendix A's
+   * "Post journal entries" (Owner, Accountant, Bookkeeper) and a verified e-mail address; an
+   * Expense Submitter's claim waits at `ready` for someone who holds it.
+   */
+  postExpense(administrationId: string, expenseId: string): Promise<ExpensePostingView> {
+    return this.call<ExpensePostingView>(
+      "POST",
+      `${this.expensePath(administrationId, expenseId)}/posting`,
+    );
   }
 
   private expensePath(administrationId: string, expenseId: string): string {

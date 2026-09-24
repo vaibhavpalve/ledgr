@@ -13,6 +13,7 @@ import { ApiError, describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
+import { toDecimalInput } from "../ui/decimal";
 import { vatNumberFormatProblem, type CustomerBody, type KvkLookupResult } from "./api";
 
 /**
@@ -108,7 +109,7 @@ export function bodyOf(draft: Draft): CustomerBody {
     peppol_participant_id: null,
     // A count of days, not money: `Number` is fine here (NFR-031 is about amounts).
     payment_terms_days: Number.parseInt(draft.payment_terms_days, 10) || 0,
-    credit_limit: orNull(draft.credit_limit.replace(",", ".")),
+    credit_limit: orNull(toDecimalInput(draft.credit_limit)),
     delivery_channel: draft.delivery_channel,
     invoice_email: orNull(draft.invoice_email),
     language: draft.language,

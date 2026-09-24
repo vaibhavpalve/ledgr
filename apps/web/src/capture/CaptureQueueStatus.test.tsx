@@ -232,7 +232,7 @@ describe("captures the server refused", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("capture-queue-item").textContent).toContain(
-        "Je mag geen bonnen meer indienen voor deze klant.",
+        "U mag geen bonnen meer indienen voor deze klant.",
       ),
     );
   });
@@ -307,7 +307,7 @@ describe("CaptureQueuePurgeWarning — MOB-009", () => {
     render(<CaptureQueuePurgeWarning pending={3} />);
 
     expect(screen.getByTestId("capture-queue-purge-warning").textContent).toContain(
-      "3 bonnen zijn nog niet geüpload en gaan verloren als je uitlogt.",
+      "3 bonnen zijn nog niet geüpload en gaan verloren als u uitlogt.",
     );
   });
 

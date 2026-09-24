@@ -8,7 +8,7 @@ import { MemoryKeyVault, WebCryptoCipher } from "../capture/webCryptoCipher";
 import { assertNoAxeViolations, axeViolations } from "../testing/axe";
 import { jsonResponse } from "../testing/fakeFetch";
 import { renderApp } from "../testing/renderApp";
-import { meFixture } from "../testing/session";
+import { meFixture, testAdministration } from "../testing/session";
 
 /**
  * The purchases screen: the list, with uploading at the top, and one invoice
@@ -349,10 +349,36 @@ describe("one invoice, opened for review", () => {
     expect(back.getAttribute("href")).toBe("/purchases");
   });
 
-  it("returns to the list once the invoice is submitted", async () => {
-    stubApi({
+  it("books the invoice in the same click it is submitted, then returns to the list", async () => {
+    const calls = stubApi({
       [EXPENSE]: () => jsonResponse(detail({ missing_fields: [], can_be_marked_ready: true })),
-      [LIST]: () => jsonResponse([row({ status: "ready" })]),
+      [LIST]: () => jsonResponse([row({ status: "posted" })]),
+      "POST /v1/administrations/adm-A/expenses/exp-1/ready": () =>
+        jsonResponse(detail({ status: "ready", missing_fields: [], can_be_marked_ready: true })),
+      "POST /v1/administrations/adm-A/expenses/exp-1/posting": () =>
+        jsonResponse({
+          expense_id: "exp-1",
+          journal_entry_id: "je-1",
+          entry_number: 12,
+          entry_date: "2026-09-01",
+          status: "posted",
+        }),
+    });
+    renderApp({ authenticated: true, language: "en" }, { route: "/purchases/exp-1" });
+
+    fireEvent.click(await screen.findByTestId("expense-submit"));
+
+    await waitFor(() => expect(screen.getByTestId("purchases")).toBeTruthy());
+    expect(calls).toContain("POST /v1/administrations/adm-A/expenses/exp-1/posting");
+  });
+
+  it("leaves booking to someone with bookkeeping rights when the submitter has none", async () => {
+    const calls = stubApi({
+      "GET /v1/me": () =>
+        jsonResponse(
+          meFixture({ administrations: [{ ...testAdministration, role: "Expense Submitter" }] }),
+        ),
+      [EXPENSE]: () => jsonResponse(detail({ missing_fields: [], can_be_marked_ready: true })),
       "POST /v1/administrations/adm-A/expenses/exp-1/ready": () =>
         jsonResponse(detail({ status: "ready", missing_fields: [], can_be_marked_ready: true })),
     });
@@ -360,7 +386,37 @@ describe("one invoice, opened for review", () => {
 
     fireEvent.click(await screen.findByTestId("expense-submit"));
 
-    await waitFor(() => expect(screen.getByTestId("purchases")).toBeTruthy());
+    const note = await screen.findByTestId("purchase-book");
+    expect(note.textContent).toContain("Someone with bookkeeping rights will book this purchase");
+    expect(screen.queryByTestId("purchase-book-button")).toBeNull();
+    expect(calls.some((call) => call.endsWith("/posting"))).toBe(false);
+  });
+
+  it("books every ready purchase from the list in one action", async () => {
+    const calls = stubApi({
+      [LIST]: () =>
+        jsonResponse([
+          row({ id: "exp-1", status: "ready" }),
+          row({ id: "exp-2", status: "ready" }),
+          row({ id: "exp-3", status: "posted" }),
+        ]),
+      "POST /v1/administrations/adm-A/expenses/exp-1/posting": () => jsonResponse({}),
+      "POST /v1/administrations/adm-A/expenses/exp-2/posting": () =>
+        new Response(JSON.stringify({ detail: { message: "closed", reason: "no_open_period" } }), {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        }),
+    });
+    renderApp({ authenticated: true, language: "en" }, { route: "/purchases" });
+
+    const bookAll = await screen.findByTestId("purchases-book-all");
+    expect(bookAll.textContent).toBe("Book 2 ready purchases");
+    fireEvent.click(bookAll);
+
+    const result = await screen.findByTestId("purchases-book-result");
+    expect(result.textContent).toContain("1 purchases booked.");
+    expect(result.textContent).toContain("1 purchases could not be booked");
+    expect(calls.filter((call) => call.endsWith("/posting"))).toHaveLength(2);
   });
 
   it("has no automated WCAG 2.2 AA violations", async () => {

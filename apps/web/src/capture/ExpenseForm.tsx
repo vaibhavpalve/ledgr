@@ -3,6 +3,7 @@ import { useI18n } from "@ledgr/i18n";
 import { PAYMENT_METHODS, VAT_TREATMENTS } from "@ledgr/shared-types";
 import type { ExpenseView, PaymentMethod, VatTreatment } from "@ledgr/shared-types";
 
+import { toDecimalInput } from "../ui/decimal";
 import type { CaptureApi, ExpenseFormPatch } from "./api";
 
 /** Below this, a reading's own confidence in a field is not enough to trust it
@@ -90,7 +91,7 @@ export function ExpenseForm({
   /** Called with the server's answer after every successful write. */
   onChanged?: (next: ExpenseView) => void;
 }) {
-  const { t, money, date } = useI18n();
+  const { t, money, date, language } = useI18n();
   const [draft, setDraft] = useState<ExpenseFormPatch>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -116,9 +117,14 @@ export function ExpenseForm({
         // Only what was touched. PATCH rather than PUT is load-bearing on the
         // server too: an omitted field must not mean "clear it", or saving one
         // changed field would wipe the other five.
+        // The gross amount as typed ("121,00") is sent as the API reads it ("121.00").
+        const patch: ExpenseFormPatch =
+          typeof draft.gross_amount === "string"
+            ? { ...draft, gross_amount: toDecimalInput(draft.gross_amount, language) }
+            : draft;
         const afterSave =
-          Object.keys(draft).length > 0
-            ? await api.updateExpense(administrationId, expense.id, draft)
+          Object.keys(patch).length > 0
+            ? await api.updateExpense(administrationId, expense.id, patch)
             : expense;
         const next =
           action === "submit" ? await api.markReady(administrationId, expense.id) : afterSave;
@@ -134,7 +140,7 @@ export function ExpenseForm({
         setSaving(false);
       }
     },
-    [administrationId, api, draft, expense, onChanged],
+    [administrationId, api, draft, expense, language, onChanged],
   );
 
   return (

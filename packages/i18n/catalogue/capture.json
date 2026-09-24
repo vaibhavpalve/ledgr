@@ -156,6 +156,34 @@
     },
     "capture.purchases.status.ready": { "nl": "Klaar om te boeken", "en": "Ready to book" },
     "capture.purchases.status.posted": { "nl": "Geboekt", "en": "Booked" },
+    "capture.book.ready_note": {
+      "note": "On a purchase that is complete but not yet in the ledger. Says what booking does, in the reader's terms: it is what makes the purchase count.",
+      "nl": "Klaar om te boeken. Boeken zet deze inkoop in uw administratie en telt de voorbelasting mee in de btw-aangifte.",
+      "en": "Ready to book. Booking puts this purchase in your books and counts its input BTW on your BTW return."
+    },
+    "capture.book.button": { "nl": "Boeken", "en": "Book" },
+    "capture.book.booking": { "nl": "Bezig met boeken…", "en": "Booking…" },
+    "capture.book.booked": {
+      "nl": "Geboekt in boeking {number}.",
+      "en": "Booked in entry {number}."
+    },
+    "capture.book.not_permitted": {
+      "note": "An Expense Submitter's view of a ready purchase: posting is not theirs to do (Appendix A, SoD).",
+      "nl": "Ingediend. Iemand met boekhoudrechten boekt deze inkoop.",
+      "en": "Submitted. Someone with bookkeeping rights will book this purchase."
+    },
+    "capture.book.all": {
+      "nl": "{count} klaargezette inkopen boeken",
+      "en": "Book {count} ready purchases"
+    },
+    "capture.book.all_done": {
+      "nl": "{count} inkopen geboekt.",
+      "en": "{count} purchases booked."
+    },
+    "capture.book.all_failed": {
+      "nl": "{count} inkopen konden niet worden geboekt. Open ze om te zien waarom.",
+      "en": "{count} purchases could not be booked. Open them to see why."
+    },
     "capture.purchases.unread_title": {
       "note": "Stands in for the supplier of an invoice with nothing filled in yet.",
       "nl": "Factuur om aan te vullen",
@@ -175,7 +203,7 @@
     },
     "capture.purchases.empty_body": {
       "note": "Says what happens when the first one is added, because the drop zone above is the next step.",
-      "nl": "Voeg hierboven je eerste factuur toe. We lezen de datum, het bedrag en de leverancier voor je uit.",
+      "nl": "Voeg hierboven uw eerste factuur toe. We lezen de datum, het bedrag en de leverancier voor u uit.",
       "en": "Add your first invoice above. We read the date, amount and supplier for you."
     },
     "capture.purchases.back": { "nl": "Terug naar lijst", "en": "Back to list" },
@@ -191,7 +219,7 @@
     },
     "capture.read.done": {
       "note": "Shown on an invoice whose fields were filled by automatic reading. Asks for a check, because a reading is a suggestion.",
-      "nl": "We hebben deze factuur automatisch gelezen. Controleer de gemarkeerde velden voordat je indient.",
+      "nl": "We hebben deze factuur automatisch gelezen. Controleer de gemarkeerde velden voordat u indient.",
       "en": "We read this invoice automatically. Please check the marked fields before you submit."
     },
     "capture.read.failed": {
@@ -335,7 +363,7 @@
     },
     "capture.form.suggested_category": {
       "note": "FR-EXP-001b's 'defaulting from the user's history'. Offered, not applied — a default that overwrote a choice would be a correction.",
-      "nl": "Vorige keer koos je {category}",
+      "nl": "Vorige keer koos u {category}",
       "en": "Last time you chose {category}"
     },
     "capture.form.use_suggestion": {
@@ -437,7 +465,7 @@
     },
     "capture.duplicate.same_submitter": {
       "note": "Their own double entry is a mistake to fix.",
-      "nl": "Deze heb je zelf al ingediend.",
+      "nl": "Deze hebt u zelf al ingediend.",
       "en": "You submitted this one yourself."
     },
     "capture.duplicate.other_submitter": {
@@ -561,7 +589,7 @@
     },
     "capture.queue.reason.not_permitted": {
       "note": "IAM-030: authorization is evaluated against current state, so a grant may have gone since the photograph was taken.",
-      "nl": "Je mag geen bonnen meer indienen voor deze klant.",
+      "nl": "U mag geen bonnen meer indienen voor deze klant.",
       "en": "You are no longer allowed to submit receipts for this client."
     },
     "capture.queue.reason.not_found": {
@@ -591,8 +619,8 @@
     "capture.queue.purge_warning": {
       "note": "MOB-009 purges the queue on logout, role change and remote wipe, which destroys captures that never uploaded. Shown BEFORE the person signs out — the requirement is not negotiable, so the least this can do is not be a surprise.",
       "nl": {
-        "one": "{count} bon is nog niet geüpload en gaat verloren als je uitlogt.",
-        "other": "{count} bonnen zijn nog niet geüpload en gaan verloren als je uitlogt."
+        "one": "{count} bon is nog niet geüpload en gaat verloren als u uitlogt.",
+        "other": "{count} bonnen zijn nog niet geüpload en gaan verloren als u uitlogt."
       },
       "en": {
         "one": "{count} receipt has not uploaded yet and will be lost when you sign out.",

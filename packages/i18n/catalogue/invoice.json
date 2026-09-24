@@ -289,21 +289,21 @@
     },
     "invoice.required.supplier_name": {
       "note": "FR-AR-003 / D5. Every message in this block states WHAT is missing, WHY the law wants it, and WHERE to go and fix it — the three things D5 requires. The citation is part of the 'why': a person who does not believe the product will believe the statute.",
-      "nl": "De naam van je onderneming ontbreekt. Een factuur moet de volledige naam van de verkoper vermelden (art. 35a Wet OB). Vul de bedrijfsnaam in bij de gegevens van deze administratie.",
+      "nl": "De naam van uw onderneming ontbreekt. Een factuur moet de volledige naam van de verkoper vermelden (art. 35a Wet OB). Vul de bedrijfsnaam in bij de gegevens van deze administratie.",
       "en": "Your business name is missing. An invoice must show the seller's full name (art. 35a Wet OB). Add it in this administration's details."
     },
     "invoice.required.supplier_address": {
       "note": "FR-AR-003 / D5. Names the three parts, because the gate checks all three and 'address' alone leaves somebody guessing which is absent.",
-      "nl": "Het adres van je onderneming ontbreekt. Een factuur moet het adres van de verkoper vermelden (art. 35a Wet OB). Vul straat, postcode en plaats in bij de gegevens van deze administratie.",
+      "nl": "Het adres van uw onderneming ontbreekt. Een factuur moet het adres van de verkoper vermelden (art. 35a Wet OB). Vul straat, postcode en plaats in bij de gegevens van deze administratie.",
       "en": "Your business address is missing. An invoice must show the seller's address (art. 35a Wet OB). Add the street, postcode and city in this administration's details."
     },
     "invoice.required.supplier_vat_number": {
-      "nl": "Het BTW-nummer van je onderneming ontbreekt. Dat is verplicht op elke factuur (art. 35a Wet OB). Vul het in bij de gegevens van deze administratie.",
+      "nl": "Het BTW-nummer van uw onderneming ontbreekt. Dat is verplicht op elke factuur (art. 35a Wet OB). Vul het in bij de gegevens van deze administratie.",
       "en": "Your business BTW number is missing. Every invoice must carry it (art. 35a Wet OB). Add it in this administration's details."
     },
     "invoice.required.supplier_kvk_number": {
       "note": "Not art. 35a: the KvK number is required on Dutch commercial documents by the Handelsregisterwet. The 'why' cites the right statute rather than the convenient one.",
-      "nl": "Het KvK-nummer van je onderneming ontbreekt. Dat hoort op elk handelsdocument te staan (Handelsregisterwet). Vul het in bij de gegevens van deze administratie.",
+      "nl": "Het KvK-nummer van uw onderneming ontbreekt. Dat hoort op elk handelsdocument te staan (Handelsregisterwet). Vul het in bij de gegevens van deze administratie.",
       "en": "Your KvK number is missing. Dutch commercial documents must carry it (Handelsregisterwet). Add it in this administration's details."
     },
     "invoice.required.customer_name": {
@@ -325,7 +325,7 @@
     },
     "invoice.required.lines": {
       "note": "The 'why' here is not a citation but a consequence, and it is the more useful one: an invoice with no lines describes no supply, and issuing it would spend a number from a gapless series on a document that says nothing.",
-      "nl": "Deze factuur heeft geen regels en beschrijft dus geen levering. Voeg minstens één regel toe voordat je hem verstuurt.",
+      "nl": "Deze factuur heeft geen regels en beschrijft dus geen levering. Voeg minstens één regel toe voordat u hem verstuurt.",
       "en": "This invoice has no lines, so it describes no supply. Add at least one line before sending it."
     },
     "invoice.required.line_description": {
@@ -352,22 +352,22 @@
     },
     "invoice.duplicate.identical.issued": {
       "note": "SI-12. A WARNING, never a refusal: repeating an invoice is often correct, so the sentence says what was found and what to check, not that anything is wrong. {reference} is the issued invoice's number, {date} its invoice date, {amount} its net total, all already formatted.",
-      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft dezelfde regels (netto {amount}). Controleer of je niet dezelfde factuur twee keer verstuurt. Is het bedoeld, dan kun je gewoon doorgaan.",
+      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft dezelfde regels (netto {amount}). Controleer of u niet dezelfde factuur twee keer verstuurt. Is het bedoeld, dan kunt u gewoon doorgaan.",
       "en": "Invoice {reference} of {date} to the same customer has the same lines (net {amount}). Check that you are not sending the same invoice twice. If it is intended, carry on."
     },
     "invoice.duplicate.identical.draft": {
       "note": "SI-12. As invoice.duplicate.identical.issued, for another DRAFT: it has no number yet, so it is identified by its date. Often the half-finished draft somebody forgot they had started.",
-      "nl": "Er staat al een concept van {date} voor dezelfde klant met dezelfde regels (netto {amount}). Verwijder een van de twee als het er per ongeluk twee zijn. Is het bedoeld, dan kun je gewoon doorgaan.",
+      "nl": "Er staat al een concept van {date} voor dezelfde klant met dezelfde regels (netto {amount}). Verwijder een van de twee als het er per ongeluk twee zijn. Is het bedoeld, dan kunt u gewoon doorgaan.",
       "en": "There is already a draft dated {date} for the same customer with the same lines (net {amount}). Delete one of the two if it was created twice by accident. If it is intended, carry on."
     },
     "invoice.duplicate.same_total.issued": {
       "note": "SI-12. The weaker match: different lines, same net total. Worded as a possibility, not a finding, because two different jobs can cost the same.",
-      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die je opnieuw factureert.",
+      "nl": "Factuur {reference} van {date} aan dezelfde klant heeft hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die u opnieuw factureert.",
       "en": "Invoice {reference} of {date} to the same customer has the same net amount ({amount}) but different lines. Check whether this is the same supply being invoiced again."
     },
     "invoice.duplicate.same_total.draft": {
       "note": "SI-12. As invoice.duplicate.same_total.issued, for another DRAFT.",
-      "nl": "Er staat al een concept van {date} voor dezelfde klant met hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die je twee keer opvoert.",
+      "nl": "Er staat al een concept van {date} voor dezelfde klant met hetzelfde nettobedrag ({amount}) maar andere regels. Controleer of dit dezelfde levering is die u twee keer opvoert.",
       "en": "There is already a draft dated {date} for the same customer with the same net amount ({amount}) but different lines. Check whether this is the same supply entered twice."
     },
     "invoice.template.locked.quantity_column": {
@@ -1009,7 +1009,7 @@
     },
     "invoice.recurring.issue_error.not_authorized_to_issue": {
       "note": "SI-07. The schedule asked to issue its invoices but the person who ran it may not (issuing needs the send permission). The invoice was created as a draft.",
-      "nl": "Het schema is ingesteld om te versturen, maar jij mag facturen niet definitief maken. De factuur staat als concept klaar.",
+      "nl": "Het schema is ingesteld om te versturen, maar u mag facturen niet definitief maken. De factuur staat als concept klaar.",
       "en": "The schedule is set to issue its invoices, but you may not issue them. The invoice was created as a draft."
     },
     "invoice.recurring.issue_error.not_statutory_compliant": {
@@ -1069,7 +1069,7 @@
     },
     "invoice.batch.issue_error.not_authorized_to_issue": {
       "note": "SI-17. Issuing was asked for but the person who ran the batch may not issue (needs the send permission). The invoice is a draft.",
-      "nl": "Je mag facturen niet definitief maken. De factuur staat als concept klaar.",
+      "nl": "U mag facturen niet definitief maken. De factuur staat als concept klaar.",
       "en": "You may not issue invoices. The invoice was left as a draft."
     },
     "invoice.batch.issue_error.approval_required": {
@@ -1199,12 +1199,12 @@
     },
     "invoice.chase.skip.needs_confirmation": {
       "note": "SI-11. A formal notice claims interest and collection costs, so a bulk 'chase everything' never sends one: a person must choose that invoice. Says how.",
-      "nl": "Dit is een aanmaning, met rente en incassokosten. Die verstuur je niet in bulk: kies deze factuur zelf om de aanmaning te versturen.",
+      "nl": "Dit is een aanmaning, met rente en incassokosten. Die verstuurt u niet in bulk: kies deze factuur zelf om de aanmaning te versturen.",
       "en": "This is a formal notice, with interest and collection costs. It is not sent in bulk: choose this invoice yourself to send the notice."
     },
     "invoice.chase.skip.step_changed": {
       "note": "SI-11. The person reviewed one step and a different one is now next (a stale preview, or a repeated request). Skipped rather than sent as whatever the step has become.",
-      "nl": "De volgende herinnering voor deze factuur is intussen een andere dan die je bekeek. Er is niets verstuurd; bekijk de factuur opnieuw.",
+      "nl": "De volgende herinnering voor deze factuur is intussen een andere dan die u bekeek. Er is niets verstuurd; bekijk de factuur opnieuw.",
       "en": "The next reminder for this invoice is no longer the one you reviewed. Nothing was sent; review the invoice again."
     },
     "invoice.chase.skip.not_overdue_or_unknown": {

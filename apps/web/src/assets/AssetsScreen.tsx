@@ -14,6 +14,7 @@ import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { useModalFocus } from "../useModalFocus";
+import { toDecimalInput } from "../ui/decimal";
 
 /**
  * `/assets` — "Activa (MVA)": PRD §13's fixed-asset register, ungraded by
@@ -198,8 +199,8 @@ function CreateAssetForm({
           name,
           category: category.trim() === "" ? null : category,
           acquisitionDate,
-          acquisitionCost: cost,
-          residualValue: residual === "" ? "0" : residual,
+          acquisitionCost: toDecimalInput(cost),
+          residualValue: residual === "" ? "0" : toDecimalInput(residual),
           usefulLifeMonths: Number(usefulLife),
           assetAccountId,
           depreciationExpenseAccountId: expenseAccountId,
