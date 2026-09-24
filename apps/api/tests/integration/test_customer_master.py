@@ -20,8 +20,6 @@ from sqlalchemy import text
 from api.db import engine as app_engine
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 _INSERT = """
     INSERT INTO customer (
         organization_id, administration_id, name,

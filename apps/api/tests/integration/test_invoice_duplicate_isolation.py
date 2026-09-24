@@ -19,15 +19,12 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import engine as app_engine
 from api.invoicing.repository import SqlInvoiceRepository
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 DAY = date(2026, 9, 9)
 CUSTOMER = "De Vries Holding B.V."

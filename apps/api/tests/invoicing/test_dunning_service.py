@@ -41,8 +41,6 @@ from api.invoicing.model import InvoiceNotFound, NotAuthorizedToInvoice
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 DUE = date(2026, 1, 1)
 INVOICE = uuid.uuid4()
 CUSTOMER = uuid.uuid4()

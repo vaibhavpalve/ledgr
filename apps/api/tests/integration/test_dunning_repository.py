@@ -34,8 +34,6 @@ from tests.integration.test_sales_invoice_payment import _pay
 from tests.integration.test_sales_invoice_posting import _exec, _scalar
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 TODAY = date(2026, 10, 15)
 
 

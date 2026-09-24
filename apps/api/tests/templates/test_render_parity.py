@@ -34,8 +34,6 @@ import base64
 import uuid
 from dataclasses import replace
 
-import pytest
-
 from api.authz.model import AuthorizationDecision
 from api.i18n.language import Language
 from api.invoicing.posting import SalesPostingService
@@ -61,8 +59,6 @@ from api.templates.service import (
     _sample_view,
     encode_preview,
 )
-
-pytestmark = pytest.mark.anyio
 
 ADMIN = uuid.uuid4()
 ORG = uuid.uuid4()

@@ -31,8 +31,6 @@ from api.templates.assets import (
 from api.templates.svg_sanitizer import sanitize_svg
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 #: A genuinely decodable 1x1 PNG - unlike the placeholder `PNG` bytes above
 #: (which are only ever used where nothing needs to actually LOAD the image),

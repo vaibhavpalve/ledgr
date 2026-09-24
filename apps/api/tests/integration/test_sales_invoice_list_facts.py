@@ -13,7 +13,6 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,8 +21,6 @@ from api.invoicing.repository import SqlInvoiceRepository
 from tests.integration.test_sales_invoice_payment import GROSS, _owed_invoice, _pay
 from tests.integration.test_sales_invoice_posting import _exec
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 TODAY = date(2026, 9, 24)
 

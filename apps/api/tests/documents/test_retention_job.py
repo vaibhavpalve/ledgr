@@ -15,15 +15,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
-import pytest
-
 from api.documents.retention_job import (
     DocumentRetentionSweepJob,
     ExpiredDocument,
     RetentionSweepReport,
 )
-
-pytestmark = pytest.mark.anyio
 
 ORG = uuid.uuid4()
 ADMIN = uuid.uuid4()

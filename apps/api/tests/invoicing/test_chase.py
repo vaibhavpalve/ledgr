@@ -46,8 +46,6 @@ from api.invoicing.model import NotAuthorizedToInvoice
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 DUE = date(2026, 1, 1)
 RATE_10 = [InterestRate(valid_from=date(2025, 1, 1), rate=Decimal("10"))]
 

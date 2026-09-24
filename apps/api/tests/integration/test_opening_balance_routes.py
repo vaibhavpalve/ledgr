@@ -18,8 +18,6 @@ from tests.integration.test_posting_defaults import _onboard, _rows
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 class _Verified:
     async def is_verified(self, user_id: uuid.UUID) -> bool:

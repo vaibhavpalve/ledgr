@@ -37,8 +37,6 @@ from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 from tests.support.fake_customer_repository import InMemoryCustomerRepository
 
-pytestmark = pytest.mark.anyio
-
 DETAILS = CustomerDetails(
     name="De Vries Holding B.V.",
     address_line1="Damrak 70",

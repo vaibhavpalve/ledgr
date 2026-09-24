@@ -30,8 +30,6 @@ from api.customers.vies import (
     build_vies_validator,
 )
 
-pytestmark = pytest.mark.anyio
-
 NL = "NL123456789B01"
 
 

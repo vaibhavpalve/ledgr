@@ -46,8 +46,6 @@ from api.invoicing.sepa_service import (
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 TODAY = date(2026, 9, 21)  # a Monday
 COLLECT_ON = date(2026, 9, 24)
 NOW = datetime(2026, 9, 21, 10, 0, 0).astimezone()

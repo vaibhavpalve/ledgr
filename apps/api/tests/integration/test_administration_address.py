@@ -12,15 +12,12 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
 from tests.integration.test_sepa_routes import _patch_administration
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 ADDRESS = {
     "address_line1": "Keizersgracht 100",

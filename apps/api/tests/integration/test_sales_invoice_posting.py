@@ -21,8 +21,6 @@ from sqlalchemy import text
 from api.db import engine as app_engine
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _exec(tenants: SeededTenants, sql: str, **params: object):  # type: ignore[no-untyped-def]
     async with app_engine.begin() as conn:

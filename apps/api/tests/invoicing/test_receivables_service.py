@@ -29,8 +29,6 @@ from api.invoicing.routes import _ageing_json, _statement_json
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 D = Decimal
 AS_OF = date(2026, 6, 30)
 CUSTOMER = uuid.uuid4()

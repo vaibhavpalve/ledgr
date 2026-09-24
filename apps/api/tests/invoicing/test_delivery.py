@@ -53,8 +53,6 @@ from tests.authz.helpers import build_world
 from tests.invoicing.test_posting import invoice as build_invoice
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 PDF = b"%PDF-1.7\nstored at issue\n%%EOF\n"
 
 

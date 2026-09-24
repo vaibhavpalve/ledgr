@@ -27,8 +27,6 @@ from tests.integration.test_dunning import _overdue_invoice
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 REFUSED = {403, 404}
 
 

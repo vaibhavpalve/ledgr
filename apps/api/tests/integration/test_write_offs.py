@@ -35,8 +35,6 @@ from tests.integration.test_sales_invoice_posting import (
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 TODAY = date.today()
 LONG_OVERDUE = "2025-08-01"  # more than 12 months before any real "today" this suite runs
 

@@ -40,8 +40,6 @@ from api.invoicing.routes import _recurring_json
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 D = Decimal
 CUSTOMER = uuid.uuid4()
 YEAR = uuid.uuid4()

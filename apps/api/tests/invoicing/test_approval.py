@@ -48,8 +48,6 @@ from api.vat.rules import TreatmentRole
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 D = Decimal
 NOW = datetime(2026, 9, 21, 10, 0, 0).astimezone()
 

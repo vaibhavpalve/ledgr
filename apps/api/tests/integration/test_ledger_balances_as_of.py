@@ -8,15 +8,12 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from sqlalchemy import text
 
 from api.db import engine as app_engine
 from tests.integration.test_dunning import _overdue_invoice
 from tests.integration.test_sales_invoice_posting import _exec
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 # The shared seed issues a 1210.00 invoice dated 2026-09-09, so on that day the
 # receivable is debited 1210.00 and revenue plus output VAT are credited.

@@ -52,8 +52,6 @@ from api.vat.rules import TreatmentRole
 from tests.invoicing.image_fixtures import png
 from tests.invoicing.support.synthetic_font import build_synthetic_font
 
-pytestmark = pytest.mark.anyio
-
 SUPPLIER = SupplierDetails(
     legal_name="Bakker Consultancy B.V.",
     address_line1="Damrak 70",

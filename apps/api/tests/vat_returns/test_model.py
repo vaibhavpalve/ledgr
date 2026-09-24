@@ -29,8 +29,6 @@ from api.vat_returns.model import (
 )
 from tests.support.fake_vat_rules_repository import InMemoryVatRulesRepository, load_document
 
-pytestmark = pytest.mark.anyio
-
 START = date(2026, 7, 1)
 END = date(2026, 9, 30)
 AFTER = PeriodFacts(today=date(2026, 10, 5))

@@ -29,8 +29,6 @@ from tests.integration.test_write_offs import _call, _debtor_balance, _owed
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 NS = {"p": "urn:iso:std:iso:20022:tech:xsd:pain.008.001.02"}
 CREDITOR_ID = "DE98ZZZ09999999999"  # the EPC's own valid example
 ADMIN_IBAN = "NL91ABNA0417164300"

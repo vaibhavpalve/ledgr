@@ -22,8 +22,6 @@ from api.main import app
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants, seed_session
 
-pytestmark = pytest.mark.anyio
-
 
 @pytest.mark.isolation("GET", "/v1/me")
 async def test_me_names_only_the_callers_own_memberships(

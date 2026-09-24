@@ -18,15 +18,12 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
 from tests.integration.test_sales_invoice_posting import _exec, _scalar, _world
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 
 def _headers(tenants: SeededTenants) -> dict[str, str]:

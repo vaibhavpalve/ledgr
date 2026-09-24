@@ -21,8 +21,6 @@ from api.main import app
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 REFUSED = {403, 404}
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64

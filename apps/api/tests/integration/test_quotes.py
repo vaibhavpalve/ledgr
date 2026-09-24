@@ -27,8 +27,6 @@ from api.invoicing.quotes import QuoteKind, QuoteLine, QuoteStatus
 from tests.integration.test_sales_invoice_posting import _draft, _exec, _scalar, _world
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _as_repo[T](org: uuid.UUID, work: Callable[[SqlQuoteRepository], Awaitable[T]]) -> T:
     async with app_engine.begin() as conn:

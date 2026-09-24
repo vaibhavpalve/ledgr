@@ -31,8 +31,6 @@ from api.invoicing.vat import VatGroup
 from api.ledger.model import Party, PartyKind
 from api.vat.rules import TreatmentRole
 
-pytestmark = pytest.mark.anyio
-
 ADMIN = uuid.uuid4()
 ORG = uuid.uuid4()
 USER = uuid.uuid4()

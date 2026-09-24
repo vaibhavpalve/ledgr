@@ -22,8 +22,6 @@ from tests.integration.test_onboarding_isolation import _CREATE_BODY, _headers, 
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants, seed_session
 
-pytestmark = pytest.mark.anyio
-
 #: The tenant the reads run as - set by _onboard, which every test calls first.
 _ORG: list[str] = [""]
 

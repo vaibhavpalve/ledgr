@@ -26,8 +26,6 @@ from tests.integration.test_sales_invoice_posting import _exec, _scalar, _world
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 _CSV_HEADER = "date,amount,counterparty_name,counterparty_iban,description"
 _TELECOM_CSV = f"{_CSV_HEADER}\n2026-09-05,-12.50,KPN,NL00KPN0000000000,Telefoon\n"
 _INVOICE_PAYMENT_CSV = (

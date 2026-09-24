@@ -39,8 +39,6 @@ from api.invoicing.posting import NoOpenPeriod
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 INVOICE = uuid.uuid4()
 BANK = uuid.uuid4()
 AR = uuid.uuid4()

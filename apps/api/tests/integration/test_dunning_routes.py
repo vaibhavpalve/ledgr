@@ -36,8 +36,6 @@ from tests.integration.test_sales_invoice_posting import _exec, _issued_and_post
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 # Invoices are dated 2026-09-09 (the shared seed); a due date of 2026-09-10 makes them
 # overdue for every real "today" from 2026-09-17 on, and step 1 is the next step for
 # any invoice nobody has chased.

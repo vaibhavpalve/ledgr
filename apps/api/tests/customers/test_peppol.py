@@ -30,9 +30,6 @@ from api.customers.peppol import (
     candidate_identifiers,
 )
 
-pytestmark = pytest.mark.anyio
-
-
 # --- the stub ---------------------------------------------------------------
 
 

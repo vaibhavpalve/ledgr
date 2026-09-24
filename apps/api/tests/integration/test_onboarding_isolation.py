@@ -37,8 +37,6 @@ from tests.support.seed import (
     signup_firm_organization,
 )
 
-pytestmark = pytest.mark.anyio
-
 REFUSED = {403, 404}
 
 _CREATE_BODY = {

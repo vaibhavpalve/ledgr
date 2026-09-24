@@ -36,8 +36,6 @@ from api.invoicing.quotes import QuoteInvalid, QuoteKind, QuoteLine, QuoteStatus
 from tests.authz.helpers import build_world
 from tests.support.fake_audit_repository import InMemoryAuditRepository
 
-pytestmark = pytest.mark.anyio
-
 D = Decimal
 TODAY = date(2026, 9, 19)
 CUSTOMER = uuid.uuid4()

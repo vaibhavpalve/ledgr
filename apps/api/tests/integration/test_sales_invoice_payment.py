@@ -32,8 +32,6 @@ from tests.integration.test_sales_invoice_posting import (
 )
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 GROSS = Decimal("1210.00")
 
 

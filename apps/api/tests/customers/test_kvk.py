@@ -24,8 +24,6 @@ from api.customers.kvk import (
     build_kvk_lookup,
 )
 
-pytestmark = pytest.mark.anyio
-
 KVK = "68750110"
 
 

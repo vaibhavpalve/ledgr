@@ -15,7 +15,6 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import engine as app_engine
@@ -24,8 +23,6 @@ from api.invoicing.rubriek_preview import preview
 from api.invoicing.vat import VatGroup
 from api.vat.rules import TreatmentRole
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 
 async def test_the_production_reader_places_a_standard_supply_in_1a(

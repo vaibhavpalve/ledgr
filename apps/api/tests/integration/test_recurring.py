@@ -30,8 +30,6 @@ from api.invoicing.recurring_service import (
 from tests.integration.test_sales_invoice_posting import _draft, _exec, _scalar, _world
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _as_repo[T](org: uuid.UUID, work: Callable[[SqlRecurringRepository], Awaitable[T]]) -> T:
     """Run `work` against the repository in ONE transaction under `org`'s RLS."""

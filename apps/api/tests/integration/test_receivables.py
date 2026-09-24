@@ -16,7 +16,6 @@ import uuid
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
-import pytest
 from sqlalchemy import text
 
 from api.db import engine as app_engine
@@ -26,8 +25,6 @@ from tests.integration.test_dunning import _overdue_invoice
 from tests.integration.test_sales_invoice_payment import _balance, _pay
 from tests.integration.test_sales_invoice_posting import _exec, _scalar
 from tests.support.seed import SeededTenants
-
-pytestmark = pytest.mark.anyio
 
 # The invoice is dated 2026-09-09 (the shared seed), due 2026-09-30, owing 1210.00.
 INVOICE_DATE = date(2026, 9, 9)

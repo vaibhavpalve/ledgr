@@ -24,8 +24,6 @@ from tests.integration.test_posting_defaults import _rows
 from tests.integration.test_sales_invoice_posting import _exec
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _sale_in_january(tenants: SeededTenants, admin: str, codes: dict[str, str]) -> None:
     [(period,)] = await _rows(

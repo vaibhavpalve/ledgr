@@ -20,8 +20,6 @@ from tests.integration.test_sales_invoice_posting import _exec, _scalar
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 class _Verified:
     async def is_verified(self, user_id: uuid.UUID) -> bool:

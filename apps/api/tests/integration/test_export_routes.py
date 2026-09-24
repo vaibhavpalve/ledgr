@@ -11,8 +11,6 @@ import pytest
 from tests.integration.test_opening_balance_routes import _call, _world
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _with_opening(tenants: SeededTenants) -> tuple[str, str]:
     admin, year, codes = await _world(tenants)

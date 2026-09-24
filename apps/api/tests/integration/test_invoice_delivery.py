@@ -18,8 +18,6 @@ from sqlalchemy import text
 from api.db import engine as app_engine
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 async def _exec(  # type: ignore[no-untyped-def]
     tenants: SeededTenants, sql: str, *, as_org: uuid.UUID | None = None, **params: object

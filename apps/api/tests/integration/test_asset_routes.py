@@ -25,8 +25,6 @@ from api.main import app
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 
 class _Verified:
     async def is_verified(self, user_id: uuid.UUID) -> bool:

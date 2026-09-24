@@ -32,8 +32,6 @@ from api.main import app
 from tests.support.isolation import make_token
 from tests.support.seed import SeededTenants
 
-pytestmark = pytest.mark.anyio
-
 REFUSED = {403, 404}
 
 _BASE = "/v1/administrations/{admin}/customers"

@@ -34,8 +34,6 @@ from api.templates.model import (
 )
 from api.templates.service import InvoiceTemplateService
 
-pytestmark = pytest.mark.anyio
-
 ADMIN = uuid.uuid4()
 ORG = uuid.uuid4()
 ACTOR = uuid.uuid4()
