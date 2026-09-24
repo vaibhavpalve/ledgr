@@ -1082,6 +1082,11 @@
       "nl": "Dit bestand is geen bankafschrift dat LEDGR kan lezen. Kies CAMT.053 (aanbevolen), MT940 of de CSV-export van ING, Rabobank, bunq, Knab of ABN AMRO.",
       "en": "This file is not a bank statement LEDGR can read. Choose CAMT.053 (recommended), MT940 or the CSV export of ING, Rabobank, bunq, Knab or ABN AMRO."
     },
+    "errors.bank_expense_not_matchable": {
+      "note": "ADR-092: a bank line matched to a receipt that is not booked, was paid privately, is already matched, or has a different amount.",
+      "nl": "Deze bon past niet bij deze betaling: hij is nog niet geboekt, niet zakelijk betaald, al gekoppeld of het bedrag verschilt.",
+      "en": "This receipt does not fit this payment: it is not booked yet, was not paid from the business account, is already matched, or the amount differs."
+    },
     "errors.bank_statement_other_account": {
       "note": "ADR-091: the file names an account and it is not this bank account's IBAN.",
       "nl": "Dit afschrift is van rekening {iban}, niet van deze bankrekening. Er is niets ingelezen.",

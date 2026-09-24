@@ -126,6 +126,22 @@ async def test_every_capture_category_resolves_to_an_account(
     } <= purposes
 
 
+async def test_a_receipt_paid_from_the_bank_waits_in_kruisposten(
+    two_organizations: SeededTenants,
+) -> None:
+    """ADR-092: crediting the bank on the receipt's date and again when its statement line is
+    reconciled took the money out twice; the receipt credits Kruisposten until matched."""
+    administration_id = await _onboard(two_organizations)
+    rows = await _rows(
+        "SELECT e.purpose, a.code FROM expense_posting_account e "
+        "JOIN ledger_account a ON a.id = e.account_id "
+        "WHERE e.administration_id = :a "
+        "AND e.purpose IN ('business_account', 'business_card')",
+        a=administration_id,
+    )
+    assert dict(rows) == {"business_account": "2000", "business_card": "2000"}
+
+
 async def test_the_code_the_picker_shows_is_the_account_the_category_books_to(
     two_organizations: SeededTenants,
 ) -> None:

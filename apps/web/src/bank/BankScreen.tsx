@@ -238,11 +238,11 @@ function AccountTransactions({
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
   const matchOne = useCallback(
-    async (transactionId: string, invoiceId: string) => {
+    async (transactionId: string, candidate: BankMatchCandidateView) => {
       setMatching(true);
       setMatchResult(null);
       try {
-        await bank.reconcileWithInvoice(administrationId, transactionId, invoiceId);
+        await bank.reconcileWithCandidate(administrationId, transactionId, candidate);
         reload();
       } catch (error) {
         setMatchResult({ tone: "attention", text: describeError(error) });
@@ -253,9 +253,9 @@ function AccountTransactions({
     [bank, administrationId, reload],
   );
 
-  // FR-BNK-004 (ADR-091): only HIGH suggestions, one at a time, each through the same
-  // reconcile-with-invoice call a person's click makes. A refusal (the invoice was paid meanwhile)
-  // leaves that line for a person and does not stop the rest.
+  // FR-BNK-004 (ADR-091, ADR-092): only HIGH suggestions, one at a time, each through the same
+  // reconcile call a person's click makes - an invoice for money in, a receipt for money out. A
+  // refusal (the invoice was paid meanwhile) leaves that line for a person and does not stop the rest.
   const certainLines = (transactions ?? []).filter(
     (transaction) =>
       transaction.status === "unmatched" && transaction.suggestion?.confidence === "high",
@@ -269,7 +269,7 @@ function AccountTransactions({
       const suggestion = transaction.suggestion;
       if (!suggestion) continue;
       try {
-        await bank.reconcileWithInvoice(administrationId, transaction.id, suggestion.invoice_id);
+        await bank.reconcileWithCandidate(administrationId, transaction.id, suggestion);
         matched += 1;
       } catch {
         failed += 1;
@@ -401,7 +401,7 @@ function AccountTransactions({
                         <SuggestionLine
                           suggestion={transaction.suggestion}
                           disabled={matching}
-                          onMatch={(invoiceId) => void matchOne(transaction.id, invoiceId)}
+                          onMatch={(candidate) => void matchOne(transaction.id, candidate)}
                           testId={`bank-suggestion-${transaction.id}`}
                         />
                       ) : null}
@@ -565,7 +565,25 @@ function ConfidenceChip({ candidate }: { candidate: BankMatchCandidateView }) {
   );
 }
 
-/** The best open invoice for one bank line, with a one-click match (FR-BNK-003, ADR-091). */
+/** "Invoice 2026-0007 to Hotel De Gouden Leeuw" or "Receipt from Staples, 16-09-2026". */
+function CandidateText({ candidate }: { candidate: BankMatchCandidateView }) {
+  const { t, date } = useI18n();
+  return (
+    <span className="caption">
+      {candidate.kind === "expense"
+        ? t("bank.suggestion_expense", {
+            party: candidate.party_name,
+            date: date(candidate.document_date),
+          })
+        : t("bank.suggestion", {
+            reference: candidate.reference ?? "—",
+            party: candidate.party_name,
+          })}
+    </span>
+  );
+}
+
+/** The best open document for one bank line, with a one-click match (FR-BNK-003, ADR-091). */
 function SuggestionLine({
   suggestion,
   disabled,
@@ -574,24 +592,19 @@ function SuggestionLine({
 }: {
   suggestion: BankMatchCandidateView;
   disabled: boolean;
-  onMatch: (invoiceId: string) => void;
+  onMatch: (candidate: BankMatchCandidateView) => void;
   testId: string;
 }) {
   const { t } = useI18n();
   return (
     <div className="bank-suggestion" data-testid={testId}>
       <ConfidenceChip candidate={suggestion} />
-      <span className="caption">
-        {t("bank.suggestion", {
-          reference: suggestion.invoice_reference ?? "—",
-          customer: suggestion.customer_name,
-        })}
-      </span>
+      <CandidateText candidate={suggestion} />
       <button
         type="button"
         className="bank-suggestion__match"
         disabled={disabled}
-        onClick={() => onMatch(suggestion.invoice_id)}
+        onClick={() => onMatch(suggestion)}
         data-testid={`${testId}-match`}
       >
         {t("bank.match")}
@@ -622,7 +635,6 @@ function ReconcilePanel({
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isInflow) return;
     let cancelled = false;
     bank
       .matchCandidates(administrationId, transaction.id)
@@ -635,14 +647,14 @@ function ReconcilePanel({
     return () => {
       cancelled = true;
     };
-  }, [bank, administrationId, transaction.id, isInflow]);
+  }, [bank, administrationId, transaction.id]);
 
-  const matchInvoice = useCallback(
-    async (invoiceId: string) => {
+  const matchCandidate = useCallback(
+    async (candidate: BankMatchCandidateView) => {
       setSending(true);
       setProblem(null);
       try {
-        await bank.reconcileWithInvoice(administrationId, transaction.id, invoiceId);
+        await bank.reconcileWithCandidate(administrationId, transaction.id, candidate);
         onDone();
       } catch (error) {
         setProblem(describeError(error));
@@ -674,20 +686,21 @@ function ReconcilePanel({
   return (
     <div className="panel form" data-testid={`bank-reconcile-panel-${transaction.id}`}>
       {problem !== null ? <ErrorState message={problem} /> : null}
-      {isInflow && candidates !== null && candidates.length > 0 ? (
+      {candidates !== null && candidates.length > 0 ? (
         <div>
-          <p className="caption">{t("bank.suggested_invoices")}</p>
+          <p className="caption">
+            {isInflow ? t("bank.suggested_invoices") : t("bank.suggested_receipts")}
+          </p>
           <ul className="bank-candidates">
             {candidates.map((candidate) => (
-              <li key={candidate.invoice_id}>
-                <ConfidenceChip candidate={candidate} />{" "}
-                {candidate.invoice_reference ? `${candidate.invoice_reference} · ` : ""}
-                {candidate.customer_name} — {money(candidate.outstanding)}{" "}
+              <li key={candidate.document_id}>
+                <ConfidenceChip candidate={candidate} /> <CandidateText candidate={candidate} /> —{" "}
+                {money(candidate.amount)}{" "}
                 <button
                   type="button"
                   disabled={sending}
-                  onClick={() => void matchInvoice(candidate.invoice_id)}
-                  data-testid={`bank-match-invoice-${candidate.invoice_id}`}
+                  onClick={() => void matchCandidate(candidate)}
+                  data-testid={`bank-match-${candidate.kind}-${candidate.document_id}`}
                 >
                   {t("bank.match")}
                 </button>

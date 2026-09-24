@@ -105,17 +105,26 @@
       "en": "Match"
     },
     "bank.generic_reconcile_hint": {
-      "nl": "Geen van deze facturen? Kies een tegenrekening om deze transactie rechtstreeks te boeken.",
-      "en": "None of these invoices? Choose an offset account to post this transaction directly."
+      "nl": "Geen van deze? Kies een tegenrekening om deze transactie rechtstreeks te boeken.",
+      "en": "None of these? Choose an offset account to post this transaction directly."
     },
     "bank.import_choose": {
       "nl": "Afschrift kiezen",
       "en": "Choose a statement"
     },
     "bank.suggestion": {
-      "note": "The best open invoice for one bank line (ADR-091). {reference} is the invoice number.",
-      "nl": "Factuur {reference} van {customer}",
-      "en": "Invoice {reference} to {customer}"
+      "note": "The best open sales invoice for an incoming bank line (ADR-091). {reference} is the invoice number, {party} the customer.",
+      "nl": "Factuur {reference} aan {party}",
+      "en": "Invoice {reference} to {party}"
+    },
+    "bank.suggestion_expense": {
+      "note": "The receipt an outgoing bank line paid (ADR-092). {party} is the supplier, {date} the receipt's date.",
+      "nl": "Bon van {party}, {date}",
+      "en": "Receipt from {party}, {date}"
+    },
+    "bank.suggested_receipts": {
+      "nl": "Mogelijk deze bon:",
+      "en": "Possibly this receipt:"
     },
     "bank.confidence.high": {
       "note": "Certain enough to be matched in bulk: the invoice number is in the payment, or the payer's name matches and no other invoice has this amount.",
@@ -136,12 +145,12 @@
       "en": "invoice number in the description"
     },
     "bank.reason.name": {
-      "nl": "naam van de betaler",
-      "en": "payer's name"
+      "nl": "naam van de tegenpartij",
+      "en": "counterparty's name"
     },
     "bank.reason.only_candidate": {
-      "nl": "enige openstaande factuur van dit bedrag",
-      "en": "only open invoice of this amount"
+      "nl": "enige open factuur of bon van dit bedrag",
+      "en": "only open invoice or receipt of this amount"
     },
     "bank.reason.ambiguous": {
       "nl": "past ook bij een andere factuur of betaling",
@@ -150,12 +159,12 @@
     "bank.certain_banner": {
       "note": "Above the bank lines when some have a certain match (ADR-091).",
       "nl": {
-        "one": "{count} betaling past zeker bij een openstaande factuur.",
-        "other": "{count} betalingen passen zeker bij een openstaande factuur."
+        "one": "{count} betaling past zeker bij een factuur of bon.",
+        "other": "{count} betalingen passen zeker bij een factuur of bon."
       },
       "en": {
-        "one": "{count} payment certainly matches an open invoice.",
-        "other": "{count} payments certainly match an open invoice."
+        "one": "{count} payment certainly matches an invoice or receipt.",
+        "other": "{count} payments certainly match an invoice or receipt."
       }
     },
     "bank.match_certain": {
@@ -164,12 +173,12 @@
     },
     "bank.match_certain_done": {
       "nl": {
-        "one": "{count} betaling gekoppeld en als ontvangst geboekt.",
-        "other": "{count} betalingen gekoppeld en als ontvangst geboekt."
+        "one": "{count} betaling gekoppeld en geboekt.",
+        "other": "{count} betalingen gekoppeld en geboekt."
       },
       "en": {
-        "one": "{count} payment matched and booked as received.",
-        "other": "{count} payments matched and booked as received."
+        "one": "{count} payment matched and booked.",
+        "other": "{count} payments matched and booked."
       }
     },
     "bank.match_certain_partial": {

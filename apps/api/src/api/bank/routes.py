@@ -6,6 +6,7 @@
     GET  /v1/administrations/{id}/bank-accounts/{account_id}/transactions
     GET  /v1/administrations/{id}/bank-transactions/{transaction_id}/match-candidates
     POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-invoice
+    POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-expense
     POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile
 
 Registered via `register(app)`, not `include_router` - see
@@ -44,6 +45,7 @@ from api.bank.model import (
     BankAccountNotFound,
     BankError,
     BankTransaction,
+    ExpenseNotMatchable,
     ImportResult,
     InvalidBankField,
     MatchCandidate,
@@ -97,6 +99,12 @@ def register(app: FastAPI) -> None:
         reconcile_with_invoice,
         methods=["POST"],
         name="reconcile_bank_transaction_with_invoice",
+    )
+    app.add_api_route(
+        f"{_TRANSACTION}/reconcile-with-expense",
+        reconcile_with_expense,
+        methods=["POST"],
+        name="reconcile_bank_transaction_with_expense",
     )
     app.add_api_route(
         f"{_TRANSACTION}/reconcile",
@@ -162,6 +170,9 @@ def _transaction_json(transaction: BankTransaction) -> dict[str, object]:
             if transaction.matched_sales_invoice_id
             else None
         ),
+        "matched_expense_id": (
+            str(transaction.matched_expense_id) if transaction.matched_expense_id else None
+        ),
         "journal_entry_id": str(transaction.journal_entry_id)
         if transaction.journal_entry_id
         else None,
@@ -174,11 +185,13 @@ def _transaction_json(transaction: BankTransaction) -> dict[str, object]:
 def _candidate_json(scored: ScoredCandidate) -> dict[str, object]:
     candidate: MatchCandidate = scored.candidate
     return {
-        "invoice_id": str(candidate.invoice_id),
-        "invoice_reference": candidate.invoice_reference,
-        "customer_name": candidate.customer_name,
-        "outstanding": str(candidate.outstanding),
-        "invoice_date": candidate.invoice_date.isoformat(),
+        # ADR-092: a sales invoice for money in, a receipt for money out.
+        "kind": candidate.kind.value,
+        "document_id": str(candidate.document_id),
+        "reference": candidate.reference,
+        "party_name": candidate.party_name,
+        "amount": str(candidate.amount),
+        "document_date": candidate.document_date.isoformat(),
         # FR-BNK-003's confidence, and why (ADR-091).
         "confidence": scored.confidence.value,
         "reasons": list(scored.reasons),
@@ -214,6 +227,10 @@ def _refuse(request: Request, exc: Exception) -> Exception:
     if isinstance(exc, NoActiveBankJournal):
         return problem(
             request, 409, "errors.bank_no_active_journal", reason="bank_no_active_journal"
+        )
+    if isinstance(exc, ExpenseNotMatchable):
+        return problem(
+            request, 409, "errors.bank_expense_not_matchable", reason="bank_expense_not_matchable"
         )
     if isinstance(exc, InvalidBankField):
         return problem(
@@ -292,6 +309,10 @@ class ImportStatementBody(BaseModel):
 
 class ReconcileWithInvoiceBody(BaseModel):
     invoice_id: str
+
+
+class ReconcileWithExpenseBody(BaseModel):
+    expense_id: str
 
 
 class ReconcileGenericBody(BaseModel):
@@ -473,6 +494,37 @@ async def reconcile_with_invoice(
             administration_id=administration_id,
             transaction_id=transaction_id,
             invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except BankError as exc:
+        raise _refuse(request, exc) from exc
+    return _transaction_json(transaction)
+
+
+async def reconcile_with_expense(
+    administration_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+    body: ReconcileWithExpenseBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: BankService = Depends(get_bank_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "reconcile",
+            "bank_transaction",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+) -> dict[str, object]:
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    expense_id = _parse_uuid(request, "expense_id", body.expense_id)
+    try:
+        transaction = await service.reconcile_with_expense(
+            administration_id=administration_id,
+            transaction_id=transaction_id,
+            expense_id=expense_id,
             actor_user_id=tenant.user_id,
         )
     except BankError as exc:

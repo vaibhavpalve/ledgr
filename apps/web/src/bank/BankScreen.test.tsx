@@ -30,29 +30,46 @@ function suggestion(
   reasons: BankMatchCandidateView["reasons"],
 ): BankMatchCandidateView {
   return {
-    invoice_id: invoiceId,
-    invoice_reference: `2026-${invoiceId}`,
-    customer_name: "Hotel De Gouden Leeuw B.V.",
-    outstanding: "1149.50",
-    invoice_date: "2026-09-01",
+    kind: "sales_invoice",
+    document_id: invoiceId,
+    reference: `2026-${invoiceId}`,
+    party_name: "Hotel De Gouden Leeuw B.V.",
+    amount: "1149.50",
+    document_date: "2026-09-01",
     confidence,
     reasons,
   };
 }
 
-function line(id: string, match: BankMatchCandidateView | null): BankTransactionView {
+const staplesReceipt: BankMatchCandidateView = {
+  kind: "expense",
+  document_id: "exp-1",
+  reference: null,
+  party_name: "Staples",
+  amount: "121.00",
+  document_date: "2026-09-16",
+  confidence: "high",
+  reasons: ["name", "only_candidate"],
+};
+
+function line(
+  id: string,
+  match: BankMatchCandidateView | null,
+  amount = "1149.50",
+): BankTransactionView {
   return {
     id,
     bank_account_id: "ba-1",
     booking_date: "2026-09-22",
     value_date: null,
-    amount: "1149.50",
+    amount,
     currency: "EUR",
     counterparty_name: "HOTEL DE GOUDEN LEEUW BV",
     counterparty_iban: null,
     description: "factuur",
     status: "unmatched",
     matched_sales_invoice_id: null,
+    matched_expense_id: null,
     journal_entry_id: null,
     reconciled_at: null,
     suggestion: match,
@@ -63,14 +80,15 @@ const certainA = line("t1", suggestion("0007", "high", ["reference"]));
 const certainB = line("t2", suggestion("0008", "high", ["name", "only_candidate"]));
 const likely = line("t3", suggestion("0009", "medium", ["name"]));
 const nothing = line("t4", null);
+const staples = line("t5", staplesReceipt, "-121.00");
 
 const services = {
   bank: {
     listAccounts: vi.fn(async () => [account]),
-    listTransactions: vi.fn(async () => [certainA, certainB, likely, nothing]),
+    listTransactions: vi.fn(async () => [certainA, certainB, likely, nothing, staples]),
     matchCandidates: vi.fn(async () => []),
-    reconcileWithInvoice: vi.fn(async (_admin: string, transactionId: string) => ({
-      ...line(transactionId, null),
+    reconcileWithCandidate: vi.fn(async (...args: [string, string, BankMatchCandidateView]) => ({
+      ...line(args[1], null),
       status: "reconciled" as const,
     })),
     reconcileGeneric: vi.fn(),
@@ -107,28 +125,39 @@ describe("suggested matches", () => {
     expect(first.textContent).toContain("Invoice 2026-0007 to Hotel De Gouden Leeuw B.V.");
     expect(screen.getByTestId("bank-suggestion-t3").textContent).toContain("Likely");
     expect(screen.queryByTestId("bank-suggestion-t4")).toBeNull();
+    // ADR-092: money out is offered the receipt it paid.
+    expect(screen.getByTestId("bank-suggestion-t5").textContent).toContain(
+      "Receipt from Staples, 16-09-2026",
+    );
   });
 
   it("matches only the certain lines in bulk", async () => {
     open();
     const banner = await screen.findByTestId("bank-certain");
-    expect(banner.textContent).toContain("2 payments certainly match an open invoice.");
+    expect(banner.textContent).toContain("3 payments certainly match an invoice or receipt.");
 
     fireEvent.click(within(banner).getByTestId("bank-match-certain"));
 
     await waitFor(() =>
       expect(screen.getByTestId("bank-match-result").textContent).toContain(
-        "2 payments matched and booked as received.",
+        "3 payments matched and booked.",
       ),
     );
-    expect(services.bank.reconcileWithInvoice.mock.calls).toEqual([
+    expect(
+      services.bank.reconcileWithCandidate.mock.calls.map(([admin, id, candidate]) => [
+        admin,
+        id,
+        candidate.document_id,
+      ]),
+    ).toEqual([
       ["adm-A", "t1", "0007"],
       ["adm-A", "t2", "0008"],
+      ["adm-A", "t5", "exp-1"],
     ]);
   });
 
   it("reports the certain matches that were refused and carries on", async () => {
-    services.bank.reconcileWithInvoice.mockRejectedValueOnce(
+    services.bank.reconcileWithCandidate.mockRejectedValueOnce(
       new ApiError(409, "errors.bank_transaction_already_reconciled", "already"),
     );
     open();
@@ -136,10 +165,10 @@ describe("suggested matches", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("bank-match-result").textContent).toContain(
-        "1 payment matched; 1 failed, please review those yourself.",
+        "2 payments matched; 1 failed, please review those yourself.",
       ),
     );
-    expect(services.bank.reconcileWithInvoice).toHaveBeenCalledTimes(2);
+    expect(services.bank.reconcileWithCandidate).toHaveBeenCalledTimes(3);
   });
 
   it("books nothing to an account the person did not choose", async () => {
@@ -167,7 +196,11 @@ describe("suggested matches", () => {
     open();
     fireEvent.click(await screen.findByTestId("bank-suggestion-t3-match"));
     await waitFor(() =>
-      expect(services.bank.reconcileWithInvoice).toHaveBeenCalledWith("adm-A", "t3", "0009"),
+      expect(services.bank.reconcileWithCandidate).toHaveBeenCalledWith(
+        "adm-A",
+        "t3",
+        expect.objectContaining({ kind: "sales_invoice", document_id: "0009" }),
+      ),
     );
   });
 });

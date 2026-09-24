@@ -1,5 +1,5 @@
-"""SQL for bank accounts, statement imports and reconciliation - migration
-0065.
+"""SQL for bank accounts, statement imports and reconciliation - migrations
+0065 and 0070.
 
 A plain tenant-scoped module, not the ledger's bounded context: writes here
 touch `bank_account`/`bank_transaction`/`bank_statement_import`, never
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -23,6 +24,7 @@ from api.bank.model import (
     BankAccount,
     BankAccountStatus,
     BankTransaction,
+    CandidateKind,
     MatchCandidate,
     TransactionStatus,
 )
@@ -34,7 +36,8 @@ _ACCOUNT_COLUMNS = (
 _TRANSACTION_COLUMNS = """
     id, administration_id, bank_account_id, booking_date, value_date, amount, currency,
     counterparty_name, counterparty_iban, description, external_id, status,
-    matched_sales_invoice_id, matched_payment_id, journal_entry_id, reconciled_at
+    matched_sales_invoice_id, matched_payment_id, journal_entry_id, reconciled_at,
+    matched_expense_id
 """
 
 
@@ -69,7 +72,58 @@ def _transaction(row: Any) -> BankTransaction:
         matched_payment_id=row.matched_payment_id,
         journal_entry_id=row.journal_entry_id,
         reconciled_at=row.reconciled_at,
+        matched_expense_id=row.matched_expense_id,
     )
+
+
+def _invoice_candidate(row: Any) -> MatchCandidate:
+    return MatchCandidate(
+        kind=CandidateKind.SALES_INVOICE,
+        document_id=row.invoice_id,
+        reference=row.invoice_reference,
+        party_name=row.customer_name,
+        amount=Decimal(row.outstanding),
+        document_date=row.invoice_date,
+    )
+
+
+def _expense_candidate(row: Any) -> MatchCandidate:
+    return MatchCandidate(
+        kind=CandidateKind.EXPENSE,
+        document_id=row.id,
+        reference=row.invoice_number,
+        party_name=row.supplier,
+        amount=Decimal(row.gross_amount),
+        document_date=row.expense_date,
+    )
+
+
+#: ADR-092: the receipts a bank line can settle - posted, paid from the business account or card
+#: (not out of someone's own pocket), and not settled by another line yet.
+_BANK_PAID_EXPENSES = """
+    SELECT e.id, e.invoice_number, e.supplier, e.gross_amount, e.expense_date
+      FROM expense e
+     WHERE e.administration_id = :admin
+       AND e.status = 'posted'
+       AND e.payment_method IN ('business_account', 'business_card')
+       AND NOT EXISTS (SELECT 1 FROM bank_transaction b WHERE b.matched_expense_id = e.id)
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class ExpenseSettlement:
+    """What reconciling a bank line against a receipt needs to know about the receipt."""
+
+    expense_id: uuid.UUID
+    status: str
+    payment_method: str | None
+    gross_amount: Decimal | None
+    supplier: str | None
+    journal_entry_id: uuid.UUID | None
+    #: The account the receipt's posting credited - Kruisposten, or the bank itself for a receipt
+    #: posted before 0070.
+    funding_account_id: uuid.UUID | None
+    already_matched: bool
 
 
 class SqlBankRepository:
@@ -289,16 +343,54 @@ class SqlBankRepository:
             ),
             {"admin": str(administration_id), "amount": amount},
         )
-        return [
-            MatchCandidate(
-                invoice_id=row.invoice_id,
-                invoice_reference=row.invoice_reference,
-                customer_name=row.customer_name,
-                outstanding=Decimal(row.outstanding),
-                invoice_date=row.invoice_date,
-            )
-            for row in result
-        ]
+        return [_invoice_candidate(row) for row in result]
+
+    async def bank_paid_expenses(
+        self, *, administration_id: uuid.UUID, amount: Decimal | None = None
+    ) -> list[MatchCandidate]:
+        """Receipts an outgoing line could have paid (ADR-092); of exactly `amount` when given."""
+        result = await self._session.execute(
+            text(
+                _BANK_PAID_EXPENSES
+                + " AND (cast(:amount as numeric) IS NULL OR e.gross_amount = :amount)"
+                + " ORDER BY e.expense_date"
+            ),
+            {"admin": str(administration_id), "amount": amount},
+        )
+        return [_expense_candidate(row) for row in result]
+
+    async def expense_settlement(
+        self, *, administration_id: uuid.UUID, expense_id: uuid.UUID
+    ) -> ExpenseSettlement | None:
+        result = await self._session.execute(
+            text(
+                """
+                SELECT e.id, e.status, e.payment_method, e.gross_amount, e.supplier,
+                       e.journal_entry_id,
+                       (SELECT jl.account_id FROM journal_line jl
+                         WHERE jl.journal_entry_id = e.journal_entry_id AND jl.credit > 0
+                         ORDER BY jl.credit DESC LIMIT 1) AS funding_account_id,
+                       EXISTS (SELECT 1 FROM bank_transaction b
+                                WHERE b.matched_expense_id = e.id) AS already_matched
+                  FROM expense e
+                 WHERE e.id = :id AND e.administration_id = :admin
+                """
+            ),
+            {"id": str(expense_id), "admin": str(administration_id)},
+        )
+        row = result.first()
+        if row is None:
+            return None
+        return ExpenseSettlement(
+            expense_id=row.id,
+            status=row.status,
+            payment_method=row.payment_method,
+            gross_amount=None if row.gross_amount is None else Decimal(row.gross_amount),
+            supplier=row.supplier,
+            journal_entry_id=row.journal_entry_id,
+            funding_account_id=row.funding_account_id,
+            already_matched=row.already_matched,
+        )
 
     async def open_invoice_balances(self, *, administration_id: uuid.UUID) -> list[MatchCandidate]:
         """Every sales invoice with something outstanding - read once for a whole page of bank
@@ -311,16 +403,7 @@ class SqlBankRepository:
             ),
             {"admin": str(administration_id)},
         )
-        return [
-            MatchCandidate(
-                invoice_id=row.invoice_id,
-                invoice_reference=row.invoice_reference,
-                customer_name=row.customer_name,
-                outstanding=Decimal(row.outstanding),
-                invoice_date=row.invoice_date,
-            )
-            for row in result
-        ]
+        return [_invoice_candidate(row) for row in result]
 
     async def period_for_date(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
         result = await self._session.execute(
@@ -354,6 +437,7 @@ class SqlBankRepository:
         matched_payment_id: uuid.UUID | None,
         user_id: uuid.UUID,
         reconciled_at: datetime,
+        matched_expense_id: uuid.UUID | None = None,
     ) -> BankTransaction:
         result = await self._session.execute(
             text(
@@ -363,6 +447,7 @@ class SqlBankRepository:
                     journal_entry_id = :entry,
                     matched_sales_invoice_id = :invoice,
                     matched_payment_id = :payment,
+                    matched_expense_id = :expense,
                     reconciled_by_user_id = :user,
                     reconciled_at = :reconciled_at
                  WHERE id = :id AND administration_id = :admin
@@ -375,6 +460,7 @@ class SqlBankRepository:
                 "entry": str(journal_entry_id),
                 "invoice": str(matched_sales_invoice_id) if matched_sales_invoice_id else None,
                 "payment": str(matched_payment_id) if matched_payment_id else None,
+                "expense": str(matched_expense_id) if matched_expense_id else None,
                 "user": str(user_id),
                 "reconciled_at": reconciled_at,
             },

@@ -1,11 +1,11 @@
 """Value types for bank accounts, statement imports and reconciliation
-(migration 0065).
+(migrations 0065, 0070).
 
 Reconciliation is not a second write path into the ledger: a match against a
 sales invoice calls `api.invoicing.payments.SalesPaymentService.record()`,
-and a generic match calls `LedgerService.post()` directly - the same two
-public entry points `api.assets.service` already uses for depreciation and
-disposal.
+and a generic match or a receipt's settlement calls `LedgerService.post()`
+directly - the same two public entry points `api.assets.service` already uses
+for depreciation and disposal.
 """
 
 from __future__ import annotations
@@ -89,6 +89,7 @@ class BankTransaction:
     matched_payment_id: uuid.UUID | None
     journal_entry_id: uuid.UUID | None
     reconciled_at: datetime | None
+    matched_expense_id: uuid.UUID | None = None
 
     @property
     def is_inflow(self) -> bool:
@@ -102,15 +103,34 @@ class ImportResult:
     duplicate_count: int
 
 
+class CandidateKind(enum.Enum):
+    """What a bank line can settle: money IN pays a sales invoice, money OUT pays a receipt that
+    was booked as paid from the business account or card (ADR-092)."""
+
+    SALES_INVOICE = "sales_invoice"
+    EXPENSE = "expense"
+
+
 @dataclass(frozen=True, slots=True)
 class MatchCandidate:
-    """One open sales invoice whose outstanding balance matches a
-    transaction's amount exactly - the suggestion the reconciliation screen
-    offers, never applied automatically.
+    """One open document whose amount equals a transaction's exactly - the suggestion the
+    reconciliation screen offers, never applied without a click.
+
+        document_id    the sales invoice's id, or the expense's
+        reference      the invoice number: ours for a sales invoice, the supplier's for a receipt
+        party_name     the customer, or the supplier
+        amount         what is still open: the invoice's outstanding balance, the receipt's gross
+        document_date  the invoice date, or the receipt's date
     """
 
-    invoice_id: uuid.UUID
-    invoice_reference: str | None
-    customer_name: str
-    outstanding: Decimal
-    invoice_date: date
+    kind: CandidateKind
+    document_id: uuid.UUID
+    reference: str | None
+    party_name: str
+    amount: Decimal
+    document_date: date
+
+
+class ExpenseNotMatchable(BankError):
+    """The receipt cannot settle this bank line: it is not posted, was not paid from the business
+    account or card, is already matched, or its amount differs."""

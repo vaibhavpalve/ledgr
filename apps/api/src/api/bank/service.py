@@ -1,10 +1,12 @@
 """Bank accounts, statement import and reconciliation.
 
-Two ways a transaction is reconciled, and both are EXISTING public entry
+Three ways a transaction is reconciled, all through EXISTING public entry
 points, never a new write path into the ledger (CLAUDE.md non-negotiable #1):
 
     matched to an invoice   api.invoicing.payments.SalesPaymentService.record()
-    matched to anything else (an expense paid, a transfer, a fee)
+    matched to a receipt    LedgerService.post(): Kruisposten -> Bank (ADR-092), or
+                            nothing at all when the receipt already credited the bank
+    matched to anything else (a transfer, a fee)
                              LedgerService.post() directly, the same way
                              api.assets.service posts depreciation and disposal
 """
@@ -23,8 +25,10 @@ from api.bank.model import (
     BankAccount,
     BankAccountNotFound,
     BankTransaction,
+    ExpenseNotMatchable,
     ImportResult,
     InvalidBankField,
+    MatchCandidate,
     NoActiveBankJournal,
     NoOpenPeriod,
     TransactionAlreadyReconciled,
@@ -223,30 +227,36 @@ class BankService:
     async def match_candidates(
         self, *, administration_id: uuid.UUID, transaction: BankTransaction
     ) -> Sequence[ScoredCandidate]:
-        """FR-BNK-003: equal-amount open invoices, scored (api.bank.matching)."""
-        if not transaction.is_inflow:
-            # A customer's payment is always money IN; an outflow has no
-            # sales-invoice candidate by construction.
-            return ()
-        candidates = await self._repository.match_candidates(
-            administration_id=administration_id, amount=transaction.amount
-        )
+        """FR-BNK-003: equal-amount open documents, scored (api.bank.matching) - sales invoices
+        for money in, bank-paid receipts for money out (ADR-092)."""
+        if transaction.is_inflow:
+            candidates = await self._repository.match_candidates(
+                administration_id=administration_id, amount=transaction.amount
+            )
+        else:
+            candidates = await self._repository.bank_paid_expenses(
+                administration_id=administration_id, amount=-transaction.amount
+            )
         return score(transaction, candidates)
 
     async def suggestions(
         self, *, administration_id: uuid.UUID, transactions: Sequence[BankTransaction]
     ) -> dict[uuid.UUID, ScoredCandidate]:
-        """The best match for each unmatched incoming line, from one read of the open invoices -
-        what the list shows beside each line and what "match all certain" applies (ADR-091)."""
-        waiting = [
-            t for t in transactions if t.is_inflow and t.status is TransactionStatus.UNMATCHED
-        ]
+        """The best match for each unmatched line, from one read of the open documents - what
+        the list shows beside each line and what "match all certain" applies (ADR-091)."""
+        waiting = [t for t in transactions if t.status is TransactionStatus.UNMATCHED]
         if not waiting:
             return {}
-        open_invoices = await self._repository.open_invoice_balances(
-            administration_id=administration_id
-        )
-        return suggest(waiting, open_invoices)
+        documents: list[MatchCandidate] = []
+        if any(t.is_inflow for t in waiting):
+            documents += await self._repository.open_invoice_balances(
+                administration_id=administration_id
+            )
+        if any(not t.is_inflow for t in waiting):
+            documents += await self._repository.bank_paid_expenses(
+                administration_id=administration_id
+            )
+        return suggest(waiting, documents)
 
     # -- reconciliation -------------------------------------------------------
 
@@ -313,6 +323,93 @@ class BankService:
         await self._record_reconciled(
             administration_id, transaction_id, payment.journal_entry_id, actor_user_id
         )
+        return reconciled
+
+    async def reconcile_with_expense(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        transaction_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+    ) -> BankTransaction:
+        """ADR-092: an outgoing line settles the receipt it paid.
+
+        The receipt's posting already carries the cost and the VAT; what is left is moving the
+        money. It credited Kruisposten, so this posts Kruisposten -> Bank on the bank line's date.
+        A receipt posted before 0070 credited the bank itself - the money has already left the
+        ledger's bank account, so the line is linked to that entry and nothing is posted twice.
+        """
+        transaction = await self._transaction_or_refuse(
+            administration_id=administration_id, transaction_id=transaction_id
+        )
+        if transaction.is_inflow:
+            raise ExpenseNotMatchable("money coming in cannot pay a receipt")
+        bank_account = await self._account_or_refuse(
+            administration_id=administration_id, bank_account_id=transaction.bank_account_id
+        )
+        receipt = await self._repository.expense_settlement(
+            administration_id=administration_id, expense_id=expense_id
+        )
+        if receipt is None:
+            raise ExpenseNotMatchable(f"expense {expense_id} does not exist")
+        if (
+            receipt.status != "posted"
+            or receipt.journal_entry_id is None
+            or receipt.funding_account_id is None
+        ):
+            raise ExpenseNotMatchable("the receipt is not booked yet")
+        if receipt.payment_method not in ("business_account", "business_card"):
+            raise ExpenseNotMatchable("the receipt was not paid from the business account or card")
+        if receipt.already_matched:
+            raise ExpenseNotMatchable("the receipt is already matched to another bank line")
+        if receipt.gross_amount != -transaction.amount:
+            raise ExpenseNotMatchable("the receipt's amount differs from the bank line's")
+
+        if receipt.funding_account_id == bank_account.ledger_account_id:
+            entry_id = receipt.journal_entry_id
+        else:
+            period_id = await self._repository.period_for_date(
+                administration_id=administration_id, on=transaction.booking_date
+            )
+            if period_id is None:
+                raise NoOpenPeriod(transaction.booking_date)
+            journal_id = await self._repository.bank_journal_of(administration_id=administration_id)
+            if journal_id is None:
+                raise NoActiveBankJournal(
+                    "this administration has no single active bank journal to post into"
+                )
+            amount = -transaction.amount
+            posted = await self._ledger.post(
+                EntryInput(
+                    administration_id=administration_id,
+                    journal_id=journal_id,
+                    period_id=period_id,
+                    entry_date=transaction.booking_date,
+                    description=f"Betaling {receipt.supplier}" if receipt.supplier else "Betaling",
+                    lines=[
+                        LineInput(account_id=receipt.funding_account_id, debit=amount),
+                        LineInput(account_id=bank_account.ledger_account_id, credit=amount),
+                    ],
+                    source_system="bank",
+                    # NFR-032: one settlement per bank line, whatever retries.
+                    idempotency_key=f"bank-expense:{transaction_id}",
+                ),
+                actor_user_id=actor_user_id,
+            )
+            entry_id = posted.id
+
+        reconciled = await self._repository.mark_reconciled(
+            administration_id=administration_id,
+            transaction_id=transaction_id,
+            journal_entry_id=entry_id,
+            matched_sales_invoice_id=None,
+            matched_payment_id=None,
+            matched_expense_id=expense_id,
+            user_id=actor_user_id,
+            reconciled_at=datetime.now().astimezone(),
+        )
+        await self._record_reconciled(administration_id, transaction_id, entry_id, actor_user_id)
         return reconciled
 
     async def reconcile_generic(

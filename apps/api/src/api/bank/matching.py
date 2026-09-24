@@ -1,17 +1,19 @@
-"""How sure a bank line's match to an open invoice is (FR-BNK-003/004, ADR-091).
+"""How sure a bank line's match to an open document is (FR-BNK-003/004, ADR-091, ADR-092).
 
     FR-BNK-003  Automatic matching of transactions to open AR/AP items using amount, payment
                 reference, IBAN, name similarity and historical behaviour, with a confidence score.
     FR-BNK-004  ... auto-post above the high threshold, propose between thresholds, queue for
                 manual handling below. Defaults are conservative.
 
-Pure. A candidate is always an open invoice whose outstanding balance EQUALS the incoming amount
-(partial and batched payments are the person's call, FR-BNK-005). What raises confidence:
+Pure. Money IN is matched to open sales invoices, money OUT to receipts booked as paid from the
+business account or card (ADR-092). A candidate's open amount always EQUALS the line's (partial
+and batched payments are the person's call, FR-BNK-005). What raises confidence:
 
-    reference       the invoice number appears in the payment's description - the customer
-                    typed it, or the bank carried the structured reference
-    name            the payer's name is the customer's name, give or take legal-form suffixes
-    only_candidate  no other open invoice has this amount
+    reference       the invoice number appears in the payment's description - ours, typed by the
+                    customer, or the supplier's, carried on our transfer
+    name            the counterparty's name is the customer's or supplier's, give or take
+                    legal-form suffixes
+    only_candidate  no other open document of that kind has this amount
 
     high      a reference match; or the name AND the only candidate
     medium    the name, or the only candidate
@@ -31,7 +33,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 
-from api.bank.model import BankTransaction, MatchCandidate
+from api.bank.model import BankTransaction, CandidateKind, MatchCandidate
 
 
 class Confidence(enum.Enum):
@@ -63,8 +65,8 @@ def _words(value: str | None) -> str:
     return " ".join(t for t in tokens if t not in _NOISE).strip()
 
 
-def names_match(payer: str | None, customer: str | None) -> bool:
-    a, b = _words(payer), _words(customer)
+def names_match(counterparty: str | None, party: str | None) -> bool:
+    a, b = _words(counterparty), _words(party)
     if not a or not b:
         return False
     if a == b or a in b or b in a:
@@ -83,14 +85,14 @@ def reference_in(transaction: BankTransaction, reference: str | None) -> bool:
 def score(
     transaction: BankTransaction, candidates: Sequence[MatchCandidate]
 ) -> list[ScoredCandidate]:
-    """Every candidate with its confidence, most certain first (then oldest invoice first)."""
+    """Every candidate with its confidence, most certain first (then oldest document first)."""
     only = len(candidates) == 1
     scored: list[ScoredCandidate] = []
     for candidate in candidates:
         reasons: list[str] = []
-        if reference_in(transaction, candidate.invoice_reference):
+        if reference_in(transaction, candidate.reference):
             reasons.append("reference")
-        if names_match(transaction.counterparty_name, candidate.customer_name):
+        if names_match(transaction.counterparty_name, candidate.party_name):
             reasons.append("name")
         if only:
             reasons.append("only_candidate")
@@ -101,7 +103,7 @@ def score(
         else:
             confidence = Confidence.LOW
         scored.append(ScoredCandidate(candidate, confidence, tuple(reasons)))
-    scored.sort(key=lambda s: (_RANK[s.confidence], s.candidate.invoice_date))
+    scored.sort(key=lambda s: (_RANK[s.confidence], s.candidate.document_date))
     return scored
 
 
@@ -112,31 +114,42 @@ def certain(scored: Sequence[ScoredCandidate]) -> ScoredCandidate | None:
 
 
 def ambiguous(scored: ScoredCandidate) -> ScoredCandidate:
-    """A HIGH match that competes with another - two invoices both named in one payment, or one
-    invoice certain for two payments - is only a proposal: a person picks."""
+    """A HIGH match that competes with another - two documents both named in one payment, or one
+    document certain for two payments - is only a proposal: a person picks."""
     return ScoredCandidate(scored.candidate, Confidence.MEDIUM, (*scored.reasons, "ambiguous"))
 
 
+def fits(transaction: BankTransaction, candidate: MatchCandidate) -> bool:
+    """Could this document be what the line paid? Direction decides the kind - a customer's
+    payment comes in, a supplier's goes out - and the open amount must be the line's exactly."""
+    if transaction.is_inflow:
+        return (
+            candidate.kind is CandidateKind.SALES_INVOICE and candidate.amount == transaction.amount
+        )
+    return candidate.kind is CandidateKind.EXPENSE and candidate.amount == -transaction.amount
+
+
 def suggest(
-    transactions: Sequence[BankTransaction], open_invoices: Sequence[MatchCandidate]
+    transactions: Sequence[BankTransaction], open_documents: Sequence[MatchCandidate]
 ) -> dict[uuid.UUID, ScoredCandidate]:
-    """The best match for each incoming line, among the open invoices of exactly its amount."""
+    """The best match for each line, among the open documents it could have paid."""
     best: dict[uuid.UUID, ScoredCandidate] = {}
     for transaction in transactions:
-        scored = score(
-            transaction, [c for c in open_invoices if c.outstanding == transaction.amount]
-        )
+        scored = score(transaction, [c for c in open_documents if fits(transaction, c)])
         if not scored:
             continue
         top = scored[0]
         if top.confidence is Confidence.HIGH and certain(scored) is None:
             top = ambiguous(top)
         best[transaction.id] = top
-    # One invoice certain for two lines (a customer paid twice) is certain for neither.
+    # One document certain for two lines (a customer paid twice) is certain for neither.
     claims = Counter(
-        s.candidate.invoice_id for s in best.values() if s.confidence is Confidence.HIGH
+        s.candidate.document_id for s in best.values() if s.confidence is Confidence.HIGH
     )
     for transaction_id, suggestion in list(best.items()):
-        if suggestion.confidence is Confidence.HIGH and claims[suggestion.candidate.invoice_id] > 1:
+        if (
+            suggestion.confidence is Confidence.HIGH
+            and claims[suggestion.candidate.document_id] > 1
+        ):
             best[transaction_id] = ambiguous(suggestion)
     return best

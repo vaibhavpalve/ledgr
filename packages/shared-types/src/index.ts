@@ -1351,31 +1351,41 @@ export interface BankTransactionView {
   readonly description: string | null;
   readonly status: "unmatched" | "reconciled";
   readonly matched_sales_invoice_id: string | null;
+  /** The receipt an outgoing line settled (ADR-092). */
+  readonly matched_expense_id: string | null;
   readonly journal_entry_id: string | null;
   readonly reconciled_at: string | null;
   /**
-   * The best open invoice for an unmatched incoming line, or null (ADR-091). Only the list
+   * The best open document for an unmatched line, or null (ADR-091, ADR-092). Only the list
    * carries it; the reconcile responses leave it out.
    */
   readonly suggestion?: BankMatchCandidateView | null;
 }
 
+/** Money in settles a sales invoice; money out settles a bank-paid receipt (ADR-092). */
+export type BankMatchKind = "sales_invoice" | "expense";
+
 /** How sure a match is — `api.bank.matching.Confidence` (FR-BNK-003, ADR-091). */
 export type BankMatchConfidence = "high" | "medium" | "low";
 
 /**
- * Why: the invoice number in the description, the payer's name, no other invoice of that amount;
- * "ambiguous" when a HIGH match competed with another and was lowered to a proposal.
+ * Why: the invoice number in the description, the counterparty's name, no other document of that
+ * amount; "ambiguous" when a HIGH match competed with another and was lowered to a proposal.
  */
 export type BankMatchReason = "reference" | "name" | "only_candidate" | "ambiguous";
 
 /** `GET .../bank-transactions/{id}/match-candidates` rows — `api.bank.matching.ScoredCandidate`. */
 export interface BankMatchCandidateView {
-  readonly invoice_id: string;
-  readonly invoice_reference: string | null;
-  readonly customer_name: string;
-  readonly outstanding: string;
-  readonly invoice_date: string;
+  readonly kind: BankMatchKind;
+  /** The sales invoice's id, or the expense's. */
+  readonly document_id: string;
+  /** Our invoice number, or the supplier's on a receipt. */
+  readonly reference: string | null;
+  /** The customer, or the supplier. */
+  readonly party_name: string;
+  /** What is open: the invoice's outstanding balance, or the receipt's gross amount. */
+  readonly amount: string;
+  readonly document_date: string;
   readonly confidence: BankMatchConfidence;
   readonly reasons: readonly BankMatchReason[];
 }

@@ -129,6 +129,38 @@ export class BankApi {
     );
   }
 
+  /** ADR-092: an outgoing line settles the receipt it paid. */
+  reconcileWithExpense(
+    administrationId: string,
+    transactionId: string,
+    expenseId: string,
+  ): Promise<BankTransactionView> {
+    return callJson<BankTransactionView>(
+      this.options,
+      "POST",
+      pathOf(
+        "v1",
+        "administrations",
+        administrationId,
+        "bank-transactions",
+        transactionId,
+        "reconcile-with-expense",
+      ),
+      { expense_id: expenseId },
+    );
+  }
+
+  /** A suggested or chosen match, whichever kind of document it is. */
+  reconcileWithCandidate(
+    administrationId: string,
+    transactionId: string,
+    candidate: Pick<BankMatchCandidateView, "kind" | "document_id">,
+  ): Promise<BankTransactionView> {
+    return candidate.kind === "expense"
+      ? this.reconcileWithExpense(administrationId, transactionId, candidate.document_id)
+      : this.reconcileWithInvoice(administrationId, transactionId, candidate.document_id);
+  }
+
   reconcileGeneric(
     administrationId: string,
     transactionId: string,

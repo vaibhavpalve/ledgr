@@ -244,14 +244,19 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
 <Dbtr><Nm>HOTEL DE GOUDEN LEEUW BV</Nm></Dbtr>
 <DbtrAcct><Id><IBAN>NL02RABO0123456789</IBAN></Id></DbtrAcct></RltdPties>
 <RmtInf><Ustrd>Broodlevering september</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
+<Ntry><Amt Ccy="EUR">121.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts>
+<BookgDt><Dt>${iso}</Dt></BookgDt><NtryDtls><TxDtls><RltdPties>
+<Cdtr><Nm>STAPLES NEDERLAND BV</Nm></Cdtr></RltdPties></TxDtls></NtryDtls>
+<AddtlNtryInf>Pinbetaling</AddtlNtryInf></Ntry>
 </Stmt></BkToCstmrStmt></Document>`,
     ),
   });
   await expect(page.getByTestId("bank-import-result")).toBeVisible();
   await shot(page, "15a-bank-imported");
   await page.getByTestId("bank-import-done").click();
-  // The payer's name is the customer's and no other invoice is open for 1.149,50: certain.
-  await expect(page.getByTestId("bank-certain")).toBeVisible();
+  // Both lines are certain: the hotel's payment names the customer and no other invoice is open
+  // for 1.149,50; the payment to Staples is the receipt booked above (ADR-092).
+  await expect(page.getByTestId("bank-certain")).toContainText(/2 betalingen|2 payments/);
   await expect(page.getByTestId("bank-transaction-row").first()).toContainText(/Zeker|Certain/);
   await shot(page, "15b-bank-suggestion");
   const reconcileOpen = page.locator('[data-testid^="bank-reconcile-open-"]').first();
@@ -262,14 +267,15 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await shot(page, "15b2-bank-reconcile-panel");
   await reconcileOpen.click();
   await page.getByTestId("bank-match-certain").click();
-  await expect(page.getByTestId("bank-match-result")).toBeVisible();
+  await expect(page.getByTestId("bank-match-result")).toContainText(/2 betalingen|2 payments/);
   await expect(page.getByTestId("bank-transactions-empty")).toBeVisible();
   await shot(page, "15c-bank-matched");
 
   // --- The dashboard now has figures -------------------------------------------------
   await go(page, "/");
   await expect(page.getByTestId("home-figures")).toBeVisible();
-  // 12.500 brought in, 121 paid for the receipt, 1.149,50 received from the hotel.
+  // 12.500 brought in, 121 paid for the receipt, 1.149,50 received from the hotel - and the
+  // receipt's payment counted once, although it was both booked and matched to its bank line.
   await expect(page.getByTestId("home-cash-position")).toContainText("13.528,50");
   await shot(page, "16-dashboard");
 
