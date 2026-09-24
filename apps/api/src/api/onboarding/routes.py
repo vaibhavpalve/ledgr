@@ -515,6 +515,7 @@ def _not_permitted(
 async def _seed_and_open(
     request: Request,
     *,
+    session: AsyncSession,
     chart: ChartOfAccountsService,
     fiscal: FiscalYearService,
     administration_id: uuid.UUID,
@@ -546,6 +547,13 @@ async def _seed_and_open(
         raise problem(
             request, 422, "errors.fiscal_year_invalid", reason="invalid_fiscal_year"
         ) from exc
+    # ADR-086: the journals and posting-account mappings the seeded chart implies. Without
+    # them the first invoice, receipt or bank line this administration posts is refused for
+    # configuration nobody could have entered. Runs under the same tenant context as the seed
+    # (the client's own, for a firm), so RLS scopes it exactly as it scoped the chart.
+    await session.execute(
+        text("SELECT app.ensure_posting_defaults(:id)"), {"id": str(administration_id)}
+    )
     return seeded, year
 
 
@@ -634,6 +642,7 @@ async def create_administration(
         try:
             seeded, _year = await _seed_and_open(
                 request,
+                session=session,
                 chart=chart,
                 fiscal=fiscal,
                 administration_id=administration_id,
@@ -651,6 +660,7 @@ async def create_administration(
         )
         seeded, _year = await _seed_and_open(
             request,
+            session=session,
             chart=chart,
             fiscal=fiscal,
             administration_id=administration_id,
