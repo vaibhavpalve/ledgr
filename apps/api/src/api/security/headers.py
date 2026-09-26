@@ -54,6 +54,7 @@ def _content_security_policy(nonce: str) -> str:
             "img-src 'self' data:",
             "connect-src 'self'",
             "font-src 'self'",
+            "frame-src blob:",
             "base-uri 'none'",
             "form-action 'self'",
             "frame-ancestors 'none'",

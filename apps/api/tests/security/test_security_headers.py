@@ -55,6 +55,20 @@ def test_the_nonce_is_different_on_every_request() -> None:
     assert first.group(1) != second.group(1)
 
 
+def test_frame_src_allows_blob_for_in_app_document_previews() -> None:
+    """apps/web's OriginalDocument component shows a stored file's blob: object
+    URL in an <iframe> rather than a direct download-endpoint src (SEC-005).
+    With no frame-src directive, that iframe inherits `default-src 'none'`
+    and the browser blocks it outright ("This content is blocked") — this
+    guards the directive that makes the preview loadable at all.
+    """
+    client = TestClient(_probe_app())
+
+    csp = client.get("/ok").headers["content-security-policy"]
+
+    assert "frame-src blob:" in csp
+
+
 def test_hsts_meets_preload_list_requirements() -> None:
     client = TestClient(_probe_app())
 
