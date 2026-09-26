@@ -91,6 +91,10 @@ These are not done by this change and are the deployer's to confirm:
    id in `EXTRACTION_MODEL` is offered **in the chosen region**. Model ids and regional availability
    change; the default (`claude-haiku-4-5@20251001`, `europe-west4`) was not verified against a live
    project.
+   **Update 2026-09-27**: verified against the live project — Model Garden access for this model was
+   only available in `europe-west1`, not `europe-west4`. Both are EU regions and satisfy
+   PRIV-010/011 equally; `.env.example`'s `EXTRACTION_GCP_REGION` default was changed to
+   `europe-west1` accordingly.
 3. **The data-processing terms** for Claude on Vertex are confirmed to give PRIV-011 (EU only) and
    PRIV-015 (no training on customer data), and the **sub-processor list is updated** with the
    30 days' notice PRIV-016 requires.

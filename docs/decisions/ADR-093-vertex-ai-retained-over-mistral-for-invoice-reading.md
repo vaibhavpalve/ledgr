@@ -1,6 +1,6 @@
 # ADR-093: Invoice reading launches on Vertex AI; Mistral AI evaluated and deferred, not rejected
 
-- **Status**: Accepted
+- **Status**: Superseded by [ADR-094](ADR-094-mistral-ai-replaces-vertex-for-invoice-reading.md)
 - **Date**: 2026-09-27
 - **Serves**: FR-EXP-001c, FR-AP-002 (same as ADR-081)
 - **Constrained by**: PRIV-010, PRIV-011, PRIV-016, CLAUDE.md non-negotiable 4 (integrations sit
@@ -27,6 +27,14 @@ PRIV-010/011 literally ask for, and no customer or accounting firm has raised it
 still pre-revenue, with only its own test/demo tenant.
 
 ## Decision
+
+> **Superseded 2026-09-27 by [ADR-094](ADR-094-mistral-ai-replaces-vertex-for-invoice-reading.md).**
+> The analysis below of Mistral vs. Vertex stands — it is not wrong, and ADR-094 does not
+> re-litigate it. What changed is operational, not evaluative: enabling Vertex turned out to be
+> blocked by this GCP project's billing-account tier, which Model Garden's partner-model access
+> requires be upgraded past free/trial. That is the "Vertex/Claude access ... turns out
+> unavailable" trigger this ADR's own "Consequences" section names as a reason to revisit — it just
+> fired almost immediately, on a billing gate rather than a customer request.
 
 **Enable Vertex AI now, as ADR-081 already specifies. Do not build a Mistral adapter speculatively.**
 

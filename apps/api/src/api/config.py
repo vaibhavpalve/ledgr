@@ -110,14 +110,27 @@ class Settings(BaseSettings):
     # the Google Cloud service account KMS already uses (GOOGLE_APPLICATION_
     # CREDENTIALS), which needs the Vertex AI API enabled and access to the
     # model in the project. See api.expenses.extraction.build.
-    extraction_provider: Literal["none", "vertex-claude"] = "none"
+    #
+    # "mistral" is Mistral's own "La Plateforme" API (ADR-094): a French
+    # company with no US parent, EU-hosted by default. Chosen over Vertex when
+    # Vertex's Claude access could not be obtained on this deployment's GCP
+    # billing account — see ADR-094 for why this isn't a quality/compliance
+    # preference, just what was actually reachable.
+    extraction_provider: Literal["none", "vertex-claude", "mistral"] = "none"
     extraction_gcp_project: str | None = None
     extraction_gcp_region: str = "europe-west4"
-    # A Vertex model id, e.g. "claude-haiku-4-5@20251001". Not validated here:
-    # what is offered depends on the project and region, and a wrong one fails
-    # as a recorded "failed" reading rather than blocking the capture.
+    # A model id for whichever provider is selected, e.g.
+    # "claude-haiku-4-5@20251001" (vertex-claude) or "mistral-small-latest"
+    # (mistral). Not validated here: what is offered depends on the provider,
+    # project and region, and a wrong one fails as a recorded "failed" reading
+    # rather than blocking the capture.
     extraction_model: str = "claude-haiku-4-5@20251001"
     extraction_timeout_seconds: float = 30.0
+    # La Plateforme API key (ADR-094). No default: "mistral" selected without
+    # one is treated the same as vertex-claude without a project - off rather
+    # than failing on the first capture. Never logged; see
+    # api.expenses.extraction.mistral.
+    extraction_mistral_api_key: str | None = None
 
     # --- Invoice delivery (FR-AR-005) ---
     # "collecting" is dev/test only: it assembles the message, keeps it, and

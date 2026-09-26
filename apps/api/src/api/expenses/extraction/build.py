@@ -4,28 +4,40 @@ Same shape as `api.documents.scanning.build_scanner` and `api.mail.sender.
 build_email_sender`: a provider name in, an adapter out. Unlike the scanner
 there IS an "off" (`none`): reading is optional by FR-EXP-001c, and its default
 is off because switching it on sends invoices to a model (PRIV-010/011,
-ADR-081).
+ADR-081). "mistral" (ADR-094) is a second adapter behind the same port -
+picking one is a settings change, not a rewrite (non-negotiable 4).
 """
 
 from __future__ import annotations
 
 from api.config import Settings
 from api.expenses.extraction.google_auth import ServiceAccountToken
+from api.expenses.extraction.mistral import MistralExtractor
 from api.expenses.extraction.ports import InvoiceExtractor
 from api.expenses.extraction.vertex import VertexClaudeExtractor
 
 
 class ExtractionNotConfigured(RuntimeError):
-    """`vertex-claude` was selected without what it needs to run."""
+    """A provider was selected without what it needs to run."""
 
 
 def build_extractor(settings: Settings) -> InvoiceExtractor | None:
     if settings.extraction_provider == "none":
         return None
+    if settings.extraction_provider == "mistral":
+        if not settings.extraction_mistral_api_key:
+            # Fail at first use with a plain sentence, not on the first invoice
+            # with a provider error: a missing key is certainly missing rather
+            # than merely unavailable.
+            raise ExtractionNotConfigured(
+                "EXTRACTION_PROVIDER=mistral needs EXTRACTION_MISTRAL_API_KEY (ADR-094)"
+            )
+        return MistralExtractor(
+            api_key=settings.extraction_mistral_api_key,
+            model=settings.extraction_model,
+            timeout_seconds=settings.extraction_timeout_seconds,
+        )
     if not settings.extraction_gcp_project:
-        # Fail at first use with a plain sentence, not on the first invoice with
-        # a provider error: a project id is the one thing that is certainly
-        # missing rather than merely unavailable.
         raise ExtractionNotConfigured(
             "EXTRACTION_PROVIDER=vertex-claude needs EXTRACTION_GCP_PROJECT (ADR-081)"
         )
