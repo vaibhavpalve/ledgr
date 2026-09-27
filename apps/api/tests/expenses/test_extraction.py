@@ -162,6 +162,10 @@ def tool_answer(**fields: Any) -> httpx.Response:
     )
 
 
+async def no_sleep(_: float) -> None:
+    return None
+
+
 def extractor(handler: Any, **kwargs: Any) -> tuple[VertexClaudeExtractor, list[httpx.Request]]:
     seen: list[httpx.Request] = []
 
@@ -178,6 +182,7 @@ def extractor(handler: Any, **kwargs: Any) -> tuple[VertexClaudeExtractor, list[
             tokens=StaticToken(),
             http=client,
             today=TODAY,
+            sleep=no_sleep,
             **kwargs,
         ),
         seen,
@@ -239,14 +244,26 @@ async def test_the_answer_is_read_from_the_tool_call_and_checked() -> None:
     assert result.gross_amount == Decimal("1240.00")
 
 
-@pytest.mark.parametrize("status", [400, 403, 429, 500, 503])
-async def test_a_refusal_is_an_extraction_error_that_does_not_carry_the_body(status: int) -> None:
+@pytest.mark.parametrize(
+    ("status", "reason"),
+    [
+        (400, "provider_rejected_request"),
+        (403, "provider_auth_failed"),
+        (429, "provider_rate_limited"),
+        (500, "provider_error"),
+        (503, "provider_error"),
+    ],
+)
+async def test_a_refusal_is_an_extraction_error_that_does_not_carry_the_body(
+    status: int, reason: str
+) -> None:
     reader, _ = extractor(lambda _: httpx.Response(status, text="echo of the INVOICE TEXT"))
 
     with pytest.raises(ExtractionError) as excinfo:
         await reader.extract(data=b"%PDF-1.7", content_type="application/pdf")
 
-    assert excinfo.value.reason == "provider_refused"
+    assert excinfo.value.reason == reason
+    assert excinfo.value.http_status == status
     assert "INVOICE TEXT" not in str(excinfo.value)
 
 
@@ -633,6 +650,49 @@ async def test_a_date_the_vat_ruleset_predates_keeps_everything_but_the_treatmen
     assert expense.supplier == "Acme"
     assert expense.gross_amount == Decimal("50.00")
     assert expense.vat_treatment is None and expense.vat_rate is None
+
+
+async def test_a_reading_never_overwrites_what_a_person_already_filled_in() -> None:
+    """ADR-095: a reading run again lands on a draft somebody may have started.
+    Their typing wins; the reading fills only what is still empty."""
+    h, _ = read_harness(GOOD)
+    h.repository.expenses[h.expense_id] = replace(
+        h.repository.expenses[h.expense_id],
+        supplier="Typed By Hand B.V.",
+        gross_amount=Decimal("99.00"),
+    )
+
+    await read(h)
+
+    expense = h.repository.expenses[h.expense_id]
+    assert expense.supplier == "Typed By Hand B.V."
+    assert expense.gross_amount == Decimal("99.00")
+    # What was empty is filled.
+    assert expense.invoice_number == "MFZ-9921"
+    assert expense.expense_date == date(2026, 9, 18)
+    # Only what the reading actually wrote carries a confidence.
+    fields = h.repository.recorded[h.expense_id]["fields"]
+    assert "supplier" not in fields and "gross_amount" not in fields
+    assert "invoice_number" in fields
+
+
+async def test_a_refusal_records_the_status_and_provider_code_and_logs_no_content(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    failure = ExtractionError(
+        "provider_rate_limited", "HTTP 429", http_status=429, provider_code="rate_limited"
+    )
+    h, _ = read_harness(failure)
+
+    with caplog.at_level("WARNING", logger="api.expenses.extraction.service"):
+        await read(h)
+
+    record = h.repository.recorded[h.expense_id]
+    assert record["reason"] == "provider_rate_limited"
+    assert record["http_status"] == 429
+    assert record["provider_code"] == "rate_limited"
+    (line,) = [r.getMessage() for r in caplog.records]
+    assert "reason=provider_rate_limited" in line and "http_status=429" in line
 
 
 async def test_a_zero_percent_invoice_leaves_the_treatment_for_a_person() -> None:

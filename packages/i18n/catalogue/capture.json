@@ -226,6 +226,18 @@
       "nl": "We konden deze factuur niet automatisch lezen. Vul de gegevens hieronder zelf in.",
       "en": "We couldn't read this invoice automatically. Please fill in the details below."
     },
+    "capture.read.failed_busy": {
+      "note": "ADR-095. The reading service limited our requests, erred, or did not answer in time — transient, so it offers the retry.",
+      "nl": "De leesdienst was even niet beschikbaar. Probeer het zo opnieuw, of vul de gegevens hieronder zelf in.",
+      "en": "The reading service was briefly unavailable. Try reading again shortly, or fill in the details below."
+    },
+    "capture.read.failed_setup": {
+      "note": "ADR-095. The reading service refused our key or the request (a wrong model id, a revoked key) — configuration, which a retry will not fix until an administrator does.",
+      "nl": "Automatisch lezen is niet goed ingesteld. Vul de gegevens hieronder zelf in; een beheerder moet de instellingen controleren.",
+      "en": "Automatic reading is not set up correctly. Fill in the details below; an administrator needs to check its settings."
+    },
+    "capture.read.again": { "nl": "Opnieuw lezen", "en": "Read again" },
+    "capture.read.reading": { "nl": "Bezig met lezen…", "en": "Reading…" },
     "capture.read.check": {
       "note": "Beside a field the reading was not sure of.",
       "nl": "Controleer dit",

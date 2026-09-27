@@ -56,9 +56,109 @@ function api(overrides: Partial<CaptureApi> = {}) {
   return {
     updateExpense: vi.fn(async () => complete),
     markReady: vi.fn(async () => ({ ...complete, status: "ready" as const })),
+    readExpenseAgain: vi.fn(async () => ({
+      ...complete,
+      extraction: { status: "done" as const, reason: null, fields: { supplier: 0.95 } },
+    })),
     ...overrides,
   } as unknown as CaptureApi;
 }
+
+function failedWith(reason: string | null, status: ExpenseView["status"] = "draft"): ExpenseView {
+  return { ...blank, status, extraction: { status: "failed", reason, fields: {} } };
+}
+
+describe("a failed reading — ADR-095", () => {
+  it("says a busy provider is worth another try", () => {
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={failedWith("provider_rate_limited")}
+        api={api()}
+      />,
+      "en",
+    );
+
+    expect(screen.getByTestId("expense-read-failed").textContent).toContain("briefly unavailable");
+  });
+
+  it("says a refused key needs an administrator, not a retry", () => {
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={failedWith("provider_auth_failed")}
+        api={api()}
+      />,
+      "en",
+    );
+
+    expect(screen.getByTestId("expense-read-failed").textContent).toContain("administrator");
+  });
+
+  it("keeps the general sentence for a reason it has no special words for", () => {
+    render(
+      <ExpenseForm administrationId="adm-A" expense={failedWith("nothing_found")} api={api()} />,
+      "en",
+    );
+
+    expect(screen.getByTestId("expense-read-failed").textContent).toContain(
+      "We couldn't read this invoice automatically",
+    );
+  });
+
+  it("reads the stored invoice again and shows what came back", async () => {
+    const calls = api();
+    const onChanged = vi.fn();
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={failedWith("provider_rate_limited")}
+        api={calls}
+        onChanged={onChanged}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("expense-read-again"));
+
+    await waitFor(() => expect(calls.readExpenseAgain).toHaveBeenCalledWith("adm-A", "exp-1"));
+    await waitFor(() =>
+      expect(onChanged).toHaveBeenCalledWith(expect.objectContaining({ supplier: "Café Central" })),
+    );
+  });
+
+  it("shows the server's sentence when reading again is refused", async () => {
+    const calls = api({
+      readExpenseAgain: vi.fn(async () => {
+        throw new ApiError(409, "extraction_unavailable", "Automatisch lezen staat niet aan.");
+      }) as unknown as CaptureApi["readExpenseAgain"],
+    });
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={failedWith("provider_rate_limited")}
+        api={calls}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("expense-read-again"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("expense-problem").textContent).toContain("staat niet aan"),
+    );
+  });
+
+  it("offers no re-read once the claim has been submitted", () => {
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={failedWith("provider_rate_limited", "ready")}
+        api={api()}
+      />,
+    );
+
+    expect(screen.queryByTestId("expense-read-again")).toBeNull();
+  });
+});
 
 describe("the form asks for the minimum — FR-EXP-001b, FR-EXP-001e", () => {
   it("offers exactly the six fields the requirement names", async () => {

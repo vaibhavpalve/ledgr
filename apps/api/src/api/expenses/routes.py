@@ -59,7 +59,10 @@ from api.documents.content_type import ContentTypeError
 from api.documents.model import (
     MAX_ANY_BYTES,
     DocumentInfected,
+    DocumentNotFound,
+    DocumentNotReleasable,
     DocumentTooLarge,
+    NotAuthorizedForDocument,
     ScanUnavailable,
 )
 from api.documents.routes import get_document_service
@@ -156,6 +159,13 @@ def register(app: FastAPI) -> None:
         mark_expense_ready,
         methods=["POST"],
         name="mark_expense_ready",
+    )
+    # ADR-095: run automatic reading again over the stored invoice.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/expenses/{expense_id}/extraction",
+        read_expense_again,
+        methods=["POST"],
+        name="read_expense_again",
     )
     # FR-EXP-001d: confirmation into the ledger.
     app.add_api_route(
@@ -812,6 +822,84 @@ async def mark_expense_ready(
             missing_fields=list(exc.missing),
         ) from exc
     return _expense_json(view)
+
+
+async def read_expense_again(
+    administration_id: uuid.UUID,
+    expense_id: uuid.UUID,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    form: ExpenseFormService = Depends(get_expense_form_service),
+    extraction: InvoiceExtractionService = Depends(get_extraction_service),
+    documents: DocumentService = Depends(get_document_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "submit",
+            "expense",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """ADR-095: read a DRAFT's stored invoice again - after a rate limit, a
+    provider outage or a configuration fix - without uploading it a second time.
+
+    Same permission as `update_expense`, because what it does is fill in the same
+    form. It only ever fills fields that are still EMPTY
+    (`InvoiceExtractionService._apply`), so a person's own typing survives it.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    if not extraction.available:
+        raise problem(
+            request, 409, "errors.extraction_unavailable", reason="extraction_unavailable"
+        )
+
+    try:
+        view = await form.view(
+            administration_id=administration_id,
+            expense_id=expense_id,
+            actor_user_id=tenant.user_id,
+        )
+    except ExpenseNotFound as exc:
+        raise problem(request, 404, "errors.expense_not_found", reason="expense_not_found") from exc
+    if view.expense.status is not ExpenseStatus.DRAFT:
+        raise problem(request, 409, "errors.expense_already_ready", reason="expense_already_ready")
+    if view.document_id is None:
+        raise problem(request, 404, "errors.document_not_found", reason="document_not_found")
+
+    try:
+        document, data = await documents.original(
+            administration_id=administration_id,
+            document_id=view.document_id,
+            actor_user_id=tenant.user_id,
+        )
+    except (DocumentNotFound, NotAuthorizedForDocument) as exc:
+        raise problem(
+            request, 404, "errors.document_not_found", reason="document_not_found"
+        ) from exc
+    except DocumentNotReleasable as exc:
+        raise problem(
+            request,
+            409,
+            "errors.document_not_releasable",
+            reason="document_not_releasable",
+            scan_status=exc.scan_status.value,
+        ) from exc
+
+    await extraction.read_into_expense(
+        administration_id=administration_id,
+        item_id=view.expense.capture_item_id,
+        actor_user_id=tenant.user_id,
+        data=data,
+        content_type=document.content_type.value,
+    )
+    refreshed = await form.view(
+        administration_id=administration_id,
+        expense_id=expense_id,
+        actor_user_id=tenant.user_id,
+    )
+    return _expense_json(refreshed)
 
 
 # ===========================================================================

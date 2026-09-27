@@ -119,12 +119,14 @@ class Settings(BaseSettings):
     extraction_provider: Literal["none", "vertex-claude", "mistral"] = "none"
     extraction_gcp_project: str | None = None
     extraction_gcp_region: str = "europe-west4"
-    # A model id for whichever provider is selected, e.g.
-    # "claude-haiku-4-5@20251001" (vertex-claude) or "mistral-small-latest"
-    # (mistral). Not validated here: what is offered depends on the provider,
-    # project and region, and a wrong one fails as a recorded "failed" reading
-    # rather than blocking the capture.
-    extraction_model: str = "claude-haiku-4-5@20251001"
+    # A model id for whichever provider is selected. Unset means that provider's
+    # own default (ADR-095) - "mistral-small-latest" for mistral,
+    # "claude-haiku-4-5@20251001" for vertex-claude - so switching provider can
+    # never leave one provider's model id pointed at the other. Not validated
+    # here: what is offered depends on the provider, project and region, and a
+    # wrong one fails as a recorded `provider_rejected_request` reading rather
+    # than blocking the capture.
+    extraction_model: str | None = None
     extraction_timeout_seconds: float = 30.0
     # La Plateforme API key (ADR-094). No default: "mistral" selected without
     # one is treated the same as vertex-claude without a project - off rather

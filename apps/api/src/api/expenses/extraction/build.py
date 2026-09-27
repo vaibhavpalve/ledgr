@@ -11,6 +11,7 @@ picking one is a settings change, not a rewrite (non-negotiable 4).
 from __future__ import annotations
 
 from api.config import Settings
+from api.expenses.extraction import mistral, vertex
 from api.expenses.extraction.google_auth import ServiceAccountToken
 from api.expenses.extraction.mistral import MistralExtractor
 from api.expenses.extraction.ports import InvoiceExtractor
@@ -34,7 +35,7 @@ def build_extractor(settings: Settings) -> InvoiceExtractor | None:
             )
         return MistralExtractor(
             api_key=settings.extraction_mistral_api_key,
-            model=settings.extraction_model,
+            model=settings.extraction_model or mistral.DEFAULT_MODEL,
             timeout_seconds=settings.extraction_timeout_seconds,
         )
     if not settings.extraction_gcp_project:
@@ -44,7 +45,7 @@ def build_extractor(settings: Settings) -> InvoiceExtractor | None:
     return VertexClaudeExtractor(
         project=settings.extraction_gcp_project,
         region=settings.extraction_gcp_region,
-        model=settings.extraction_model,
+        model=settings.extraction_model or vertex.DEFAULT_MODEL,
         tokens=ServiceAccountToken(),
         timeout_seconds=settings.extraction_timeout_seconds,
     )

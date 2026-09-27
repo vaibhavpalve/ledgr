@@ -226,6 +226,52 @@ async def test_another_tenants_expense_cannot_be_submitted(
 
 
 @pytest.mark.isolation(
+    "POST", "/v1/administrations/{administration_id}/expenses/{expense_id}/extraction"
+)
+async def test_another_tenants_expense_cannot_be_read_again(
+    two_organizations: SeededTenants,
+) -> None:
+    """ADR-095. Reading again opens the stored invoice and writes into the form,
+    so across the boundary it would both disclose another client's document and
+    alter their claim.
+    """
+    foreign = await _seed_expense(
+        two_organizations.admin_b,
+        two_organizations.org_b,
+        two_organizations.owner_b,
+        supplier="De Vries Groothandel",
+    )
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        token = make_token(two_organizations.org_a, user_id=two_organizations.owner_a)
+        response = await client.post(
+            f"/v1/administrations/{two_organizations.admin_b}/expenses/{foreign}/extraction",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Idempotency-Key": f"read-{uuid.uuid4()}",
+            },
+        )
+
+    assert response.status_code in (403, 404), response.text
+    assert "De Vries Groothandel" not in response.text
+
+    async with app_engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org, true)"),
+            {"org": str(two_organizations.org_b)},
+        )
+        row = (
+            await conn.execute(
+                text("SELECT supplier, extraction FROM expense WHERE id = :id"),
+                {"id": str(foreign)},
+            )
+        ).one()
+    assert row.supplier == "De Vries Groothandel"
+    assert row.extraction is None, "nothing was read into the other tenant's claim"
+
+
+@pytest.mark.isolation(
     "POST", "/v1/administrations/{administration_id}/expenses/{expense_id}/posting"
 )
 async def test_another_tenants_expense_cannot_be_posted(

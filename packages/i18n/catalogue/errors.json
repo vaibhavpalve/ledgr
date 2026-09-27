@@ -201,6 +201,11 @@
       "nl": "Deze uitgave is al ingediend en kan niet meer worden gewijzigd.",
       "en": "This expense has already been submitted and can no longer be changed."
     },
+    "errors.extraction_unavailable": {
+      "note": "ADR-095: 'read again' asked of a deployment where automatic reading is switched off (EXTRACTION_PROVIDER=none, or a provider selected without its credential). A 409 about this environment's configuration, not about the invoice — the form still works by hand.",
+      "nl": "Automatisch lezen staat in deze omgeving niet aan. Vul de gegevens zelf in.",
+      "en": "Automatic reading is not switched on here. Fill in the details yourself."
+    },
     "errors.vat_rate_unavailable": {
       "note": "No rate is in force for that treatment on that date — reachable for a date before the ruleset's floor row. Refused rather than defaulted to zero: a claim with no VAT because nobody knew the rate looks exactly like a genuinely zero-rated one.",
       "nl": "Voor deze BTW-behandeling is op deze datum geen tarief bekend. Controleer de datum.",

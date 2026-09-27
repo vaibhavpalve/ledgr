@@ -750,6 +750,30 @@
 .expense-form__notice--failed {
   border-left-color: var(--ledgr-caution);
   background-color: var(--ledgr-caution-wash);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-2) var(--ledgr-space-3);
+}
+.expense-form__notice--failed > p {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+.expense-form__read-again {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 var(--ledgr-space-3);
+  border: 1px solid var(--ledgr-caution);
+  border-radius: var(--ledgr-radius-control);
+  background-color: transparent;
+  color: var(--ledgr-text-primary);
+  font: inherit;
+  font-weight: var(--ledgr-weight-semibold);
+  cursor: pointer;
+}
+.expense-form__read-again:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .expense-form__check {
   display: inline-block;

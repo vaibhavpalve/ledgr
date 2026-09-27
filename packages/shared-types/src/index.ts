@@ -122,7 +122,12 @@ export type ExpenseStatus = "draft" | "ready" | "posted";
  */
 export interface ExtractionView {
   readonly status: "done" | "failed" | "skipped";
-  /** Why it did not happen; a short code, for the screen to choose its sentence. */
+  /**
+   * Why it did not happen; a short code, for the screen to choose its sentence.
+   * Among them (ADR-095): `provider_rate_limited`, `provider_auth_failed`,
+   * `provider_rejected_request`, `provider_error`, `provider_unreachable`,
+   * `timeout`, `nothing_found`, `response_unreadable`, `unsupported_type`.
+   */
   readonly reason: string | null;
   readonly fields: Readonly<Record<string, number>>;
 }

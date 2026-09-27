@@ -52,9 +52,21 @@ class ExtractionError(Exception):
     echo the document.
     """
 
-    def __init__(self, reason: str, message: str = "") -> None:
+    def __init__(
+        self,
+        reason: str,
+        message: str = "",
+        *,
+        http_status: int | None = None,
+        provider_code: str | None = None,
+    ) -> None:
         super().__init__(message or reason)
         self.reason = reason
+        #: The provider's HTTP status and its own short error code (e.g. Mistral's
+        #: "rate_limited"), when it answered at all. Neither can carry the
+        #: document: see `api.expenses.extraction.transport`.
+        self.http_status = http_status
+        self.provider_code = provider_code
 
 
 @dataclass(frozen=True, slots=True)

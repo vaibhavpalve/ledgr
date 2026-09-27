@@ -24,6 +24,7 @@ invoice's text is a second copy of it with none of the archive's protections.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 from datetime import date
 from typing import Any, Protocol
@@ -32,6 +33,10 @@ import httpx
 
 from api.expenses.extraction.model import ExtractedInvoice, ExtractionError, parse_reading
 from api.expenses.extraction.ports import READABLE_CONTENT_TYPES
+from api.expenses.extraction.transport import Sleep, post_json
+
+#: What `EXTRACTION_MODEL` means when it is not set (ADR-095).
+DEFAULT_MODEL = "claude-haiku-4-5@20251001"
 
 _ANTHROPIC_VERSION = "vertex-2023-10-16"
 _TOOL_NAME = "record_invoice"
@@ -103,6 +108,7 @@ class VertexClaudeExtractor:
         http: httpx.AsyncClient | None = None,
         timeout_seconds: float = 30.0,
         today: date | None = None,
+        sleep: Sleep = asyncio.sleep,
     ) -> None:
         self.model = model
         self._project = project
@@ -111,6 +117,7 @@ class VertexClaudeExtractor:
         self._http = http
         self._timeout = timeout_seconds
         self._today = today
+        self._sleep = sleep
 
     @property
     def _url(self) -> str:
@@ -151,28 +158,14 @@ class VertexClaudeExtractor:
             ],
         }
         token = await self._tokens.token()
-
-        client = self._http or httpx.AsyncClient(timeout=self._timeout)
-        try:
-            response = await client.post(
-                self._url,
-                json=payload,
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=self._timeout,
-            )
-        except httpx.TimeoutException as exc:
-            raise ExtractionError("timeout") from exc
-        except httpx.HTTPError as exc:
-            raise ExtractionError("provider_unreachable", type(exc).__name__) from exc
-        finally:
-            if self._http is None:
-                await client.aclose()
-
-        if response.status_code != 200:
-            # The body is deliberately not carried: an error page can echo the
-            # request, and the request is the invoice.
-            raise ExtractionError("provider_refused", f"HTTP {response.status_code}")
-
+        response = await post_json(
+            http=self._http,
+            url=self._url,
+            payload=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=self._timeout,
+            sleep=self._sleep,
+        )
         return parse_reading(_tool_input(response), today=self._today or date.today())
 
 

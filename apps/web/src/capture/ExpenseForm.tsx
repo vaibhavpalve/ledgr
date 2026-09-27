@@ -12,6 +12,28 @@ import type { CaptureApi, ExpenseFormPatch } from "./api";
 const CHECK_BELOW = 0.8;
 
 /**
+ * ADR-095: which sentence a failed reading gets. A busy provider is worth a
+ * retry; a refused key or model is not, until an administrator fixes it. Any
+ * other reason keeps the general sentence.
+ */
+const FAILED_SENTENCE: Readonly<Record<string, string>> = {
+  provider_rate_limited: "capture.read.failed_busy",
+  provider_error: "capture.read.failed_busy",
+  provider_unreachable: "capture.read.failed_busy",
+  timeout: "capture.read.failed_busy",
+  provider_auth_failed: "capture.read.failed_setup",
+  provider_rejected_request: "capture.read.failed_setup",
+  credentials_missing: "capture.read.failed_setup",
+  credentials_invalid: "capture.read.failed_setup",
+  credentials_unreadable: "capture.read.failed_setup",
+  token_refused: "capture.read.failed_setup",
+};
+
+function failedSentence(reason: string | null): string {
+  return (reason !== null ? FAILED_SENTENCE[reason] : undefined) ?? "capture.read.failed";
+}
+
+/**
  * "Check this", beside a field the automatic reading wrote and was not sure of.
  *
  * Shown only for a field the reading actually filled (it is in `extraction.
@@ -95,7 +117,21 @@ export function ExpenseForm({
   const [draft, setDraft] = useState<ExpenseFormPatch>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reading, setReading] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+
+  const readAgain = useCallback(async () => {
+    setReading(true);
+    setProblem(null);
+    try {
+      const next = await api.readExpenseAgain(administrationId, expense.id);
+      onChanged?.(next);
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : "");
+    } finally {
+      setReading(false);
+    }
+  }, [administrationId, api, expense.id, onChanged]);
 
   const value = <K extends keyof ExpenseFormPatch>(field: K): string => {
     const pending = draft[field];
@@ -166,12 +202,24 @@ export function ExpenseForm({
         </p>
       ) : null}
       {expense.extraction?.status === "failed" ? (
-        <p
+        <div
           className="expense-form__notice expense-form__notice--failed"
           data-testid="expense-read-failed"
+          data-reason={expense.extraction.reason ?? undefined}
         >
-          {t("capture.read.failed")}
-        </p>
+          <p>{t(failedSentence(expense.extraction.reason))}</p>
+          {expense.status === "draft" ? (
+            <button
+              type="button"
+              className="expense-form__read-again"
+              data-testid="expense-read-again"
+              disabled={reading || saving}
+              onClick={() => void readAgain()}
+            >
+              {reading ? t("capture.read.reading") : t("capture.read.again")}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       <label>

@@ -41,6 +41,10 @@ def tool_answer(**fields: Any) -> httpx.Response:
     )
 
 
+async def no_sleep(_: float) -> None:
+    return None
+
+
 def extractor(handler: Any, **kwargs: Any) -> tuple[MistralExtractor, list[httpx.Request]]:
     seen: list[httpx.Request] = []
 
@@ -55,6 +59,7 @@ def extractor(handler: Any, **kwargs: Any) -> tuple[MistralExtractor, list[httpx
             model="mistral-small-latest",
             http=client,
             today=TODAY,
+            sleep=no_sleep,
             **kwargs,
         ),
         seen,
@@ -113,15 +118,52 @@ async def test_the_answer_is_read_from_the_tool_call_and_checked() -> None:
     assert result.gross_amount.__class__.__name__ == "Decimal"
 
 
-@pytest.mark.parametrize("status", [400, 401, 429, 500, 503])
-async def test_a_refusal_is_an_extraction_error_that_does_not_carry_the_body(status: int) -> None:
+@pytest.mark.parametrize(
+    ("status", "reason"),
+    [
+        (400, "provider_rejected_request"),
+        (401, "provider_auth_failed"),
+        (429, "provider_rate_limited"),
+        (500, "provider_error"),
+        (503, "provider_error"),
+    ],
+)
+async def test_a_refusal_is_an_extraction_error_that_does_not_carry_the_body(
+    status: int, reason: str
+) -> None:
     reader, _ = extractor(lambda _: httpx.Response(status, text="echo of the INVOICE TEXT"))
 
     with pytest.raises(ExtractionError) as excinfo:
         await reader.extract(data=b"%PDF-1.7", content_type="application/pdf")
 
-    assert excinfo.value.reason == "provider_refused"
+    assert excinfo.value.reason == reason
     assert "INVOICE TEXT" not in str(excinfo.value)
+
+
+async def test_mistrals_own_rate_limit_answer_is_recognised_and_retried_first() -> None:
+    """The exact body La Plateforme answered in production (HTTP 429, code
+    1300). Retried, then reported with Mistral's own code beside the status."""
+    reader, seen = extractor(
+        lambda _: httpx.Response(
+            429,
+            json={
+                "object": "error",
+                "message": "Rate limit exceeded",
+                "type": "rate_limited",
+                "param": None,
+                "code": "1300",
+                "raw_status_code": 429,
+            },
+        )
+    )
+
+    with pytest.raises(ExtractionError) as excinfo:
+        await reader.extract(data=b"%PDF-1.7", content_type="application/pdf")
+
+    assert len(seen) == 3, "the first try and two retries"
+    assert excinfo.value.reason == "provider_rate_limited"
+    assert excinfo.value.provider_code == "rate_limited"
+    assert "Rate limit exceeded" not in str(excinfo.value), "the message is never carried"
 
 
 async def test_an_answer_with_no_tool_call_is_unreadable() -> None:
@@ -177,6 +219,29 @@ def test_mistral_selected_without_a_key_fails_at_build_not_on_first_capture() ->
 
     with pytest.raises(ExtractionNotConfigured):
         build_extractor(Settings(extraction_provider="mistral", extraction_mistral_api_key=None))
+
+
+@pytest.mark.parametrize(
+    ("provider", "extra", "model"),
+    [
+        ("mistral", {"extraction_mistral_api_key": "k"}, "mistral-small-latest"),
+        ("vertex-claude", {"extraction_gcp_project": "p"}, "claude-haiku-4-5@20251001"),
+    ],
+)
+def test_an_unset_model_means_the_selected_providers_own_default(
+    provider: str, extra: dict[str, str], model: str
+) -> None:
+    """ADR-095. One shared default once sent a Claude model id to Mistral, and
+    every reading failed with a 400 that looked like any other refusal."""
+    from api.config import Settings
+    from api.expenses.extraction.build import build_extractor
+
+    built = build_extractor(
+        Settings(extraction_provider=provider, extraction_model=None, **extra)  # type: ignore[arg-type]
+    )
+
+    assert built is not None
+    assert built.model == model
 
 
 def test_mistral_selected_with_a_key_builds_the_mistral_adapter() -> None:

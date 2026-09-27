@@ -27,6 +27,7 @@ retention, IAM-093, and is not a second copy of the claim).
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -42,6 +43,8 @@ from api.expenses.model import Expense, VatRateUnavailable, VatTreatment
 #: here: it is `btw_0`, `btw_vrijgesteld`, `btw_verlegd` or an export, and the
 #: invoice's rate cannot say which - so it is left for a person to choose.
 _TREATMENT_BY_RATE = {Decimal("21"): VatTreatment.BTW_21, Decimal("9"): VatTreatment.BTW_9}
+
+logger = logging.getLogger(__name__)
 
 
 class ExtractionRepository(Protocol):
@@ -71,6 +74,11 @@ class InvoiceExtractionService:
         self._repository = repository
         self._audit = audit_log
         self._timeout = timeout_seconds
+
+    @property
+    def available(self) -> bool:
+        """Whether this deployment reads invoices at all."""
+        return self._extractor is not None
 
     async def read_into_expense(
         self,
@@ -108,6 +116,7 @@ class InvoiceExtractionService:
             await self._record(
                 expense, administration_id, actor_user_id, correlation_id,
                 status="failed", reason=exc.reason,
+                http_status=exc.http_status, provider_code=exc.provider_code,
             )  # fmt: skip
             return
         except TimeoutError:
@@ -148,20 +157,25 @@ class InvoiceExtractionService:
         reading: ExtractedInvoice,
         correlation_id: str | None,
     ) -> frozenset[str]:
-        """Writes the reading through the form. Returns the fields that landed."""
+        """Writes the reading through the form. Returns the fields that landed.
+
+        Only into EMPTY fields. On a fresh capture every field is empty, so this
+        changes nothing there; on a reading run again (ADR-095) it is what keeps a
+        person's own typing from being replaced by a model's guess.
+        """
         fields: dict[str, Any] = {}
-        if reading.supplier is not None:
+        if reading.supplier is not None and expense.supplier is None:
             fields["supplier"] = reading.supplier
-        if reading.invoice_number is not None:
+        if reading.invoice_number is not None and expense.invoice_number is None:
             fields["invoice_number"] = reading.invoice_number
-        if reading.invoice_date is not None:
+        if reading.invoice_date is not None and expense.expense_date is None:
             fields["expense_date"] = reading.invoice_date
-        if reading.gross_amount is not None:
+        if reading.gross_amount is not None and expense.gross_amount is None:
             fields["gross_amount"] = reading.gross_amount
         treatment = (
             _TREATMENT_BY_RATE.get(reading.vat_rate) if reading.vat_rate is not None else None
         )
-        if treatment is not None:
+        if treatment is not None and expense.vat_treatment is None:
             fields["vat_treatment"] = treatment
 
         if not fields:
@@ -202,6 +216,8 @@ class InvoiceExtractionService:
         detail: str | None = None,
         reading: ExtractedInvoice | None = None,
         applied: frozenset[str] = frozenset(),
+        http_status: int | None = None,
+        provider_code: str | None = None,
     ) -> None:
         assert self._extractor is not None
         confidence = {
@@ -218,6 +234,23 @@ class InvoiceExtractionService:
         }
         if reason is not None:
             record["reason"] = reason
+        if http_status is not None:
+            record["http_status"] = http_status
+        if provider_code is not None:
+            record["provider_code"] = provider_code
+        if status == "failed":
+            # The one line an operator reads in the platform's logs. Codes only:
+            # nothing here comes from the document (see transport.py).
+            logger.warning(
+                "invoice reading failed: provider=%s model=%s reason=%s http_status=%s "
+                "provider_code=%s error_type=%s",
+                self._extractor.provider,
+                self._extractor.model,
+                reason,
+                http_status,
+                provider_code,
+                detail,
+            )
         await self._repository.record_extraction(
             administration_id=administration_id, expense_id=expense.id, extraction=record
         )
@@ -247,6 +280,8 @@ class InvoiceExtractionService:
                     "fields": sorted(confidence),
                     **({"reason": reason} if reason else {}),
                     **({"error_type": detail} if detail else {}),
+                    **({"http_status": http_status} if http_status is not None else {}),
+                    **({"provider_code": provider_code} if provider_code else {}),
                 },
             )
         )

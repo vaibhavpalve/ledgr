@@ -139,6 +139,18 @@ export class CaptureApi {
   }
 
   /**
+   * ADR-095: run automatic reading again over the stored invoice of a draft -
+   * after a rate limit or a configuration fix, without uploading it twice. Fills
+   * only fields that are still empty, so nothing the person typed is replaced.
+   */
+  readExpenseAgain(administrationId: string, expenseId: string): Promise<ExpenseView> {
+    return this.call<ExpenseView>(
+      "POST",
+      `${this.expensePath(administrationId, expenseId)}/extraction`,
+    );
+  }
+
+  /**
    * Book a ready expense into the ledger - `api.expenses.routes.post_expense`. Needs Appendix A's
    * "Post journal entries" (Owner, Accountant, Bookkeeper) and a verified e-mail address; an
    * Expense Submitter's claim waits at `ready` for someone who holds it.
