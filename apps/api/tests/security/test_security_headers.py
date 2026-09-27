@@ -69,6 +69,17 @@ def test_frame_src_allows_blob_for_in_app_document_previews() -> None:
     assert "frame-src blob:" in csp
 
 
+def test_manifest_src_allows_the_pwa_manifest() -> None:
+    """ADR-046's web manifest is fetched under `manifest-src`, which falls back
+    to `default-src 'none'` when absent - the browser then refuses it and the
+    app cannot be installed."""
+    client = TestClient(_probe_app())
+
+    csp = client.get("/ok").headers["content-security-policy"]
+
+    assert "manifest-src 'self'" in csp
+
+
 def test_hsts_meets_preload_list_requirements() -> None:
     client = TestClient(_probe_app())
 

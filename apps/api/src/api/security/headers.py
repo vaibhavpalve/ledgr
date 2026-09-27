@@ -55,6 +55,9 @@ def _content_security_policy(nonce: str) -> str:
             "connect-src 'self'",
             "font-src 'self'",
             "frame-src blob:",
+            # ADR-046's installable PWA: without it the manifest falls back to
+            # default-src 'none' and the browser refuses to load it.
+            "manifest-src 'self'",
             "base-uri 'none'",
             "form-action 'self'",
             "frame-ancestors 'none'",
