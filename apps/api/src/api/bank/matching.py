@@ -1,26 +1,33 @@
-"""How sure a bank line's match to an open document is (FR-BNK-003/004, ADR-091, ADR-092).
+"""How sure a bank line's match to an open document is (FR-BNK-003/004/005, ADR-091, ADR-092).
 
     FR-BNK-003  Automatic matching of transactions to open AR/AP items using amount, payment
                 reference, IBAN, name similarity and historical behaviour, with a confidence score.
     FR-BNK-004  ... auto-post above the high threshold, propose between thresholds, queue for
                 manual handling below. Defaults are conservative.
+    FR-BNK-005  Partial payments, overpayments, batched payments ... and split allocation.
 
 Pure. Money IN is matched to open sales invoices, money OUT to receipts booked as paid from the
-business account or card (ADR-092). A candidate's open amount always EQUALS the line's (partial
-and batched payments are the person's call, FR-BNK-005). What raises confidence:
+business account or card (ADR-092). What raises confidence:
 
     reference       the invoice number appears in the payment's description - ours, typed by the
                     customer, or the supplier's, carried on our transfer
     name            the counterparty's name is the customer's or supplier's, give or take
                     legal-form suffixes
     only_candidate  no other open document of that kind has this amount
+    partial         the line pays LESS than the document's open amount (ADR-097) - a real,
+                    common shape of FR-BNK-005 (a customer paying short), not yet the batched or
+                    split-across-many-invoices shape, which stays a person's call
 
-    high      a reference match; or the name AND the only candidate
-    medium    the name, or the only candidate
+    high      a reference match on the FULL amount; or the name AND the only candidate
+    medium    a reference match on a PARTIAL amount (never promoted past medium - real money
+                stays open on the invoice afterward, so this is always a person's click,
+                never bulk-applied); or an exact match on the name, or the only candidate
     low       an amount and nothing else
 
 Only HIGH is ever applied in bulk ("match all certain" in the web app), and only when it is the
-single high candidate for that line - the conservative default FR-BNK-004 asks for.
+single high candidate for that line - the conservative default FR-BNK-004 asks for. A partial
+match is never HIGH, so it can never be applied that way, by construction rather than a separate
+check.
 """
 
 from __future__ import annotations
@@ -31,6 +38,7 @@ import uuid
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from decimal import Decimal
 from difflib import SequenceMatcher
 
 from api.bank.model import BankTransaction, CandidateKind, MatchCandidate
@@ -82,21 +90,35 @@ def reference_in(transaction: BankTransaction, reference: str | None) -> bool:
     return wanted in haystack
 
 
+def _paid(transaction: BankTransaction) -> Decimal:
+    """What this line pays toward a candidate - always positive, whichever direction."""
+    return transaction.amount if transaction.is_inflow else -transaction.amount
+
+
 def score(
     transaction: BankTransaction, candidates: Sequence[MatchCandidate]
 ) -> list[ScoredCandidate]:
     """Every candidate with its confidence, most certain first (then oldest document first)."""
     only = len(candidates) == 1
+    paid = _paid(transaction)
     scored: list[ScoredCandidate] = []
     for candidate in candidates:
         reasons: list[str] = []
+        partial = candidate.amount != paid
+        if partial:
+            reasons.append("partial")
         if reference_in(transaction, candidate.reference):
             reasons.append("reference")
         if names_match(transaction.counterparty_name, candidate.party_name):
             reasons.append("name")
         if only:
             reasons.append("only_candidate")
-        if "reference" in reasons or ("name" in reasons and only):
+        if partial:
+            # Real money stays open on the invoice afterward - a partial match is
+            # always a person's click, never HIGH and never bulk-applied
+            # (FR-BNK-004's conservative default), regardless of how it was found.
+            confidence = Confidence.MEDIUM
+        elif "reference" in reasons or ("name" in reasons and only):
             confidence = Confidence.HIGH
         elif "name" in reasons or only:
             confidence = Confidence.MEDIUM
@@ -121,11 +143,21 @@ def ambiguous(scored: ScoredCandidate) -> ScoredCandidate:
 
 def fits(transaction: BankTransaction, candidate: MatchCandidate) -> bool:
     """Could this document be what the line paid? Direction decides the kind - a customer's
-    payment comes in, a supplier's goes out - and the open amount must be the line's exactly."""
+    payment comes in, a supplier's goes out.
+
+    The open amount must be the line's exactly, UNLESS the candidate is a sales invoice AND the
+    line's own reference names it - then a LESSER amount is a partial payment (FR-BNK-005,
+    ADR-097), never a greater one: that is an overpayment, which has nowhere automatic to put
+    the extra and stays a person's call. The expense side keeps the old exact-only rule: a
+    receipt has no running "outstanding balance" to pay down partially, only a settled/open flag.
+    """
     if transaction.is_inflow:
-        return (
-            candidate.kind is CandidateKind.SALES_INVOICE and candidate.amount == transaction.amount
-        )
+        if candidate.kind is not CandidateKind.SALES_INVOICE:
+            return False
+        paid = _paid(transaction)
+        if candidate.amount == paid:
+            return True
+        return candidate.amount > paid and reference_in(transaction, candidate.reference)
     return candidate.kind is CandidateKind.EXPENSE and candidate.amount == -transaction.amount
 
 

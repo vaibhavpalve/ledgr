@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from api.bank.matching import Confidence, ambiguous, certain, names_match, score, suggest
+from api.bank.matching import Confidence, ambiguous, certain, fits, names_match, score, suggest
 from api.bank.model import BankTransaction, CandidateKind, MatchCandidate, TransactionStatus
 
 
@@ -154,3 +154,59 @@ def test_the_suppliers_invoice_number_on_our_transfer_is_certain() -> None:
     best = suggest([line], [other, target])
     assert best[line.id].candidate is target
     assert best[line.id].confidence is Confidence.HIGH
+
+
+# ===========================================================================
+# Partial payments - FR-BNK-005, ADR-097
+# ===========================================================================
+
+
+def test_a_referenced_partial_payment_fits() -> None:
+    """The invoice is open for more than the line pays, but the line's own
+    description names it - a customer paying part of what they owe."""
+    open_invoice = invoice("2026-0007", "Hotel De Gouden Leeuw B.V.")  # open 1149.50
+    short_payment = transaction(None, "factuur 2026-0007 termijn 1", amount="500.00")
+    assert fits(short_payment, open_invoice)
+
+
+def test_an_unreferenced_partial_amount_does_not_fit() -> None:
+    """Amount alone is no longer a unique signal once partial amounts are in play - without the
+    reference naming the invoice, a lesser amount is just some other, smaller invoice."""
+    open_invoice = invoice("2026-0007", "Hotel De Gouden Leeuw B.V.")
+    short_payment = transaction("Hotel De Gouden Leeuw", None, amount="500.00")
+    assert not fits(short_payment, open_invoice)
+
+
+def test_a_referenced_but_greater_amount_does_not_fit() -> None:
+    """More than the invoice owes is an overpayment, not a partial payment - FR-BNK-005 names it
+    separately, and there is nowhere automatic to put the extra yet."""
+    open_invoice = invoice("2026-0007", "Hotel De Gouden Leeuw B.V.")  # open 1149.50
+    overpayment = transaction(None, "factuur 2026-0007", amount="1200.00")
+    assert not fits(overpayment, open_invoice)
+
+
+def test_a_partial_payment_is_proposed_but_never_certain() -> None:
+    hotel = invoice("2026-0007", "Hotel De Gouden Leeuw B.V.")
+    short_payment = transaction(None, "factuur 2026-0007 termijn 1", amount="500.00")
+
+    best = suggest([short_payment], [hotel])
+
+    assert best[short_payment.id].candidate is hotel
+    assert best[short_payment.id].confidence is Confidence.MEDIUM
+    assert "partial" in best[short_payment.id].reasons
+    assert certain(score(short_payment, [hotel])) is None
+
+
+def test_a_partial_payment_without_a_reference_is_never_suggested() -> None:
+    hotel = invoice("2026-0007", "Hotel De Gouden Leeuw B.V.")
+    short_payment = transaction(None, "geen omschrijving", amount="500.00")
+
+    assert suggest([short_payment], [hotel]) == {}
+
+
+def test_money_out_has_no_partial_shape_yet() -> None:
+    """FR-BNK-005's expense side is not built (ADR-097): a receipt has no running outstanding
+    balance to pay down, so a lesser amount still does not fit, reference or not."""
+    staples = receipt("Staples", gross="121.00")
+    short_payment = transaction(None, "factuur Staples termijn 1", amount="-80.00")
+    assert not fits(short_payment, staples)

@@ -1375,9 +1375,11 @@ export type BankMatchConfidence = "high" | "medium" | "low";
 
 /**
  * Why: the invoice number in the description, the counterparty's name, no other document of that
- * amount; "ambiguous" when a HIGH match competed with another and was lowered to a proposal.
+ * amount, "ambiguous" when a HIGH match competed with another and was lowered to a proposal, or
+ * "partial" when the line pays less than the invoice's open amount (FR-BNK-005, ADR-097) - always
+ * paired with "reference", since that is the only way a partial candidate is ever surfaced.
  */
-export type BankMatchReason = "reference" | "name" | "only_candidate" | "ambiguous";
+export type BankMatchReason = "reference" | "name" | "only_candidate" | "ambiguous" | "partial";
 
 /** `GET .../bank-transactions/{id}/match-candidates` rows — `api.bank.matching.ScoredCandidate`. */
 export interface BankMatchCandidateView {

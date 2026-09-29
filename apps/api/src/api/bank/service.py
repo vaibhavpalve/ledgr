@@ -20,7 +20,7 @@ from datetime import datetime
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.bank.csv_parser import CsvStatementError, StatementRow
-from api.bank.matching import ScoredCandidate, score, suggest
+from api.bank.matching import ScoredCandidate, fits, score, suggest
 from api.bank.model import (
     BankAccount,
     BankAccountNotFound,
@@ -227,17 +227,25 @@ class BankService:
     async def match_candidates(
         self, *, administration_id: uuid.UUID, transaction: BankTransaction
     ) -> Sequence[ScoredCandidate]:
-        """FR-BNK-003: equal-amount open documents, scored (api.bank.matching) - sales invoices
-        for money in, bank-paid receipts for money out (ADR-092)."""
+        """FR-BNK-003/005: open documents this line could fit, scored (api.bank.matching) - sales
+        invoices for money in, bank-paid receipts for money out (ADR-092).
+
+        The inflow side reads every open invoice, not only an equal-amount one, because
+        `fits` (ADR-097) now also admits a partial payment when the line's reference names the
+        invoice - a query pre-filtered to the exact amount would never let that candidate reach
+        scoring at all. The outflow side is unchanged: a receipt has no partial-payment shape yet
+        (FR-BNK-005's expense side is not built), so filtering by the exact amount in SQL is
+        still correct and cheaper than reading every open receipt.
+        """
         if transaction.is_inflow:
-            candidates = await self._repository.match_candidates(
-                administration_id=administration_id, amount=transaction.amount
+            candidates = await self._repository.open_invoice_balances(
+                administration_id=administration_id
             )
         else:
             candidates = await self._repository.bank_paid_expenses(
                 administration_id=administration_id, amount=-transaction.amount
             )
-        return score(transaction, candidates)
+        return score(transaction, [c for c in candidates if fits(transaction, c)])
 
     async def suggestions(
         self, *, administration_id: uuid.UUID, transactions: Sequence[BankTransaction]

@@ -156,6 +156,16 @@
       "nl": "past ook bij een andere factuur of betaling",
       "en": "also fits another invoice or payment"
     },
+    "bank.reason.partial": {
+      "note": "FR-BNK-005/ADR-097. Shown only alongside 'reference' - a partial candidate is never surfaced without one.",
+      "nl": "betaalt een deel van deze factuur",
+      "en": "pays part of this invoice"
+    },
+    "bank.partial_amount": {
+      "note": "FR-BNK-005/ADR-097. Both figures, never a client-side subtraction of money (NFR-031) - the invoice stays open for the rest afterward.",
+      "nl": "betaalt {paid} van {open} open",
+      "en": "pays {paid} of {open} open"
+    },
     "bank.certain_banner": {
       "note": "Above the bank lines when some have a certain match (ADR-091).",
       "nl": {

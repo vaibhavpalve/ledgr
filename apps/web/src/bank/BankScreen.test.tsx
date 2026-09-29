@@ -204,3 +204,59 @@ describe("suggested matches", () => {
     );
   });
 });
+
+describe("partial payments — FR-BNK-005, ADR-097", () => {
+  it("shows both figures rather than subtracting them, and matches on request", async () => {
+    const shortPayment = line("t6", null, "500.00");
+    const partialCandidate: BankMatchCandidateView = {
+      kind: "sales_invoice",
+      document_id: "0099",
+      reference: "2026-0099",
+      party_name: "Hotel De Gouden Leeuw B.V.",
+      amount: "1149.50",
+      document_date: "2026-09-01",
+      confidence: "medium",
+      reasons: ["partial", "reference"],
+    };
+    services.bank.listTransactions.mockResolvedValueOnce([shortPayment]);
+    services.bank.matchCandidates.mockResolvedValueOnce([partialCandidate]);
+    open();
+
+    fireEvent.click(await screen.findByTestId("bank-reconcile-open-t6"));
+    const partial = await screen.findByTestId("bank-partial-0099");
+    expect(partial.textContent).toContain("500,00");
+    expect(partial.textContent).toContain("1.149,50");
+
+    fireEvent.click(screen.getByTestId("bank-match-sales_invoice-0099"));
+
+    await waitFor(() =>
+      expect(services.bank.reconcileWithCandidate).toHaveBeenCalledWith(
+        "adm-A",
+        "t6",
+        expect.objectContaining({ document_id: "0099" }),
+      ),
+    );
+  });
+
+  it("shows an exact candidate's plain amount, not the partial phrasing", async () => {
+    const exact = line("t7", null, "1149.50");
+    const exactCandidate: BankMatchCandidateView = {
+      kind: "sales_invoice",
+      document_id: "0100",
+      reference: "2026-0100",
+      party_name: "Hotel De Gouden Leeuw B.V.",
+      amount: "1149.50",
+      document_date: "2026-09-01",
+      confidence: "high",
+      reasons: ["reference"],
+    };
+    services.bank.listTransactions.mockResolvedValueOnce([exact]);
+    services.bank.matchCandidates.mockResolvedValueOnce([exactCandidate]);
+    open();
+
+    fireEvent.click(await screen.findByTestId("bank-reconcile-open-t7"));
+    await screen.findByTestId("bank-match-sales_invoice-0100");
+
+    expect(screen.queryByTestId("bank-partial-0100")).toBeNull();
+  });
+});

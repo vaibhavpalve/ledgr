@@ -327,24 +327,6 @@ class SqlBankRepository:
         )
         return [_transaction(row) for row in result]
 
-    async def match_candidates(
-        self, *, administration_id: uuid.UUID, amount: Decimal
-    ) -> Sequence[MatchCandidate]:
-        """Open sales invoices whose OUTSTANDING balance equals `amount`
-        exactly - `invoicing.invoice_balances` (0052) is the one definition
-        of "outstanding" every other screen already reads, reused rather
-        than reimplemented here.
-        """
-        result = await self._session.execute(
-            text(
-                "SELECT invoice_id, invoice_reference, customer_name, outstanding, invoice_date "
-                "FROM invoicing.invoice_balances(:admin, NULL) "
-                "WHERE outstanding = :amount ORDER BY invoice_date"
-            ),
-            {"admin": str(administration_id), "amount": amount},
-        )
-        return [_invoice_candidate(row) for row in result]
-
     async def bank_paid_expenses(
         self, *, administration_id: uuid.UUID, amount: Decimal | None = None
     ) -> list[MatchCandidate]:

@@ -692,20 +692,35 @@ function ReconcilePanel({
             {isInflow ? t("bank.suggested_invoices") : t("bank.suggested_receipts")}
           </p>
           <ul className="bank-candidates">
-            {candidates.map((candidate) => (
-              <li key={candidate.document_id}>
-                <ConfidenceChip candidate={candidate} /> <CandidateText candidate={candidate} /> —{" "}
-                {money(candidate.amount)}{" "}
-                <button
-                  type="button"
-                  disabled={sending}
-                  onClick={() => void matchCandidate(candidate)}
-                  data-testid={`bank-match-${candidate.kind}-${candidate.document_id}`}
-                >
-                  {t("bank.match")}
-                </button>
-              </li>
-            ))}
+            {candidates.map((candidate) => {
+              const partial = candidate.reasons.includes("partial");
+              return (
+                <li key={candidate.document_id}>
+                  <ConfidenceChip candidate={candidate} /> <CandidateText candidate={candidate} />{" "}
+                  —{" "}
+                  {partial ? (
+                    // FR-BNK-005 (ADR-097): both figures, never a client-side subtraction of
+                    // money (NFR-031) - the invoice stays open for the rest afterward.
+                    <span data-testid={`bank-partial-${candidate.document_id}`}>
+                      {t("bank.partial_amount", {
+                        paid: money(transaction.amount),
+                        open: money(candidate.amount),
+                      })}
+                    </span>
+                  ) : (
+                    money(candidate.amount)
+                  )}{" "}
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() => void matchCandidate(candidate)}
+                    data-testid={`bank-match-${candidate.kind}-${candidate.document_id}`}
+                  >
+                    {t("bank.match")}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
