@@ -449,6 +449,44 @@ class SqlBankRepository:
         )
         return _transaction(result.one())
 
+    async def record_allocations(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        transaction_id: uuid.UUID,
+        allocations: Sequence[tuple[uuid.UUID, uuid.UUID, uuid.UUID, Decimal]],
+        user_id: uuid.UUID,
+    ) -> None:
+        """FR-BNK-005 (ADR-098, migration 0071): one row per invoice a batched bank line paid.
+
+        `organization_id` comes from the bank line itself via the subquery, the same tenant every
+        allocation must belong to - never taken from the caller, which is exactly the class of
+        cross-tenant mistake `organization_id`-from-a-join is meant to make unspellable.
+        """
+        for invoice_id, payment_id, journal_entry_id, amount in allocations:
+            await self._session.execute(
+                text(
+                    """
+                    INSERT INTO bank_transaction_allocation (
+                        organization_id, administration_id, bank_transaction_id,
+                        sales_invoice_id, payment_id, journal_entry_id, amount, created_by_user_id
+                    )
+                    SELECT organization_id, :admin, :transaction, :invoice, :payment, :entry,
+                           :amount, :user
+                      FROM bank_transaction WHERE id = :transaction AND administration_id = :admin
+                    """
+                ),
+                {
+                    "admin": str(administration_id),
+                    "transaction": str(transaction_id),
+                    "invoice": str(invoice_id),
+                    "payment": str(payment_id),
+                    "entry": str(journal_entry_id),
+                    "amount": amount,
+                    "user": str(user_id),
+                },
+            )
+
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None:
         result = await self._session.execute(
             text("SELECT organization_id FROM administration WHERE id = :id"),

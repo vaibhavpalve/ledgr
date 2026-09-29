@@ -403,6 +403,181 @@ async def test_reconcile_with_invoice_records_a_payment(two_organizations: Seede
     assert reconciled.json()["matched_sales_invoice_id"] == invoice_id
 
 
+# ---------------------------------------------------------------------------
+# FR-BNK-005 (ADR-098): one line settling several invoices at once
+# ---------------------------------------------------------------------------
+
+
+async def _two_issued_invoices_and_matching_transaction(
+    tenants: SeededTenants,
+) -> tuple[str, str, str] | None:
+    """Two issued invoices (605.00 and 302.50) and one imported bank line for their sum
+    (907.50) - the shared setup for the batched-payment tests. Returns None (the caller skips)
+    for the same environment reason `_issued_invoice_and_matching_transaction` documents.
+    """
+    world = await _bank_world(tenants)
+    invoice_world = await _world(tenants)
+    from sqlalchemy import text as sql_text
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from api.crypto.envelope import EnvelopeEncryptionService
+    from api.crypto.kms import build_kms
+    from api.crypto.repository import SqlAdministrationKeyRepository
+    from api.db import engine as app_engine
+
+    async with AsyncSession(app_engine) as session, session.begin():
+        await session.execute(
+            sql_text("SELECT set_config('app.current_org_id', :org, true)"),
+            {"org": str(tenants.org_a)},
+        )
+        await EnvelopeEncryptionService(
+            build_kms(), SqlAdministrationKeyRepository(session)
+        ).provision_key(tenants.admin_a)
+    await _exec(
+        tenants,
+        "UPDATE administration SET address_line1 = 'Keizersgracht 1', postal_code = '1015 CS', "
+        "  city = 'Amsterdam', country = 'NL', vat_number = 'NL123456789B01', "
+        "  kvk_number = '12345678' WHERE id = :id",
+        id=str(tenants.admin_a),
+    )
+
+    invoice_ids: list[str] = []
+    for unit_price in ("500", "250"):
+        draft = await _call(
+            tenants,
+            tenants.admin_a,
+            "POST",
+            "/sales-invoices",
+            {
+                "fiscal_year_id": str(invoice_world["year"]),
+                "invoice_date": "2026-09-09",
+                "customer_name": "De Vries Holding B.V.",
+                "customer_address": "Damrak 70, 1012 LM Amsterdam",
+                "customer_country": "NL",
+                "lines": [
+                    {
+                        "description": "Advies",
+                        "quantity": "1",
+                        "unit_price": unit_price,
+                        "vat_treatment": "btw_21",
+                    }
+                ],
+            },
+        )
+        assert draft.status_code == 200, draft.text
+        invoice_id = draft.json()["id"]
+        try:
+            issued = await _call(
+                tenants, tenants.admin_a, "POST", f"/sales-invoices/{invoice_id}/issue"
+            )
+        except ValueError as exc:
+            assert "no active encryption key" in str(exc), exc
+            return None
+        if issued.status_code != 200:
+            return None
+        invoice_ids.append(invoice_id)
+
+    created = await _call(
+        tenants,
+        tenants.admin_a,
+        "POST",
+        "/bank-accounts",
+        {"name": "Bank", "ledger_account_id": str(world["bank_ledger_account"])},
+    )
+    account_id = created.json()["id"]
+    # 500 + 21% = 605.00; 250 + 21% = 302.50; one transfer covering both invoices exactly.
+    csv = f"{_CSV_HEADER}\n2026-09-15,907.50,De Vries Holding,NL00DVH0000000000,Twee facturen\n"
+    await _call(
+        tenants, tenants.admin_a, "POST", f"/bank-accounts/{account_id}/import", {"csv": csv}
+    )
+    listing = await _call(
+        tenants, tenants.admin_a, "GET", f"/bank-accounts/{account_id}/transactions"
+    )
+    [line] = listing.json()["transactions"]
+    return invoice_ids[0], invoice_ids[1], line["id"]
+
+
+@pytest.mark.isolation(
+    "POST",
+    "/v1/administrations/{administration_id}/bank-transactions/{transaction_id}"
+    "/reconcile-with-invoices",
+)
+async def test_reconcile_with_invoices_settles_a_batch(two_organizations: SeededTenants) -> None:
+    setup = await _two_issued_invoices_and_matching_transaction(two_organizations)
+    if setup is None:
+        pytest.skip("invoice could not be issued in this environment")
+    invoice_a, invoice_b, transaction_id = setup
+
+    reconciled = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        f"/bank-transactions/{transaction_id}/reconcile-with-invoices",
+        {
+            "allocations": [
+                {"invoice_id": invoice_a, "amount": "605.00"},
+                {"invoice_id": invoice_b, "amount": "302.50"},
+            ]
+        },
+    )
+    assert reconciled.status_code == 200, reconciled.text
+    assert reconciled.json()["status"] == "reconciled"
+    # Neither single-invoice column can name two invoices - the batch's breakdown lives in
+    # bank_transaction_allocation, asserted here by both invoices now showing no balance owed.
+    assert reconciled.json()["matched_sales_invoice_id"] is None
+
+    for invoice_id in (invoice_a, invoice_b):
+        payments = await _call(
+            two_organizations,
+            two_organizations.admin_a,
+            "GET",
+            f"/sales-invoices/{invoice_id}/payments",
+        )
+        assert payments.json()["balance"]["outstanding_amount"] == "0.00", payments.json()
+
+
+async def test_reconcile_with_invoices_refuses_a_mismatched_sum(
+    two_organizations: SeededTenants,
+) -> None:
+    setup = await _two_issued_invoices_and_matching_transaction(two_organizations)
+    if setup is None:
+        pytest.skip("invoice could not be issued in this environment")
+    invoice_a, invoice_b, transaction_id = setup
+
+    refused = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        f"/bank-transactions/{transaction_id}/reconcile-with-invoices",
+        {
+            "allocations": [
+                {"invoice_id": invoice_a, "amount": "605.00"},
+                {"invoice_id": invoice_b, "amount": "1.00"},
+            ]
+        },
+    )
+    assert refused.status_code == 422, refused.text
+    assert refused.json()["detail"]["reason"] == "bank_field_invalid"
+
+
+async def test_reconcile_with_invoices_refuses_fewer_than_two_allocations(
+    two_organizations: SeededTenants,
+) -> None:
+    setup = await _two_issued_invoices_and_matching_transaction(two_organizations)
+    if setup is None:
+        pytest.skip("invoice could not be issued in this environment")
+    invoice_a, _invoice_b, transaction_id = setup
+
+    refused = await _call(
+        two_organizations,
+        two_organizations.admin_a,
+        "POST",
+        f"/bank-transactions/{transaction_id}/reconcile-with-invoices",
+        {"allocations": [{"invoice_id": invoice_a, "amount": "907.50"}]},
+    )
+    assert refused.status_code == 422, refused.text
+
+
 async def test_a_camt053_statement_imports_and_another_accounts_is_refused(
     two_organizations: SeededTenants,
 ) -> None:

@@ -6,6 +6,7 @@
     GET  /v1/administrations/{id}/bank-accounts/{account_id}/transactions
     GET  /v1/administrations/{id}/bank-transactions/{transaction_id}/match-candidates
     POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-invoice
+    POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-invoices
     POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-expense
     POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile
 
@@ -24,6 +25,7 @@ domain; this module is the first thing that reaches it.
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
 from fastapi import Depends, FastAPI, Request
 from pydantic import BaseModel
@@ -99,6 +101,12 @@ def register(app: FastAPI) -> None:
         reconcile_with_invoice,
         methods=["POST"],
         name="reconcile_bank_transaction_with_invoice",
+    )
+    app.add_api_route(
+        f"{_TRANSACTION}/reconcile-with-invoices",
+        reconcile_with_invoices,
+        methods=["POST"],
+        name="reconcile_bank_transaction_with_invoices",
     )
     app.add_api_route(
         f"{_TRANSACTION}/reconcile-with-expense",
@@ -311,6 +319,16 @@ class ReconcileWithInvoiceBody(BaseModel):
     invoice_id: str
 
 
+class AllocationBody(BaseModel):
+    invoice_id: str
+    #: A string on the wire, a Decimal here (NFR-031) - the same pattern gross_amount uses.
+    amount: Decimal
+
+
+class ReconcileWithInvoicesBody(BaseModel):
+    allocations: list[AllocationBody]
+
+
 class ReconcileWithExpenseBody(BaseModel):
     expense_id: str
 
@@ -494,6 +512,45 @@ async def reconcile_with_invoice(
             administration_id=administration_id,
             transaction_id=transaction_id,
             invoice_id=invoice_id,
+            actor_user_id=tenant.user_id,
+        )
+    except BankError as exc:
+        raise _refuse(request, exc) from exc
+    return _transaction_json(transaction)
+
+
+async def reconcile_with_invoices(
+    administration_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+    body: ReconcileWithInvoicesBody,
+    request: Request,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: BankService = Depends(get_bank_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "reconcile",
+            "bank_transaction",
+            scope=administration_from_path("administration_id"),
+            audit=AuditCategory.POSTING,
+        )
+    ),
+) -> dict[str, object]:
+    """FR-BNK-005's batched-payment shape (ADR-098): one bank line settling several invoices.
+
+    Same permission as the single-invoice route - a batch is still reconciling, not a separate
+    capability.
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    allocations = [
+        (_parse_uuid(request, "invoice_id", entry.invoice_id), entry.amount)
+        for entry in body.allocations
+    ]
+    try:
+        transaction = await service.reconcile_with_invoices(
+            administration_id=administration_id,
+            transaction_id=transaction_id,
+            allocations=allocations,
             actor_user_id=tenant.user_id,
         )
     except BankError as exc:

@@ -129,6 +129,27 @@ export class BankApi {
     );
   }
 
+  /** FR-BNK-005 (ADR-098): one line settling several invoices at once. */
+  reconcileWithInvoices(
+    administrationId: string,
+    transactionId: string,
+    allocations: readonly { invoice_id: string; amount: string }[],
+  ): Promise<BankTransactionView> {
+    return callJson<BankTransactionView>(
+      this.options,
+      "POST",
+      pathOf(
+        "v1",
+        "administrations",
+        administrationId,
+        "bank-transactions",
+        transactionId,
+        "reconcile-with-invoices",
+      ),
+      { allocations },
+    );
+  }
+
   /** ADR-092: an outgoing line settles the receipt it paid. */
   reconcileWithExpense(
     administrationId: string,

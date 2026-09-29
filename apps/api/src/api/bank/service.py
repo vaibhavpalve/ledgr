@@ -17,6 +17,7 @@ import hashlib
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
+from decimal import Decimal
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.bank.csv_parser import CsvStatementError, StatementRow
@@ -330,6 +331,89 @@ class BankService:
         )
         await self._record_reconciled(
             administration_id, transaction_id, payment.journal_entry_id, actor_user_id
+        )
+        return reconciled
+
+    async def reconcile_with_invoices(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        transaction_id: uuid.UUID,
+        allocations: Sequence[tuple[uuid.UUID, Decimal]],
+        actor_user_id: uuid.UUID,
+    ) -> BankTransaction:
+        """FR-BNK-005's batched-payment shape: one bank line settling several invoices at once
+        (ADR-098).
+
+        Each allocation is its own call to `SalesPaymentService.record()` - the same entry point
+        `reconcile_with_invoice` uses, never a new write path into the ledger (CLAUDE.md
+        non-negotiable #1). The whole batch is validated BEFORE anything is posted: fewer than two
+        allocations is `reconcile_with_invoice`'s job, not a batch; the same invoice cannot appear
+        twice, since that could not mean two different things; and the amounts must sum to exactly
+        the line's - a batched payment settles the whole line, never leaves it half-applied.
+
+        `bank_transaction.matched_sales_invoice_id`/`matched_payment_id` stay null - neither column
+        can name more than one invoice. The full breakdown is `bank_transaction_allocation`; the
+        transaction's own `journal_entry_id` points at the batch's FIRST entry only, because the
+        table's own CHECK constraint requires it non-null once reconciled.
+        """
+        transaction = await self._transaction_or_refuse(
+            administration_id=administration_id, transaction_id=transaction_id
+        )
+        if not transaction.is_inflow:
+            raise InvalidBankField("allocations", "an outflow cannot be split across invoices")
+        if len(allocations) < 2:
+            raise InvalidBankField(
+                "allocations", "a single invoice is reconcile-with-invoice's job, not a batch"
+            )
+        invoice_ids = [invoice_id for invoice_id, _ in allocations]
+        if len(set(invoice_ids)) != len(invoice_ids):
+            raise InvalidBankField("allocations", "the same invoice appears twice in this batch")
+        if sum((amount for _, amount in allocations), start=Decimal("0")) != transaction.amount:
+            raise InvalidBankField(
+                "allocations", "the allocations must add up to exactly the bank line's amount"
+            )
+
+        bank_account = await self._account_or_refuse(
+            administration_id=administration_id, bank_account_id=transaction.bank_account_id
+        )
+
+        posted: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID, Decimal]] = []
+        for invoice_id, amount in allocations:
+            try:
+                payment = await self._payments.record(
+                    administration_id=administration_id,
+                    invoice_id=invoice_id,
+                    actor_user_id=actor_user_id,
+                    amount=amount,
+                    paid_on=transaction.booking_date,
+                    method=PaymentMethod.BANK_TRANSFER,
+                    bank_account_id=bank_account.ledger_account_id,
+                    reference=transaction.description,
+                )
+            except InvoicingError as exc:
+                raise InvalidBankField("allocations", str(exc)) from exc
+            posted.append((invoice_id, payment.id, payment.journal_entry_id, amount))
+
+        await self._repository.record_allocations(
+            administration_id=administration_id,
+            transaction_id=transaction_id,
+            allocations=posted,
+            user_id=actor_user_id,
+        )
+
+        first_entry_id = posted[0][2]
+        reconciled = await self._repository.mark_reconciled(
+            administration_id=administration_id,
+            transaction_id=transaction_id,
+            journal_entry_id=first_entry_id,
+            matched_sales_invoice_id=None,
+            matched_payment_id=None,
+            user_id=actor_user_id,
+            reconciled_at=datetime.now().astimezone(),
+        )
+        await self._record_reconciled(
+            administration_id, transaction_id, first_entry_id, actor_user_id
         )
         return reconciled
 

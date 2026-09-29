@@ -108,6 +108,29 @@
       "nl": "Geen van deze? Kies een tegenrekening om deze transactie rechtstreeks te boeken.",
       "en": "None of these? Choose an offset account to post this transaction directly."
     },
+    "bank.split.show": {
+      "note": "FR-BNK-005 (ADR-098). Toggles the panel for one payment settling several invoices.",
+      "nl": "Verdelen over meerdere facturen",
+      "en": "Split across several invoices"
+    },
+    "bank.split.hide": {
+      "nl": "Verbergen",
+      "en": "Hide"
+    },
+    "bank.split.open_amount": {
+      "note": "Beside each invoice offered in the split panel - what it is still open for.",
+      "nl": "open: {amount}",
+      "en": "open: {amount}"
+    },
+    "bank.split.total": {
+      "note": "A live running total against the bank line's own amount - a client-side hint only, never what is actually checked (the server sums the exact typed amounts).",
+      "nl": "Toegewezen: {total} van {target}",
+      "en": "Allocated: {total} of {target}"
+    },
+    "bank.split.confirm": {
+      "nl": "Verdeling bevestigen",
+      "en": "Confirm split"
+    },
     "bank.import_choose": {
       "nl": "Afschrift kiezen",
       "en": "Choose a statement"

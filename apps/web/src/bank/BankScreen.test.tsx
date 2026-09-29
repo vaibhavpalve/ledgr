@@ -91,6 +91,10 @@ const services = {
       ...line(args[1], null),
       status: "reconciled" as const,
     })),
+    reconcileWithInvoices: vi.fn(async (...args: [string, string, unknown]) => ({
+      ...line(args[1], null),
+      status: "reconciled" as const,
+    })),
     reconcileGeneric: vi.fn(),
     importStatement: vi.fn(),
     createAccount: vi.fn(),
@@ -258,5 +262,81 @@ describe("partial payments — FR-BNK-005, ADR-097", () => {
     await screen.findByTestId("bank-match-sales_invoice-0100");
 
     expect(screen.queryByTestId("bank-partial-0100")).toBeNull();
+  });
+});
+
+describe("splitting one line across several invoices — FR-BNK-005, ADR-098", () => {
+  const invoiceA: BankMatchCandidateView = {
+    kind: "sales_invoice",
+    document_id: "0201",
+    reference: "2026-0201",
+    party_name: "De Vries Holding B.V.",
+    amount: "605.00",
+    document_date: "2026-09-01",
+    confidence: "medium",
+    reasons: ["only_candidate"],
+  };
+  const invoiceB: BankMatchCandidateView = {
+    kind: "sales_invoice",
+    document_id: "0202",
+    reference: "2026-0202",
+    party_name: "De Vries Holding B.V.",
+    amount: "302.50",
+    document_date: "2026-09-02",
+    confidence: "medium",
+    reasons: ["only_candidate"],
+  };
+  const batchLine = line("t8", null, "907.50");
+
+  it("offers no split toggle with fewer than two candidates", async () => {
+    services.bank.listTransactions.mockResolvedValueOnce([batchLine]);
+    services.bank.matchCandidates.mockResolvedValueOnce([invoiceA]);
+    open();
+
+    fireEvent.click(await screen.findByTestId("bank-reconcile-open-t8"));
+    await screen.findByTestId("bank-match-sales_invoice-0201");
+
+    expect(screen.queryByTestId("bank-split-toggle-t8")).toBeNull();
+  });
+
+  it("only enables the confirm button once the checked amounts add up exactly", async () => {
+    services.bank.listTransactions.mockResolvedValueOnce([batchLine]);
+    services.bank.matchCandidates.mockResolvedValueOnce([invoiceA, invoiceB]);
+    open();
+
+    fireEvent.click(await screen.findByTestId("bank-reconcile-open-t8"));
+    fireEvent.click(await screen.findByTestId("bank-split-toggle-t8"));
+    fireEvent.click(await screen.findByTestId("bank-split-check-0201"));
+    const confirm = screen.getByTestId("bank-split-submit-t8") as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true); // only one invoice checked so far
+
+    fireEvent.click(screen.getByTestId("bank-split-check-0202"));
+    expect(confirm.disabled).toBe(false); // 605.00 + 302.50 = 907.50, exactly the line
+
+    fireEvent.change(screen.getByTestId("bank-split-amount-0202"), { target: { value: "300.00" } });
+    expect(confirm.disabled).toBe(true); // 605.00 + 300.00 falls short
+  });
+
+  it("submits exactly the typed allocations, never a client-computed figure", async () => {
+    services.bank.listTransactions.mockResolvedValueOnce([batchLine]);
+    services.bank.matchCandidates.mockResolvedValueOnce([invoiceA, invoiceB]);
+    open();
+
+    fireEvent.click(await screen.findByTestId("bank-reconcile-open-t8"));
+    fireEvent.click(await screen.findByTestId("bank-split-toggle-t8"));
+    fireEvent.click(await screen.findByTestId("bank-split-check-0201"));
+    fireEvent.click(screen.getByTestId("bank-split-check-0202"));
+    fireEvent.click(screen.getByTestId("bank-split-submit-t8"));
+
+    await waitFor(() =>
+      expect(services.bank.reconcileWithInvoices).toHaveBeenCalledWith(
+        "adm-A",
+        "t8",
+        expect.arrayContaining([
+          { invoice_id: "0201", amount: "605.00" },
+          { invoice_id: "0202", amount: "302.50" },
+        ]),
+      ),
+    );
   });
 });

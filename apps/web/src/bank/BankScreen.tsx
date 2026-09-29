@@ -12,6 +12,7 @@ import { useAdministration } from "../session/SessionProvider";
 import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
+import { toDecimalInput } from "../ui/decimal";
 import "./Bank.css";
 
 /**
@@ -633,6 +634,7 @@ function ReconcilePanel({
   const [description, setDescription] = useState(transaction.description ?? "");
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [splitting, setSplitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -724,6 +726,28 @@ function ReconcilePanel({
           </ul>
         </div>
       ) : null}
+      {/* FR-BNK-005 (ADR-098): one line settling several invoices at once - the expense side has
+          no batched shape yet, so this is offered only for money in. */}
+      {isInflow && candidates !== null && candidates.length >= 2 ? (
+        <div>
+          <button
+            type="button"
+            className="bank-split__toggle"
+            onClick={() => setSplitting((current) => !current)}
+            data-testid={`bank-split-toggle-${transaction.id}`}
+          >
+            {t(splitting ? "bank.split.hide" : "bank.split.show")}
+          </button>
+          {splitting ? (
+            <SplitAllocationPanel
+              administrationId={administrationId}
+              transaction={transaction}
+              candidates={candidates}
+              onDone={onDone}
+            />
+          ) : null}
+        </div>
+      ) : null}
       <p className="caption">{t("bank.generic_reconcile_hint")}</p>
       <div className="form__row">
         <label className="form__field">
@@ -762,6 +786,115 @@ function ReconcilePanel({
           {t("bank.reconcile")}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * FR-BNK-005 (ADR-098): one bank line settling several invoices at once - a person checks which
+ * invoices it paid and types each one's share, and the server (never this component) is the
+ * authority on whether they add up. The running total shown here is a live hint only, computed
+ * with `Number()` for that purpose alone - the amounts actually SENT are the typed strings
+ * (NFR-031), never round-tripped through this sum.
+ */
+function SplitAllocationPanel({
+  administrationId,
+  transaction,
+  candidates,
+  onDone,
+}: {
+  administrationId: string;
+  transaction: BankTransactionView;
+  candidates: readonly BankMatchCandidateView[];
+  onDone: () => void;
+}) {
+  const { t, money, language } = useI18n();
+  const { bank } = useServices();
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const toggle = (candidate: BankMatchCandidateView) => {
+    setSelected((current) => {
+      const { [candidate.document_id]: existing, ...rest } = current;
+      return existing === undefined ? { ...current, [candidate.document_id]: candidate.amount } : rest;
+    });
+  };
+
+  const total = Object.values(selected).reduce((sum, value) => sum + (Number(value) || 0), 0);
+  const target = Math.abs(Number(transaction.amount));
+  // Rounded to cents before comparing: two numbers that are each the sum of 2-decimal amounts
+  // never disagree past that precision, so this cannot itself be the source of a false mismatch.
+  const balances = Math.round(total * 100) === Math.round(target * 100);
+  const canSubmit = Object.keys(selected).length >= 2 && balances;
+
+  const submit = useCallback(async () => {
+    setSending(true);
+    setProblem(null);
+    try {
+      await bank.reconcileWithInvoices(
+        administrationId,
+        transaction.id,
+        Object.entries(selected).map(([invoiceId, amount]) => ({
+          invoice_id: invoiceId,
+          amount: toDecimalInput(amount, language),
+        })),
+      );
+      onDone();
+    } catch (error) {
+      setProblem(describeError(error));
+    } finally {
+      setSending(false);
+    }
+  }, [bank, administrationId, transaction.id, selected, language, onDone]);
+
+  return (
+    <div className="bank-split" data-testid={`bank-split-${transaction.id}`}>
+      {problem !== null ? <ErrorState message={problem} /> : null}
+      <ul className="bank-split__list">
+        {candidates.map((candidate) => {
+          const checked = candidate.document_id in selected;
+          return (
+            <li key={candidate.document_id}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(candidate)}
+                  data-testid={`bank-split-check-${candidate.document_id}`}
+                />
+                <CandidateText candidate={candidate} /> —{" "}
+                {t("bank.split.open_amount", { amount: money(candidate.amount) })}
+              </label>
+              {checked ? (
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={selected[candidate.document_id]}
+                  onChange={(event) =>
+                    setSelected((current) => ({
+                      ...current,
+                      [candidate.document_id]: event.target.value,
+                    }))
+                  }
+                  data-testid={`bank-split-amount-${candidate.document_id}`}
+                />
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="caption" data-testid={`bank-split-total-${transaction.id}`}>
+        {t("bank.split.total", { total: total.toFixed(2), target: money(transaction.amount) })}
+      </p>
+      <button
+        type="button"
+        disabled={sending || !canSubmit}
+        onClick={() => void submit()}
+        data-testid={`bank-split-submit-${transaction.id}`}
+      >
+        {t("bank.split.confirm")}
+      </button>
     </div>
   );
 }
