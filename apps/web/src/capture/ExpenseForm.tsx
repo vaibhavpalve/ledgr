@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useI18n } from "@ledgr/i18n";
-import { PAYMENT_METHODS, VAT_TREATMENTS } from "@ledgr/shared-types";
-import type { ExpenseView, PaymentMethod, VatTreatment } from "@ledgr/shared-types";
+import { VAT_TREATMENTS } from "@ledgr/shared-types";
+import type { ExpenseView, VatTreatment } from "@ledgr/shared-types";
 
 import { toDecimalInput } from "../ui/decimal";
 import type { CaptureApi, ExpenseFormPatch } from "./api";
@@ -63,8 +63,7 @@ function CheckHint({
 }
 
 /**
- * FR-EXP-001b's form, with FR-EXP-001e's payment method and FR-EXP-001g's
- * warnings.
+ * FR-EXP-001b's form, with FR-EXP-001g's warnings.
  *
  *     FR-EXP-001b  The expense form asks for the minimum — date, supplier,
  *                  gross amount, VAT rate, category — with VAT and net
@@ -72,7 +71,12 @@ function CheckHint({
  *                  the user's history. Everything else is optional and hidden
  *                  by default.
  *
- * --- Six fields, and the rest is derived ---
+ * FR-EXP-001e's payment method is not one of these fields here: this screen
+ * is for company-funded purchases only, so every expense it creates is born
+ * business_account (`add_item`'s INSERT default) rather than asked for. A
+ * personally paid receipt is a reimbursement claim, a different process.
+ *
+ * --- Five fields, and the rest is derived ---
  *
  * The gross amount is asked for because it is the figure PRINTED on the
  * receipt: the one a person can read off without doing arithmetic. VAT, net
@@ -195,13 +199,24 @@ export function ExpenseForm({
         a suggestion, so a success asks for a check rather than claiming to be
         right; a failure says so, because a form that looks like nobody tried to
         fill it in reads as a bug.
+
+        A certain VAT rate (21% or 9%) submits the claim without a person, so
+        an expense that reaches this screen already `ready` has nothing left
+        to check - showing the editable form under "check before you submit"
+        would be wrong twice over: the fields cannot be saved anymore
+        (`ExpenseFormService.update` refuses a ready claim), and there is
+        nothing to check.
       */}
-      {expense.extraction?.status === "done" ? (
+      {expense.status !== "draft" && expense.extraction?.status === "done" ? (
+        <p className="expense-form__notice" data-testid="expense-read-submitted">
+          {t("capture.read.submitted")}
+        </p>
+      ) : expense.extraction?.status === "done" ? (
         <p className="expense-form__notice" data-testid="expense-read-done">
           {t("capture.read.done")}
         </p>
       ) : null}
-      {expense.extraction?.status === "failed" ? (
+      {expense.status === "draft" && expense.extraction?.status === "failed" ? (
         <div
           className="expense-form__notice expense-form__notice--failed"
           data-testid="expense-read-failed"
@@ -222,195 +237,187 @@ export function ExpenseForm({
         </div>
       ) : null}
 
-      <label>
-        {t("capture.form.date")}
-        <input
-          type="date"
-          data-testid="expense-date"
-          value={value("expense_date")}
-          onChange={(event) => edit({ expense_date: event.target.value || null })}
-        />
-        <CheckHint expense={expense} field="invoice_date" testId="expense-date-check" />
-      </label>
+      {expense.status === "draft" ? (
+        <>
+          <label>
+            {t("capture.form.date")}
+            <input
+              type="date"
+              data-testid="expense-date"
+              value={value("expense_date")}
+              onChange={(event) => edit({ expense_date: event.target.value || null })}
+            />
+            <CheckHint expense={expense} field="invoice_date" testId="expense-date-check" />
+          </label>
 
-      <label>
-        {t("capture.form.supplier")}
-        <input
-          type="text"
-          data-testid="expense-supplier"
-          value={value("supplier")}
-          onChange={(event) => edit({ supplier: event.target.value || null })}
-        />
-        <CheckHint expense={expense} field="supplier" testId="expense-supplier-check" />
-      </label>
+          <label>
+            {t("capture.form.supplier")}
+            <input
+              type="text"
+              data-testid="expense-supplier"
+              value={value("supplier")}
+              onChange={(event) => edit({ supplier: event.target.value || null })}
+            />
+            <CheckHint expense={expense} field="supplier" testId="expense-supplier-check" />
+          </label>
 
-      <label>
-        {t("capture.form.invoice_number")}
-        <input
-          type="text"
-          data-testid="expense-invoice-number"
-          value={value("invoice_number")}
-          onChange={(event) => edit({ invoice_number: event.target.value || null })}
-        />
-        <CheckHint expense={expense} field="invoice_number" testId="expense-invoice-number-check" />
-      </label>
+          <label>
+            {t("capture.form.invoice_number")}
+            <input
+              type="text"
+              data-testid="expense-invoice-number"
+              value={value("invoice_number")}
+              onChange={(event) => edit({ invoice_number: event.target.value || null })}
+            />
+            <CheckHint
+              expense={expense}
+              field="invoice_number"
+              testId="expense-invoice-number-check"
+            />
+          </label>
 
-      <label>
-        {t("capture.form.gross_amount")}
-        {/*
-          `inputMode="decimal"` rather than `type="number"`: a number input
-          hands back a value the browser has already parsed as a double, and
-          NFR-031 runs through the client too. This stays the string the person
-          typed, all the way to the wire.
-        */}
-        <input
-          type="text"
-          inputMode="decimal"
-          data-testid="expense-gross-amount"
-          value={value("gross_amount")}
-          onChange={(event) => edit({ gross_amount: event.target.value || null })}
-        />
-        <CheckHint expense={expense} field="gross_amount" testId="expense-gross-amount-check" />
-      </label>
+          <label>
+            {t("capture.form.gross_amount")}
+            {/*
+              `inputMode="decimal"` rather than `type="number"`: a number input
+              hands back a value the browser has already parsed as a double, and
+              NFR-031 runs through the client too. This stays the string the person
+              typed, all the way to the wire.
+            */}
+            <input
+              type="text"
+              inputMode="decimal"
+              data-testid="expense-gross-amount"
+              value={value("gross_amount")}
+              onChange={(event) => edit({ gross_amount: event.target.value || null })}
+            />
+            <CheckHint expense={expense} field="gross_amount" testId="expense-gross-amount-check" />
+          </label>
 
-      <label>
-        {t("capture.form.vat_treatment")}
-        <select
-          data-testid="expense-vat-treatment"
-          value={value("vat_treatment")}
-          onChange={(event) =>
-            edit({ vat_treatment: (event.target.value || null) as VatTreatment | null })
-          }
-        >
-          <option value="" />
-          {VAT_TREATMENTS.map((treatment) => (
-            <option key={treatment} value={treatment}>
-              {t(`capture.vat.${treatment}`)}
-            </option>
-          ))}
-        </select>
-        <CheckHint expense={expense} field="vat_rate" testId="expense-vat-check" />
-      </label>
+          <label>
+            {t("capture.form.vat_treatment")}
+            <select
+              data-testid="expense-vat-treatment"
+              value={value("vat_treatment")}
+              onChange={(event) =>
+                edit({ vat_treatment: (event.target.value || null) as VatTreatment | null })
+              }
+            >
+              <option value="" />
+              {VAT_TREATMENTS.map((treatment) => (
+                <option key={treatment} value={treatment}>
+                  {t(`capture.vat.${treatment}`)}
+                </option>
+              ))}
+            </select>
+            <CheckHint expense={expense} field="vat_rate" testId="expense-vat-check" />
+          </label>
 
-      <label>
-        {t("capture.form.payment_method")}
-        <select
-          data-testid="expense-payment-method"
-          value={value("payment_method")}
-          onChange={(event) =>
-            edit({ payment_method: (event.target.value || null) as PaymentMethod | null })
-          }
-        >
-          <option value="" />
-          {PAYMENT_METHODS.map((method) => (
-            <option key={method} value={method}>
-              {t(`capture.payment.${method}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+          <label>
+            {t("capture.form.category")}
+            <input
+              type="text"
+              data-testid="expense-category"
+              value={value("category")}
+              onChange={(event) => edit({ category: event.target.value || null })}
+            />
+          </label>
 
-      <label>
-        {t("capture.form.category")}
-        <input
-          type="text"
-          data-testid="expense-category"
-          value={value("category")}
-          onChange={(event) => edit({ category: event.target.value || null })}
-        />
-      </label>
+          {/*
+            FR-EXP-001b's "defaulting from the user's history", offered rather than
+            applied. The API sends null once a category has been chosen, so this
+            cannot reappear to argue with a decision already made.
+          */}
+          {expense.suggested_category !== null ? (
+            <p data-testid="expense-suggestion">
+              {t("capture.form.suggested_category", { category: expense.suggested_category })}
+              <button
+                type="button"
+                data-testid="expense-use-suggestion"
+                onClick={() => edit({ category: expense.suggested_category })}
+              >
+                {t("capture.form.use_suggestion")}
+              </button>
+            </p>
+          ) : null}
 
-      {/*
-        FR-EXP-001b's "defaulting from the user's history", offered rather than
-        applied. The API sends null once a category has been chosen, so this
-        cannot reappear to argue with a decision already made.
-      */}
-      {expense.suggested_category !== null ? (
-        <p data-testid="expense-suggestion">
-          {t("capture.form.suggested_category", { category: expense.suggested_category })}
+          {/* Computed, shown, never accepted. */}
+          {expense.vat_amount !== null &&
+          expense.net_amount !== null &&
+          expense.vat_rate !== null ? (
+            <p data-testid="expense-derived">
+              {t("capture.form.derived", {
+                vat: money(expense.vat_amount),
+                net: money(expense.net_amount),
+                rate: expense.vat_rate,
+              })}
+            </p>
+          ) : null}
+
+          {expense.missing_fields.length > 0 ? (
+            <p data-testid="expense-missing">
+              {t("capture.form.still_needed", {
+                fields: expense.missing_fields
+                  .map((field) => t(`capture.form.field.${field}`))
+                  .join(", "),
+              })}
+            </p>
+          ) : null}
+
+          {expense.duplicate_warnings.length > 0 ? (
+            <section aria-label={t("capture.duplicate.title")} data-testid="expense-duplicates">
+              <h3>{t("capture.duplicate.title")}</h3>
+              <ul>
+                {expense.duplicate_warnings.map((warning) => (
+                  <li key={warning.expense_id} data-testid="expense-duplicate">
+                    <span>
+                      {t("capture.duplicate.entry", {
+                        supplier: warning.supplier,
+                        date: date(warning.expense_date),
+                        amount: money(warning.gross_amount),
+                      })}
+                    </span>
+                    <span>
+                      {warning.same_submitter
+                        ? t("capture.duplicate.same_submitter")
+                        : t("capture.duplicate.other_submitter")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {problem !== null ? (
+            <p role="alert" data-testid="expense-problem">
+              {problem}
+            </p>
+          ) : null}
+
+          {saved ? (
+            <p role="status" data-testid="expense-saved">
+              {t("capture.form.saved")}
+            </p>
+          ) : null}
+
+          <button type="submit" disabled={saving} data-testid="expense-save">
+            {saving ? t("capture.form.saving") : t("capture.form.save")}
+          </button>
+
+          {/*
+            Disabled only on what the SERVER says is missing — never on the
+            duplicate warnings, which warn and do not block (FR-EXP-001g).
+          */}
           <button
             type="button"
-            data-testid="expense-use-suggestion"
-            onClick={() => edit({ category: expense.suggested_category })}
+            disabled={saving || !expense.can_be_marked_ready}
+            data-testid="expense-submit"
+            onClick={() => void write("submit")}
           >
-            {t("capture.form.use_suggestion")}
+            {t("capture.form.mark_ready")}
           </button>
-        </p>
+        </>
       ) : null}
-
-      {/* Computed, shown, never accepted. */}
-      {expense.vat_amount !== null && expense.net_amount !== null && expense.vat_rate !== null ? (
-        <p data-testid="expense-derived">
-          {t("capture.form.derived", {
-            vat: money(expense.vat_amount),
-            net: money(expense.net_amount),
-            rate: expense.vat_rate,
-          })}
-        </p>
-      ) : null}
-
-      {expense.missing_fields.length > 0 ? (
-        <p data-testid="expense-missing">
-          {t("capture.form.still_needed", {
-            fields: expense.missing_fields
-              .map((field) => t(`capture.form.field.${field}`))
-              .join(", "),
-          })}
-        </p>
-      ) : null}
-
-      {expense.duplicate_warnings.length > 0 ? (
-        <section aria-label={t("capture.duplicate.title")} data-testid="expense-duplicates">
-          <h3>{t("capture.duplicate.title")}</h3>
-          <ul>
-            {expense.duplicate_warnings.map((warning) => (
-              <li key={warning.expense_id} data-testid="expense-duplicate">
-                <span>
-                  {t("capture.duplicate.entry", {
-                    supplier: warning.supplier,
-                    date: date(warning.expense_date),
-                    amount: money(warning.gross_amount),
-                  })}
-                </span>
-                <span>
-                  {warning.same_submitter
-                    ? t("capture.duplicate.same_submitter")
-                    : t("capture.duplicate.other_submitter")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {problem !== null ? (
-        <p role="alert" data-testid="expense-problem">
-          {problem}
-        </p>
-      ) : null}
-
-      {saved ? (
-        <p role="status" data-testid="expense-saved">
-          {t("capture.form.saved")}
-        </p>
-      ) : null}
-
-      <button type="submit" disabled={saving} data-testid="expense-save">
-        {saving ? t("capture.form.saving") : t("capture.form.save")}
-      </button>
-
-      {/*
-        Disabled only on what the SERVER says is missing — never on the
-        duplicate warnings, which warn and do not block (FR-EXP-001g).
-      */}
-      <button
-        type="button"
-        disabled={saving || !expense.can_be_marked_ready}
-        data-testid="expense-submit"
-        onClick={() => void write("submit")}
-      >
-        {t("capture.form.mark_ready")}
-      </button>
     </form>
   );
 }

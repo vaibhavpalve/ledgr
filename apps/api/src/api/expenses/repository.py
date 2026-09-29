@@ -210,10 +210,10 @@ class SqlCaptureRepository:
                 )
                 INSERT INTO expense (
                     organization_id, administration_id, capture_item_id,
-                    submitted_by_user_id, category
+                    submitted_by_user_id, category, payment_method
                 )
                 SELECT :org, new_item.administration_id, new_item.id, :user,
-                       CAST(:category AS text)
+                       CAST(:category AS text), 'business_account'
                   FROM new_item
                 RETURNING """
                 + _EXPENSE_COLUMNS

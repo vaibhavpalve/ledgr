@@ -35,7 +35,7 @@ from api.expenses.extraction.model import (
 from api.expenses.extraction.service import InvoiceExtractionService
 from api.expenses.extraction.vertex import VertexClaudeExtractor
 from api.expenses.form import ExpenseFormService
-from api.expenses.model import Expense, ExpenseStatus, VatTreatment
+from api.expenses.model import Expense, ExpenseStatus, PaymentMethod, VatTreatment
 from tests.authz.helpers import build_world
 from tests.expenses.test_form import FakeFormRepository
 from tests.support.fake_audit_repository import InMemoryAuditRepository
@@ -544,6 +544,59 @@ async def test_a_reading_fills_the_draft_through_the_form() -> None:
     assert expense.vat_amount == Decimal("215.21")
     # The category the person chose at upload is untouched.
     assert expense.category == "Office supplies"
+
+
+# ===========================================================================
+# Submitting without a person - only when the VAT rate is certain
+# ===========================================================================
+
+
+def _paid_from_business_account(h: ReadHarness) -> None:
+    """What `add_item`'s INSERT now guarantees for every real capture - the
+    harness builds its `Expense` by hand, so tests that want a claim capable
+    of going READY have to set it themselves."""
+    h.repository.expenses[h.expense_id] = replace(
+        h.repository.expenses[h.expense_id], payment_method=PaymentMethod.BUSINESS_ACCOUNT
+    )
+
+
+async def test_a_certain_vat_rate_submits_the_claim_without_a_person() -> None:
+    h, _ = read_harness(GOOD)
+    _paid_from_business_account(h)
+
+    await read(h)
+
+    expense = h.repository.expenses[h.expense_id]
+    assert expense.status is ExpenseStatus.READY
+    assert h.repository.recorded[h.expense_id]["submitted"] is True
+
+
+async def test_an_uncertain_vat_rate_leaves_it_for_a_person() -> None:
+    """0% could be btw_0, vrijgesteld, verlegd or an export - the reading
+    cannot say which, so this is exactly the case that still needs a human,
+    even though every other field was read cleanly."""
+    reading = replace(GOOD, vat_rate=Decimal("0"))
+    h, _ = read_harness(reading)
+    _paid_from_business_account(h)
+
+    await read(h)
+
+    expense = h.repository.expenses[h.expense_id]
+    assert expense.status is ExpenseStatus.DRAFT
+    assert h.repository.recorded[h.expense_id]["submitted"] is False
+
+
+async def test_a_certain_vat_rate_still_waits_if_something_else_is_missing() -> None:
+    """A certain VAT rate is necessary, not sufficient - `mark_ready`'s own
+    completeness check still has to pass. Here payment_method is left unset,
+    same as `read_harness`'s default fixture."""
+    h, _ = read_harness(GOOD)
+
+    await read(h)
+
+    expense = h.repository.expenses[h.expense_id]
+    assert expense.status is ExpenseStatus.DRAFT
+    assert h.repository.recorded[h.expense_id]["submitted"] is False
 
 
 async def test_how_it_was_read_is_recorded_without_the_values() -> None:

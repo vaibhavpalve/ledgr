@@ -88,6 +88,13 @@ class PaymentMethod(enum.Enum):
 
     Nothing on a receipt says which. A card slip looks the same whoever's card
     it was, which is exactly why FR-EXP-001e says it cannot be inferred later.
+
+    The purchase-invoice capture flow (this module) no longer asks: every
+    expense it creates is born BUSINESS_ACCOUNT (`add_item`'s INSERT), because
+    that flow is defined to be for company-funded purchases only. A personally
+    paid receipt is a reimbursement claim, a different process this module
+    does not build - PERSONAL_REIMBURSABLE and BUSINESS_CARD stay real values
+    a future flow can still set through `ExpenseFormService.update`.
     """
 
     BUSINESS_ACCOUNT = "business_account"

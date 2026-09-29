@@ -222,6 +222,11 @@
       "nl": "We hebben deze factuur automatisch gelezen. Controleer de gemarkeerde velden voordat u indient.",
       "en": "We read this invoice automatically. Please check the marked fields before you submit."
     },
+    "capture.read.submitted": {
+      "note": "The invoice's own VAT rate was read with enough certainty (21% or 9%) that the claim was submitted automatically - nothing left to review here.",
+      "nl": "We hebben deze factuur automatisch gelezen en ingediend. Er is niets meer om te controleren.",
+      "en": "We read this invoice automatically and submitted it. There's nothing left for you to review."
+    },
     "capture.read.failed": {
       "nl": "We konden deze factuur niet automatisch lezen. Vul de gegevens hieronder zelf in.",
       "en": "We couldn't read this invoice automatically. Please fill in the details below."

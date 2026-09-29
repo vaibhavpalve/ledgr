@@ -23,16 +23,11 @@ const blank: ExpenseView = {
   vat_amount: null,
   net_amount: null,
   category: null,
-  payment_method: null,
+  // Every expense this flow creates is born business_account (`add_item`'s
+  // INSERT default) - a person is never asked, so it is never missing.
+  payment_method: "business_account",
   suggested_category: null,
-  missing_fields: [
-    "expense_date",
-    "supplier",
-    "gross_amount",
-    "vat_treatment",
-    "category",
-    "payment_method",
-  ],
+  missing_fields: ["expense_date", "supplier", "gross_amount", "vat_treatment", "category"],
   can_be_marked_ready: false,
   duplicate_warnings: [],
 };
@@ -47,7 +42,7 @@ const complete: ExpenseView = {
   vat_amount: "21.00",
   net_amount: "100.00",
   category: "Representatie",
-  payment_method: "personal_reimbursable",
+  payment_method: "business_account",
   missing_fields: [],
   can_be_marked_ready: true,
 };
@@ -160,8 +155,56 @@ describe("a failed reading — ADR-095", () => {
   });
 });
 
-describe("the form asks for the minimum — FR-EXP-001b, FR-EXP-001e", () => {
-  it("offers exactly the six fields the requirement names", async () => {
+describe("a certain VAT rate submits without a person — FR-EXP-001c", () => {
+  const autoSubmitted: ExpenseView = {
+    ...complete,
+    status: "ready",
+    extraction: { status: "done", reason: null, fields: { supplier: 0.95, vat_rate: 0.99 } },
+  };
+
+  it("says it was read and submitted automatically, not to check it first", () => {
+    render(<ExpenseForm administrationId="adm-A" expense={autoSubmitted} api={api()} />, "en");
+
+    expect(screen.getByTestId("expense-read-submitted").textContent).toContain(
+      "nothing left for you to review",
+    );
+    expect(screen.queryByTestId("expense-read-done")).toBeNull();
+  });
+
+  it("shows no editable fields or buttons — there is nothing left to do", () => {
+    render(<ExpenseForm administrationId="adm-A" expense={autoSubmitted} api={api()} />);
+
+    for (const field of [
+      "expense-date",
+      "expense-supplier",
+      "expense-gross-amount",
+      "expense-vat-treatment",
+      "expense-category",
+      "expense-save",
+      "expense-submit",
+    ]) {
+      expect(screen.queryByTestId(field)).toBeNull();
+    }
+  });
+
+  it("still shows the ordinary reading notice for a draft that was only read, not submitted", () => {
+    const readOnly: ExpenseView = {
+      ...blank,
+      extraction: { status: "done", reason: null, fields: { supplier: 0.95 } },
+    };
+    render(<ExpenseForm administrationId="adm-A" expense={readOnly} api={api()} />, "en");
+
+    expect(screen.getByTestId("expense-read-done")).toBeDefined();
+    expect(screen.queryByTestId("expense-read-submitted")).toBeNull();
+    expect(screen.getByTestId("expense-date")).toBeDefined();
+  });
+});
+
+describe("the form asks for the minimum — FR-EXP-001b", () => {
+  it("offers exactly the five fields a person still has to fill in", async () => {
+    // Payment method (FR-EXP-001e) is no longer one of them: this flow is for
+    // company-funded purchases only, so every expense is born business_account
+    // (`add_item`'s INSERT default) and a person is never asked.
     render(<ExpenseForm administrationId="adm-A" expense={blank} api={api()} />);
 
     for (const field of [
@@ -170,10 +213,10 @@ describe("the form asks for the minimum — FR-EXP-001b, FR-EXP-001e", () => {
       "expense-gross-amount",
       "expense-vat-treatment",
       "expense-category",
-      "expense-payment-method",
     ]) {
       expect(screen.getByTestId(field)).toBeDefined();
     }
+    expect(screen.queryByTestId("expense-payment-method")).toBeNull();
   });
 
   it("shows VAT, net and the rate without offering to type them", async () => {
@@ -186,14 +229,6 @@ describe("the form asks for the minimum — FR-EXP-001b, FR-EXP-001e", () => {
     expect(screen.getByTestId("expense-derived").textContent).toContain("100,00");
     expect(screen.queryByTestId("expense-vat-amount")).toBeNull();
     expect(screen.queryByTestId("expense-net-amount")).toBeNull();
-  });
-
-  it("names FR-EXP-001e's reimbursable option by its consequence", async () => {
-    render(<ExpenseForm administrationId="adm-A" expense={blank} api={api()} />);
-
-    expect(screen.getByTestId("expense-payment-method").textContent).toContain(
-      "Zelf voorgeschoten",
-    );
   });
 });
 
@@ -236,7 +271,7 @@ describe("nothing blocks — FR-EXP-001c", () => {
     const missing = screen.getByTestId("expense-missing").textContent ?? "";
     expect(missing).toContain("datum");
     expect(missing).toContain("leverancier");
-    expect(missing).toContain("betaalmethode");
+    expect(missing).toContain("categorie");
   });
 });
 

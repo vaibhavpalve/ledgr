@@ -142,9 +142,12 @@ class InvoiceExtractionService:
         applied = await self._apply(
             expense, administration_id, actor_user_id, reading, correlation_id
         )
+        submitted = await self._submit_if_vat_is_certain(
+            expense, administration_id, actor_user_id, reading, correlation_id
+        )
         await self._record(
             expense, administration_id, actor_user_id, correlation_id,
-            status="done", reading=reading, applied=applied,
+            status="done", reading=reading, applied=applied, submitted=submitted,
         )  # fmt: skip
 
     # -- internals ---------------------------------------------------------
@@ -204,6 +207,44 @@ class InvoiceExtractionService:
             )
         return frozenset(_READING_FIELD_FOR.get(name, name) for name in fields)
 
+    async def _submit_if_vat_is_certain(
+        self,
+        expense: Expense,
+        administration_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+        reading: ExtractedInvoice,
+        correlation_id: str | None,
+    ) -> bool:
+        """Moves a draft straight to READY when the invoice's own rate was
+        read with enough certainty to pick a treatment automatically, so a
+        clean read never has to wait on somebody clicking submit.
+
+        `_TREATMENT_BY_RATE` only maps 21% and 9% - a rate it cannot map
+        (missing, or an invoice showing 0%, which could be btw_0/vrijgesteld/
+        btw_verlegd/an export) is exactly the case that still needs a person,
+        so this only ever fires on the two unambiguous rates. Everything else
+        `mark_ready` requires - date, supplier, amount, category from capture,
+        payment method from `add_item`'s BUSINESS_ACCOUNT default - still has
+        to be genuinely present; `can_be_marked_ready` is the same check a
+        person's own submit button goes through, not a relaxed one.
+        """
+        if reading.vat_rate not in _TREATMENT_BY_RATE:
+            return False
+        view = await self._form.view(
+            administration_id=administration_id,
+            expense_id=expense.id,
+            actor_user_id=actor_user_id,
+        )
+        if not view.can_be_marked_ready:
+            return False
+        await self._form.mark_ready(
+            administration_id=administration_id,
+            expense_id=expense.id,
+            actor_user_id=actor_user_id,
+            correlation_id=correlation_id,
+        )
+        return True
+
     async def _record(
         self,
         expense: Expense,
@@ -216,6 +257,7 @@ class InvoiceExtractionService:
         detail: str | None = None,
         reading: ExtractedInvoice | None = None,
         applied: frozenset[str] = frozenset(),
+        submitted: bool = False,
         http_status: int | None = None,
         provider_code: str | None = None,
     ) -> None:
@@ -231,6 +273,10 @@ class InvoiceExtractionService:
             "model": self._extractor.model,
             "read_at": datetime.now(UTC).isoformat(),
             "fields": confidence,
+            # Whether the VAT rate was certain enough to submit the claim
+            # without a person reviewing it first - never true for a failed
+            # or empty reading.
+            "submitted": submitted,
         }
         if reason is not None:
             record["reason"] = reason
@@ -278,6 +324,7 @@ class InvoiceExtractionService:
                     "provider": self._extractor.provider,
                     "model": self._extractor.model,
                     "fields": sorted(confidence),
+                    "submitted": submitted,
                     **({"reason": reason} if reason else {}),
                     **({"error_type": detail} if detail else {}),
                     **({"http_status": http_status} if http_status is not None else {}),
