@@ -118,7 +118,11 @@ class Settings(BaseSettings):
     # preference, just what was actually reachable.
     extraction_provider: Literal["none", "vertex-claude", "mistral"] = "none"
     extraction_gcp_project: str | None = None
-    extraction_gcp_region: str = "europe-west4"
+    # europe-west4 (KMS's region, ADR-062) does not itself serve Claude Haiku
+    # 4.5 - Vertex's per-region quota list only has it in europe-west1 (plus
+    # the EU multi-region and global buckets), confirmed against the Quotas
+    # page while wiring this up. Still within the EU for PRIV-010.
+    extraction_gcp_region: str = "europe-west1"
     # A model id for whichever provider is selected. Unset means that provider's
     # own default (ADR-095) - "mistral-small-latest" for mistral,
     # "claude-haiku-4-5@20251001" for vertex-claude - so switching provider can

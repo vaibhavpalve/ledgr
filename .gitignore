@@ -1,6 +1,12 @@
 # Env
 .env
 
+# A GCP service-account key downloaded straight into the repo root (IAM &
+# Admin -> Keys) is a real credential, not something to gitignore-and-forget -
+# move it out of the repo. This is a safety net only.
+project-7a7785ad-6667-4be9-ad4-*.json
+*-service-account*.json
+
 # Local dev infrastructure (native Postgres/Azurite installed in place of
 # Docker, which is absent on this machine — see the "local dev stack" memory
 # note). Binaries, a real database cluster, and generated credentials; none

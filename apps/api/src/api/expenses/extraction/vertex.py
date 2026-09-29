@@ -4,8 +4,10 @@
 
 PRIV-010 keeps customer data in the EU and PRIV-011 forbids any sub-processor
 that stores or accesses it outside. Anthropic's own API is not the answer to
-that by default; Claude served from Vertex AI in `europe-west4` is, and it sits
-under the Google Cloud relationship KMS already uses (ADR-062, ADR-081). PRIV-015
+that by default; Claude served from Vertex AI in an EU region is, and it sits
+under the Google Cloud relationship KMS already uses (ADR-062, ADR-081) - though
+not the same region: KMS is `europe-west4`, but Claude Haiku 4.5 is only served
+regionally from `europe-west1` (see `Settings.extraction_gcp_region`). PRIV-015
 (no training on customer data) is a term of that agreement, not something this
 module can enforce - it is recorded in ADR-081 as something to confirm.
 
