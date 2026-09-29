@@ -86,7 +86,7 @@ const services = {
   bank: {
     listAccounts: vi.fn(async () => [account]),
     listTransactions: vi.fn(async () => [certainA, certainB, likely, nothing, staples]),
-    matchCandidates: vi.fn(async () => []),
+    matchCandidates: vi.fn(async (): Promise<BankMatchCandidateView[]> => []),
     reconcileWithCandidate: vi.fn(async (...args: [string, string, BankMatchCandidateView]) => ({
       ...line(args[1], null),
       status: "reconciled" as const,
