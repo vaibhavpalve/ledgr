@@ -227,6 +227,15 @@ class InvoiceExtractionService:
         payment method from `add_item`'s BUSINESS_ACCOUNT default - still has
         to be genuinely present; `can_be_marked_ready` is the same check a
         person's own submit button goes through, not a relaxed one.
+
+        A duplicate warning (FR-EXP-001g) also holds this back, unlike a
+        person's own submit button, which is deliberately never gated on one
+        (`ExpenseView.can_be_marked_ready` is blind to `duplicate_warnings` on
+        purpose - a legitimate repeat purchase is ordinary, and refusing it
+        would be wrong about the money). Automatic submission has no person
+        standing there to see the banner and judge it, so the one it would
+        have shown is exactly what keeps this from happening silently; the
+        draft is left for a person to look at instead.
         """
         if reading.vat_rate not in _TREATMENT_BY_RATE:
             return False
@@ -235,7 +244,7 @@ class InvoiceExtractionService:
             expense_id=expense.id,
             actor_user_id=actor_user_id,
         )
-        if not view.can_be_marked_ready:
+        if not view.can_be_marked_ready or view.has_duplicate_warning:
             return False
         await self._form.mark_ready(
             administration_id=administration_id,

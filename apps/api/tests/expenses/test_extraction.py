@@ -26,6 +26,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from api.audit.log import AuditLog, AuditOutcome
 from api.authz.service import AuthorizationService
+from api.expenses.duplicates import DuplicateStrength, DuplicateWarning
 from api.expenses.extraction.google_auth import ServiceAccountToken
 from api.expenses.extraction.model import (
     ExtractedInvoice,
@@ -591,6 +592,31 @@ async def test_a_certain_vat_rate_still_waits_if_something_else_is_missing() -> 
     completeness check still has to pass. Here payment_method is left unset,
     same as `read_harness`'s default fixture."""
     h, _ = read_harness(GOOD)
+
+    await read(h)
+
+    expense = h.repository.expenses[h.expense_id]
+    assert expense.status is ExpenseStatus.DRAFT
+    assert h.repository.recorded[h.expense_id]["submitted"] is False
+
+
+async def test_a_certain_vat_rate_still_waits_for_a_person_when_it_looks_like_a_duplicate() -> None:
+    """FR-EXP-001g's warning is never a block for a PERSON's own submit - a legitimate repeat
+    purchase is ordinary. Automatic submission has no person standing there to see the banner and
+    judge it, so this is the one case where the warning itself holds the claim back instead."""
+    h, _ = read_harness(GOOD)
+    _paid_from_business_account(h)
+    h.repository.duplicates = [
+        DuplicateWarning(
+            expense_id=uuid.uuid4(),
+            strength=DuplicateStrength.EXACT,
+            supplier="Meelfabriek Zeeland",
+            on=date(2026, 9, 18),
+            gross_amount=Decimal("1240.00"),
+            status="posted",
+            same_submitter=True,
+        )
+    ]
 
     await read(h)
 
