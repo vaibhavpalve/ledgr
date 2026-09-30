@@ -23,6 +23,7 @@ from api.expenses.duplicates import (
     DuplicateStrength,
     DuplicateWarning,
     ExpenseTriple,
+    invoice_number_match,
 )
 from api.expenses.model import (
     CaptureSession,
@@ -502,19 +503,24 @@ class SqlCaptureRepository:
         administration_id: uuid.UUID,
         expense_id: uuid.UUID,
         triple: ExpenseTriple,
+        invoice_number: str | None,
     ) -> Sequence[DuplicateWarning]:
         """FR-EXP-001g, from the SQL function that derives it.
 
         The similarity floor is passed from Python so the number has one home
         (`api.expenses.duplicates.SIMILARITY_THRESHOLD`) rather than one in the
         function's default and another in a constant nobody reconciles.
+        `invoice_number` (ADR-101) is not part of the match rule - the SQL
+        function returns each candidate's own number unconditionally, and
+        `api.expenses.duplicates.invoice_number_match` is what decides what a
+        match, a mismatch or a missing number means.
         """
         result = await self._session.execute(
             text(
                 "SELECT expense_id, strength, supplier, expense_date, gross_amount, "
-                "       status, same_submitter, similarity "
+                "       status, same_submitter, similarity, invoice_number "
                 "FROM expenses.duplicate_candidates("
-                "    :admin, :expense, :supplier, :on, :gross, :floor)"
+                "    :admin, :expense, :supplier, :on, :gross, :invoice_number, :floor)"
             ),
             {
                 "admin": str(administration_id),
@@ -522,6 +528,7 @@ class SqlCaptureRepository:
                 "supplier": triple.supplier,
                 "on": triple.on,
                 "gross": triple.gross_amount,
+                "invoice_number": invoice_number,
                 "floor": SIMILARITY_THRESHOLD,
             },
         )
@@ -535,6 +542,7 @@ class SqlCaptureRepository:
                 status=row.status,
                 same_submitter=row.same_submitter,
                 similarity=float(row.similarity) if row.similarity is not None else None,
+                invoice_number_match=invoice_number_match(invoice_number, row.invoice_number),
             )
             for row in result
         ]

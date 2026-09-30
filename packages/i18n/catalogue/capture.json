@@ -462,9 +462,24 @@
       "en": "Paid personally — to be reimbursed"
     },
     "capture.duplicate.title": {
-      "note": "FR-EXP-001g. Warns and never blocks: two identical receipts can be legitimate, so a client must not gate its submit button on this being empty.",
+      "note": "FR-EXP-001g. Almost always a warning, not a block: two identical receipts can be legitimate. ADR-101's one exception (the invoice number also matches) is already reflected in can_be_marked_ready, not in this heading.",
       "nl": "Lijkt op een bestaande uitgave",
       "en": "Looks like an existing expense"
+    },
+    "capture.duplicate.confirmed": {
+      "note": "ADR-101. Shown when the invoice number also matches - near-certain the same document, and the reason the submit button below is disabled.",
+      "nl": "Zelfde leverancier, datum, bedrag én factuurnummer als hieronder — vrijwel zeker hetzelfde document. Dit kan niet worden ingediend voordat dit is opgelost.",
+      "en": "Same supplier, date, amount and invoice number as below — almost certainly the same document. This cannot be submitted until it is resolved."
+    },
+    "capture.duplicate.invoice_number_same": {
+      "note": "ADR-101. Beside the specific matching claim that also shares the invoice number.",
+      "nl": "zelfde factuurnummer",
+      "en": "same invoice number"
+    },
+    "capture.duplicate.invoice_number_missing": {
+      "note": "ADR-101. A parking ticket has no invoice number - nothing rules a duplicate out, worth saying even though it does not block.",
+      "nl": "geen factuurnummer om te vergelijken",
+      "en": "no invoice number to compare"
     },
     "capture.duplicate.entry": {
       "note": "Identical because it is entirely placeholders — a supplier's name, a date and an amount, each already rendered in the administration's locale (FR-LOC-002). There is no prose here to translate.",

@@ -759,6 +759,14 @@
   margin: 0;
   flex: 1 1 16rem;
 }
+/* ADR-101: a duplicate warning loud enough to notice without opening the
+   item further - the invoice number also matches (blocks submission) or is
+   missing on either side (does not, but nothing rules a duplicate out
+   either). An ordinary look-alike duplicate keeps the default notice look. */
+.expense-form__notice--attention {
+  border-left-color: var(--ledgr-attention);
+  background-color: var(--ledgr-attention-wash);
+}
 .expense-form__read-again {
   flex: 0 0 auto;
   min-height: 36px;

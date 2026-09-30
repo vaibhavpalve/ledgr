@@ -106,7 +106,11 @@ export interface ExpenseView {
   /** What marking ready would still refuse for, so a form can show all of it at once. */
   readonly missing_fields: readonly string[];
   readonly can_be_marked_ready: boolean;
-  /** FR-EXP-001g. These WARN and never block — see `DuplicateWarning`. */
+  /**
+   * FR-EXP-001g. Almost always just a warning - see `DuplicateWarning.
+   * invoice_number_match` for ADR-101's one exception, already reflected in
+   * `can_be_marked_ready` above.
+   */
   readonly duplicate_warnings: readonly DuplicateWarning[];
 }
 
@@ -235,6 +239,14 @@ export interface DuplicateWarning {
    */
   readonly same_submitter: boolean;
   readonly similarity: number;
+  /**
+   * ADR-101. "same": the invoice number matches too - near-certain the same
+   * document, and the one case `ExpenseView.can_be_marked_ready` is false
+   * for. "missing": one or both sides have no number (a parking ticket) -
+   * nothing rules a duplicate out, worth showing just as loudly even though
+   * it does not block. "different": two real documents, the ordinary case.
+   */
+  readonly invoice_number_match: "same" | "missing" | "different";
 }
 
 /**

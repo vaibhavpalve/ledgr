@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -71,7 +72,9 @@ from api.authz.model import (
     ResourceAttributes,
 )
 from api.authz.service import AuthorizationService
+from api.expenses.duplicates import DuplicateWarning, ExpenseTriple
 from api.expenses.model import (
+    ConfirmedDuplicateExpense,
     Expense,
     ExpenseNotFound,
     ExpenseStatus,
@@ -161,6 +164,19 @@ class ExpensePostingRepository(Protocol):
         unset or still holds an earlier default's value, never a mapping set on purpose."""
         ...
 
+    async def duplicate_candidates(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        triple: ExpenseTriple,
+        invoice_number: str | None,
+    ) -> Sequence[DuplicateWarning]:
+        """FR-EXP-001g/ADR-101. Checked again here, not only in `mark_ready`
+        (`api.expenses.form`), because `post` can confirm a complete DRAFT in
+        one step - see this class's own `post` docstring."""
+        ...
+
     async def purchase_journal(self, *, administration_id: uuid.UUID) -> uuid.UUID | None: ...
 
     async def mark_posted(
@@ -232,6 +248,24 @@ class ExpensePostingService:
         # single-receipt capture wants.
         if expense.missing_fields:
             raise IncompleteExpense(expense.missing_fields)
+
+        # FR-EXP-001g/ADR-101: the same one exception to warn-never-block that
+        # `mark_ready` enforces. Checked again here, not assumed from an
+        # earlier `mark_ready` call, because this method can confirm a
+        # complete DRAFT in one step (this method's own docstring above) -
+        # bypassing mark_ready entirely.
+        triple = ExpenseTriple(
+            supplier=expense.supplier, on=expense.expense_date, gross_amount=expense.gross_amount
+        )
+        duplicates = await self._repository.duplicate_candidates(
+            administration_id=administration_id,
+            expense_id=expense_id,
+            triple=triple,
+            invoice_number=expense.invoice_number,
+        )
+        confirmed = tuple(w.expense_id for w in duplicates if w.invoice_number_match == "same")
+        if confirmed:
+            raise ConfirmedDuplicateExpense(confirmed)
 
         accounts = await self._resolve_accounts(expense)
         journal_id = await self._repository.purchase_journal(administration_id=administration_id)

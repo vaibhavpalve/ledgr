@@ -205,6 +205,23 @@ class IncompleteExpense(CaptureError):
         super().__init__(f"this expense cannot be marked ready until it has: {', '.join(missing)}")
 
 
+class ConfirmedDuplicateExpense(CaptureError):
+    """ADR-101's one exception to FR-EXP-001g's "warn, never block": another
+    claim matches on supplier, date, amount AND invoice number - near-certain
+    the same document, not a look-alike claim.
+
+    Raised only when marking an expense READY, the same point
+    `IncompleteExpense` is - saving a draft, or reading it, is never refused.
+    """
+
+    def __init__(self, matching_expense_ids: tuple[uuid.UUID, ...]) -> None:
+        self.matching_expense_ids = matching_expense_ids
+        super().__init__(
+            "this expense has the same supplier, date, amount and invoice number as an "
+            "existing claim - almost certainly the same document, submitted twice"
+        )
+
+
 class ExpenseAlreadyReady(CaptureError):
     """The claim has been released and is somebody else's to change now.
 

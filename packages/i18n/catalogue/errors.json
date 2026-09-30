@@ -176,6 +176,11 @@
       "nl": "Vul eerst de ontbrekende gegevens in voordat u deze uitgave indient.",
       "en": "Fill in the missing details before submitting this expense."
     },
+    "errors.expense_confirmed_duplicate": {
+      "note": "ADR-101: the one exception to FR-EXP-001g's warn-never-block, when the invoice number also matches an existing claim - near-certain the same document, not a look-alike. {matching_expense_ids} travels beside the sentence as a machine field, never named in the prose.",
+      "nl": "Deze uitgave heeft dezelfde leverancier, datum, bedrag én factuurnummer als een bestaande uitgave — vrijwel zeker hetzelfde document, twee keer ingediend.",
+      "en": "This expense has the same supplier, date, amount and invoice number as an existing one — almost certainly the same document, submitted twice."
+    },
     "errors.expense_already_posted": {
       "note": "FR-GL-003: a posting is corrected by a reversing entry, never unmade. The message names the entry rather than offering to undo it, because undoing is not an operation this system has.",
       "nl": "Deze uitgave is al geboekt. Een correctie gebeurt met een tegenboeking.",

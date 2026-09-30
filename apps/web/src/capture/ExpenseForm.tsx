@@ -123,6 +123,17 @@ export function ExpenseForm({
   const [reading, setReading] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
+  // ADR-101: the invoice number also matching is near-certain the same
+  // document (blocks submission - already reflected in can_be_marked_ready
+  // above); missing on either side rules nothing out. Either is worth the
+  // loud styling immediately, not only once somebody reads the list below.
+  const confirmedDuplicate = expense.duplicate_warnings.some(
+    (warning) => warning.invoice_number_match === "same",
+  );
+  const loudDuplicate =
+    confirmedDuplicate ||
+    expense.duplicate_warnings.some((warning) => warning.invoice_number_match === "missing");
+
   const readAgain = useCallback(async () => {
     setReading(true);
     setProblem(null);
@@ -360,8 +371,19 @@ export function ExpenseForm({
           ) : null}
 
           {expense.duplicate_warnings.length > 0 ? (
-            <section aria-label={t("capture.duplicate.title")} data-testid="expense-duplicates">
+            <section
+              aria-label={t("capture.duplicate.title")}
+              data-testid="expense-duplicates"
+              className={
+                loudDuplicate ? "expense-form__notice expense-form__notice--attention" : undefined
+              }
+            >
               <h3>{t("capture.duplicate.title")}</h3>
+              {confirmedDuplicate ? (
+                <p data-testid="expense-duplicate-confirmed">
+                  {t("capture.duplicate.confirmed")}
+                </p>
+              ) : null}
               <ul>
                 {expense.duplicate_warnings.map((warning) => (
                   <li key={warning.expense_id} data-testid="expense-duplicate">
@@ -377,6 +399,15 @@ export function ExpenseForm({
                         ? t("capture.duplicate.same_submitter")
                         : t("capture.duplicate.other_submitter")}
                     </span>
+                    {warning.invoice_number_match !== "different" ? (
+                      <span data-testid="expense-duplicate-invoice-number-match">
+                        {t(
+                          warning.invoice_number_match === "same"
+                            ? "capture.duplicate.invoice_number_same"
+                            : "capture.duplicate.invoice_number_missing",
+                        )}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

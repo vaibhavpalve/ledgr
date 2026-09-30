@@ -3,7 +3,7 @@
     FR-EXP-001g  Duplicate detection WARNS when a receipt matching an existing
                  expense on supplier, date and amount is captured.
 
---- Warn, never block ---
+--- Warn, never block - with one exception (ADR-101) ---
 
 Legitimate duplicates exist and are ordinary. Two identical coffees on the same
 morning, two colleagues each buying a train ticket on the same route, a monthly
@@ -11,11 +11,15 @@ subscription billed twice because the first attempt failed. A system that
 refused any of those would be wrong about the money AND would teach people to
 work around it, which is worse than the duplicates it stopped.
 
-So every function here RETURNS findings. Nothing raises, nothing refuses, and
-`mark_ready` and the posting path both succeed with warnings outstanding -
-asserted in tests/expenses/test_duplicates.py, because "warn, don't block" is
-the kind of property that quietly becomes "block" the first time somebody
-treats a warning as an error.
+So every function here RETURNS findings, and nothing raises. What changed
+under ADR-101 is `ExpenseView.can_be_marked_ready` in `api.expenses.form`: a
+warning whose invoice number ALSO matches (`DuplicateWarning.
+invoice_number_match == "same"`) is not "looks similar", it is "almost
+certainly the same document" - a real supplier essentially never reuses an
+invoice number - and that one case blocks submission. Every other warning
+still never does, asserted in tests/expenses/test_duplicates.py, because
+"warn, don't block" is the kind of property that quietly becomes "block" the
+first time somebody treats a warning as an error.
 
 What a warning does change is the record: the submission audit entry says how
 many were outstanding when the claim was released, so an approver reading it
@@ -64,6 +68,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 #: Runs of whitespace, so "Albert  Heijn" and "Albert Heijn" are one supplier.
 _WHITESPACE = re.compile(r"\s+")
@@ -149,6 +154,17 @@ class DuplicateWarning:
     #: pg_trgm's score, for a PROBABLE match. None for an EXACT one, where
     #: there is nothing to score.
     similarity: float | None = None
+    #: ADR-101's escalation, orthogonal to `strength` (which is about the
+    #: SUPPLIER). "same": the invoice number matches too - a real supplier
+    #: essentially never reuses one, so this is near-certain the same
+    #: document, not a look-alike claim, and is the one case that blocks
+    #: submission (`ExpenseView.can_be_marked_ready`). "missing": one or both
+    #: sides have no number (a parking ticket) - nothing rules a duplicate
+    #: out, so this still warns loudly, but does not block. "different": the
+    #: numbers disagree, which is about as good evidence as exists that these
+    #: are two real documents - the ordinary, quiet case this warning always
+    #: covered before ADR-101, and the default here for exactly that reason.
+    invoice_number_match: Literal["same", "missing", "different"] = "different"
 
 
 def normalise_supplier(supplier: str) -> str:
@@ -164,6 +180,20 @@ def normalise_supplier(supplier: str) -> str:
     """
     collapsed = _WHITESPACE.sub(" ", supplier.strip())
     return _EDGE_PUNCTUATION.sub("", collapsed).casefold()
+
+
+def invoice_number_match(
+    subject: str | None, candidate: str | None
+) -> Literal["same", "missing", "different"]:
+    """ADR-101: how two invoice numbers compare, for the one exception to
+    "warn, never block". Whitespace and case never decide it, same posture as
+    `normalise_supplier` - "MSTRL-001" and " mstrl-001 " are the same number.
+    """
+    left = None if subject is None else subject.strip().casefold() or None
+    right = None if candidate is None else candidate.strip().casefold() or None
+    if left is None or right is None:
+        return "missing"
+    return "same" if left == right else "different"
 
 
 def is_exact_match(left: ExpenseTriple, right: ExpenseTriple) -> bool:

@@ -24,10 +24,11 @@ from api.expenses.duplicates import (
     ExpenseTriple,
     describe,
     find_exact_matches,
+    invoice_number_match,
     is_exact_match,
     normalise_supplier,
 )
-from api.expenses.model import ExpenseStatus, VatTreatment
+from api.expenses.model import ConfirmedDuplicateExpense, ExpenseStatus, VatTreatment
 from tests.expenses.duplicate_cases import MATCH_CASES, NORMALISATION_CASES, MatchCase
 from tests.expenses.test_form import complete, harness, update
 
@@ -156,11 +157,42 @@ def test_a_supplier_that_normalises_to_nothing_matches_nothing(junk: str) -> Non
 
 
 # ===========================================================================
+# ADR-101: the one thing that escalates a warning into a block
+# ===========================================================================
+
+
+def test_the_same_invoice_number_is_same() -> None:
+    assert invoice_number_match("2026-0007", "2026-0007") == "same"
+
+
+def test_case_and_whitespace_never_change_the_answer() -> None:
+    assert invoice_number_match(" 2026-0007 ", "2026-0007") == "same"
+    assert invoice_number_match("MSTRL-001", "mstrl-001") == "same"
+
+
+def test_a_different_number_is_different() -> None:
+    assert invoice_number_match("2026-0007", "2026-0008") == "different"
+
+
+@pytest.mark.parametrize(
+    ("subject", "candidate"),
+    [(None, "2026-0007"), ("2026-0007", None), (None, None), ("", "2026-0007"), ("  ", "x")],
+)
+def test_either_side_missing_is_missing(subject: str | None, candidate: str | None) -> None:
+    """A parking ticket has no invoice number at all - nothing here can rule a
+    duplicate out, which is exactly why this is not the quiet "different" case."""
+    assert invoice_number_match(subject, candidate) == "missing"
+
+
+# ===========================================================================
 # Warn, never block - at every layer that could take it away
 # ===========================================================================
 
 
-def _warning(same_submitter: bool = False) -> DuplicateWarning:
+def _warning(
+    same_submitter: bool = False,
+    invoice_number_match: str = "different",
+) -> DuplicateWarning:
     return DuplicateWarning(
         expense_id=uuid.uuid4(),
         strength=DuplicateStrength.EXACT,
@@ -169,6 +201,7 @@ def _warning(same_submitter: bool = False) -> DuplicateWarning:
         gross_amount=AMOUNT,
         status="posted",
         same_submitter=same_submitter,
+        invoice_number_match=invoice_number_match,  # type: ignore[arg-type]
     )
 
 
@@ -215,6 +248,55 @@ async def test_can_be_marked_ready_does_not_consult_the_warnings() -> None:
     assert len(view.duplicate_warnings) == 2
     assert view.missing_fields == ()
     assert view.can_be_marked_ready is True
+
+
+async def test_a_confirmed_duplicate_blocks_submission() -> None:
+    """ADR-101's one exception: the invoice number matches too, which is
+    near-certain the same document rather than a look-alike claim."""
+    h = harness()
+    h.repository.duplicates = [_warning(invoice_number_match="same")]
+    await complete(h)
+
+    view = await h.service.view(
+        administration_id=h.administration,
+        expense_id=h.expense_id,
+        actor_user_id=h.user,
+    )
+
+    assert view.missing_fields == ()
+    assert view.has_confirmed_duplicate is True
+    assert view.can_be_marked_ready is False
+
+    with pytest.raises(ConfirmedDuplicateExpense):
+        await h.service.mark_ready(
+            administration_id=h.administration,
+            expense_id=h.expense_id,
+            actor_user_id=h.user,
+        )
+
+
+async def test_a_missing_invoice_number_does_not_block() -> None:
+    """A parking ticket has no number to compare - ADR-101 still warns loudly
+    for this case (a client's concern), but does not block."""
+    h = harness()
+    h.repository.duplicates = [_warning(invoice_number_match="missing")]
+    await complete(h)
+
+    view = await h.service.view(
+        administration_id=h.administration,
+        expense_id=h.expense_id,
+        actor_user_id=h.user,
+    )
+
+    assert view.has_confirmed_duplicate is False
+    assert view.can_be_marked_ready is True
+
+    ready = await h.service.mark_ready(
+        administration_id=h.administration,
+        expense_id=h.expense_id,
+        actor_user_id=h.user,
+    )
+    assert ready.expense.status is ExpenseStatus.READY
 
 
 async def test_the_submission_records_that_warnings_were_outstanding() -> None:

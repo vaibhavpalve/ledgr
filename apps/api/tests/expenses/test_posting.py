@@ -19,7 +19,9 @@ import pytest
 
 from api.audit.log import AuditCategory, AuditLog, AuditOutcome
 from api.authz.service import AuthorizationService
+from api.expenses.duplicates import DuplicateStrength, DuplicateWarning, ExpenseTriple
 from api.expenses.model import (
+    ConfirmedDuplicateExpense,
     Expense,
     ExpenseStatus,
     IncompleteExpense,
@@ -108,6 +110,8 @@ class FakePostingRepository:
     #: Simulates the repair call itself failing (a function missing in the database, a transient
     #: error) - production hit exactly this once, as a raw 500 instead of the original refusal.
     repair_raises: bool = False
+    #: FR-EXP-001g/ADR-101. Empty by default: most tests here post a clean claim.
+    duplicates: list[DuplicateWarning] = field(default_factory=list)
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
@@ -129,6 +133,16 @@ class FakePostingRepository:
         if self.repair_raises:
             raise RuntimeError("app.ensure_posting_defaults(unknown) does not exist")
         self.accounts.update(self.repairs)
+
+    async def duplicate_candidates(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        triple: ExpenseTriple,
+        invoice_number: str | None,
+    ) -> list[DuplicateWarning]:
+        return list(self.duplicates)
 
     async def open_period_for(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
         return self.open_periods.get(on)
@@ -446,6 +460,54 @@ async def test_an_incomplete_claim_cannot_be_posted() -> None:
         await post(h)
 
     assert h.ledger_repository.posted == [], "nothing reached the ledger"
+
+
+async def test_a_confirmed_duplicate_is_refused_even_posting_directly() -> None:
+    """FR-EXP-001g/ADR-101, enforced here too - not only in `mark_ready`
+    (api.expenses.form) - because `post` can confirm a complete DRAFT in one
+    step, bypassing mark_ready entirely (this test's whole point)."""
+    h = harness()
+    other = uuid.uuid4()
+    h.repository.duplicates = [
+        DuplicateWarning(
+            expense_id=other,
+            strength=DuplicateStrength.EXACT,
+            supplier="Albert Heijn",
+            on=date(2025, 6, 1),
+            gross_amount=Decimal("121.00"),
+            status="posted",
+            same_submitter=True,
+            invoice_number_match="same",
+        )
+    ]
+
+    with pytest.raises(ConfirmedDuplicateExpense) as raised:
+        await post(h)
+
+    assert raised.value.matching_expense_ids == (other,)
+    assert h.ledger_repository.posted == [], "nothing reached the ledger"
+
+
+async def test_an_unconfirmed_duplicate_still_posts() -> None:
+    """The ordinary case (a different or missing invoice number) is still
+    only a warning here too - posting is not where FR-EXP-001g's line moved."""
+    h = harness()
+    h.repository.duplicates = [
+        DuplicateWarning(
+            expense_id=uuid.uuid4(),
+            strength=DuplicateStrength.EXACT,
+            supplier="Albert Heijn",
+            on=date(2025, 6, 1),
+            gross_amount=Decimal("121.00"),
+            status="posted",
+            same_submitter=True,
+            invoice_number_match="different",
+        )
+    ]
+
+    await post(h)
+
+    assert len(h.ledger_repository.posted) == 1
 
 
 async def test_posting_twice_is_refused() -> None:

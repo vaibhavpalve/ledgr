@@ -337,6 +337,7 @@ describe("duplicate warnings warn and never block — FR-EXP-001g", () => {
         status: "ready",
         same_submitter: sameSubmitter,
         similarity: 0.97,
+        invoice_number_match: "different",
       },
     ],
   });
@@ -362,6 +363,82 @@ describe("duplicate warnings warn and never block — FR-EXP-001g", () => {
     render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(false)} api={api()} />);
 
     expect(screen.getByTestId("expense-duplicate").textContent).toContain("Iemand anders");
+  });
+
+  it("shows no loud styling and no invoice-number line for the ordinary case", async () => {
+    render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(false)} api={api()} />, "en");
+
+    expect(screen.getByTestId("expense-duplicates").className).not.toContain("--attention");
+    expect(screen.queryByTestId("expense-duplicate-invoice-number-match")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicate-confirmed")).toBeNull();
+  });
+});
+
+describe("a confirmed duplicate blocks submission — ADR-101", () => {
+  const confirmed: ExpenseView = {
+    ...complete,
+    can_be_marked_ready: false,
+    duplicate_warnings: [
+      {
+        expense_id: "exp-9",
+        strength: "strong",
+        supplier: "Mistral AI SAS",
+        expense_date: "2026-09-28",
+        gross_amount: "10.00",
+        status: "ready",
+        same_submitter: true,
+        similarity: 1,
+        invoice_number_match: "same",
+      },
+    ],
+  };
+
+  it("shows the loud styling and the confirmed message", async () => {
+    render(<ExpenseForm administrationId="adm-A" expense={confirmed} api={api()} />, "en");
+
+    expect(screen.getByTestId("expense-duplicates").className).toContain("--attention");
+    expect(screen.getByTestId("expense-duplicate-confirmed").textContent).toContain(
+      "cannot be submitted",
+    );
+    expect(screen.getByTestId("expense-duplicate-invoice-number-match").textContent).toContain(
+      "same invoice number",
+    );
+  });
+
+  it("disables the submit button, unlike an ordinary duplicate", async () => {
+    render(<ExpenseForm administrationId="adm-A" expense={confirmed} api={api()} />);
+
+    expect(screen.getByTestId("expense-submit").hasAttribute("disabled")).toBe(true);
+  });
+});
+
+describe("a duplicate with no invoice number to compare warns loudly — ADR-101", () => {
+  const missingNumber: ExpenseView = {
+    ...complete,
+    duplicate_warnings: [
+      {
+        expense_id: "exp-9",
+        strength: "strong",
+        supplier: "Parkeergarage Centrum",
+        expense_date: "2026-09-28",
+        gross_amount: "4.50",
+        status: "ready",
+        same_submitter: true,
+        similarity: 1,
+        invoice_number_match: "missing",
+      },
+    ],
+  };
+
+  it("shows the loud styling but leaves submitting possible", async () => {
+    render(<ExpenseForm administrationId="adm-A" expense={missingNumber} api={api()} />, "en");
+
+    expect(screen.getByTestId("expense-duplicates").className).toContain("--attention");
+    expect(screen.getByTestId("expense-duplicate-invoice-number-match").textContent).toContain(
+      "no invoice number",
+    );
+    expect(screen.queryByTestId("expense-duplicate-confirmed")).toBeNull();
+    expect(screen.getByTestId("expense-submit").hasAttribute("disabled")).toBe(false);
   });
 });
 

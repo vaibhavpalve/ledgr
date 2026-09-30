@@ -132,6 +132,7 @@ class FakeFormRepository:
         administration_id: uuid.UUID,
         expense_id: uuid.UUID,
         triple: ExpenseTriple,
+        invoice_number: str | None,
     ) -> list[DuplicateWarning]:
         assert triple.is_complete, "the form must not look up an incomplete triple"
         self.duplicate_lookups += 1

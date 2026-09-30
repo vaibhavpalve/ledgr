@@ -75,6 +75,7 @@ from api.expenses.form import ExpenseFormService, ExpenseView
 from api.expenses.model import (
     CaptureSession,
     CaptureSource,
+    ConfirmedDuplicateExpense,
     EmptySession,
     Expense,
     ExpenseAlreadyReady,
@@ -598,9 +599,10 @@ def _expense_json(view: ExpenseView) -> dict[str, object]:
         # time.
         "missing_fields": list(view.missing_fields),
         "can_be_marked_ready": view.can_be_marked_ready,
-        # FR-EXP-001g. Present alongside `can_be_marked_ready: true` on
-        # purpose: these WARN and never block, so a client showing them must
-        # not gate the submit button on them being empty.
+        # FR-EXP-001g/ADR-101. `can_be_marked_ready` already reflects whether a
+        # CONFIRMED duplicate (invoice_number_match: "same") is blocking this
+        # claim - a client does not need to re-derive that from the list
+        # below, only decide how loudly to show it (see invoice_number_match).
         "duplicate_warnings": [
             {
                 "expense_id": str(warning.expense_id),
@@ -615,6 +617,7 @@ def _expense_json(view: ExpenseView) -> dict[str, object]:
                 # what one's colleagues have been spending.
                 "same_submitter": warning.same_submitter,
                 "similarity": warning.similarity,
+                "invoice_number_match": warning.invoice_number_match,
             }
             for warning in view.duplicate_warnings
         ],
@@ -821,6 +824,14 @@ async def mark_expense_ready(
             reason="expense_incomplete",
             missing_fields=list(exc.missing),
         ) from exc
+    except ConfirmedDuplicateExpense as exc:
+        raise problem(
+            request,
+            409,
+            "errors.expense_confirmed_duplicate",
+            reason="expense_confirmed_duplicate",
+            matching_expense_ids=[str(i) for i in exc.matching_expense_ids],
+        ) from exc
     return _expense_json(view)
 
 
@@ -975,6 +986,14 @@ async def post_expense(
             "errors.expense_incomplete",
             reason="expense_incomplete",
             missing_fields=list(exc.missing),
+        ) from exc
+    except ConfirmedDuplicateExpense as exc:
+        raise problem(
+            request,
+            409,
+            "errors.expense_confirmed_duplicate",
+            reason="expense_confirmed_duplicate",
+            matching_expense_ids=[str(i) for i in exc.matching_expense_ids],
         ) from exc
     except PostingConfigurationMissing as exc:
         # 409 rather than 422: the CLAIM is fine, the administration is not

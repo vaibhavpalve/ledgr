@@ -61,6 +61,7 @@ from api.authz.model import (
 from api.authz.service import AuthorizationService
 from api.expenses.duplicates import DuplicateWarning, ExpenseTriple, describe
 from api.expenses.model import (
+    ConfirmedDuplicateExpense,
     Expense,
     ExpenseAlreadyReady,
     ExpenseNotFound,
@@ -107,10 +108,11 @@ class ExpenseView:
     #: amount. Empty until all three are known, which is the normal state of a
     #: form somebody is still filling in.
     #:
-    #: These NEVER prevent anything - see `can_be_marked_ready`, which does not
-    #: consult them. Legitimate duplicates are ordinary, and a system that
-    #: refused them would be wrong about the money and would teach people to
-    #: work around it.
+    #: Almost never prevent anything - see `can_be_marked_ready`, which is
+    #: blind to every warning except one specific shape (ADR-101). Legitimate
+    #: duplicates are ordinary, and a system that refused them on looks alone
+    #: would be wrong about the money and would teach people to work around
+    #: it.
     duplicate_warnings: tuple[DuplicateWarning, ...] = ()
     #: The first stored original of the receipt, so the review screen can show
     #: what the fields were read from beside the fields. None for an expense with
@@ -118,15 +120,25 @@ class ExpenseView:
     document_id: uuid.UUID | None = None
 
     @property
-    def can_be_marked_ready(self) -> bool:
-        """Deliberately blind to `duplicate_warnings`.
+    def has_confirmed_duplicate(self) -> bool:
+        """ADR-101's one exception to warn-never-block: a warning whose
+        invoice number ALSO matches. A real supplier essentially never reuses
+        one, so this is near-certain the same document rather than a
+        look-alike claim."""
+        return any(w.invoice_number_match == "same" for w in self.duplicate_warnings)
 
-        FR-EXP-001g says warn, and this is the property that would quietly turn
-        that into "block" if somebody added `and not self.duplicate_warnings`
-        to it. tests/expenses/test_duplicates.py asserts a claim with warnings
-        can still be submitted and still be posted.
+    @property
+    def can_be_marked_ready(self) -> bool:
+        """Blind to `duplicate_warnings`, except a confirmed one (ADR-101).
+
+        FR-EXP-001g says warn, and this is the property that would quietly
+        turn that into "block" for every look-alike claim if somebody added
+        `and not self.duplicate_warnings` to it - tests/expenses/
+        test_duplicates.py asserts a claim with an ordinary warning can still
+        be submitted and still be posted. A CONFIRMED duplicate (the same
+        invoice number too) is the one case ADR-101 draws the line at.
         """
-        return not self.missing_fields
+        return not self.missing_fields and not self.has_confirmed_duplicate
 
     @property
     def has_duplicate_warning(self) -> bool:
@@ -164,11 +176,15 @@ class ExpenseFormRepository(Protocol):
         administration_id: uuid.UUID,
         expense_id: uuid.UUID,
         triple: ExpenseTriple,
+        invoice_number: str | None,
     ) -> Sequence[DuplicateWarning]:
         """FR-EXP-001g. Existing claims matching this one's triple.
 
         Returns rather than raises, at every layer: nothing about a duplicate
-        is an error.
+        is an error. `invoice_number` is not part of the triple - FR-EXP-001g
+        names supplier/date/amount as what a duplicate is matched ON - but
+        ADR-101 uses it to tell "the same document, twice" apart from "two
+        documents that happen to look alike".
         """
         ...
 
@@ -355,11 +371,22 @@ class ExpenseFormService:
         if expense.missing_fields:
             raise IncompleteExpense(expense.missing_fields)
 
-        # FR-EXP-001g: read BEFORE the write, and used for nothing but the
-        # record. A warning outstanding at submission does not stop it - the
-        # requirement says warn - but an approver reading this entry later
-        # should be able to see what the submitter saw.
+        # FR-EXP-001g/ADR-101: read BEFORE the write. Mostly this is just the
+        # record - a warning outstanding at submission does not stop it, the
+        # requirement says warn - but a CONFIRMED duplicate (the same invoice
+        # number too, near-certain the same document) is the one exception,
+        # and this is also where that gets enforced, not only displayed:
+        # `ExpenseView.can_be_marked_ready` disables a client's button, but
+        # nothing stops a direct call here without this check too.
         outstanding = await self._view_of(expense, actor_user_id)
+        if outstanding.has_confirmed_duplicate:
+            raise ConfirmedDuplicateExpense(
+                tuple(
+                    w.expense_id
+                    for w in outstanding.duplicate_warnings
+                    if w.invoice_number_match == "same"
+                )
+            )
 
         updated = await self._repository.set_status(
             administration_id=administration_id,
@@ -437,6 +464,7 @@ class ExpenseFormService:
                 administration_id=expense.administration_id,
                 expense_id=expense.id,
                 triple=triple,
+                invoice_number=expense.invoice_number,
             )
 
         return ExpenseView(
