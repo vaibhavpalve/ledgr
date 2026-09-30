@@ -387,17 +387,9 @@
       "nl": "Gebruiken",
       "en": "Use it"
     },
-    "capture.form.save": {
-      "nl": "Opslaan",
-      "en": "Save"
-    },
     "capture.form.saving": {
       "nl": "Bezig met opslaan…",
       "en": "Saving…"
-    },
-    "capture.form.saved": {
-      "nl": "Opgeslagen",
-      "en": "Saved"
     },
     "capture.form.mark_ready": {
       "note": "Releases the claim to FR-EXP-002's approval. Not 'submit', which would suggest the money is moving.",

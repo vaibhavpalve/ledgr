@@ -120,7 +120,6 @@ export function ExpenseForm({
   const { t, money, date, language } = useI18n();
   const [draft, setDraft] = useState<ExpenseFormPatch>({});
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [reading, setReading] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -146,42 +145,38 @@ export function ExpenseForm({
 
   const edit = (patch: ExpenseFormPatch) => {
     setDraft((current) => ({ ...current, ...patch }));
-    setSaved(false);
   };
 
-  const write = useCallback(
-    async (action: "save" | "submit") => {
-      setSaving(true);
-      setProblem(null);
-      try {
-        // Only what was touched. PATCH rather than PUT is load-bearing on the
-        // server too: an omitted field must not mean "clear it", or saving one
-        // changed field would wipe the other five.
-        // The gross amount as typed ("121,00") is sent as the API reads it ("121.00").
-        const patch: ExpenseFormPatch =
-          typeof draft.gross_amount === "string"
-            ? { ...draft, gross_amount: toDecimalInput(draft.gross_amount, language) }
-            : draft;
-        const afterSave =
-          Object.keys(patch).length > 0
-            ? await api.updateExpense(administrationId, expense.id, patch)
-            : expense;
-        const next =
-          action === "submit" ? await api.markReady(administrationId, expense.id) : afterSave;
-        setDraft({});
-        setSaved(true);
-        onChanged?.(next);
-      } catch (error) {
-        // The API's sentence, already translated into the reader's language by
-        // the server (FR-UX-007). Shown rather than replaced, because it names
-        // the specific refusal and this screen would only be guessing.
-        setProblem(error instanceof Error ? error.message : "");
-      } finally {
-        setSaving(false);
+  // Submit is the form's one action: it saves whatever was typed, then
+  // releases the claim - a person never has to remember to save first.
+  const submit = useCallback(async () => {
+    if (!expense.can_be_marked_ready) return;
+    setSaving(true);
+    setProblem(null);
+    try {
+      // Only what was touched. PATCH rather than PUT is load-bearing on the
+      // server too: an omitted field must not mean "clear it", or saving one
+      // changed field would wipe the other five.
+      // The gross amount as typed ("121,00") is sent as the API reads it ("121.00").
+      const patch: ExpenseFormPatch =
+        typeof draft.gross_amount === "string"
+          ? { ...draft, gross_amount: toDecimalInput(draft.gross_amount, language) }
+          : draft;
+      if (Object.keys(patch).length > 0) {
+        await api.updateExpense(administrationId, expense.id, patch);
       }
-    },
-    [administrationId, api, draft, expense, language, onChanged],
-  );
+      const next = await api.markReady(administrationId, expense.id);
+      setDraft({});
+      onChanged?.(next);
+    } catch (error) {
+      // The API's sentence, already translated into the reader's language by
+      // the server (FR-UX-007). Shown rather than replaced, because it names
+      // the specific refusal and this screen would only be guessing.
+      setProblem(error instanceof Error ? error.message : "");
+    } finally {
+      setSaving(false);
+    }
+  }, [administrationId, api, draft, expense, language, onChanged]);
 
   return (
     <form
@@ -189,7 +184,7 @@ export function ExpenseForm({
       aria-label={t("capture.form.title")}
       onSubmit={(event) => {
         event.preventDefault();
-        void write("save");
+        void submit();
       }}
     >
       <h2>{t("capture.form.title")}</h2>
@@ -394,27 +389,18 @@ export function ExpenseForm({
             </p>
           ) : null}
 
-          {saved ? (
-            <p role="status" data-testid="expense-saved">
-              {t("capture.form.saved")}
-            </p>
-          ) : null}
-
-          <button type="submit" disabled={saving} data-testid="expense-save">
-            {saving ? t("capture.form.saving") : t("capture.form.save")}
-          </button>
-
           {/*
             Disabled only on what the SERVER says is missing — never on the
-            duplicate warnings, which warn and do not block (FR-EXP-001g).
+            duplicate warnings, which warn and do not block a person's own
+            submit (FR-EXP-001g; only automatic submission skips a duplicate,
+            see InvoiceExtractionService._submit_if_vat_is_certain).
           */}
           <button
-            type="button"
+            type="submit"
             disabled={saving || !expense.can_be_marked_ready}
             data-testid="expense-submit"
-            onClick={() => void write("submit")}
           >
-            {t("capture.form.mark_ready")}
+            {saving ? t("capture.form.saving") : t("capture.form.mark_ready")}
           </button>
         </>
       ) : null}

@@ -180,7 +180,6 @@ describe("a certain VAT rate submits without a person — FR-EXP-001c", () => {
       "expense-gross-amount",
       "expense-vat-treatment",
       "expense-category",
-      "expense-save",
       "expense-submit",
     ]) {
       expect(screen.queryByTestId(field)).toBeNull();
@@ -232,31 +231,16 @@ describe("the form asks for the minimum — FR-EXP-001b", () => {
   });
 });
 
-describe("nothing blocks — FR-EXP-001c", () => {
-  it("saves a form with only one field filled in", async () => {
-    // "The product never blocks on extraction being available." A partly
-    // filled expense is the normal state, not an error.
-    const calls = api();
-    render(<ExpenseForm administrationId="adm-A" expense={blank} api={calls} />);
-
-    fireEvent.change(screen.getByTestId("expense-supplier"), { target: { value: "Café Central" } });
-    fireEvent.click(screen.getByTestId("expense-save"));
-
-    await waitFor(() =>
-      expect(calls.updateExpense).toHaveBeenCalledWith("adm-A", "exp-1", {
-        supplier: "Café Central",
-      }),
-    );
-  });
-
-  it("sends only the fields that were touched", async () => {
-    // PATCH, not PUT: an omitted field must not mean "clear it", or saving one
-    // change would wipe the other five.
+describe("nothing blocks filling the form in, only submitting it — FR-EXP-001c", () => {
+  it("sends only the fields that were touched, alongside submitting", async () => {
+    // PATCH, not PUT: an omitted field must not mean "clear it", or one
+    // changed field would wipe the other five. There is one button now
+    // (submit), so touching a field and submitting is the only path there is.
     const calls = api();
     render(<ExpenseForm administrationId="adm-A" expense={complete} api={calls} />);
 
     fireEvent.change(screen.getByTestId("expense-category"), { target: { value: "Reiskosten" } });
-    fireEvent.click(screen.getByTestId("expense-save"));
+    fireEvent.click(screen.getByTestId("expense-submit"));
 
     await waitFor(() =>
       expect(calls.updateExpense).toHaveBeenCalledWith("adm-A", "exp-1", {
@@ -280,12 +264,12 @@ describe("money never goes through a float — NFR-031", () => {
     // JSON has one number type and it is a double. A round trip through
     // `Number()` loses the value before the server can see it.
     const calls = api();
-    render(<ExpenseForm administrationId="adm-A" expense={blank} api={calls} />);
+    render(<ExpenseForm administrationId="adm-A" expense={complete} api={calls} />);
 
     fireEvent.change(screen.getByTestId("expense-gross-amount"), {
       target: { value: "1234.56" },
     });
-    fireEvent.click(screen.getByTestId("expense-save"));
+    fireEvent.click(screen.getByTestId("expense-submit"));
 
     await waitFor(() => {
       const patch = vi.mocked(calls.updateExpense).mock.calls[0]?.[2];
@@ -414,15 +398,5 @@ describe("submitting", () => {
     await waitFor(() =>
       expect(screen.getByTestId("expense-problem").textContent).toContain("mist nog een categorie"),
     );
-  });
-
-  it("reports the saved state so a person knows the work is not lost", async () => {
-    const calls = api();
-    render(<ExpenseForm administrationId="adm-A" expense={complete} api={calls} />);
-
-    fireEvent.change(screen.getByTestId("expense-supplier"), { target: { value: "Hotel Zon" } });
-    fireEvent.click(screen.getByTestId("expense-save"));
-
-    await waitFor(() => expect(screen.getByTestId("expense-saved")).toBeDefined());
   });
 });
