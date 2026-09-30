@@ -119,7 +119,7 @@
     },
     "bank.split.open_amount": {
       "note": "Beside each invoice offered in the split panel - what it is still open for.",
-      "nl": "open: {amount}",
+      "nl": "nog {amount} open",
       "en": "open: {amount}"
     },
     "bank.split.total": {

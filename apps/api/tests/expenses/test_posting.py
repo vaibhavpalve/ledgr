@@ -101,6 +101,10 @@ class FakePostingRepository:
     open_periods: dict[date, uuid.UUID] = field(default_factory=dict)
     linked: list[tuple[uuid.UUID, uuid.UUID]] = field(default_factory=list)
     documents_per_expense: int = 2
+    #: What `ensure_posting_defaults` "fixes", simulating ADR-086's repair - keyed the same way
+    #: `accounts` is. Empty by default: most tests' gaps are genuine and survive the repair.
+    repairs: dict[tuple[str, str | None], uuid.UUID] = field(default_factory=dict)
+    ensure_posting_defaults_calls: int = 0
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
@@ -116,6 +120,10 @@ class FakePostingRepository:
                 ("expense_category", None)
             )
         return self.accounts.get((purpose, None))
+
+    async def ensure_posting_defaults(self, *, administration_id: uuid.UUID) -> None:
+        self.ensure_posting_defaults_calls += 1
+        self.accounts.update(self.repairs)
 
     async def open_period_for(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
         return self.open_periods.get(on)
@@ -455,6 +463,10 @@ async def test_posting_twice_is_refused() -> None:
 async def test_a_missing_account_mapping_is_named_not_guessed(purpose: str) -> None:
     """Configuration that has not been done is visible; a wrong guess is not,
     and a lunch in "Loonheffingen" is found by an accountant months later.
+
+    One repair is attempted first (`ensure_posting_defaults`, re-run for this
+    administration) - it is a genuine gap here because the fake's `repairs`
+    is empty, so it survives that attempt and still reaches a person.
     """
     h = harness()
     del h.repository.accounts[(purpose, None)]
@@ -464,6 +476,22 @@ async def test_a_missing_account_mapping_is_named_not_guessed(purpose: str) -> N
 
     assert raised.value.purpose == purpose
     assert h.ledger_repository.posted == []
+    assert h.repository.ensure_posting_defaults_calls == 1
+
+
+async def test_a_missing_mapping_that_the_repair_fixes_posts_without_a_person() -> None:
+    """An administration onboarded before a later migration added a posting purpose (ADR-092's
+    Kruisposten mapping, for one) never had the chance to run `ensure_posting_defaults` for it.
+    The first posting under that purpose repairs it and succeeds, rather than refusing for a gap
+    a person would otherwise have no way to fix themselves."""
+    h = harness()
+    del h.repository.accounts[("business_account", None)]
+    h.repository.repairs = {("business_account", None): BANK_ACCOUNT}
+
+    await post(h)
+
+    assert h.repository.ensure_posting_defaults_calls == 1
+    assert len(h.ledger_repository.posted) == 1
 
 
 async def test_an_administration_with_no_vat_never_needs_a_vat_account() -> None:

@@ -153,6 +153,11 @@ class ExpensePostingRepository(Protocol):
         """
         ...
 
+    async def ensure_posting_defaults(self, *, administration_id: uuid.UUID) -> None:
+        """ADR-086's onboarding step, re-run as a repair. Idempotent: fills only what is still
+        unset or still holds an earlier default's value, never a mapping set on purpose."""
+        ...
+
     async def purchase_journal(self, *, administration_id: uuid.UUID) -> uuid.UUID | None: ...
 
     async def mark_posted(
@@ -304,7 +309,26 @@ class ExpensePostingService:
     # -- internals ---------------------------------------------------------
 
     async def _resolve_accounts(self, expense: Expense) -> PostingAccounts:
-        """Every account this entry needs, or a refusal naming the first gap."""
+        """Every account this entry needs, or a refusal naming the first gap.
+
+        One repair is attempted before refusing: `ensure_posting_defaults` re-run for this
+        administration (ADR-086's onboarding step, idempotent - see
+        `SqlCaptureRepository.ensure_posting_defaults`). An administration onboarded before a
+        later migration added a posting purpose (ADR-092's Kruisposten mapping, for one) never
+        had the chance to run it the first time; this is what lets its first posting under the
+        new purpose succeed without anyone having to know a repair exists, let alone ask for
+        one. Only a genuine gap - a category truly never mapped, a chart with no bank account at
+        all - survives the retry and is what actually reaches a person as a refusal.
+        """
+        try:
+            return await self._resolve_accounts_once(expense)
+        except PostingConfigurationMissing:
+            await self._repository.ensure_posting_defaults(
+                administration_id=expense.administration_id
+            )
+            return await self._resolve_accounts_once(expense)
+
+    async def _resolve_accounts_once(self, expense: Expense) -> PostingAccounts:
         administration_id = expense.administration_id
 
         expense_account = await self._repository.account_for(

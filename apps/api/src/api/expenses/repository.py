@@ -580,6 +580,19 @@ class SqlCaptureRepository:
         )
         return result.scalar_one_or_none()
 
+    async def ensure_posting_defaults(self, *, administration_id: uuid.UUID) -> None:
+        """Re-runs ADR-086's onboarding step for an administration that already exists.
+
+        Idempotent by design (`app.ensure_posting_defaults`'s own body): it only fills a mapping
+        that is still unset, or repoints one that still holds an EARLIER default's value, never
+        one a person set on purpose. Called as a repair, not only at onboarding, because an
+        administration created before a later migration added a new posting purpose (ADR-092's
+        Kruisposten mapping, for one) never had the chance to run this the first time.
+        """
+        await self._session.execute(
+            text("SELECT app.ensure_posting_defaults(:admin)"), {"admin": str(administration_id)}
+        )
+
     async def open_period_for(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
         """The OPEN period containing `on`.
 
