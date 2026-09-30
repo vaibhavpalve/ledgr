@@ -105,6 +105,9 @@ class FakePostingRepository:
     #: `accounts` is. Empty by default: most tests' gaps are genuine and survive the repair.
     repairs: dict[tuple[str, str | None], uuid.UUID] = field(default_factory=dict)
     ensure_posting_defaults_calls: int = 0
+    #: Simulates the repair call itself failing (a function missing in the database, a transient
+    #: error) - production hit exactly this once, as a raw 500 instead of the original refusal.
+    repair_raises: bool = False
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
@@ -123,6 +126,8 @@ class FakePostingRepository:
 
     async def ensure_posting_defaults(self, *, administration_id: uuid.UUID) -> None:
         self.ensure_posting_defaults_calls += 1
+        if self.repair_raises:
+            raise RuntimeError("app.ensure_posting_defaults(unknown) does not exist")
         self.accounts.update(self.repairs)
 
     async def open_period_for(self, *, administration_id: uuid.UUID, on: date) -> uuid.UUID | None:
@@ -492,6 +497,22 @@ async def test_a_missing_mapping_that_the_repair_fixes_posts_without_a_person() 
 
     assert h.repository.ensure_posting_defaults_calls == 1
     assert len(h.ledger_repository.posted) == 1
+
+
+async def test_a_failed_repair_falls_back_to_the_original_refusal_not_a_crash() -> None:
+    """Production hit this once for real: `ensure_posting_defaults` itself raised
+    (`UndefinedFunctionError`), and it surfaced as a raw 500 instead of the plain, actionable
+    refusal a person had already been shown before this repair existed. The repair attempt must
+    never be able to make things worse than not attempting it at all."""
+    h = harness()
+    del h.repository.accounts[("business_account", None)]
+    h.repository.repair_raises = True
+
+    with pytest.raises(PostingConfigurationMissing) as raised:
+        await post(h)
+
+    assert raised.value.purpose == "business_account"
+    assert h.ledger_repository.posted == []
 
 
 async def test_an_administration_with_no_vat_never_needs_a_vat_account() -> None:

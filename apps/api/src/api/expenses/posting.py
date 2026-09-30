@@ -57,6 +57,7 @@ because migration 0035 records the treatment on the line.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import date
@@ -86,6 +87,8 @@ from api.ledger.service import LedgerService
 #: §8.4 lets an Expense Submitter submit a claim and not post one, and that
 #: separation is the point (SoD). Reused rather than invented, per ADR-012.
 POST_JOURNAL_ENTRY = ("post", "journal_entry")
+
+logger = logging.getLogger(__name__)
 
 
 class PostingConfigurationMissing(Exception):
@@ -322,10 +325,22 @@ class ExpensePostingService:
         """
         try:
             return await self._resolve_accounts_once(expense)
-        except PostingConfigurationMissing:
-            await self._repository.ensure_posting_defaults(
-                administration_id=expense.administration_id
-            )
+        except PostingConfigurationMissing as gap:
+            # The repair attempt itself must never be what a person sees: if it fails for any
+            # reason (a function genuinely missing in this database, a transient error), that is
+            # strictly worse than the plain, actionable refusal this except clause already has in
+            # hand - never a raw 500 in its place.
+            try:
+                await self._repository.ensure_posting_defaults(
+                    administration_id=expense.administration_id
+                )
+            except Exception:  # noqa: BLE001 - see above; the original refusal below is what matters
+                logger.warning(
+                    "posting-defaults repair failed for administration %s; "
+                    "falling back to the original refusal",
+                    expense.administration_id,
+                )
+                raise gap from None
             return await self._resolve_accounts_once(expense)
 
     async def _resolve_accounts_once(self, expense: Expense) -> PostingAccounts:
