@@ -13,6 +13,13 @@ project-7a7785ad-6667-4be9-ad4-*.json
 # of it belongs in the repo.
 .devtools/
 
+# `railway config pull`'s snapshot of the live project, generated while
+# diagnosing why preDeployCommand wasn't running. The project still deploys
+# from railway.json (Config as Code) — switching to this Infrastructure as
+# Code format is a separate decision, not something to commit as a side
+# effect of a diagnostic pull.
+.railway/
+
 # Agent skills installed with `npx skills add`. These configure whoever is
 # working on the repo, not the repo itself — a different person may want a
 # different set, and they run with full agent permissions, so they are not
