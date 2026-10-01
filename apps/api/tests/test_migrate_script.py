@@ -138,6 +138,23 @@ def test_a_crlf_digest_recorded_earlier_is_not_mistaken_for_an_edit(tmp_path: Pa
     assert recorded_then not in module.accepted_checksums(migration)
 
 
+def test_a_crlf_digest_still_matches_the_lf_checkout_of_the_same_file(tmp_path: Path) -> None:
+    """Git stores 0052-0061 with LF but production recorded their CRLF digests, so a
+    GitHub-triggered build (LF checkout) must not read them as edited.
+    """
+    import hashlib
+
+    module = _load()
+    migration = tmp_path / "0001_a.sql"
+    migration.write_bytes(b"begin;\ncommit;\n")
+    recorded_then = hashlib.sha256(b"begin;\r\ncommit;\r\n").hexdigest()
+
+    assert recorded_then in module.accepted_checksums(migration)
+
+    migration.write_bytes(b"begin;\nalter table t add column c int;\ncommit;\n")
+    assert recorded_then not in module.accepted_checksums(migration)
+
+
 def test_the_real_migrations_sort_into_numeric_order() -> None:
     """Zero-padded names make lexicographic order the applied order. A file
     added as `051_x.sql` would sort before `0001_` and silently reorder

@@ -86,8 +86,20 @@ def accepted_checksums(migration: Path) -> set[str]:
     newline-normalised text. Same SQL, different digest - flagging that as an
     edit made production refuse every later migration. A line-ending difference
     is not an edit, so the raw-bytes digest is accepted as well.
+
+    The same holds in the other direction: git stores those files with LF, so a
+    build from a GitHub checkout (Linux) reads LF bytes while the recorded
+    digest is of the CRLF bytes a Windows `railway up` uploaded. The CRLF form
+    of the normalised text is accepted too, so the file reads as unchanged
+    whichever way it was checked out.
     """
-    return {checksum(migration), hashlib.sha256(migration.read_bytes()).hexdigest()}
+    text = migration.read_text(encoding="utf-8-sig")
+    crlf = text.replace("\n", "\r\n").encode("utf-8")
+    return {
+        checksum(migration),
+        hashlib.sha256(migration.read_bytes()).hexdigest(),
+        hashlib.sha256(crlf).hexdigest(),
+    }
 
 
 def _migrations() -> list[Path]:
