@@ -435,7 +435,7 @@ class EmailInvoiceChannel:
                 else _body(request.invoice, language, custom_message=request.custom_message)
             ),
             from_address=self._from_address,
-            # The SUPPLIER's name, not LEDGR's: the customer is receiving an
+            # The SUPPLIER's name, not Boeklite's: the customer is receiving an
             # invoice from their supplier, and a sender line naming the
             # bookkeeping software is how an invoice ends up in a spam folder.
             from_name=self._from_name or request.invoice.supplier_name,
@@ -496,7 +496,7 @@ def _body(
     blended into the fixed sentences above or below it: the amount, due date
     and "questions go to the supplier" lines are the facts a recipient needs
     regardless of what the sender typed, and a label ("A note from <supplier>")
-    keeps the sender's own words visibly separate from LEDGR's fixed wording -
+    keeps the sender's own words visibly separate from Boeklite's fixed wording -
     the recipient should never wonder which parts of this e-mail the business
     actually wrote.
     """

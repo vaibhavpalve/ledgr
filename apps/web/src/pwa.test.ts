@@ -25,8 +25,8 @@ describe("the installable PWA shell", () => {
       icons: { src: string; sizes: string; type: string }[];
     };
 
-    expect(manifest.name).toBe("LEDGR");
-    expect(manifest.short_name).toBe("LEDGR");
+    expect(manifest.name).toBe("Boeklite");
+    expect(manifest.short_name).toBe("Boeklite");
     expect(manifest.display).toBe("standalone");
     expect(typeof manifest.start_url).toBe("string");
     expect(typeof manifest.background_color).toBe("string");

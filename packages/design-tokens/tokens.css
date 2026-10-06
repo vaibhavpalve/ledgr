@@ -1,5 +1,5 @@
 /*
- * LEDGR design tokens — the stylesheet the browser actually applies.
+ * Boeklite design tokens — the stylesheet the browser actually applies.
  *
  * `src/tokens.ts` is the typed mirror of this file and `src/tokens.test.ts`
  * asserts the two agree, token for token, in both themes. Edit them together
@@ -379,7 +379,7 @@ output {
     "lnum" 1;
 }
 
-/* Monetary figures and page titles — the serif that makes LEDGR recognisable. */
+/* Monetary figures and page titles — the serif that makes Boeklite recognisable. */
 .ledgr-figure {
   font-family: var(--ledgr-font-serif);
   font-weight: var(--ledgr-weight-semibold);

@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     # though the two coincide locally - one is a security boundary passkeys
     # are checked against, the other is where a person is sent.
     app_base_url: str = "http://localhost:5173"
+    # Comma-separated hostnames that redirect to app_base_url (the secondary
+    # domains and www variants) - see api.canonical_host. Empty disables it.
+    redirect_hosts: str = ""
     # Development only. With email_provider=collecting nothing is ever sent;
     # this exposes what WOULD have been sent on GET /v1/dev/outbox so the
     # frontend can read a verification link without a mailbox. The route is
@@ -85,11 +88,11 @@ class Settings(BaseSettings):
 
     # --- WebAuthn passkeys (IAM-010) ---
     # rp_id is the relying party identifier (typically the bare domain,
-    # e.g. "ledgr.nl") - it must be a registrable domain suffix of every
+    # e.g. "boeklite.nl") - it must be a registrable domain suffix of every
     # origin passkeys are used from. webauthn_origin is the full origin
     # (scheme + host [+ port]) checked against clientDataJSON.
     webauthn_rp_id: str = "localhost"
-    webauthn_rp_name: str = "LEDGR"
+    webauthn_rp_name: str = "Boeklite"
     webauthn_origin: str = "http://localhost:5173"
 
     # --- Document archive (FR-DOC, SEC-005) ---
@@ -160,7 +163,7 @@ class Settings(BaseSettings):
     # line (the display name comes from the administration), but the address
     # has to be one this deployment is authorised to send from - SPF and DKIM
     # are published for our domain, not for every client's.
-    email_from_address: str = "noreply@ledgr.example"
+    email_from_address: str = "noreply@boeklite.nl"
 
     # --- Invoice rendering (FR-TPL-017) ---
     # "minimal-pdf" is the only renderer built: one A4 layout, no templates,

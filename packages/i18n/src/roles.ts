@@ -4,7 +4,7 @@
  *
  * --- Two kinds of role, and only one of them is ours ---
  *
- *   SYSTEM roles   the twelve of PRD §8.4. Their names are LEDGR's own
+ *   SYSTEM roles   the twelve of PRD §8.4. Their names are Boeklite's own
  *                  vocabulary, identical in every tenant, and they are
  *                  user-facing text like any other — so they are translated.
  *   CUSTOM roles   composed by an organization (ADR-013, migration 0011).

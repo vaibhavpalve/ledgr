@@ -9,8 +9,8 @@ not know which channel it was.
 
 --- What exists ---
 
-`ManualFiling`: the person filing enters the figures LEDGR shows in Mijn Belastingdienst Zakelijk
-(or their accountant's software), and records the reference the Belastingdienst gave back. LEDGR
+`ManualFiling`: the person filing enters the figures Boeklite shows in Mijn Belastingdienst Zakelijk
+(or their accountant's software), and records the reference the Belastingdienst gave back. Boeklite
 then stores the return exactly as filed and hard-locks the period. This is a complete, honest
 path - the figures, the evidence and the lock are all real - with one step done by a person.
 
@@ -18,7 +18,7 @@ path - the figures, the evidence and the lock are all real - with one step done 
 
 Digipoort needs an XBRL instance against the current NT OB taxonomy, signed and sent over a
 connection authenticated with a PKIoverheid services server certificate issued to the filing
-party. The certificate is the blocker: only the business (or LEDGR as an intermediary, once it
+party. The certificate is the blocker: only the business (or Boeklite as an intermediary, once it
 holds one) can obtain it, and an unsigned or unverified submission to a tax authority is not
 something to ship on a guess. `DigipoortFiling` implements this Protocol when that exists; the
 return service, the table and the screen need no change. ADR-087 records it.

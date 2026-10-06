@@ -70,7 +70,7 @@ def _harness() -> _Harness:
     sessions = SessionService(InMemorySessionRepository())
     totp = TotpService(InMemoryTotpRepository(), _kms(), clock=clock)
     webauthn = WebAuthnService(
-        InMemoryPasskeyRepository(), rp_id=_RP_ID, rp_name="LEDGR Test", expected_origin=_ORIGIN
+        InMemoryPasskeyRepository(), rp_id=_RP_ID, rp_name="Boeklite Test", expected_origin=_ORIGIN
     )
     recovery_log = InMemoryAccountRecoveryEventRepository()
     service = AccountRecoveryService(

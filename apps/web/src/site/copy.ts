@@ -30,7 +30,7 @@ export const COPY = {
   capture: {
     eyebrow: "CAPTURE",
     title: "Snap a photo. We book it.",
-    lead: "Photograph a receipt from your phone, even with no signal. Ledgr reads the supplier, date, total and BTW, proposes the entry and books it the moment you are back online.",
+    lead: "Photograph a receipt from your phone, even with no signal. Boeklite reads the supplier, date, total and BTW, proposes the entry and books it the moment you are back online.",
     ticks: [
       "Works offline, syncs when you reconnect.",
       "Suggests the account and BTW rate for you to confirm.",

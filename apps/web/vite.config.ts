@@ -9,7 +9,7 @@ import react from "@vitejs/plugin-react";
 
 // Where the dev server proxies the API. Defaults to the local stack's :8000; the Playwright
 // golden path (e2e/) points it at an API of its own so a run never touches the dev database.
-const apiTarget = process.env.LEDGR_API_URL ?? "http://localhost:8000";
+const apiTarget = process.env.BOEKLITE_API_URL ?? "http://localhost:8000";
 
 export default defineConfig({
   plugins: [react()],

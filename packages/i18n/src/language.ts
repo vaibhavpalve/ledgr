@@ -20,7 +20,7 @@
  */
 
 /**
- * The languages LEDGR ships. Both first-class, and the order of this array is
+ * The languages Boeklite ships. Both first-class, and the order of this array is
  * not a ranking — it is the order a language picker lists them in, which is
  * alphabetical by endonym (English, Nederlands) so neither language is
  * presented as the default one.

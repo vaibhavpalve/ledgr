@@ -521,7 +521,7 @@ async def resend_verification_email(
 ) -> dict[str, Any]:
     """A new link for the signed-in caller's own address, retiring the old
     one. Rate-limited per account (IAM-019's sliding window) so a stuck
-    "resend" button cannot turn LEDGR into a mail cannon aimed at its own
+    "resend" button cannot turn Boeklite into a mail cannon aimed at its own
     customer. The language is the stored preference when there is one
     (this is a server-initiated mail in the api.i18n.language sense), else
     the request's.

@@ -220,7 +220,7 @@ class SqlEngagementRevocationRepository:
             return 0
         # Clears the context, does NOT revoke the session: losing access to
         # one client puts a firm employee back at the switcher, not signed
-        # out of LEDGR. See the module docstring in api.authz.engagement_revocation.
+        # out of Boeklite. See the module docstring in api.authz.engagement_revocation.
         result = await self._session.execute(
             text(
                 "UPDATE sessions SET active_administration_id = NULL "

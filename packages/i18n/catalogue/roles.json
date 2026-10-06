@@ -18,7 +18,7 @@
       "en": "Security Admin"
     },
     "roles.billing_admin": {
-      "note": "LEDGR's OWN subscription and billing, not the customer's sales invoicing. 'Facturatiebeheerder' would be read as the latter and collide with Invoicer below, which is exactly the confusion this role must not cause; 'Abonnementbeheerder' names the subscription unambiguously.",
+      "note": "Boeklite's OWN subscription and billing, not the customer's sales invoicing. 'Facturatiebeheerder' would be read as the latter and collide with Invoicer below, which is exactly the confusion this role must not cause; 'Abonnementbeheerder' names the subscription unambiguously.",
       "nl": "Abonnementbeheerder",
       "en": "Billing Admin"
     },

@@ -608,14 +608,14 @@ CODE_ISH = re.compile(r"[(){}=;]|=>|\.\w")
 #: name", not "translating this is inconvenient".
 LITERAL_ALLOWLIST: frozenset[tuple[str, str]] = frozenset(
     {
-        # The wordmark. A brand name reads LEDGR in Dutch and in English, and
+        # The wordmark. A brand name reads Boeklite in Dutch and in English, and
         # putting it in the catalogue would invite somebody to translate it.
         #
         # One entry, not one per screen: apps/web/src/Wordmark.tsx exists so
         # that the product's name is written once. An allowlist that grew
         # every time a header was added would stop being read, and an
         # allowlist nobody reads is where an untranslated sentence hides.
-        ("apps/web/src/Wordmark.tsx", "LEDGR"),
+        ("apps/web/src/Wordmark.tsx", "Boeklite"),
     }
 )
 

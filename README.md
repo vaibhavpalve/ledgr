@@ -1,4 +1,4 @@
-# LEDGR
+# Boeklite
 
 Monorepo scaffold. See [CLAUDE.md](CLAUDE.md) for architecture rules and [prd.md](prd.md) for
 product requirements. This repo currently contains shell only — no application code, no database

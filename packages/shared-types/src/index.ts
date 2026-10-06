@@ -1473,7 +1473,7 @@ export interface SwitcherEntry extends ClientBadge {
   role: string;
   /**
    * FR-LOC-001: true for one of PRD §8.4's twelve system roles, whose name is
-   * LEDGR's own vocabulary and is translated; false for a custom role
+   * Boeklite's own vocabulary and is translated; false for a custom role
    * (ADR-013), whose name the organization chose and which is shown verbatim,
    * exactly as a client's legal name is.
    *

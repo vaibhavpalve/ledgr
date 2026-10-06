@@ -24,7 +24,7 @@ from starlette.responses import Response
 #: A name of the app's own, not a framework default (`session`, `sessionid`)
 #: — a generic name is one a same-site sibling application on the same
 #: parent domain could collide with or make assumptions about.
-SESSION_COOKIE_NAME = "ledgr_session"
+SESSION_COOKIE_NAME = "boeklite_session"
 
 #: The companion cookie for double-submit CSRF verification
 #: (api.security.csrf) — readable by JavaScript (NOT HttpOnly) by design: the

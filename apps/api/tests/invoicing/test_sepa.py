@@ -69,7 +69,7 @@ def line(**kw: object) -> CollectionLine:
 
 def build(lines: list[CollectionLine], **kw: object) -> ET.Element:
     args: dict[str, object] = dict(
-        message_id="LEDGR-20260921100000-ABC123",
+        message_id="BOEKLITE-20260921100000-ABC123",
         created_at=datetime(2026, 9, 21, 10, 0, 0, 123456),
         creditor=CREDITOR,
         collection_date=date(2026, 9, 24),
@@ -102,7 +102,7 @@ def test_the_business_code_is_not_part_of_the_check() -> None:
 
 
 @pytest.mark.parametrize(
-    "ok", ["M-0001", "LEDGR-A1B2C3D4E5F6", "a" * 35, "K.1/2:3 (x)".replace(" ", "")]
+    "ok", ["M-0001", "BOEKLITE-A1B2C3D4E5F6", "a" * 35, "K.1/2:3 (x)".replace(" ", "")]
 )
 def test_valid_mandate_references(ok: str) -> None:
     assert validate_mandate_reference(ok) == ok
@@ -176,7 +176,7 @@ def test_a_collection_date_is_a_future_business_day_within_reach() -> None:
 def test_the_group_header_counts_and_sums_everything() -> None:
     root = build([line(), line(end_to_end_id="2026-2", amount=D("79.95"))])
     header = "p:CstmrDrctDbtInitn/p:GrpHdr"
-    assert text(root, f"{header}/p:MsgId") == "LEDGR-20260921100000-ABC123"
+    assert text(root, f"{header}/p:MsgId") == "BOEKLITE-20260921100000-ABC123"
     assert text(root, f"{header}/p:CreDtTm") == "2026-09-21T10:00:00"  # no microseconds
     assert text(root, f"{header}/p:NbOfTxs") == "2"
     assert text(root, f"{header}/p:CtrlSum") == "200.95"

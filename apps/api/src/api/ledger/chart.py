@@ -209,7 +209,7 @@ class RgsVersion:
 
 @dataclass(frozen=True, slots=True)
 class RgsElement:
-    """One reference code. `account_type` is LEDGR's FR-GL-005 classification
+    """One reference code. `account_type` is Boeklite's FR-GL-005 classification
     of it, which is a mapping decision and therefore stored as data rather
     than derived in code.
     """

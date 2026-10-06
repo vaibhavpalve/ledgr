@@ -5,7 +5,7 @@
              approvals, filings, configuration changes and support access
     IAM-091  actor, actor type, tenant, resource, action, outcome, timestamp
              (UTC), source IP, user agent, correlation ID
-    IAM-092  immutable and tamper-evident. No role, including Owner or LEDGR
+    IAM-092  immutable and tamper-evident. No role, including Owner or Boeklite
              staff, can edit or delete entries
     IAM-093  retained 7 years, matching fiscal record retention
 
@@ -74,7 +74,7 @@ class ActorType(enum.Enum):
     SERVICE_ACCOUNT = "service_account"
     #: Scheduled jobs and internal processes - api/scripts, key rotation.
     SYSTEM = "system"
-    #: LEDGR staff acting on a tenant's data. Its own type because IAM-090
+    #: Boeklite staff acting on a tenant's data. Its own type because IAM-090
     #: names support access separately from ordinary user activity, and a
     #: tenant reviewing their log needs to see which was which.
     SUPPORT = "support"

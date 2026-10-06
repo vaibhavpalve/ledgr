@@ -1,4 +1,4 @@
-"""Drive LEDGR's golden path over real HTTP against a running stack.
+"""Drive Boeklite's golden path over real HTTP against a running stack.
 
     python scripts/golden_path.py [--base http://127.0.0.1:8000]
 

@@ -50,7 +50,7 @@ from api.bank.csv_parser import (
 class UnknownStatementFormat(CsvStatementError):
     def __init__(self) -> None:
         super().__init__(
-            "this file is not a statement format LEDGR reads. Export CAMT.053 (recommended), "
+            "this file is not a statement format Boeklite reads. Export CAMT.053 (recommended), "
             "MT940, or your bank's CSV (ING, Rabobank, bunq, Knab, ABN AMRO)"
         )
 
@@ -499,7 +499,7 @@ def _parse_csv(text: str) -> ParsedStatement:
 
 
 def parse_statement(text: str) -> ParsedStatement:
-    """Whatever a Dutch bank exported, or a refusal saying what LEDGR does read."""
+    """Whatever a Dutch bank exported, or a refusal saying what Boeklite does read."""
     body = text[1:] if text.startswith(chr(0xFEFF)) else text
     head = body.lstrip()[:2000]
     if head.startswith("<"):

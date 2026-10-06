@@ -170,7 +170,7 @@ class TotpService:
         repository: TotpRepository,
         kms: KeyManagementService,
         *,
-        issuer: str = "LEDGR",
+        issuer: str = "Boeklite",
         clock: Callable[[], datetime] = _utcnow,
     ) -> None:
         self._repository = repository

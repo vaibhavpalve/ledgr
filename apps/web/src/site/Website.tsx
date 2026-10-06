@@ -185,7 +185,7 @@ function HeroPanel() {
         </div>
         <div className="site__browser-body">
           <div className="site__mini-nav">
-            <div className="ui-serif site__mini-logo">{"Ledgr"}</div>
+            <div className="ui-serif site__mini-logo">{"Boeklite"}</div>
             <div className="site__mini-on">{"Home"}</div>
             <div>{"Capture"}</div>
             <div>{"Review"}</div>

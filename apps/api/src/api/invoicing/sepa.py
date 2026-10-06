@@ -2,7 +2,7 @@
 
 Pure: no I/O and no clock. The service supplies the facts and today's date.
 
---- What LEDGR does and does not do ---
+--- What Boeklite does and does not do ---
 
 It keeps the mandates and GENERATES the file (`build_pain008`); the business uploads it to its
 own bank. Nothing here talks to a bank, and the outcome of each collection is recorded by a

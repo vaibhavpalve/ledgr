@@ -57,7 +57,7 @@ export function reconcileWithAccount(
  *
  * The seeding write is what makes the pre-login choice mean anything beyond
  * this browser. Somebody who picked English on the login screen of a machine
- * they will never use again should still find LEDGR in English on their own
+ * they will never use again should still find Boeklite in English on their own
  * one, and this is the only moment that can be arranged — after that, the
  * account is authoritative (FR-LOC-001b) and the device is just a cache.
  *

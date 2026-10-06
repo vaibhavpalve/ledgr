@@ -170,11 +170,11 @@ async def test_the_entry_carries_the_iam_091_request_fields() -> None:
 
     TestClient(app).post(
         f"/v1/administrations/{world.acme_books}/entries",
-        headers={"user-agent": "LEDGR/1.0", CORRELATION_HEADER: "req-abc-123"},
+        headers={"user-agent": "Boeklite/1.0", CORRELATION_HEADER: "req-abc-123"},
     )
 
     entry = (await audit.search(organization_id=world.acme))[0]
-    assert entry.user_agent == "LEDGR/1.0"
+    assert entry.user_agent == "Boeklite/1.0"
     assert entry.correlation_id == "req-abc-123"
     assert entry.source_ip is not None
     assert entry.detail["method"] == "POST"

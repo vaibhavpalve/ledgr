@@ -1,5 +1,5 @@
 /**
- * `@ledgr/design-tokens` — the single source of truth for how LEDGR looks.
+ * `@ledgr/design-tokens` — the single source of truth for how Boeklite looks.
  *
  * Consumers import `@ledgr/design-tokens/tokens.css` once, at the composition
  * root, and then reference `var(--ledgr-*)` from their own stylesheets. The

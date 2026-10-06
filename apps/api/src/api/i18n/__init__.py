@@ -1,4 +1,4 @@
-"""The API's half of LEDGR's bilingual surface - FR-LOC-001 through
+"""The API's half of Boeklite's bilingual surface - FR-LOC-001 through
 FR-LOC-005, FR-UX-007.
 
 Three separate concerns, and keeping them separate is the point:

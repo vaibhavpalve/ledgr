@@ -2,7 +2,7 @@
 # root, which points here via "dockerfilePath": "apps/api/Dockerfile") - NOT
 # apps/api alone. apps/api/pyproject.toml's
 # [tool.hatch.build.targets.wheel.force-include] pulls in
-# ../../packages/i18n/catalogue (the message catalogue LEDGR shares with the
+# ../../packages/i18n/catalogue (the message catalogue Boeklite shares with the
 # web and mobile apps, per FR-LOC-001) via a path relative to that
 # pyproject.toml - a build context rooted at apps/api alone cannot see that
 # directory at all, and the image would boot and then raise on the first

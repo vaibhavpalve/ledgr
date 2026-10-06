@@ -20,7 +20,7 @@ class User:
     mfa_enrolled: bool
     # IAM-010b: when this address was proven to belong to the person - by
     # a verification link (api.auth.email_verification) or by the identity
-    # provider at Google sign-in, which verified it before LEDGR ever saw
+    # provider at Google sign-in, which verified it before Boeklite ever saw
     # it. None means unverified, which is a real, allowed state: such an
     # account can sign in and onboard but cannot post to the ledger
     # (require_verified_email). Migration 0049.

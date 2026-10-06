@@ -1,7 +1,7 @@
 [project]
 name = "ledgr-api"
 version = "0.0.0"
-description = "LEDGR API"
+description = "Boeklite API"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115.0",

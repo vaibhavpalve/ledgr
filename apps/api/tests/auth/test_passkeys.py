@@ -45,7 +45,7 @@ def _service(clock: _FakeClock | None = None) -> WebAuthnService:
     return WebAuthnService(
         InMemoryPasskeyRepository(),
         rp_id=_RP_ID,
-        rp_name="LEDGR Test",
+        rp_name="Boeklite Test",
         expected_origin=_ORIGIN,
         **kwargs,
     )

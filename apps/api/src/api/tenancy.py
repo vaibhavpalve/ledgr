@@ -75,7 +75,7 @@ if TYPE_CHECKING:
 #
 #   /v1/auth/verify-email
 #       IAM-010b. The link in the e-mail is opened wherever the mail is
-#       read - a phone with no LEDGR session, a different browser - and the
+#       read - a phone with no Boeklite session, a different browser - and the
 #       single-use token in the body is the proof, not a bearer token. The
 #       resend endpoint is NOT here: asking for a new link is something the
 #       signed-in account holder does.

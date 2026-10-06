@@ -27,7 +27,7 @@ terminating a firm employee's entire login, which also cuts them off from
 every other client, or terminating nothing.
 
 Terminating is deliberately narrower than revoking. `revoke_session` would
-sign the user out of LEDGR entirely; `clear_administration_context` puts them
+sign the user out of Boeklite entirely; `clear_administration_context` puts them
 back at the switcher, which is what losing access to one client means when
 they still have four others. A firm employee whose only client revokes them
 ends up at an empty switcher, which is correct and is not the same as being

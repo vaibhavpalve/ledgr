@@ -254,7 +254,7 @@ def harness(
         else (
             EmailInvoiceChannel(
                 sender or mail,  # type: ignore[arg-type]
-                from_address="noreply@ledgr.example",
+                from_address="noreply@boeklite.nl",
             ),
         )
     )

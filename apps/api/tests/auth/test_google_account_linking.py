@@ -41,11 +41,11 @@ def _harness() -> tuple[GoogleSignInService, AuthenticationService, InMemoryUser
 
 def _attacker_identity() -> GoogleIdentity:
     """A Google identity an ATTACKER controls, whose email happens to
-    match the victim's LEDGR account. email_verified=True is exactly what
+    match the victim's Boeklite account. email_verified=True is exactly what
     api.auth.google_oidc already guarantees before a GoogleIdentity can
     exist at all (IAM-010b) - the point of this test file is that being a
     real, verified Google account for that email is NOT sufficient on its
-    own to gain access to the victim's LEDGR account (IAM-010c).
+    own to gain access to the victim's Boeklite account (IAM-010c).
     """
     return GoogleIdentity(
         subject="attacker-controlled-google-subject",

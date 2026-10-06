@@ -75,7 +75,7 @@ class MfaFactorKind(enum.Enum):
 # factor was used. Google's real-world amr support for consumer accounts
 # is limited in practice - IAM-010e's own wording ("where... this is
 # asserted") anticipates it may often be absent, in which case
-# google_asserts_second_factor correctly returns False and LEDGR enrols
+# google_asserts_second_factor correctly returns False and Boeklite enrols
 # its own factor, exactly as the requirement specifies.
 _MFA_ASSERTING_AMR_VALUES = frozenset({"mfa"})
 
@@ -84,7 +84,7 @@ def google_asserts_second_factor(identity: GoogleIdentity) -> bool:
     """IAM-010e: "Google sign-in does not satisfy the MFA requirement on
     its own. Where the user's Google account has 2FA enabled and this is
     asserted in the token (amr), it may be accepted as the second factor;
-    otherwise LEDGR enrols its own."
+    otherwise Boeklite enrols its own."
 
     This function is the accept/reject decision for the first half of that
     sentence. It does NOT itself cause a session to be marked MFA-verified

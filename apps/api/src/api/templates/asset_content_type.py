@@ -170,7 +170,7 @@ def _refusal(data: bytes, description: str | None = None) -> str:
                 break
     if description is not None:
         return (
-            f"this file is {description}, which is not a logo type LEDGR accepts "
+            f"this file is {description}, which is not a logo type Boeklite accepts "
             f"(FR-TPL-001, SEC-005). Accepted: {accepted}."
         )
     prefix = data[:8].hex(" ")

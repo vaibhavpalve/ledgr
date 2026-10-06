@@ -25,6 +25,7 @@ from api.authz.firm_access_repository import SqlEngagementRevocationRepository
 from api.authz.model import AuthorizationDecision
 from api.authz_middleware import AuthorizationEnforcementMiddleware
 from api.bank import routes as bank_routes
+from api.canonical_host import CanonicalHostMiddleware
 from api.customers import routes as customer_routes
 from api.dashboard import routes as dashboard_routes
 from api.db import get_db_session
@@ -52,7 +53,7 @@ from api.templates import routes as template_routes
 from api.tenancy import TenantContext, TenantContextMiddleware, get_tenant_context
 from api.vat_returns import routes as vat_return_routes
 
-app = FastAPI(title="LEDGR API")
+app = FastAPI(title="Boeklite API")
 # Order matters: the LAST middleware added runs FIRST (Starlette wraps
 # outermost-last), verified empirically before relying on it - see
 # api.mfa_middleware's module docstring. MfaEnforcementMiddleware reads
@@ -175,6 +176,10 @@ app.add_middleware(AuditMiddleware)
 app.add_middleware(TenantContextMiddleware)
 app.add_middleware(CsrfProtectionMiddleware)
 register_spa(app)
+# Outside the SPA and CSRF layers, inside SecurityHeadersMiddleware: a secondary
+# domain is redirected before anything else looks at it, and the redirect
+# still carries HSTS. See api.canonical_host.
+app.add_middleware(CanonicalHostMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 

@@ -322,10 +322,10 @@ def xmp_packet(*, title: str, language: str, conformance: Conformance) -> bytes:
    <dc:language><rdf:Bag><rdf:li>{_xml_escape(language)}</rdf:li></rdf:Bag></dc:language>
   </rdf:Description>
   <rdf:Description rdf:about="" xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
-   <pdf:Producer>LEDGR</pdf:Producer>
+   <pdf:Producer>Boeklite</pdf:Producer>
   </rdf:Description>
   <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">
-   <xmp:CreatorTool>LEDGR</xmp:CreatorTool>
+   <xmp:CreatorTool>Boeklite</xmp:CreatorTool>
   </rdf:Description>{identification}
  </rdf:RDF>
 </x:xmpmeta>

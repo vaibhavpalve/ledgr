@@ -26,7 +26,7 @@ the failure would have to parse a translated string to do it.
 
 --- Which language ---
 
-`Accept-Language` on the request, which the LEDGR clients set to the language
+`Accept-Language` on the request, which the Boeklite clients set to the language
 the UI is currently in. See api.i18n.language for why that rather than the
 stored `users.language` column: this is the answer that cannot be stale, and
 FR-LOC-001a's "taking effect immediately" has to hold on the server too.

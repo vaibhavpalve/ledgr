@@ -53,7 +53,7 @@ describe("resolveLanguage", () => {
     // English browser asked for English; the domain does not know better than
     // they do.
     expect(resolveLanguage({ hostname: "app.ledgr.nl" })).toBe("nl");
-    expect(resolveLanguage({ hostname: "APP.LEDGR.NL" })).toBe("nl");
+    expect(resolveLanguage({ hostname: "APP.BOEKLITE.NL" })).toBe("nl");
     expect(resolveLanguage({ preferredLanguages: ["en-GB"], hostname: "app.ledgr.nl" })).toBe("en");
   });
 

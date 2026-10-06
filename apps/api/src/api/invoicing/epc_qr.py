@@ -24,7 +24,7 @@ exact shape, tested against the spec's own field order.
 That is FR-AR-009 (payment links via a PSP - iDEAL, card, SEPA DD), a
 different, larger feature with its own account, fees and reconciliation.
 This QR carries none of that: it is a SEPA credit transfer INITIATION
-request the customer's own bank executes, LEDGR never touches the money or
+request the customer's own bank executes, Boeklite never touches the money or
 learns the transfer happened, and there is no "did they pay" signal here -
 FR-AR-009's auto-matching is what answers that question, separately.
 """

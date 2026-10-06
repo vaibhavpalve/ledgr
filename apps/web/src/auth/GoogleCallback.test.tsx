@@ -68,7 +68,7 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
       <GoogleCallback
         api={api(async () => ({
           kind: "link_required",
-          message: "Dit Google-account is nog niet gekoppeld aan een LEDGR-account.",
+          message: "Dit Google-account is nog niet gekoppeld aan een BOEKLITE-account.",
         }))}
         code="auth-code"
         state="state-value"

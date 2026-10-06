@@ -35,7 +35,7 @@ can write the database. Reasonable choices, strongest first:
     seven years. PRD §13 already chose Azure Blob with immutability policies
     for documents; this is the same control applied to a much smaller object.
   * A customer-held copy, which also serves IAM-094 - a tenant who keeps
-    their own anchors can verify their log without trusting LEDGR at all.
+    their own anchors can verify their log without trusting Boeklite at all.
   * An append-only log in a separate account or provider.
 
 LoggingAnchorSink below is the only implementation today. A structured log

@@ -1,11 +1,11 @@
 """Resolves a verified Google identity (from api.auth.google_oidc) to a
-LEDGR user account, and links one to an existing account (IAM-010c).
+Boeklite user account, and links one to an existing account (IAM-010c).
 
 The attack IAM-010c defends against: whoever controls a given email
-address at Google today gets silently merged into an existing LEDGR
+address at Google today gets silently merged into an existing Boeklite
 account that proved that same email through a *different* credential.
 Controlling the mailbox (or a Google account claiming that email) is not
-proof of controlling the LEDGR account - only the LEDGR account's own
+proof of controlling the Boeklite account - only the Boeklite account's own
 credential is. So:
 
   - sign_in() looks up an existing link by Google `sub` first, never by
@@ -108,7 +108,7 @@ class GoogleSignInService:
         await self._google_identities.link(new_user.id, identity)
         # IAM-010b's exemption: a GoogleIdentity cannot be constructed from a
         # token whose email_verified is not true (api.auth.google_oidc), so
-        # the address is already proven and LEDGR sends no link of its own.
+        # the address is already proven and Boeklite sends no link of its own.
         await self._users.mark_email_verified(new_user.id, at=datetime.now(UTC))
         return new_user
 

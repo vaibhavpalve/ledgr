@@ -1,6 +1,6 @@
 """The authorization library. CLAUDE.md's third non-negotiable - "one
 authorization library, used everywhere; there is no second implementation" -
-means this module, and every access decision in LEDGR resolves here: HTTP
+means this module, and every access decision in Boeklite resolves here: HTTP
 routes through api.authz.dependencies, background workers and the ledger
 service by calling AuthorizationService.authorize() directly.
 

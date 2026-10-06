@@ -1,4 +1,4 @@
-"""LEDGR's authorization library (IAM-030 - IAM-037).
+"""Boeklite's authorization library (IAM-030 - IAM-037).
 
 CLAUDE.md's third non-negotiable: "One authorization library, used
 everywhere. All authorization decisions are evaluated server-side per

@@ -160,7 +160,7 @@ def _refusal(data: bytes) -> str:
     for magic, description in _NAMED_REFUSALS:
         if data.startswith(magic):
             return (
-                f"this file is {description}, which is not a document type LEDGR "
+                f"this file is {description}, which is not a document type Boeklite "
                 f"accepts (SEC-005). Accepted: {accepted}."
             )
     prefix = data[:8].hex(" ")

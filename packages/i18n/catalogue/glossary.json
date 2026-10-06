@@ -86,7 +86,7 @@
       "term": "kolommenbalans",
       "keepDutch": true,
       "definition": {
-        "note": "FLAGGED, and the least settled entry here — see review.questions. The PRD does not mention a kolommenbalans anywhere, so this definition is written from ordinary Dutch bookkeeping practice rather than from a requirement, and the column set below may not match what LEDGR builds. It is also not a statutory document the way BTW and suppletie are: it is a working paper, and FR-LOC-001c's rule is written about statutory terms. Distinct from a trial balance (saldibalans), which is the two-column figure FR-RPT-001 names.",
+        "note": "FLAGGED, and the least settled entry here — see review.questions. The PRD does not mention a kolommenbalans anywhere, so this definition is written from ordinary Dutch bookkeeping practice rather than from a requirement, and the column set below may not match what Boeklite builds. It is also not a statutory document the way BTW and suppletie are: it is a working paper, and FR-LOC-001c's rule is written about statutory terms. Distinct from a trial balance (saldibalans), which is the two-column figure FR-RPT-001 names.",
         "nl": "Een werkoverzicht dat per grootboekrekening de saldibalans, de correcties en de verdeling over de balans en de winst-en-verliesrekening in kolommen naast elkaar toont.",
         "en": "A working schedule showing, for each ledger account, the trial balance, the adjustments, and their split across the balance sheet and the profit and loss account, side by side in columns."
       },
@@ -97,9 +97,9 @@
         "reviewedBy": null,
         "reviewedOn": null,
         "questions": [
-          "Is a kolommenbalans in scope at all? It appears nowhere in the PRD, and FR-RPT-001's report list names 'trial balance' but nothing matching this. If it is not a report LEDGR produces, this entry should be deleted rather than reviewed.",
+          "Is a kolommenbalans in scope at all? It appears nowhere in the PRD, and FR-RPT-001's report list names 'trial balance' but nothing matching this. If it is not a report Boeklite produces, this entry should be deleted rather than reviewed.",
           "Is 'extended trial balance' (UK) or 'worksheet' (US) an accurate enough equivalent to translate it? If so, FR-LOC-001c's criterion says translate rather than keep.",
-          "How many columns does LEDGR's version have — 8, 10 or 12? The definition names four groups and should match what is actually built.",
+          "How many columns does Boeklite's version have — 8, 10 or 12? The definition names four groups and should match what is actually built.",
           "It is a working paper rather than a statutory filing. Does FR-LOC-001c's rule reach it, or is it in this glossary for a different reason — that a Dutch bookkeeper expects the word?"
         ]
       }

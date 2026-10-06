@@ -1088,9 +1088,9 @@
       "en": "The first period of this fiscal year is closed, so no opening balance can be posted into it."
     },
     "errors.bank_statement_unknown_format": {
-      "note": "ADR-091: not CAMT.053, MT940 or a bank CSV LEDGR recognises.",
-      "nl": "Dit bestand is geen bankafschrift dat LEDGR kan lezen. Kies CAMT.053 (aanbevolen), MT940 of de CSV-export van ING, Rabobank, bunq, Knab of ABN AMRO.",
-      "en": "This file is not a bank statement LEDGR can read. Choose CAMT.053 (recommended), MT940 or the CSV export of ING, Rabobank, bunq, Knab or ABN AMRO."
+      "note": "ADR-091: not CAMT.053, MT940 or a bank CSV Boeklite recognises.",
+      "nl": "Dit bestand is geen bankafschrift dat Boeklite kan lezen. Kies CAMT.053 (aanbevolen), MT940 of de CSV-export van ING, Rabobank, bunq, Knab of ABN AMRO.",
+      "en": "This file is not a bank statement Boeklite can read. Choose CAMT.053 (recommended), MT940 or the CSV export of ING, Rabobank, bunq, Knab or ABN AMRO."
     },
     "errors.bank_expense_not_matchable": {
       "note": "ADR-092: a bank line matched to a receipt that is not booked, was paid privately, is already matched, or has a different amount.",

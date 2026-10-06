@@ -70,8 +70,8 @@
     },
     "bank.import_hint": {
       "note": "ADR-091: the formats the import reads, as a person finds them in their bank's export menu.",
-      "nl": "Download een afschrift in uw internetbankieren en kies het hier. LEDGR leest CAMT.053 (aanbevolen), MT940 en de CSV-export van ING, Rabobank, bunq, Knab en ABN AMRO. Een afschrift dat al eerder is ingelezen, wordt niet dubbel geboekt.",
-      "en": "Download a statement from your online banking and choose it here. LEDGR reads CAMT.053 (recommended), MT940 and the CSV export of ING, Rabobank, bunq, Knab and ABN AMRO. A statement imported before is not booked twice."
+      "nl": "Download een afschrift in uw internetbankieren en kies het hier. Boeklite leest CAMT.053 (aanbevolen), MT940 en de CSV-export van ING, Rabobank, bunq, Knab en ABN AMRO. Een afschrift dat al eerder is ingelezen, wordt niet dubbel geboekt.",
+      "en": "Download a statement from your online banking and choose it here. Boeklite reads CAMT.053 (recommended), MT940 and the CSV export of ING, Rabobank, bunq, Knab and ABN AMRO. A statement imported before is not booked twice."
     },
     "bank.import_result": {
       "note": "{count} new transactions, {duplicates} already-imported lines skipped.",

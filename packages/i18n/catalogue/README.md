@@ -5,7 +5,7 @@
 > help article and validation message exists in both. A missing translation is a release blocker,
 > not a fallback to English.
 
-This directory is the single source of every user-facing string in LEDGR, for the web app, the
+This directory is the single source of every user-facing string in Boeklite, for the web app, the
 mobile apps and the API. One catalogue, not one per client: an error message rendered into a PDF
 by the API and the same message shown on a screen have to be the same sentence, and two catalogues
 would let them drift.

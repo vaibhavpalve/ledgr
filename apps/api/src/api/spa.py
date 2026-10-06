@@ -1,6 +1,6 @@
 """Serves the built React SPA (apps/web/dist) from the API's own origin.
 
-ADR-063 decided LEDGR serves one origin - the API, the SPA, and stored file
+ADR-063 decided Boeklite serves one origin - the API, the SPA, and stored file
 bytes all come from the same host - and named this module's job as the
 remaining work it left undone: "The API must serve the built SPA... Not done
 in this ADR." The reason it has to be this way, not a separate static host,

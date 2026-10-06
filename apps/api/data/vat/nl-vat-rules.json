@@ -1,6 +1,6 @@
 {
   "_readme": [
-    "Dutch VAT rules for LEDGR (CMP-014, CMP-013, FR-VAT-001, FR-AR-002).",
+    "Dutch VAT rules for Boeklite (CMP-014, CMP-013, FR-VAT-001, FR-AR-002).",
     "",
     "This file is DATA. scripts/load_vat_rules.py loads it into vat_treatment /",
     "vat_rate / vat_rubriek / vat_treatment_rubriek, and a rate change is another",

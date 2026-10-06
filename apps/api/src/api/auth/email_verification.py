@@ -2,7 +2,7 @@
 
     IAM-010b  Google sign-in requires a verified Google e-mail address; an
               unverified one is rejected. (For every other signup method,
-              LEDGR verifies the address itself.)
+              Boeklite verifies the address itself.)
 
 ADR-054 shipped password signup with the account active immediately and
 named this as the one gap it deliberately left open. This module closes it

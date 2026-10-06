@@ -32,7 +32,7 @@ export type ResolvedTheme = "light" | "dark";
  * this device survives a deployment. Versioned in the name so a future change
  * of shape does not have to read a value it cannot parse.
  */
-export const THEME_STORAGE_KEY = "ledgr.theme.v1";
+export const THEME_STORAGE_KEY = "boeklite.theme.v1";
 
 export const THEME_PREFERENCES: readonly ThemePreference[] = ["system", "light", "dark"];
 

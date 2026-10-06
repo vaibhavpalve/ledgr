@@ -6,7 +6,7 @@ flow with PKCE.
 Every scope Google grants becomes a capability the resulting access token
 carries - Gmail, Drive, Calendar and Contacts scopes each let that token
 read or write the corresponding Google API, not just prove who the user
-is. LEDGR has no legitimate use for any of that on a login path: we are
+is. Boeklite has no legitimate use for any of that on a login path: we are
 verifying identity, not requesting delegated access to someone's personal
 email, files, calendar or address book. Requesting those scopes anyway
 would mean:
@@ -15,10 +15,10 @@ would mean:
      permissions wildly disproportionate to "log into your bookkeeping
      software" - a trust-destroying mismatch between what the button says
      ("Continue with Google") and what it actually asks for.
-  2. The stored access token (even if LEDGR never calls those APIs) becomes
-     a far more valuable target: a compromise of LEDGR's token storage
+  2. The stored access token (even if Boeklite never calls those APIs) becomes
+     a far more valuable target: a compromise of Boeklite's token storage
      would hand an attacker read/write access to users' email and files,
-     not just their bookkeeping data - a blast radius LEDGR has no business
+     not just their bookkeeping data - a blast radius Boeklite has no business
      creating.
   3. It would directly violate IAM-010a, which prohibits this outright:
      "No Gmail, Drive, Calendar or Contacts scopes are requested at any
@@ -30,7 +30,7 @@ when it is present; without it this would be a plain OAuth grant with no
 built-in identity proof. `email` (plus the `email_verified` claim it
 carries) is the one piece of identity IAM-010b's rejection check depends
 on. `profile` provides a display name and picture for the UI - the
-absolute maximum footprint that still lets LEDGR show "Signed in as
+absolute maximum footprint that still lets Boeklite show "Signed in as
 <name>". Nothing else belongs in _SCOPES, ever - not "just to check," not
 temporarily, not behind a feature flag. If a future feature genuinely needs
 Google API access (there is no such feature today), that is a separate,

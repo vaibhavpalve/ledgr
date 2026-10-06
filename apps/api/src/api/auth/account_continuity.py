@@ -4,7 +4,7 @@
 user whose only method is Google is prompted to add a passkey or password
 before they can post to the ledger."
 
-Why this matters: LEDGR does not control account recovery for a
+Why this matters: Boeklite does not control account recovery for a
 third-party identity provider. If Google sign-in is a user's only path
 into their account and something goes wrong with it - lost access,
 provider-side suspension, the user switching Google accounts - they would

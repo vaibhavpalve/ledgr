@@ -96,7 +96,7 @@ async def test_a_blob_written_by_something_else_is_refused() -> None:
     """
     administration = uuid.uuid4()
     store, inner, _ = await _encrypted(administration)
-    await inner.put("stray", b"not a LEDGR document")
+    await inner.put("stray", b"not a Boeklite document")
 
     with pytest.raises(StorageError, match="header"):
         await store.get("stray")

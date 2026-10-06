@@ -119,7 +119,7 @@ class SqlSwitcherRepository:
                     initials=initials_for(row.trade_name or row.legal_name),
                 ),
                 role_name=row.role_name,
-                # FR-LOC-001: a system role's name is LEDGR's vocabulary and is
+                # FR-LOC-001: a system role's name is Boeklite's vocabulary and is
                 # translated; a custom role's is the organization's own words
                 # and is not. Only this column can tell them apart.
                 role_is_system=bool(row.role_is_system),

@@ -130,7 +130,7 @@ NL_NL = LocaleSpec(
     ),
 )
 
-#: The administration locales LEDGR supports. One today: LEDGR serves Dutch
+#: The administration locales Boeklite supports. One today: Boeklite serves Dutch
 #: SMBs, and a second entry would be a guess about a jurisdiction nobody has
 #: specified a chart of accounts, a VAT ruleset or a filing channel for.
 #: Mirrored by FORMATTING_LOCALES in packages/i18n/src/locale.ts and by the

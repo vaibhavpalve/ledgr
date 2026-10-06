@@ -75,7 +75,7 @@ def main() -> int:
         "charged, and a customer's own tax authority reads it.\n"
     )
     print(
-        "Nothing in LEDGR can check these words. Signing one off is an edit to\n"
+        "Nothing in Boeklite can check these words. Signing one off is an edit to\n"
         "apps/api/data/invoicing/wording-review.json: set status to 'reviewed'\n"
         "and fill reviewedBy and reviewedOn. It takes effect on the next\n"
         "restart, with no code change.\n"

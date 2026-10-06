@@ -7,7 +7,7 @@ Registered on the app in `api.main`.
     SEC-005  ... stored outside the web root, served from a SEPARATE ORIGIN
              with `Content-Disposition: attachment`.
 
-ADR-063 deviates from the separate-origin half deliberately: LEDGR serves
+ADR-063 deviates from the separate-origin half deliberately: Boeklite serves
 one origin, and `Content-Security-Policy: sandbox` puts a rendered response
 in an opaque origin of its own, which is the property the separate origin
 was there to provide. What that ADR gives up is the second, independent
@@ -202,7 +202,7 @@ async def upload_document(
     That is a security choice before it is an ergonomic one: multipart needs a
     parser, and a parser is code that runs over attacker-controlled bytes
     before anything has decided whether to accept them. SEC-006 isolates the
-    parsing LEDGR cannot avoid; this avoids one it can.
+    parsing Boeklite cannot avoid; this avoids one it can.
 
     It costs nothing at the client. A `File` is a `Blob`, so a file picker or a
     drag-and-drop (FR-EXP-001) sends it directly:

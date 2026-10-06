@@ -5,7 +5,7 @@
  *
  * This is the part that turns a pre-login click into a preference that
  * follows a person to another machine. Somebody who chose English on the
- * login screen of a borrowed laptop should find LEDGR in English on their own
+ * login screen of a borrowed laptop should find Boeklite in English on their own
  * one, and first login is the only moment that can be arranged: after it, the
  * account is authoritative (FR-LOC-001b) and the device is a cache.
  */

@@ -288,7 +288,7 @@ def _unpack(blob: bytes, administration_id: uuid.UUID) -> EncryptedPayload:
     """
     if not blob.startswith(_HEADER):
         raise StorageError(
-            "stored blob does not carry the LEDGR document header; it was "
+            "stored blob does not carry the Boeklite document header; it was "
             "written by something else, or it has been altered (FR-DOC-001)"
         )
     cursor = len(_HEADER)

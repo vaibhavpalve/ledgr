@@ -164,7 +164,7 @@ class SwitcherEntry:
     expires_at: datetime | None = None
     vat_registered: bool = False
     # FR-LOC-001: whether `role_name` is one of PRD §8.4's twelve system roles
-    # (LEDGR's own vocabulary, and translated) or a custom role composed by an
+    # (Boeklite's own vocabulary, and translated) or a custom role composed by an
     # organization (ADR-013), whose name is that organization's own words and
     # is shown verbatim - the same rule a client's legal name follows.
     #

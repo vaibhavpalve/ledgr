@@ -51,7 +51,7 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
   it("TOTP: begins enrolment, shows the secret, confirms the code, reports the result", async () => {
     const mfaTotpEnrollBegin = vi.fn(async () => ({
       secret: "JBSWY3DPEHPK3PXP",
-      provisioningUri: "otpauth://totp/LEDGR:a@example.com?secret=JBSWY3DPEHPK3PXP",
+      provisioningUri: "otpauth://totp/Boeklite:a@example.com?secret=JBSWY3DPEHPK3PXP",
     }));
     const mfaTotpEnrollConfirm = vi.fn(async () => verified);
     const onVerified = vi.fn();
@@ -79,7 +79,7 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
   it("TOTP: renders a real scannable QR code, not just the raw secret", async () => {
     const mfaTotpEnrollBegin = vi.fn(async () => ({
       secret: "JBSWY3DPEHPK3PXP",
-      provisioningUri: "otpauth://totp/LEDGR:a@example.com?secret=JBSWY3DPEHPK3PXP",
+      provisioningUri: "otpauth://totp/Boeklite:a@example.com?secret=JBSWY3DPEHPK3PXP",
     }));
     const onVerified = vi.fn();
 
@@ -185,7 +185,7 @@ describe("MfaEnrollment — ADR-054's whole reason for existing", () => {
     const mfaPasskeyEnrollBegin = vi.fn(async () => ({
       ceremonyId: "cer-1",
       optionsJson: JSON.stringify({
-        rp: { name: "LEDGR" },
+        rp: { name: "Boeklite" },
         user: { id: "AAAA", name: "a@example.com", displayName: "a@example.com" },
         challenge: "AAAA",
         pubKeyCredParams: [{ type: "public-key", alg: -7 }],

@@ -13,7 +13,7 @@ need different answers:
 
     REQUEST-SCOPED      an error, a validation message, a response body. The
                         language comes from the request's `Accept-Language`
-                        header, which the LEDGR clients set to the language
+                        header, which the Boeklite clients set to the language
                         the UI is CURRENTLY in.
     SERVER-INITIATED    an e-mail, a push notification, a scheduled PDF.
                         There is no request, so the language comes from
@@ -46,7 +46,7 @@ import re
 
 
 class Language(enum.Enum):
-    """The languages LEDGR ships. Both first-class (FR-LOC-001); the order
+    """The languages Boeklite ships. Both first-class (FR-LOC-001); the order
     here is alphabetical by code and is not a ranking.
 
     Mirrored by the `users_language` CHECK in migration 0030 and by
@@ -64,7 +64,7 @@ SUPPORTED_LANGUAGE_CODES: tuple[str, ...] = tuple(language.value for language in
 
 
 #: Where negotiation lands when nothing else answers - a caller that sent no
-#: `Accept-Language`, or one asking only for languages LEDGR does not ship.
+#: `Accept-Language`, or one asking only for languages Boeklite does not ship.
 #:
 #: PRD open question Q12 ("Is Dutch or English the default UI language for a
 #: firm's staff users?") is unresolved, and this is the answer the product
@@ -78,7 +78,7 @@ DEFAULT_LANGUAGE = Language.NL
 
 
 def parse_language(value: str | None) -> Language | None:
-    """A bare language code, or None if it is not one LEDGR ships.
+    """A bare language code, or None if it is not one Boeklite ships.
 
     Used for `users.language` values and for request payloads. Returns None
     rather than the default, so a caller can tell "not set" from "set to
@@ -104,7 +104,7 @@ _RANGE = re.compile(
 
 
 def negotiate_language(header: str | None) -> Language:
-    """RFC 9110 `Accept-Language`, reduced to the two languages LEDGR ships.
+    """RFC 9110 `Accept-Language`, reduced to the two languages Boeklite ships.
 
     Matches on the primary subtag, so `nl-BE` and `en-US` both resolve - a
     Flemish accountant's browser should not fall through to the default over

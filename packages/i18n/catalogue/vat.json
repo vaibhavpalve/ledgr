@@ -204,8 +204,8 @@
       "en": "Some postings carry a BTW treatment that fits no box ({detail}). Under the margin scheme you declare the margin, not the sale price: have your bookkeeper prepare this return."
     },
     "vat.check.provisional_ruleset": {
-      "nl": "De btw-regels in LEDGR zijn nog niet gecontroleerd tegen de officiële publicatie van de Belastingdienst. Laat de bedragen controleren voordat u indient.",
-      "en": "The BTW rules in LEDGR have not yet been checked against the Belastingdienst's official publication. Have the figures checked before you file."
+      "nl": "De btw-regels in Boeklite zijn nog niet gecontroleerd tegen de officiële publicatie van de Belastingdienst. Laat de bedragen controleren voordat u indient.",
+      "en": "The BTW rules in Boeklite have not yet been checked against the Belastingdienst's official publication. Have the figures checked before you file."
     },
     "vat.check.unposted_purchases": {
       "nl": "{count} inkoopfacturen of bonnen zijn nog niet geboekt. Hun voorbelasting telt pas mee als ze geboekt zijn.",

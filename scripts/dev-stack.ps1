@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Start, stop or check LEDGR's local dev stack on a machine without Docker.
+  Start, stop or check Boeklite's local dev stack on a machine without Docker.
 
 .DESCRIPTION
   docker-compose.yml is the canonical local infrastructure. This script is the

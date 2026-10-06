@@ -170,7 +170,7 @@ class EnvelopeEncryptionService:
         self, administration_id: uuid.UUID, *, revoked_by_user_id: uuid.UUID | None = None
     ) -> None:
         """IAM-004: after this call, every document ever encrypted for this
-        administration is permanently unreadable, including by LEDGR
+        administration is permanently unreadable, including by Boeklite
         itself - the wrapped DEK material is deleted (the migration's
         tombstone trigger nulls wrapped_dek on the revoked row), and the
         raw DEK was never stored anywhere to begin with. No other

@@ -379,7 +379,7 @@ class SepaDirectDebitService:
             raise CollectionInvalid("bic_invalid")
         try:
             reference = validate_mandate_reference(
-                mandate_reference or f"LEDGR-{secrets.token_hex(6).upper()}"
+                mandate_reference or f"BOEKLITE-{secrets.token_hex(6).upper()}"
             )
         except SepaInvalid as exc:
             raise CollectionInvalid("reference_invalid", str(exc)) from exc
@@ -569,7 +569,7 @@ class SepaDirectDebitService:
         if not lines:
             raise NothingToCollect(skipped)
 
-        message_id = f"LEDGR-{now:%Y%m%d%H%M%S}-{secrets.token_hex(3).upper()}"
+        message_id = f"BOEKLITE-{now:%Y%m%d%H%M%S}-{secrets.token_hex(3).upper()}"
         try:
             xml = build_pain008(
                 message_id=message_id,

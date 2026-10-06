@@ -1,6 +1,6 @@
 {
   "_readme": [
-    "RGS reference data for LEDGR (CMP-003, FR-ONB-005, FR-GL-005).",
+    "RGS reference data for Boeklite (CMP-003, FR-ONB-005, FR-GL-005).",
     "",
     "This file is DATA, not a seed script. scripts/load_rgs_version.py loads it into",
     "rgs_version / rgs_element / rgs_profile / rgs_profile_element, and a future RGS",
@@ -35,7 +35,7 @@
   "source_note": "Starter subset in RGS shape; replace with the official 3.8 publication.",
 
   "_elements_note": [
-    "account_type is LEDGR's FR-GL-005 classification (asset/liability/equity/",
+    "account_type is Boeklite's FR-GL-005 classification (asset/liability/equity/",
     "revenue/expense), which is a mapping decision and therefore data. Only postable",
     "elements need one: a heading exists to hold a subtree, not to carry postings.",
     "debit_credit is RGS's own D/C indicator."

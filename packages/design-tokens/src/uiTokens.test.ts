@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = resolve(__dirname, "../../..");
 const read = (path: string) => readFileSync(resolve(root, path), "utf8").replace(/\r\n/g, "\n");
 
-describe("Ledgr UI handoff tokens (ADR-080)", () => {
+describe("Boeklite UI handoff tokens (ADR-080)", () => {
   it("ui-tokens.css is a verbatim copy of design/tokens/tokens.css", () => {
     expect(read("packages/design-tokens/ui-tokens.css")).toBe(read("design/tokens/tokens.css"));
   });

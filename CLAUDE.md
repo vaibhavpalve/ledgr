@@ -1,6 +1,6 @@
-# LEDGR
+# Boeklite
 
-LEDGR is a multi-tenant cloud bookkeeping platform for Dutch SMBs and the accounting firms that
+Boeklite is a multi-tenant cloud bookkeeping platform for Dutch SMBs and the accounting firms that
 serve them, automating the path from source document to filed tax return. It ships as a web app,
 iOS app, Android app and public API, all running against one API with no client-side business logic.
 

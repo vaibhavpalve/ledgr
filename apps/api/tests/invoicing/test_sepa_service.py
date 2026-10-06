@@ -286,7 +286,7 @@ async def test_a_mandate_is_stored_normalised_and_audited_without_personal_data(
 
     assert mandate.debtor_iban == "NL02ABNA0123456789"  # compact, upper case
     assert mandate.debtor_bic == "ABNANL2A"
-    assert mandate.mandate_reference.startswith("LEDGR-")  # generated when omitted
+    assert mandate.mandate_reference.startswith("BOEKLITE-")  # generated when omitted
     assert mandate.is_active and mandate.scheme is MandateScheme.CORE
     entry = setup.audit._entries[-1]
     assert entry.action == "create_sepa_mandate"
