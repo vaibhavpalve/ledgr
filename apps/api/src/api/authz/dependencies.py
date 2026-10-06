@@ -168,7 +168,8 @@ PERMISSION_MARKER = "__ledgr_authorization_requirement__"
 #              surface, and the MFA enrolment/step-up flow) is exempt, for
 #              one of two reasons depending on which half of the module it
 #              is in:
-#                - signup/login/passkey-login/google (api.tenancy.
+#                - signup/login/passkey-login/google, including the
+#                  google/link leg (api.tenancy.
 #                  EXEMPT_PATHS): there is no tenant yet for a permission to
 #                  be scoped to - these routes ESTABLISH identity, they do
 #                  not act on a resource within one.
@@ -236,6 +237,7 @@ AUTHORIZATION_EXEMPT_PATHS = frozenset(
         "/v1/auth/login/passkey/finish",
         "/v1/auth/login/google/start",
         "/v1/auth/login/google/callback",
+        "/v1/auth/login/google/link",
         "/v1/auth/mfa/totp/enroll/begin",
         "/v1/auth/mfa/totp/enroll/confirm",
         "/v1/auth/mfa/totp/verify",

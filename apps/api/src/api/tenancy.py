@@ -79,6 +79,10 @@ if TYPE_CHECKING:
 #       single-use token in the body is the proof, not a bearer token. The
 #       resend endpoint is NOT here: asking for a new link is something the
 #       signed-in account holder does.
+#   /v1/auth/login/google/link
+#       IAM-010c. The second leg of a Google sign-in whose email matched an
+#       existing account: the one-time google_link ticket plus that account's
+#       password are the proof, exactly as the password is for /v1/auth/login.
 #   /v1/dev/outbox
 #       Only registered when settings.expose_dev_outbox is true (never the
 #       default - see api.mail.dev_outbox), and exempt only then, so the
@@ -95,6 +99,7 @@ EXEMPT_PATHS = frozenset(
         "/v1/auth/login/passkey/finish",
         "/v1/auth/login/google/start",
         "/v1/auth/login/google/callback",
+        "/v1/auth/login/google/link",
         "/v1/auth/verify-email",
     }
     | ({"/v1/dev/outbox"} if settings.expose_dev_outbox else set())

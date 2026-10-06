@@ -510,3 +510,9 @@
 .pre-auth__journal .bk-over {
   color: #b5c2ae;
 }
+
+/* The Google link step's heading (IAM-010c): a form title, not a page title. */
+.pre-auth .google-link__heading {
+  margin: 0;
+  font: 600 18px/24px var(--font-sans);
+}

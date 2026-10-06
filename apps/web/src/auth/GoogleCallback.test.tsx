@@ -1,5 +1,5 @@
 import { fireEvent, render as renderBare, screen, waitFor } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { StrictMode, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { I18nProvider, type Language } from "@ledgr/i18n";
 
@@ -20,6 +20,13 @@ function api(
   } as unknown as AuthApi;
 }
 
+/** A fresh code per render: GoogleCallback shares one request per code across mounts. */
+let codeCounter = 0;
+function freshCode(): string {
+  codeCounter += 1;
+  return `auth-code-${codeCounter}`;
+}
+
 const signedIn: AuthResult = {
   accessToken: "tok",
   mfaVerified: true,
@@ -33,7 +40,7 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
     render(
       <GoogleCallback
         api={api(async () => ({ kind: "signed_in", result: signedIn }))}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={onSignedIn}
         onBackToLogin={vi.fn()}
@@ -52,14 +59,14 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
     render(
       <GoogleCallback
         api={{ loginGoogleCallback } as unknown as AuthApi}
-        code="my-code"
+        code="my-code-unique"
         state="my-state"
         onSignedIn={vi.fn()}
         onBackToLogin={vi.fn()}
       />,
     );
 
-    expect(loginGoogleCallback).toHaveBeenCalledWith("my-code", "my-state");
+    expect(loginGoogleCallback).toHaveBeenCalledWith("my-code-unique", "my-state");
   });
 
   it("shows IAM-010c's link-required message and offers a way back, without reporting a sign-in", async () => {
@@ -69,8 +76,10 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
         api={api(async () => ({
           kind: "link_required",
           message: "Dit Google-account is nog niet gekoppeld aan een BOEKLITE-account.",
+          ticket: null,
+          email: null,
         }))}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={onSignedIn}
         onBackToLogin={vi.fn()}
@@ -91,7 +100,7 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
         api={api(async () => {
           throw new ApiError(410, "ceremony_not_found", "Deze aanmeldpoging is verlopen.");
         })}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={vi.fn()}
         onBackToLogin={vi.fn()}
@@ -105,8 +114,8 @@ describe("GoogleCallback — the landing leg of IAM-010's Google redirect", () =
     const onBackToLogin = vi.fn();
     render(
       <GoogleCallback
-        api={api(async () => ({ kind: "link_required", message: "x" }))}
-        code="auth-code"
+        api={api(async () => ({ kind: "link_required", message: "x", ticket: null, email: null }))}
+        code={freshCode()}
         state="state-value"
         onSignedIn={vi.fn()}
         onBackToLogin={onBackToLogin}
@@ -128,7 +137,7 @@ describe("GoogleCallback — FR-MDL-001 for a brand-new Google identity", () => 
           ticket: "ticket-1",
           email: "brand.new@example.com",
         }))}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={vi.fn()}
         onBackToLogin={vi.fn()}
@@ -153,7 +162,7 @@ describe("GoogleCallback — FR-MDL-001 for a brand-new Google identity", () => 
           async () => ({ kind: "signup_required", ticket: "ticket-2", email: "a@example.com" }),
           { signupGoogle },
         )}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={onSignedIn}
         onBackToLogin={vi.fn()}
@@ -183,7 +192,7 @@ describe("GoogleCallback — FR-MDL-001 for a brand-new Google identity", () => 
           async () => ({ kind: "signup_required", ticket: "ticket-3", email: "a@example.com" }),
           { signupGoogle },
         )}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={vi.fn()}
         onBackToLogin={vi.fn()}
@@ -223,7 +232,7 @@ describe("GoogleCallback — FR-MDL-001 for a brand-new Google identity", () => 
           async () => ({ kind: "signup_required", ticket: "ticket-4", email: "a@example.com" }),
           { signupGoogle },
         )}
-        code="auth-code"
+        code={freshCode()}
         state="state-value"
         onSignedIn={onSignedIn}
         onBackToLogin={vi.fn()}
@@ -242,5 +251,105 @@ describe("GoogleCallback — FR-MDL-001 for a brand-new Google identity", () => 
       ),
     );
     expect(onSignedIn).not.toHaveBeenCalled();
+  });
+});
+
+describe("GoogleCallback — IAM-010c, an email that already has a password account", () => {
+  const linkRequired = async (): Promise<GoogleCallbackResult> => ({
+    kind: "link_required",
+    message: "Er bestaat al een account.",
+    ticket: "link-ticket-1",
+    email: "owner@example.com",
+  });
+
+  it("asks for the existing account's password, naming the address", async () => {
+    render(
+      <GoogleCallback
+        api={api(linkRequired)}
+        code={freshCode()}
+        state="state-value"
+        onSignedIn={vi.fn()}
+        onBackToLogin={vi.fn()}
+      />,
+      "en",
+    );
+
+    await waitFor(() => expect(screen.getByTestId("google-link-form")).toBeDefined());
+    expect(screen.getByTestId("google-link-intro").textContent).toContain("owner@example.com");
+    expect(screen.getByTestId("google-link-password")).toBeDefined();
+  });
+
+  it("sends only the ticket and the password, then reports the sign-in", async () => {
+    const linkGoogle = vi.fn(async () => signedIn);
+    const onSignedIn = vi.fn();
+    render(
+      <GoogleCallback
+        api={api(linkRequired, { linkGoogle })}
+        code={freshCode()}
+        state="state-value"
+        onSignedIn={onSignedIn}
+        onBackToLogin={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("google-link-form")).toBeDefined());
+    fireEvent.change(screen.getByTestId("google-link-password"), {
+      target: { value: "the-real-password" },
+    });
+    fireEvent.click(screen.getByTestId("google-link-submit"));
+
+    await waitFor(() => expect(onSignedIn).toHaveBeenCalledWith(signedIn));
+    expect(linkGoogle).toHaveBeenCalledWith("link-ticket-1", "the-real-password");
+  });
+
+  it("shows a wrong password's refusal and stays on the form to try again", async () => {
+    const linkGoogle = vi.fn(async () => {
+      throw new ApiError(401, "invalid_credentials", "E-mailadres of wachtwoord klopt niet.");
+    });
+    const onSignedIn = vi.fn();
+    render(
+      <GoogleCallback
+        api={api(linkRequired, { linkGoogle })}
+        code={freshCode()}
+        state="state-value"
+        onSignedIn={onSignedIn}
+        onBackToLogin={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("google-link-form")).toBeDefined());
+    fireEvent.change(screen.getByTestId("google-link-password"), { target: { value: "typo" } });
+    fireEvent.click(screen.getByTestId("google-link-submit"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("google-link-error").textContent).toContain("klopt niet"),
+    );
+    expect(screen.getByTestId("google-link-form")).toBeDefined();
+    expect(onSignedIn).not.toHaveBeenCalled();
+  });
+});
+
+describe("GoogleCallback — one request per authorization code", () => {
+  it("does not replay the single-use code when StrictMode runs the effect twice", async () => {
+    const loginGoogleCallback = vi.fn(async () => ({
+      kind: "signed_in" as const,
+      result: signedIn,
+    }));
+    const onSignedIn = vi.fn();
+    render(
+      <StrictMode>
+        <GoogleCallback
+          api={{ loginGoogleCallback } as unknown as AuthApi}
+          code={freshCode()}
+          state="state-value"
+          onSignedIn={onSignedIn}
+          onBackToLogin={vi.fn()}
+        />
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(onSignedIn).toHaveBeenCalledWith(signedIn));
+    expect(loginGoogleCallback).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("google-callback-problem")).toBeNull();
   });
 });

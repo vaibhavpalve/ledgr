@@ -123,6 +123,7 @@ AUDIT_EXEMPT_PATHS: frozenset[str] = frozenset(
         "/v1/auth/login/passkey/finish",
         "/v1/auth/login/google/start",
         "/v1/auth/login/google/callback",
+        "/v1/auth/login/google/link",
         "/v1/auth/verify-email",
         "/v1/auth/verify-email/resend",
     }

@@ -211,10 +211,47 @@ describe("AuthApi.loginGoogleCallback — IAM-010c's link-required branch", () =
 
     const outcome = await api(fetchImpl).loginGoogleCallback("code", "state");
 
+    // A server that predates the link step sends no ticket: the message is all there is.
     expect(outcome).toEqual({
       kind: "link_required",
       message: "Dit Google-account is nog niet gekoppeld.",
+      ticket: null,
+      email: null,
     });
+  });
+
+  it("carries the link ticket and email when the server issues one (migration 0076)", async () => {
+    const fetchImpl = respond(200, {
+      status: "link_required",
+      message: "Er bestaat al een account.",
+      ticket: "link-ticket",
+      email: "owner@example.com",
+    });
+
+    const outcome = await api(fetchImpl).loginGoogleCallback("code", "state");
+
+    expect(outcome).toEqual({
+      kind: "link_required",
+      message: "Er bestaat al een account.",
+      ticket: "link-ticket",
+      email: "owner@example.com",
+    });
+  });
+
+  it("linkGoogle posts only the ticket and password and maps the auth response", async () => {
+    const fetchImpl = respond(200, {
+      access_token: "tok",
+      token_type: "bearer",
+      mfa_verified: false,
+    });
+
+    const result = await api(fetchImpl).linkGoogle("link-ticket", "pw");
+
+    const [url, init] = vi.mocked(fetchImpl).mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/v1/auth/login/google/link");
+    expect(JSON.parse(String(init.body))).toEqual({ ticket: "link-ticket", password: "pw" });
+    expect(result.accessToken).toBe("tok");
+    expect(result.mfaVerified).toBe(false);
   });
 
   it("resolves signup_required for a brand-new Google identity (FR-MDL-001)", async () => {

@@ -51,6 +51,14 @@ because Google's own OAuth redirect has no room to carry
 account_model/organization_name/kvk_number through it - collecting them
 happens in a genuinely separate request, after the identity is already
 resolved and linked.
+
+--- Google sign-in for an account that already exists (IAM-010c) ---
+
+When the Google email matches an account created another way,
+`login_google_callback` answers `link_required` with a one-time
+`google_link` ticket (migration 0076) holding the verified identity
+server-side. `login_google_link` takes that ticket plus the existing
+account's password and is the only path that links them - see ADR-105.
 """
 
 from __future__ import annotations
@@ -231,6 +239,12 @@ def register(app: FastAPI) -> None:
         login_google_callback,
         methods=["POST"],
         name="login_google_callback",
+    )
+    app.add_api_route(
+        f"{_BASE}/login/google/link",
+        login_google_link,
+        methods=["POST"],
+        name="login_google_link",
     )
     app.add_api_route(
         f"{_BASE}/signup/google",
@@ -1215,16 +1229,19 @@ async def login_google_callback(
         raise problem(request, 409, "errors.google_signin_failed", reason="link_error") from exc
 
     if isinstance(outcome, GoogleSignInLinkRequired):
-        # IAM-010c: no mutation happened. The client must re-submit with the
-        # existing account's password via a follow-up call this route does
-        # not itself expose today (confirm_link_with_password exists in
-        # api.auth.google_signin; wiring a dedicated endpoint for it is a
-        # small, separate follow-up, not built in this pass) - answered
-        # honestly rather than silently signing nobody in.
+        # IAM-010c: no account mutation happened. The verified identity is
+        # held server-side in a one-time `google_link` ticket (migration
+        # 0076); login_google_link below takes that ticket plus the EXISTING
+        # account's password and is the only way it becomes a link.
+        ticket = await SqlCeremonyRepository(session).create_google_link_ceremony(
+            existing_user_id=outcome.existing_user_id, identity=outcome.google_identity
+        )
         await session.commit()
         return {
             "status": "link_required",
             "message": message(request, "errors.google_signin_link_required"),
+            "ticket": str(ticket),
+            "email": outcome.google_identity.email,
         }
 
     organization_id = await _home_organization_id(session, outcome.id)
@@ -1265,6 +1282,129 @@ async def login_google_callback(
     # was never non-None here either, on a returning user's Google
     # sign-in).
     enrollment = await _enrollment_status(session, outcome.id) if not effective_mfa else None
+    await session.commit()
+    return _auth_response(token=token, mfa_verified=effective_mfa, enrollment=enrollment)
+
+
+class GoogleLinkBody(BaseModel):
+    ticket: uuid.UUID
+    password: str
+
+
+async def login_google_link(
+    request: Request,
+    body: GoogleLinkBody,
+    session: AsyncSession = Depends(get_bootstrap_db_session),
+) -> dict[str, Any]:
+    """IAM-010c: links the Google identity a `link_required` callback left in
+    a `google_link` ticket to the EXISTING account, once that account's own
+    password is proven, then signs in exactly as login_google_callback does
+    for a returning user. See docs/decisions/ADR-105-google-sign-in-links-an-
+    existing-account.md.
+
+    - The identity comes from the ticket, never the request body, so a caller
+      cannot name a Google subject of their own.
+    - A wrong password counts against the same `login` lockout as POST
+      /v1/auth/login for that account (IAM-019) - this is not a second,
+      separate budget for guessing it - and is the same identical 401.
+    - A wrong password does not burn the ticket (a typo should not send the
+      person back through Google); the lockout bounds the retries, the ticket
+      expires after five minutes, and a correct password claims it once.
+    """
+    ceremonies = SqlCeremonyRepository(session)
+    try:
+        ceremony = await ceremonies.get_google_link_ceremony(body.ticket)
+    except CeremonyNotFoundError as exc:
+        raise problem(
+            request, 410, "errors.ceremony_not_found", reason="ceremony_not_found"
+        ) from exc
+
+    users = SqlUserRepository(session)
+    existing = await users.get_by_id(ceremony.existing_user_id)
+    if existing is None:  # pragma: no cover - users are never deleted
+        raise problem(request, 410, "errors.ceremony_not_found", reason="ceremony_not_found")
+
+    rate_limiter = AuthRateLimiter(SqlAuthAttemptRepository(session), LoggingAnomalyAlerter())
+    account_key = existing.email.strip().lower()
+    source_ip = request.client.host if request.client else None
+    decision = await rate_limiter.check(endpoint="login", account_key=account_key)
+    if not decision.allowed:
+        raise problem(
+            request,
+            429,
+            "errors.rate_limited",
+            reason=decision.reason,
+            retry_after_seconds=decision.retry_after_seconds,
+        )
+
+    # Both sides of user_google_identity are unique. Either one already taken
+    # means the link this ticket describes can no longer be made (another tab
+    # finished it, or the account holds a different Google identity) - a clean
+    # refusal rather than a constraint violation.
+    google_identities = SqlGoogleIdentityRepository(session)
+    if await google_identities.get_user_id_by_subject(
+        ceremony.identity.subject
+    ) is not None or await google_identities.exists_for_user(existing.id):
+        raise problem(request, 409, "errors.google_signin_failed", reason="already_linked")
+
+    breach_checker = build_breach_checker(settings.breach_checker_provider)
+    service = GoogleSignInService(
+        users, google_identities, AuthenticationService(users, breach_checker)
+    )
+    try:
+        user = await service.confirm_link_with_password(
+            GoogleSignInLinkRequired(
+                existing_user_id=ceremony.existing_user_id, google_identity=ceremony.identity
+            ),
+            password=body.password,
+        )
+    except (InvalidCredentialsError, AccountNotActiveError) as exc:
+        await rate_limiter.record_attempt(
+            endpoint="login", account_key=account_key, source_ip=source_ip, outcome="failure"
+        )
+        await session.commit()
+        raise problem(
+            request, 401, "errors.invalid_credentials", reason="invalid_credentials"
+        ) from exc
+    except GoogleAccountLinkError as exc:
+        raise problem(request, 409, "errors.google_signin_failed", reason="link_error") from exc
+
+    # Claimed only now, in the same transaction as the link: if a concurrent
+    # request already claimed it, raising here rolls this link back.
+    try:
+        await ceremonies.consume_google_link_ceremony(body.ticket)
+    except CeremonyNotFoundError as exc:
+        raise problem(
+            request, 410, "errors.ceremony_not_found", reason="ceremony_not_found"
+        ) from exc
+
+    await rate_limiter.record_attempt(
+        endpoint="login", account_key=account_key, source_ip=source_ip, outcome="success"
+    )
+
+    organization_id = await _home_organization_id(session, user.id)
+    if organization_id is None:
+        await session.commit()
+        raise problem(request, 403, "errors.no_organization", reason="no_organization")
+
+    token, effective_mfa = await _issue_post_authentication_token(
+        session,
+        user=user,
+        organization_id=organization_id,
+        source_ip=source_ip,
+        mfa_verified=google_asserts_second_factor(ceremony.identity),
+    )
+    await _record_authentication_event(
+        session,
+        organization_id=organization_id,
+        actor_user_id=user.id,
+        action="login_google_link",
+        source_ip=source_ip,
+        request=request,
+        set_org_context=True,
+    )
+    # Read before commit - see login()'s comment on the bootstrap session.
+    enrollment = await _enrollment_status(session, user.id) if not effective_mfa else None
     await session.commit()
     return _auth_response(token=token, mfa_verified=effective_mfa, enrollment=enrollment)
 

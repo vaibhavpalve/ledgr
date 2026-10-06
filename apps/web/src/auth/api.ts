@@ -71,7 +71,11 @@ export interface PasskeyChallenge {
 
 export type GoogleCallbackResult =
   | { kind: "signed_in"; result: AuthResult }
-  | { kind: "link_required"; message: string }
+  /** IAM-010c: this Google email already belongs to an account created another
+   * way. `ticket` (the server holds the Google identity behind it) plus that
+   * account's password links the two - see `linkGoogle`. Null only from a
+   * server that predates the link step, where the message is all there is. */
+  | { kind: "link_required"; message: string; ticket: string | null; email: string | null }
   /** FR-MDL-001: this Google identity matched no existing account.
    * GoogleSignInService.sign_in already created a bare user and linked the
    * identity server-side (see api.auth.routes' module docstring) - `ticket`
@@ -165,16 +169,30 @@ export class AuthApi {
   async loginGoogleCallback(code: string, state: string): Promise<GoogleCallbackResult> {
     const raw = await this.call<
       | AuthResponseJson
-      | { status: "link_required"; message: string }
+      | { status: "link_required"; message: string; ticket?: string; email?: string }
       | { status: "signup_required"; ticket: string; email: string }
     >("POST", "/v1/auth/login/google/callback", { code, state });
     if ("status" in raw && raw.status === "link_required") {
-      return { kind: "link_required", message: raw.message };
+      return {
+        kind: "link_required",
+        message: raw.message,
+        ticket: raw.ticket ?? null,
+        email: raw.email ?? null,
+      };
     }
     if ("status" in raw && raw.status === "signup_required") {
       return { kind: "signup_required", ticket: raw.ticket, email: raw.email };
     }
     return { kind: "signed_in", result: toAuthResult(raw as AuthResponseJson) };
+  }
+
+  /** IAM-010c: links the Google identity behind a `link_required` ticket to the
+   * existing account, proven by that account's password, and signs in. */
+  linkGoogle(ticket: string, password: string): Promise<AuthResult> {
+    return this.call<AuthResponseJson>("POST", "/v1/auth/login/google/link", {
+      ticket,
+      password,
+    }).then(toAuthResult);
   }
 
   /** FR-MDL-001's one question, for the Google identity `ticket` names -

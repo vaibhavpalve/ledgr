@@ -7,6 +7,11 @@ signup) a ticket handing a just-created bare user back to a follow-up
 the first two share one table; `google_signup` reuses the same table and
 TTL discipline for the same reason - one shape, one cleanup policy.
 
+`google_link` (migration 0076, IAM-010c) is the third Google kind: a verified
+Google identity whose email matches an existing account, held server-side
+against that account until its password is proven. The browser only ever
+holds the row id.
+
 Neither api.auth.passkeys nor api.auth.google_oidc persists this state
 themselves - both modules say so in their own docstrings, deliberately
 leaving the storage decision to whatever builds the HTTP layer. This module
@@ -15,6 +20,7 @@ is that decision.
 
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -23,12 +29,15 @@ from typing import Literal, Protocol
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.auth.google_oidc import GoogleIdentity
+
 CeremonyKind = Literal[
     "passkey_registration",
     "passkey_authentication",
     "google_oidc",
     "google_signup",
     "email_verification",
+    "google_link",
 ]
 
 _TTL = timedelta(minutes=5)
@@ -69,6 +78,39 @@ class GoogleCeremony:
     code_verifier: str
 
 
+@dataclass(frozen=True, slots=True)
+class GoogleLinkCeremony:
+    id: uuid.UUID
+    existing_user_id: uuid.UUID
+    identity: GoogleIdentity
+
+
+def _identity_to_json(identity: GoogleIdentity) -> str:
+    return json.dumps(
+        {
+            "subject": identity.subject,
+            "email": identity.email,
+            "name": identity.name,
+            "picture": identity.picture,
+            "amr": list(identity.amr),
+        }
+    )
+
+
+def _identity_from_json(raw: object) -> GoogleIdentity:
+    # asyncpg hands jsonb back as text unless a codec is registered; accept both.
+    data = json.loads(raw) if isinstance(raw, str | bytes) else raw
+    if not isinstance(data, dict):
+        raise CeremonyNotFoundError
+    return GoogleIdentity(
+        subject=str(data["subject"]),
+        email=str(data["email"]),
+        name=data.get("name"),
+        picture=data.get("picture"),
+        amr=tuple(str(value) for value in data.get("amr") or ()),
+    )
+
+
 class CeremonyRepository(Protocol):
     async def create_passkey_ceremony(
         self,
@@ -96,6 +138,14 @@ class CeremonyRepository(Protocol):
     async def consume_google_signup_ceremony(self, ticket_id: uuid.UUID) -> uuid.UUID: ...
 
     async def create_email_verification_ceremony(self, *, user_id: uuid.UUID) -> uuid.UUID: ...
+
+    async def create_google_link_ceremony(
+        self, *, existing_user_id: uuid.UUID, identity: GoogleIdentity
+    ) -> uuid.UUID: ...
+
+    async def get_google_link_ceremony(self, ticket_id: uuid.UUID) -> GoogleLinkCeremony: ...
+
+    async def consume_google_link_ceremony(self, ticket_id: uuid.UUID) -> None: ...
 
     async def consume_email_verification_ceremony(self, token_id: uuid.UUID) -> uuid.UUID: ...
 
@@ -278,3 +328,65 @@ class SqlCeremonyRepository:
             raise CeremonyNotFoundError
         user_id: uuid.UUID = row.user_id
         return user_id
+
+    async def create_google_link_ceremony(
+        self, *, existing_user_id: uuid.UUID, identity: GoogleIdentity
+    ) -> uuid.UUID:
+        """IAM-010c: the ticket `login_google_callback` hands back with
+        `link_required`. The verified identity stays here; the follow-up
+        request names only the ticket, so it cannot substitute a Google
+        subject of its own. Same five-minute TTL as the other sign-in
+        ceremonies - long enough to type a password, not to come back later.
+        """
+        result = await self._session.execute(
+            text(
+                "INSERT INTO auth_ceremony (kind, user_id, google_link_identity, expires_at) "
+                "VALUES ('google_link', :user_id, CAST(:identity AS jsonb), :expires_at) "
+                "RETURNING id"
+            ),
+            {
+                "user_id": str(existing_user_id),
+                "identity": _identity_to_json(identity),
+                "expires_at": _utcnow() + _TTL,
+            },
+        )
+        ceremony_id: uuid.UUID = result.scalar_one()
+        return ceremony_id
+
+    async def get_google_link_ceremony(self, ticket_id: uuid.UUID) -> GoogleLinkCeremony:
+        """Reads a live ticket WITHOUT consuming it. A mistyped password must
+        not burn the ticket and send the person back through Google; the
+        account's login lockout (IAM-019) is what bounds the retries, and
+        `consume_google_link_ceremony` claims it once the password is right.
+        """
+        result = await self._session.execute(
+            text(
+                "SELECT user_id, google_link_identity FROM auth_ceremony "
+                "WHERE id = :id AND kind = 'google_link' "
+                "AND consumed_at IS NULL AND expires_at > :now"
+            ),
+            {"id": str(ticket_id), "now": _utcnow()},
+        )
+        row = result.first()
+        if row is None or row.user_id is None or row.google_link_identity is None:
+            raise CeremonyNotFoundError
+        return GoogleLinkCeremony(
+            id=ticket_id,
+            existing_user_id=row.user_id,
+            identity=_identity_from_json(row.google_link_identity),
+        )
+
+    async def consume_google_link_ceremony(self, ticket_id: uuid.UUID) -> None:
+        """Claims the ticket in one statement, so two concurrent requests that
+        both proved the password cannot both link - the second finds no row."""
+        result = await self._session.execute(
+            text(
+                "UPDATE auth_ceremony SET consumed_at = :now "
+                "WHERE id = :id AND kind = 'google_link' "
+                "AND consumed_at IS NULL AND expires_at > :now "
+                "RETURNING id"
+            ),
+            {"id": str(ticket_id), "now": _utcnow()},
+        )
+        if result.first() is None:
+            raise CeremonyNotFoundError
