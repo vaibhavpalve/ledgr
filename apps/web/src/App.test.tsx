@@ -108,11 +108,8 @@ const signedIn = () => screen.findByTestId("app-shell");
 describe("App — the unauthenticated door", () => {
   it("renders the login screen at /login", () => {
     renderApp({}, { route: "/login" });
-    // Two, not one: PreAuthScreen (ADR-057) renders a wordmark in the task
-    // panel AND in the marketing rail, toggled by viewport width via CSS
-    // rather than JS — jsdom does not evaluate that media query, so both are
-    // genuinely in the DOM regardless of which a real browser would show.
-    expect(screen.getAllByText("Ledgr")).toHaveLength(2);
+    // One: the story panel carries the lockup at every width (under 900px it is the band).
+    expect(screen.getAllByText("Boeklite")).toHaveLength(1);
     expect(screen.getByTestId("login-form")).toBeDefined();
   });
 

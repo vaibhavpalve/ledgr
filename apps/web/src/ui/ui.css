@@ -1,5 +1,5 @@
-/*
- * Ledgr UI primitives (design/DESIGN.md section 5, ADR-080).
+﻿/*
+ * Boeklite UI primitives (design/DESIGN.md section 5, ADR-080).
  *
  * Tokens only: every colour, radius, space and family below is a handoff
  * token from @ledgr/design-tokens/ui-tokens.css. The few literal pixel sizes
@@ -521,20 +521,34 @@
 .ui-logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   color: var(--ink);
 }
-.ui-logo svg {
-  color: var(--brand);
+.ui-logo__glyph .a {
+  fill: var(--glyph-a);
+}
+.ui-logo__glyph .b {
+  fill: var(--glyph-b);
 }
 .ui-logo__word {
-  font-family: var(--font-serif);
-  font-weight: 500;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-weight: 400;
   font-size: 26px;
   line-height: 1;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.01em;
 }
-
+/* One-colour glyph on pistachio: the lower bowl is outlined, never filled. */
+.ui-logo--on-pistachio {
+  color: #14261b;
+}
+.ui-logo--on-pistachio .ui-logo__glyph .a {
+  fill: #14261b;
+}
+.ui-logo--on-pistachio .ui-logo__glyph .b {
+  fill: none;
+  stroke: #14261b;
+  stroke-width: 3;
+}
 /* Touch targets: 44px minimum on a phone (DESIGN.md section 8). */
 @media (max-width: 63.99rem) {
   .ui-btn:not(.ui-btn--icon) {

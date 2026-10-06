@@ -1,0 +1,1 @@
+Mobile capture: a full-screen camera with lemon corner marks and a lemon shutter; after capture a `surface` sheet shows supplier, total on the double rule, account and BTW, with Book entry as the `action` pill.

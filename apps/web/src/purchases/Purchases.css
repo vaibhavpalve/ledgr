@@ -24,10 +24,9 @@
 /* ---- The list ------------------------------------------------------------ */
 
 .purchases__card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
   overflow-x: auto;
   /* Clips absolutely positioned descendants too (see .table-wrap in AppShell.css). */
   position: relative;
@@ -39,10 +38,13 @@
   border-collapse: collapse;
 }
 
+/* Header band in `sand`, mono overlines; 48px rows with `line` between them. */
 .purchases__table th {
-  padding: 16px 20px 12px;
+  height: 40px;
+  padding: 0 20px;
+  background: var(--sand);
   color: var(--ink-muted);
-  font: 700 11px/16px var(--font-sans);
+  font: 500 11px/14px var(--font-mono);
   letter-spacing: 0.08em;
   text-align: left;
   text-transform: uppercase;
@@ -50,9 +52,13 @@
 }
 
 .purchases__table td {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border-subtle);
+  height: 56px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--line);
   vertical-align: middle;
+}
+.purchases__table tbody tr:first-child td {
+  border-top: 0;
 }
 
 /* The row is one target: the supplier's link is stretched across it. */
@@ -60,13 +66,13 @@
   position: relative;
 }
 .purchases__table tbody tr:hover {
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
+  background: color-mix(in srgb, var(--sand) 50%, transparent);
 }
 
 .purchases__supplier {
   display: block;
   color: var(--ink);
-  font: 700 15px/20px var(--font-sans);
+  font: 500 15px/20px var(--font-sans);
   text-decoration: none;
 }
 .purchases__supplier::after {
@@ -75,17 +81,16 @@
   inset: 0;
 }
 .purchases__supplier:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--focus);
   outline-offset: -3px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
 }
 
 .purchases__sub {
   display: block;
   margin-top: 2px;
   color: var(--ink-muted);
-  font: 500 12px/16px var(--font-sans);
-  letter-spacing: 0.02em;
+  font: 400 12px/16px var(--font-mono);
 }
 .purchases__sub:empty {
   display: none;
@@ -125,33 +130,42 @@
 .purchases__num {
   text-align: right;
 }
+/* Amounts: mono, tabular, right-aligned. */
 .purchases__amount {
   color: var(--ink);
-  font: 700 15px/20px var(--font-serif, Georgia, serif);
-  font-variant-numeric: tabular-nums lining-nums;
+  font: 500 14px/20px var(--font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+/* The status chip. Lemon marks what needs attention; a done state is never green alone. */
 .purchases__status {
-  display: inline-block;
-  padding: 3px 11px;
-  border-radius: 999px;
-  font: 700 12px/16px var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: var(--radius-pill);
+  background: var(--sand);
+  color: var(--ink);
+  font: 500 12px/16px var(--font-sans);
   white-space: nowrap;
 }
 .purchases__status--draft {
-  background: var(--warning-tint);
-  color: var(--warning);
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
 }
 .purchases__status--ready {
-  background: var(--info-tint);
-  color: var(--info);
+  background: var(--sand);
+  color: var(--ink);
 }
 .purchases__status--posted {
-  background: color-mix(in srgb, var(--ledgr-positive-wash, #dcfce7) 100%, transparent);
-  color: var(--ledgr-positive, #15803d);
+  background: var(--sand);
+  color: var(--positive);
 }
-
+.purchases__status--posted::before {
+  content: "✓";
+  margin-right: 6px;
+}
 /* ---- One invoice, opened ------------------------------------------------- */
 
 .purchase-detail {
@@ -165,9 +179,12 @@
   align-items: center;
   gap: 6px;
   align-self: flex-start;
-  color: var(--ink-muted);
-  font: 600 14px/20px var(--font-sans);
-  text-decoration: none;
+  color: var(--ink);
+  font: 500 14px/20px var(--font-sans);
+  text-decoration: underline;
+  text-decoration-color: var(--leaf);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 .purchase-detail__back:hover {
   color: var(--ink);
@@ -184,30 +201,69 @@
   .purchase-detail__body--with-original {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .purchase-original {
-    position: sticky;
-    top: 92px;
-  }
 }
 
+/* The original sits in the `forest` lightbox on the left; the form is the proposed
+   entry's card on the right. The form stays first in the DOM, so a keyboard or
+   screen-reader user reaches the fields before the picture. */
 .purchase-original {
+  order: -1;
   display: flex;
   flex-direction: column;
-  gap: var(--ledgr-space-2);
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--forest);
+  color: #f8f6ea;
 }
 .purchase-original h2 {
   margin: 0;
-  font-size: var(--ledgr-type-body);
+  font: 500 11px/14px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b5c2ae;
+}
+.purchase-original [role="status"],
+.purchase-original [role="alert"] {
+  margin: 0;
+  color: #f8f6ea;
 }
 .purchase-original__frame {
   width: 100%;
   height: 70vh;
   min-height: 24rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  background: var(--surface-raised);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: #fffef8;
 }
 
+.purchase-detail .expense-form {
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.purchase-detail .expense-form > h2 {
+  font: 500 11px/14px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.purchase-detail .expense-form__notice {
+  border-left-color: var(--leaf);
+  background: var(--mint);
+}
+.purchase-detail .expense-form__check {
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
+}
+
+@media (min-width: 64rem) {
+  .purchase-detail__body--with-original {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
 /* ---- Booking a ready purchase (FR-EXP-001e) --------------------------------- */
 
 .purchase-detail__book {
@@ -216,12 +272,20 @@
   align-items: center;
   gap: var(--ledgr-space-3);
   padding: var(--ledgr-space-4);
-  border: 1px solid var(--brand);
-  border-radius: var(--radius-lg);
-  background: var(--brand-tint);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
 }
 
 .purchase-detail__book p {
   flex: 1 1 20rem;
   margin: 0;
+}
+
+@media (min-width: 64rem) {
+  .purchase-original {
+    position: sticky;
+    top: 92px;
+  }
 }

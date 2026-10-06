@@ -74,8 +74,8 @@ describe("the login screen", () => {
   it("shows the Dutch copy when the language is switched to NL", () => {
     renderLogin();
     fireEvent.click(screen.getByTestId("language-option-nl"));
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug");
-    expect(screen.getByText("of ga verder met")).toBeTruthy();
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug.");
+    expect(screen.getByText("of")).toBeTruthy();
   });
 
   it("has no automated WCAG violations (CMP-012)", async () => {

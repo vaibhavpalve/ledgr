@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  background: var(--surface);
+  background: var(--cream);
   color: var(--ink);
 }
 
@@ -39,11 +39,11 @@
   gap: 10px;
   width: 100%;
   min-height: 0;
-  margin-bottom: var(--space-4);
-  padding: 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-raised);
+  padding: 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   color: var(--ink);
   text-align: left;
   font: inherit;
@@ -59,8 +59,8 @@
 .shell__company .shell__company-marker {
   width: 34px;
   height: 34px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
+  border-radius: 50%;
+  font: 500 12px/1 var(--font-mono);
   letter-spacing: 0;
 }
 .shell__company-text {
@@ -73,7 +73,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 600 14px/18px var(--font-sans);
+  font: 600 13px/17px var(--font-sans);
 }
 .shell__company-kvk {
   font: 400 12px/16px var(--font-sans);
@@ -99,36 +99,9 @@
   gap: var(--space-1);
 }
 
-/* ---- The rail, in the Boekje design's shape ------------------------------
- *
- * Softer than the shared `.ui-nav`: rounded 11px rows, a tinted (not filled)
- * current item, a small-caps group heading. Scoped to the rail so nothing else
- * that uses `.ui-nav` changes, and drawn from the handoff tokens so it follows
- * light and dark with the rest of the shell.
- */
-.shell__rail .ui-nav {
-  height: auto;
-  gap: 11px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  font: 600 13.5px/1.25 var(--font-sans);
-}
-.shell__rail .ui-nav svg {
-  width: 18px;
-  height: 18px;
-}
-.shell__rail .ui-nav:hover {
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
-  color: var(--ink);
-}
-.shell__rail .ui-nav[aria-current="page"] {
-  background: var(--brand-tint);
-  color: var(--brand);
-}
-.shell__rail .ui-navgroup {
-  padding: 10px 10px 6px;
-  font: 700 10.5px/16px var(--font-sans);
-  letter-spacing: 0.09em;
+/* The rail's nav pills and group headings are drawn by ui/bk.css. */
+.shell__rail .ui-navgroup:first-child {
+  padding-top: 0;
 }
 
 /* Who is signed in, at the foot. */
@@ -137,10 +110,9 @@
   align-items: center;
   gap: 10px;
   margin-top: var(--space-2);
-  padding: 11px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: 13px;
+  padding: 8px 4px 0;
+  background: transparent;
+  border: 0;
 }
 .shell__avatar {
   display: grid;
@@ -148,10 +120,10 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: var(--radius-pill);
-  background: var(--brand-tint);
-  color: var(--brand);
-  font: 700 14px/1 var(--font-sans);
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--ink);
+  font: 500 12px/1 var(--font-mono);
 }
 .shell__user-text {
   display: flex;
@@ -163,7 +135,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 700 12.5px/1.25 var(--font-sans);
+  font: 500 13px/1.25 var(--font-sans);
 }
 .shell__user-role {
   font: 400 11px/1.3 var(--font-sans);
@@ -211,8 +183,8 @@
   gap: var(--space-2) var(--space-3);
   min-height: 64px;
   padding: var(--space-2) var(--space-4);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-subtle);
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
 }
 .client-header[data-state="active"] {
   border-bottom-width: 3px;
@@ -389,14 +361,14 @@
   flex: 0 1 440px;
   width: 440px;
   max-width: 100%;
-  height: 40px;
+  height: 48px;
   min-height: 0;
-  padding: 0 var(--space-3);
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: 0 var(--space-4) 0 22px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
   color: var(--ink-muted);
-  font: 400 14px/1 var(--font-sans);
+  font: 400 15px/1 var(--font-sans);
   letter-spacing: 0;
   text-align: left;
   cursor: pointer;
@@ -406,9 +378,8 @@
 }
 .shell__kbd {
   padding: 2px 6px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  font: 400 12px/16px var(--font-mono);
+  border: 0;
+  font: 500 11px/16px var(--font-mono);
   color: var(--ink-muted);
 }
 
@@ -421,12 +392,12 @@
 .shell__fiscal-year select {
   appearance: none;
   width: auto;
-  height: 34px;
+  height: 36px;
   min-height: 0;
-  padding: 0 32px 0 var(--space-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  padding: 0 32px 0 var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
   color: var(--ink);
   font: 500 13px/1 var(--font-sans);
   font-variant-numeric: tabular-nums;
@@ -463,9 +434,9 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--brand-tint);
-  color: var(--brand);
-  font: 700 13px/1 var(--font-sans);
+  background: var(--mint);
+  color: var(--ink);
+  font: 500 12px/1 var(--font-mono);
 }
 .user-menu__panel {
   position: absolute;
@@ -477,10 +448,10 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
 }
 .user-menu__email {
   font: 600 14px/20px var(--font-sans);
@@ -572,8 +543,8 @@
   z-index: 10;
   display: flex;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--surface-raised);
-  border-top: 1px solid var(--border-subtle);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
 }
 .shell__tab {
   flex: 1 1 0;
@@ -606,8 +577,8 @@
   border-radius: var(--radius-pill);
 }
 .shell__tab[aria-current="page"] .shell__tab-icon {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--action);
+  color: var(--on-action);
 }
 
 /* ==========================================================================
@@ -617,7 +588,7 @@
 @media (min-width: 64rem) {
   .shell {
     display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-columns: 232px minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "rail header"
@@ -633,9 +604,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
-    padding: 20px var(--space-4);
-    background: var(--surface-sunken);
-    border-right: 1px solid var(--border-subtle);
+    padding: var(--space-5) var(--space-4);
+    background: var(--cream);
+    border-right: 1px solid var(--line);
     overflow-y: auto;
   }
 
@@ -677,6 +648,22 @@
     display: inline-flex;
   }
 
+  /* Brand, nav, then the company card, then settings and who is signed in. */
+  .shell__brand {
+    order: 0;
+    padding: 0 var(--space-2) var(--space-5);
+  }
+  .shell__nav {
+    order: 1;
+  }
+  .shell__company {
+    order: 2;
+    margin-top: var(--space-3);
+  }
+  .shell__rail-foot {
+    order: 3;
+  }
+
   .shell__main {
     grid-area: main;
     padding: 28px var(--space-6) var(--space-7);
@@ -688,4 +675,14 @@
   .user-menu__link--compact-only {
     display: none;
   }
+}
+
+/* The accountant's banner: whose books these are. Lemon-tint, a word and no colour alone. */
+.shell__banner {
+  margin: 0;
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
+  font: 500 13px/18px var(--font-sans);
 }

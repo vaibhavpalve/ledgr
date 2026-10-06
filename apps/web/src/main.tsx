@@ -1,14 +1,19 @@
-import { StrictMode } from "react";
+﻿import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 // Tokens FIRST: every stylesheet below reads `var(--ledgr-*)`, and a custom
 // property referenced before it is declared resolves to nothing rather than to
 // a sensible default (ADR-055).
 import "@ledgr/design-tokens/tokens.css";
-// The Ledgr UI handoff tokens and fonts (design/, ADR-080). Different names from
+// The Boeklite UI handoff tokens and fonts (design/, ADR-080). Different names from
 // the `--ledgr-*` set above, so the two coexist while screens move across.
 import "@ledgr/design-tokens/ui-tokens.css";
 import "@ledgr/design-tokens/ui-fonts.css";
+// The Boeklite design system (design/boeklite-design, ADR-104): palette, Instrument Serif /
+// Geist / Geist Mono and the signature components. Colliding names are scoped to .bk.
+import "@ledgr/design-tokens/bk-tokens.css";
+import "@ledgr/design-tokens/bk-fonts.css";
+import "@ledgr/design-tokens/bk-components.css";
 import "./accessibility.css";
 import "./app.css";
 import { App } from "./App";

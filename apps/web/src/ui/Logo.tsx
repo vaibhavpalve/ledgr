@@ -1,25 +1,26 @@
 /** The product name is a proper noun, the same in both languages. */
-const WORD = "Ledgr";
+const WORD = "Boeklite";
 
 /**
- * The placeholder wordmark (DESIGN.md section 3): an outline mark, a rounded
- * square with a vertical rule at a third and two horizontal rules, then the
- * word "Ledgr" in Newsreader 500. Replace when a real logo exists.
+ * The balanced B (design system, Logos): a stem and two equal bowls split by a
+ * hairline, debit equal to credit. The lockup is the glyph at cap height, then
+ * "Boeklite" as live type in Instrument Serif. `onPanel` is the one-colour
+ * version for a `pistachio` ground, where the two-colour glyph is not allowed.
+ * Colours come from the `--glyph-*` tokens, so the theme flips them.
  */
 export function Logo({ size = 28, onPanel }: { size?: number; onPanel?: boolean }) {
   return (
-    <span className="ui-logo" style={onPanel ? { color: "var(--on-panel)" } : undefined}>
+    <span className={`ui-logo${onPanel ? " ui-logo--on-pistachio" : ""}`}>
       <svg
-        width={size}
+        className="ui-logo__glyph"
         height={size}
-        viewBox="0 0 32 32"
-        fill="none"
-        stroke={onPanel ? "var(--on-panel)" : "currentColor"}
-        strokeWidth="2"
+        width={(size * 36) / 48}
+        viewBox="0 0 36 48"
         aria-hidden="true"
       >
-        <rect x="3" y="3" width="26" height="26" rx="7" />
-        <path d="M11 3v26M11 12h18M11 20h18" />
+        <rect className="a" x="0" y="0" width="11" height="48" rx="2" />
+        <path className="a" d="M13 0h7a11.5 11.5 0 0 1 0 23h-7z" />
+        <path className="b" d="M13 25h7a11.5 11.5 0 0 1 0 23h-7z" />
       </svg>
       <span className="ui-logo__word">{WORD}</span>
     </span>

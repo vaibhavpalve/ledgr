@@ -9,7 +9,7 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background-color: var(--ledgr-surface-ground);
+  background-color: var(--cream);
 }
 
 .onboarding-frame__bar {
@@ -18,8 +18,8 @@
   flex-wrap: wrap;
   gap: var(--ledgr-space-3);
   padding: var(--ledgr-space-3) var(--ledgr-space-4);
-  background-color: var(--ledgr-surface-paper);
-  border-bottom: 1px solid var(--ledgr-border-subtle);
+  background-color: var(--cream);
+  border-bottom: 1px solid var(--line);
 }
 
 .onboarding-frame__main {
@@ -50,10 +50,10 @@
 
 .onboarding__form {
   padding: var(--ledgr-space-5);
-  background-color: var(--ledgr-surface-paper);
-  border: 1px solid var(--ledgr-border-subtle);
-  border-radius: var(--ledgr-radius-panel);
-  box-shadow: var(--ledgr-shadow-sm);
+  background-color: var(--surface);
+  border: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 
 .onboarding__form legend {
@@ -63,4 +63,34 @@
 
 .onboarding .facts {
   padding: var(--ledgr-space-4);
+}
+
+/* Progress: mono overline steps, the current one in ink, done ones with the leaf. */
+.onboarding .steps {
+  gap: var(--space-4);
+}
+.onboarding .steps li {
+  font: 500 11px/14px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.onboarding .steps li::before {
+  width: 24px;
+  height: 24px;
+  background: var(--sand);
+  color: var(--ink);
+  font: 500 11px/1 var(--font-mono);
+}
+.onboarding .steps li[aria-current="step"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+.onboarding .steps li[aria-current="step"]::before {
+  background: var(--action);
+  color: var(--on-action);
+}
+.onboarding .steps li[data-done="true"]::before {
+  background: var(--mint);
+  color: var(--ink);
 }

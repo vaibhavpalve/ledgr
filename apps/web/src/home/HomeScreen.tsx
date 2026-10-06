@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, Check, CircleAlert, Plus } from "lucide-react";
+import { ArrowRight, Check, CircleAlert, Plus } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 import type {
   DashboardActionItemView,
@@ -18,7 +18,6 @@ import {
   CardHead,
   CashChart,
   EmptyState,
-  KpiCard,
   Row,
   useMoney,
   type BadgeVariant,
@@ -151,19 +150,23 @@ export function HomeScreen({
     <section className="home" aria-label={t("mobile.home.title")}>
       <div className="home__top">
         <div>
-          <h1 className="home__title">{greeting(t)}</h1>
-          <p className="home__date" data-testid="home-today">
+          <p className="bk-over" data-testid="home-today">
             {longToday(language)}
           </p>
+          <h1 className="home__title bk-serif">
+            {t("mobile.home.headline_lead")} <em>{t("mobile.home.headline_mark")}</em>
+          </h1>
         </div>
         <div className="home__actions">
-          <Button onClick={() => onNavigate("/purchases")}>
-            <Camera size={18} strokeWidth={1.8} aria-hidden="true" />
-            {t("mobile.home.action.capture_receipt")}
-          </Button>
-          <Button variant="primary" onClick={() => onNavigate("/invoices/new")}>
-            <Plus size={18} strokeWidth={2.2} aria-hidden="true" />
+          <Button onClick={() => onNavigate("/invoices/new")}>
+            <Plus size={18} strokeWidth={1.5} aria-hidden="true" />
             {t("mobile.home.action.new_invoice")}
+          </Button>
+          <Button variant="primary" onClick={() => onNavigate("/purchases")}>
+            {t("mobile.home.action.capture_receipt")}
+            <span className="ui-btn__end" aria-hidden="true">
+              <ArrowRight size={16} strokeWidth={2} />
+            </span>
           </Button>
         </div>
       </div>
@@ -192,62 +195,117 @@ export function HomeScreen({
 
       {summary !== null ? (
         <>
+          {/* The bento's top row: forest cash, lemon BTW, one pistachio card. */}
           <section
             className="home__kpis"
             aria-label={t("mobile.home.figures_heading")}
             data-testid="home-figures"
           >
-            <KpiCard
-              label={t("mobile.home.cash_position_label")}
-              value={<span data-testid="home-cash-position">{money(summary.cash_position)}</span>}
-              chip={cashChip}
-              caption={
-                <>
-                  {cashChip ? (
-                    <>
-                      {t("mobile.home.cash_vs", { month: previousMonth })}
-                      <br />
-                    </>
-                  ) : null}
-                  <span data-testid="home-cash-position-caption">
-                    {t(
-                      isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption",
-                    )}
-                  </span>
-                </>
-              }
-            />
-            <KpiCard
-              label={t("mobile.home.receivables_label")}
-              value={<span data-testid="home-receivables">{money(summary.receivables)}</span>}
-              caption={
-                <span data-testid="home-receivables-caption">
+            <Card className="home__card home__card--forest home__cash">
+              <p className="bk-over">{t("mobile.home.cash_position_label")}</p>
+              <p className="home__hero bk-serif">
+                <span data-testid="home-cash-position">{money(summary.cash_position)}</span>
+              </p>
+              <p className="home__caption">
+                {cashChip ? (
+                  <>
+                    <Badge variant="delta">{cashChip}</Badge>{" "}
+                    {t("mobile.home.cash_vs", { month: previousMonth })}
+                    <br />
+                  </>
+                ) : null}
+                <span data-testid="home-cash-position-caption">
+                  {t(isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption")}
+                </span>
+              </p>
+              <div className="home__owed">
+                <p className="bk-over">{t("mobile.home.receivables_label")}</p>
+                <p className="home__owed-amount bk-num">
+                  <span data-testid="home-receivables">{money(summary.receivables)}</span>
+                </p>
+                <p className="home__caption" data-testid="home-receivables-caption">
                   {t(
                     isSetup
                       ? "mobile.home.kpi.receivables_empty"
                       : "mobile.home.receivables_caption",
                   )}
+                </p>
+              </div>
+            </Card>
+
+            <Card className="home__card home__card--lemon" aria-label={t("mobile.home.btw.title")}>
+              <p className="bk-over">
+                {t("mobile.home.vat_estimate_label")}
+                {daysLeft !== null ? (
+                  <>
+                    {" · "}
+                    <span data-testid="home-btw-days">
+                      {t("mobile.home.btw.days", { count: daysLeft })}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+              <p className="home__hero home__hero--btw bk-serif">
+                <span className="bk-total" data-testid="home-vat-estimate">
+                  {money(vatReturn?.estimate ?? summary.vat_estimate)}
                 </span>
-              }
-            />
-            <KpiCard
-              label={t("mobile.home.vat_estimate_label")}
-              value={<span data-testid="home-vat-estimate">{money(summary.vat_estimate)}</span>}
-              caption={
-                <>
-                  <span data-testid="home-vat-estimate-period">
-                    {t("mobile.home.vat_estimate_period", {
-                      start: date(summary.vat_period_start),
-                      end: date(summary.vat_period_end),
-                    })}
+              </p>
+              <p className="home__btw-period" data-testid="home-btw-period">
+                {periodLabel(periodStart, periodEnd) ??
+                  t("mobile.home.vat_estimate_period", {
+                    start: date(periodStart),
+                    end: date(periodEnd),
+                  })}
+                {vatReturn ? (
+                  <span className="home__btw-due" data-testid="home-btw-due">
+                    {t("mobile.home.btw.due", { date: date(vatReturn.due_date) })}
                   </span>
-                  {" · "}
-                  <span data-testid="home-vat-estimate-caption">
-                    {t(isSetup ? "mobile.home.kpi.vat_empty" : "mobile.home.vat_estimate_caption")}
-                  </span>
-                </>
-              }
-            />
+                ) : null}
+              </p>
+              <p className="home__caption">
+                <span data-testid="home-vat-estimate-period">
+                  {t("mobile.home.vat_estimate_period", {
+                    start: date(summary.vat_period_start),
+                    end: date(summary.vat_period_end),
+                  })}
+                </span>
+                {" · "}
+                <span data-testid="home-vat-estimate-caption">
+                  {t(isSetup ? "mobile.home.kpi.vat_empty" : "mobile.home.vat_estimate_caption")}
+                </span>
+              </p>
+              {isSetup ? <p className="home__caption">{t("mobile.home.btw.empty")}</p> : null}
+              {/* The estimate's own return, one click away: the card was a dead end. */}
+              <Button
+                size="sm"
+                className="home__btw-open"
+                data-testid="home-vat-open"
+                onClick={() => onNavigate("/vat")}
+              >
+                {t("vat.open_from_home")}
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              </Button>
+            </Card>
+
+            <Card
+              className="home__card home__card--pistachio"
+              aria-label={t("mobile.home.unbooked_label")}
+            >
+              <p className="bk-over">{t("mobile.home.unbooked_label")}</p>
+              <p className="home__count bk-serif" data-testid="home-unbooked">
+                {draftReceipts}
+              </p>
+              <p className="home__caption home__caption--pistachio">
+                {draftReceipts > 0 ? (
+                  <>
+                    <CircleAlert size={14} strokeWidth={1.8} aria-hidden="true" />{" "}
+                    {t("mobile.home.btw.receipts_to_review", { count: draftReceipts })}
+                  </>
+                ) : (
+                  t("mobile.home.unbooked_empty")
+                )}
+              </p>
+            </Card>
           </section>
 
           <div className="home__columns">
@@ -288,7 +346,7 @@ export function HomeScreen({
                     >
                       {items.map((item) => (
                         <li key={item.id} data-testid="home-item">
-                          <Row height={72} className="home__list-row">
+                          <Row height={64} className="home__list-row">
                             <Badge variant={badgeFor(item.kind)} className="home__item-badge">
                               {t(`mobile.home.state.${item.kind}`)}
                             </Badge>
@@ -327,7 +385,7 @@ export function HomeScreen({
                   <ul className="ui-list" data-testid="home-recent">
                     {recent.map((invoice) => (
                       <li key={invoice.id}>
-                        <Row height={51}>
+                        <Row height={48}>
                           <span className="home__recent-text">
                             {invoice.invoice_reference ?? t("invoice.list.draft_reference")}
                             {" · "}
@@ -362,7 +420,7 @@ export function HomeScreen({
                 <Card padded aria-label={t("mobile.home.cash_position_label")}>
                   <div className="home__chart-head">
                     <h2 className="ui-card__title">{t("mobile.home.cash_position_label")}</h2>
-                    <span className="home__chart-note">
+                    <span className="bk-over">
                       {t("mobile.home.chart.months", { count: history.length })}
                     </span>
                   </div>
@@ -386,50 +444,6 @@ export function HomeScreen({
                   </div>
                 </Card>
               ) : null}
-
-              <Card padded aria-label={t("mobile.home.btw.title")}>
-                <div className="home__btw-head">
-                  <h2 className="ui-card__title">{t("mobile.home.btw.title")}</h2>
-                  {daysLeft !== null ? (
-                    <Badge variant="draft" data-testid="home-btw-days">
-                      {t("mobile.home.btw.days", { count: daysLeft })}
-                    </Badge>
-                  ) : null}
-                </div>
-                <p className="home__btw-period" data-testid="home-btw-period">
-                  {periodLabel(periodStart, periodEnd) ??
-                    t("mobile.home.vat_estimate_period", {
-                      start: date(periodStart),
-                      end: date(periodEnd),
-                    })}
-                  {vatReturn ? (
-                    <span className="home__btw-due" data-testid="home-btw-due">
-                      {t("mobile.home.btw.due", { date: date(vatReturn.due_date) })}
-                    </span>
-                  ) : null}
-                </p>
-                <p className="home__btw-estimate">
-                  <Amount value={vatReturn?.estimate ?? summary.vat_estimate} />{" "}
-                  {t("mobile.home.btw.estimated")}
-                </p>
-                {isSetup ? (
-                  <p className="home__btw-note">{t("mobile.home.btw.empty")}</p>
-                ) : draftReceipts > 0 ? (
-                  <p className="home__btw-note">
-                    <CircleAlert size={14} strokeWidth={1.8} aria-hidden="true" />{" "}
-                    {t("mobile.home.btw.receipts_to_review", { count: draftReceipts })}
-                  </p>
-                ) : null}
-                {/* The estimate's own return, one click away: the card was a dead end. */}
-                <Button
-                  size="sm"
-                  className="home__btw-open"
-                  data-testid="home-vat-open"
-                  onClick={() => onNavigate("/vat")}
-                >
-                  {t("vat.open_from_home")}
-                </Button>
-              </Card>
             </div>
           </div>
         </>
@@ -437,7 +451,6 @@ export function HomeScreen({
     </section>
   );
 }
-
 /**
  * The empty home's checklist (Home-empty.png): what to do to reach the first
  * booked entry. "Company details" is always done, since the screen only exists
@@ -517,18 +530,6 @@ function isZero(amount: string): boolean {
 
 function badgeFor(kind: DashboardActionItemView["kind"]): BadgeVariant {
   return kind === "overdue_invoice" ? "overdue" : "draft";
-}
-
-/** Time-of-day greeting from the browser clock: a display nicety, never a posting date. */
-function greeting(t: ReturnType<typeof useI18n>["t"]): string {
-  const hour = new Date().getHours();
-  const key =
-    hour < 12
-      ? "mobile.home.greeting.morning"
-      : hour < 18
-        ? "mobile.home.greeting.afternoon"
-        : "mobile.home.greeting.evening";
-  return t(key);
 }
 
 /** "April" or "Apr" for a "YYYY-MM" month, in the reader's language. */

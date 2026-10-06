@@ -215,6 +215,24 @@
       "nl": "Overzicht",
       "en": "Home"
     },
+    "mobile.home.headline_lead": {
+      "note": "Dashboard title, followed by mobile.home.headline_mark in italic.",
+      "nl": "Je boekhouding,",
+      "en": "Your books,"
+    },
+    "mobile.home.headline_mark": {
+      "nl": "vandaag.",
+      "en": "today."
+    },
+    "mobile.home.unbooked_label": {
+      "note": "Overline on the pistachio card: how many receipts are waiting to be booked.",
+      "nl": "Nog te boeken",
+      "en": "Unbooked"
+    },
+    "mobile.home.unbooked_empty": {
+      "nl": "Alles is geboekt.",
+      "en": "Everything is booked."
+    },
     "mobile.home.cash_position_label": {
       "nl": "Liquide middelen",
       "en": "Cash position"

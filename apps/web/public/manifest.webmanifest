@@ -1,12 +1,12 @@
 {
-  "name": "LEDGR",
-  "short_name": "LEDGR",
+  "name": "Boeklite",
+  "short_name": "Boeklite",
   "description": "Boekhouden van bon tot aangifte: vastleggen, factureren en het grootboek, ook vanaf uw telefoon.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f0e9",
-  "theme_color": "#f5f0e9",
+  "background_color": "#f8f6ea",
+  "theme_color": "#f8f6ea",
   "lang": "nl",
   "icons": [
     {
@@ -29,3 +29,4 @@
     }
   ]
 }
+

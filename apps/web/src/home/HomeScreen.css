@@ -19,18 +19,10 @@
   gap: var(--space-4);
 }
 .home__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 36px;
-  line-height: 40px;
-  letter-spacing: -0.5px;
+  margin: 6px 0 0;
+  font-size: 44px;
+  line-height: 48px;
   text-wrap: balance;
-}
-.home__date {
-  margin: 0;
-  font: 400 14px/20px var(--font-sans);
-  color: var(--ink-muted);
 }
 .home__actions {
   display: flex;
@@ -38,33 +30,122 @@
   gap: var(--space-3);
 }
 
+/* Bento: 12 columns, 12px gaps. Cash 5, BTW 4, unbooked 3; to-do 7, chart 5. */
 .home__kpis {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: var(--space-3);
 }
 @media (min-width: 64rem) {
   .home__kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .home__cash {
+    grid-column: span 5;
+  }
+  .home__card--lemon {
+    grid-column: span 4;
+  }
+  .home__card--pistachio {
+    grid-column: span 3;
   }
 }
 
 .home__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: var(--space-3);
   align-items: start;
 }
 @media (min-width: 64rem) {
   .home__columns {
-    grid-template-columns: minmax(0, 688fr) minmax(0, 420fr);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   }
 }
 .home__column {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-3);
   min-width: 0;
+}
+
+/* The three coloured cards. `ui-card` already gives radius and padding rules. */
+.home .home__card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  box-shadow: none;
+}
+.home .home__card--forest {
+  background: var(--forest);
+  color: #f8f6ea;
+}
+.home .home__card--forest .bk-over,
+.home .home__card--forest .home__caption {
+  color: #b5c2ae;
+}
+.home .home__card--lemon {
+  background: var(--lemon);
+  color: #14261b;
+}
+.home .home__card--lemon .bk-over,
+.home .home__card--lemon .home__caption {
+  color: #5a4a00;
+}
+.home .home__card--pistachio {
+  background: var(--pistachio);
+  color: #14261b;
+}
+.home .home__card--pistachio .bk-over,
+.home .home__caption--pistachio {
+  color: var(--pistachio-ink);
+}
+.home__hero {
+  margin: 18px 0 6px;
+  font-size: 60px;
+  line-height: 60px;
+  letter-spacing: -0.015em;
+}
+.home__card--forest .home__hero {
+  color: var(--lemon);
+}
+.home__hero .bk-total {
+  display: inline-block;
+}
+.home__hero--btw {
+  font-size: 52px;
+  line-height: 56px;
+}
+.home__count {
+  margin: 12px 0 0;
+  font-size: 112px;
+  line-height: 100px;
+}
+.home__caption {
+  margin: 0;
+  font: 400 13px/18px var(--font-sans);
+}
+.home__caption svg {
+  display: inline;
+  vertical-align: -2px;
+}
+.home__card--pistachio .home__caption {
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+.home__owed {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid #2c5a40;
+}
+.home__owed-amount {
+  margin: var(--space-1) 0;
+  font-size: 20px;
+  line-height: 26px;
+  color: var(--lemon);
+}
+.home__card--forest .ui-badge--delta {
+  margin-right: var(--space-1);
 }
 .home__clip {
   overflow: hidden;
@@ -140,9 +221,9 @@
   height: 34px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--surface-sunken);
+  background: var(--sand);
   color: var(--ink);
-  font: 700 14px/1 var(--font-sans);
+  font: 500 13px/1 var(--font-mono);
 }
 .home__step-mark--done {
   background: var(--brand-tint);
@@ -166,43 +247,20 @@
 .home__chart-empty {
   margin-top: var(--space-3);
 }
-.home__chart-head,
-.home__btw-head {
+.home__btw-due {
+  display: block;
+  font: 400 13px/20px var(--font-sans);
+}
+.home__btw-period {
+  margin: var(--space-1) 0 var(--space-3);
+  font: 500 13px/18px var(--font-sans);
+}
+.home__chart-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
 }
-.home__chart-note {
-  font: 400 13px/20px var(--font-sans);
-  color: var(--ink-muted);
-}
-.home__btw-due {
-  display: block;
-  font: 400 13px/20px var(--font-sans);
-  color: var(--ink-muted);
-}
-.home__btw-period {
-  margin: var(--space-2) 0 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  font-size: 30px;
-  line-height: 34px;
-}
-.home__btw-estimate {
-  margin: var(--space-2) 0 0;
-  font: 400 14px/20px var(--font-sans);
-}
-.home__btw-note {
-  margin: var(--space-2) 0 0;
-  font: 400 13px/20px var(--font-sans);
-  color: var(--ink-muted);
-}
-.home__btw-note svg {
-  display: inline;
-  vertical-align: -2px;
-}
-
 /* Loading */
 .home__loading {
   display: flex;
@@ -211,14 +269,14 @@
 }
 .home__loading-row {
   height: 132px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  background: var(--sand);
 }
 
 @media (max-width: 40rem) {
   .home__title {
-    font-size: 30px;
-    line-height: 34px;
+    font-size: 34px;
+    line-height: 38px;
   }
   /* Badge and action share the first line, the sentence takes the line below. */
   .home__item-badge {
@@ -249,7 +307,24 @@
 }
 
 /* The BTW card's way to the return itself (ADR-087). */
-.home__btw-open {
+.home .home__btw-open {
   align-self: flex-start;
-  margin-top: var(--ledgr-space-3);
+  margin-top: auto;
+  background: #14261b;
+  border-color: transparent;
+  color: #f8f6ea;
+}
+.home .home__btw-open:hover {
+  background: #14261b;
+  filter: brightness(1.25);
+}
+
+/* Focus on the coloured cards: the ring is the card's own ink, since the page's focus colour is
+   lemon in the dark theme and would vanish on the lemon card. */
+.home .home__card--lemon :focus-visible,
+.home .home__card--pistachio :focus-visible {
+  outline-color: #14261b;
+}
+.home .home__card--forest :focus-visible {
+  outline-color: var(--lemon);
 }

@@ -239,7 +239,7 @@ export function AppShell() {
 
   return (
     <div
-      className="shell ui-root"
+      className="shell ui-root bk"
       data-testid="app-shell"
       data-layout={hasAdministration ? "administration" : "portfolio"}
     >
@@ -378,6 +378,14 @@ export function AppShell() {
         tabIndex={-1}
         data-testid="mobile-shell-content"
       >
+        {/* A firm user inside a client's books is told whose, in words (SCREENS.md, Accountant view). */}
+        {isFirm && administration !== null ? (
+          <p className="shell__banner" data-testid="shell-working-in">
+            {t("client.banner.working_in", {
+              name: administration.trade_name ?? administration.legal_name,
+            })}
+          </p>
+        ) : null}
         {!me.user.email_verified ? <EmailVerificationBanner email={me.user.email} /> : null}
         <Outlet />
       </main>

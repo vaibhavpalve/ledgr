@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CircleAlert, KeyRound } from "lucide-react";
+import { ArrowRight, CircleAlert, KeyRound } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 
 import type { AuthApi, AuthResult } from "./api";
@@ -8,7 +8,7 @@ import { Button, Field } from "../ui";
 import { getPasskey, PasskeyUnavailableError } from "./webauthn";
 
 /**
- * IAM-010's sign-in screen: password, passkey and Google side by side.
+ * IAM-010's sign-in screen: passkey as the one primary action, then password and Google.
  * Follows `capture/ExpenseForm.tsx`'s pattern (local `useState`, no form
  * library, the server's already-translated sentence shown as-is on
  * failure — FR-UX-007) rather than inventing a new one for this screen.
@@ -63,6 +63,31 @@ export function LoginForm({
 
   return (
     <div className="auth-form" data-testid="login-form">
+      {/* Passkey first: IAM-012 counts it as a full factor, so it is the one primary
+          action. Password and Google stay below it, as outline pills. */}
+      <Button
+        variant="primary"
+        size="lg"
+        block
+        data-testid="login-passkey"
+        disabled={submitting !== null}
+        onClick={() =>
+          void withProblem("passkey", async () => {
+            const { ceremonyId, optionsJson } = await api.loginPasskeyBegin();
+            const credential = await getPasskey(optionsJson);
+            onSignedIn(await api.loginPasskeyFinish(ceremonyId, credential));
+          })
+        }
+      >
+        <KeyRound size={18} strokeWidth={1.5} aria-hidden="true" />
+        {t("auth.sign_in.passkey_short")}
+        <span className="login-passkey__end" aria-hidden="true">
+          <ArrowRight size={16} strokeWidth={2} />
+        </span>
+      </Button>
+
+      <p className="login-divider">{t("auth.sign_in.or")}</p>
+
       <form
         className="login-actions"
         aria-label={t("auth.sign_in.heading")}
@@ -130,22 +155,11 @@ export function LoginForm({
           </p>
         ) : null}
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          block
-          data-testid="login-submit"
-          disabled={submitting !== null}
-        >
-          {t("auth.sign_in.submit")}
-        </Button>
-      </form>
-
-      <div className="login-actions">
-        <p className="login-divider">{t("auth.sign_in.or_continue")}</p>
-
         <div className="login-alt">
+          <Button type="submit" size="lg" data-testid="login-submit" disabled={submitting !== null}>
+            {t("auth.sign_in.submit")}
+          </Button>
+
           <Button
             size="lg"
             data-testid="login-google"
@@ -161,25 +175,8 @@ export function LoginForm({
             <GoogleIcon />
             {t("auth.sign_in.google_short")}
           </Button>
-
-          <Button
-            size="lg"
-            data-testid="login-passkey"
-            aria-label={t("auth.sign_in.passkey")}
-            disabled={submitting !== null}
-            onClick={() =>
-              void withProblem("passkey", async () => {
-                const { ceremonyId, optionsJson } = await api.loginPasskeyBegin();
-                const credential = await getPasskey(optionsJson);
-                onSignedIn(await api.loginPasskeyFinish(ceremonyId, credential));
-              })
-            }
-          >
-            <KeyRound size={18} strokeWidth={1.8} aria-hidden="true" />
-            {t("auth.sign_in.passkey_short")}
-          </Button>
         </div>
-      </div>
+      </form>
 
       {/* A different journey, not a second primary action, so it is a text
           link and never a filled button beside the one the screen exists for. */}
@@ -196,15 +193,14 @@ export function LoginForm({
       </p>
     </div>
   );
-}
-/**
+} /**
  * Google's own four-colour "G" mark, at the fixed proportions and colours
  * Google's brand guidelines require for a "Sign in with Google" button —
  * literal hexes, not `var(--ledgr-*)` tokens, for the same reason the client
  * marker colours and the pre-auth marketing rail are literals rather than
  * theme-following ones (see tokens.css and ADR-057): this mark's colour IS
  * what identifies it as Google's, and it has to render identically
- * regardless of LEDGR's own light/dark setting.
+ * regardless of Boeklite's own light/dark setting.
  *
  * `aria-hidden` — the button's own visible text already names the action
  * fully ("Sign in with Google"), so this is decoration, not a second

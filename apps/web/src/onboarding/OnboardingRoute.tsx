@@ -29,7 +29,7 @@ export function OnboardingRoute() {
   const isFirm = me.organization.kind === "firm";
 
   return (
-    <div className="onboarding-frame" data-testid="onboarding-frame">
+    <div className="onboarding-frame ui-root bk" data-testid="onboarding-frame">
       <header className="onboarding-frame__bar">
         <Wordmark />
         <div className="app__bar-spacer" />

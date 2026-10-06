@@ -96,3 +96,19 @@
   padding-left: 0;
   list-style: none;
 }
+
+/* The toolbar above the transactions: statuses on the left, import on the right. */
+.panel > .form__row:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+/* A panel opened inside a table row is a tinted tray, not a second card. */
+.bank-row__panel .panel {
+  background: var(--sand);
+  box-shadow: none;
+}

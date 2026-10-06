@@ -15,7 +15,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LEDGR</title>
+    <title>Boeklite</title>
 
     <!--
       THEME, BEFORE FIRST PAINT (ADR-055).
@@ -37,7 +37,7 @@
     <script>
       (function () {
         try {
-          var stored = localStorage.getItem("ledgr.theme.v1");
+          var stored = localStorage.getItem("boeklite.theme.v1");
           if (stored === "light" || stored === "dark") {
             document.documentElement.setAttribute("data-theme", stored);
           }
@@ -56,14 +56,14 @@
       written literally. Values are `surface-ground` from each theme —
       the chrome should continue the page, not announce the brand.
     -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f6f2" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161a18" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8f6ea" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101912" />
 
     <!--
       Source Sans 3 and Source Serif 4 — the pairing the design system is
       built on. The serif carries monetary figures and page titles; no other
       Dutch bookkeeping product sets amounts in a serif, and it is the
-      cheapest thing that makes a LEDGR screenshot recognisable.
+      cheapest thing that makes a Boeklite screenshot recognisable.
 
       Self-hosted from /fonts/ since ADR-061 (the @font-face rules live in
       @ledgr/design-tokens/tokens.css, next to the font tokens they serve).
@@ -86,7 +86,7 @@
       type="font/woff2"
       crossorigin
     />
-    <!-- The Ledgr UI handoff's faces (ADR-080), latin subsets only. -->
+    <!-- The Boeklite UI handoff's faces (ADR-080), latin subsets only. -->
     <link
       rel="preload"
       href="/fonts/HankenGrotesk-400-700-latin.woff2"
@@ -104,9 +104,7 @@
 
     <!--
       §5.2/MOB-002: "the cheapest route is an installable PWA with camera
-      access" (ADR-046). The icons are the double-ruled mark from
-      Wordmark.tsx on the accent tile: the SVG favicon for every modern
-      browser, the 192 PNG as the fallback and the Apple touch icon.
+      access" (ADR-046). The icons are the balanced B of the Boeklite design system (ADR-104) on the forest tile: the SVG favicon for every modern browser, the 192 PNG as the fallback and the Apple touch icon.
     -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -118,3 +116,4 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

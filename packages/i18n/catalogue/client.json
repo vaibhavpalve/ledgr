@@ -108,6 +108,11 @@
       "nl": "Klant wordt geladen…",
       "en": "Loading client…"
     },
+    "client.banner.working_in": {
+      "note": "Banner for a firm user with a client open (SCREENS.md, Accountant view).",
+      "nl": "U werkt in {name}",
+      "en": "You are working in {name}"
+    },
     "client.header.none_selected": {
       "note": "FR-FRM-000a. Shown instead of an empty header when the session is inside no client — a blank space is indistinguishable from a header that failed to load.",
       "nl": "Geen klant geselecteerd",

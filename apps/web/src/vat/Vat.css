@@ -23,13 +23,30 @@
 .vat__figure {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--ink);
 }
 
+/* The amount to pay or reclaim: serif, on the double rule. */
 .vat__figure--large {
-  font-size: 1.75rem;
-  line-height: 1.2;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 60px;
+  letter-spacing: -0.015em;
+  color: var(--lemon);
+  display: inline-block;
+  align-self: flex-start;
+  background-image:
+    linear-gradient(var(--lemon), var(--lemon)), linear-gradient(var(--lemon), var(--lemon));
+  background-size:
+    100% 2px,
+    100% 2px;
+  background-position:
+    0 calc(100% - 5px),
+    0 100%;
+  background-repeat: no-repeat;
+  padding-bottom: 9px;
 }
 
 /* ---- The overview -------------------------------------------------------- */
@@ -48,31 +65,37 @@
   flex-direction: column;
   gap: var(--ledgr-space-3);
   height: 100%;
-  padding: var(--ledgr-space-4);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
   color: var(--ink);
   text-decoration: none;
-  transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+  transition: background-color 120ms ease;
 }
 
-.vat__period:hover,
+.vat__period:hover {
+  background: var(--mint);
+}
 .vat__period:focus-visible {
-  border-color: var(--brand);
-  box-shadow: var(--shadow-md);
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .vat__period--running,
 .vat__period--empty {
-  background: var(--surface);
+  background: var(--sand);
 }
 
+/* Lemon marks the period that needs attention. */
 .vat__period--attention {
-  border-color: var(--warning);
+  background: var(--lemon);
+  color: #14261b;
+}
+.vat__period--attention .vat__period-label,
+.vat__period--attention .vat__due {
+  color: #5a4a00;
 }
 
 .vat__period-head {
@@ -84,7 +107,9 @@
 }
 
 .vat__period-name {
-  font-weight: 700;
+  font: 500 11px/14px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .vat__period-amount {
@@ -94,13 +119,18 @@
 }
 
 .vat__period-amount .vat__figure {
-  font-size: 1.375rem;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 36px;
 }
 
 .vat__period-label,
 .vat__stat-label {
   color: var(--ink-muted);
-  font-size: 0.8125rem;
+  font: 500 11px/14px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .vat__due {
@@ -131,15 +161,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--ledgr-space-1);
-  padding: var(--ledgr-space-4);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--surface-raised);
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
+/* The total is the forest card, with lemon on it. */
 .vat__stat--total {
-  border-color: var(--brand);
-  background: var(--brand-tint);
+  background: var(--forest);
+  color: #f8f6ea;
+  box-shadow: none;
+}
+.vat__stat--total .vat__stat-label {
+  color: #b5c2ae;
 }
 
 .vat__stat--total .ui-badge {
@@ -227,7 +263,7 @@
 }
 
 .vat__row--summary td {
-  background: var(--surface-sunken);
+  background: var(--sand);
 }
 
 .vat__none {
@@ -249,22 +285,21 @@
   width: 1.75rem;
   height: 1.75rem;
   padding: 0;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--ink-muted);
   cursor: pointer;
 }
 
-.vat__copy:hover,
-.vat__copy:focus-visible {
-  color: var(--brand);
-  border-color: var(--brand);
+.vat__copy:hover {
+  color: var(--ink);
+  background: var(--sand);
 }
 
 .vat__drill-row > td {
   padding: 0 var(--ledgr-space-4) var(--ledgr-space-3);
-  background: var(--surface-sunken);
+  background: var(--sand);
 }
 
 .vat__drill {
@@ -292,4 +327,32 @@
 
 .vat__ack input {
   margin-top: 0.2rem;
+}
+
+.vat__stat:not(.vat__stat--total) .vat__figure {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 44px;
+}
+.vat .vat__copy {
+  min-height: 0;
+}
+
+.vat .vat__back {
+  padding-left: 0;
+}
+
+/* The box code and its description share a cell and wrap; the shared nowrap on number
+   cells would put the description on top of the amounts. */
+.bk .vat__boxes td.ledgr-num {
+  white-space: normal;
+}
+.vat__checks .panel__header h2,
+.vat__file .panel__header h2 {
+  font-size: 11px;
+}
+
+.vat__desc-inline {
+  font-family: var(--font-sans);
 }
