@@ -1,5 +1,4 @@
-A captured source document drawn as paper.
+A captured source document.
 
-- Consumer provides: supplier, address/date line, lines, BTW, total, payment line.
-- Always `#fffef8` paper with ink `receipt` type in both themes, torn zigzag bottom edge, uppercase.
-- Tilt -4° to -6° only on the story panel; straight everywhere else.
+- Consumer provides: supplier, address, date/time, lines, BTW, total.
+- White with monospace `receipt` text in both themes; straight, 1px border, `radius` 8px. Shown only as source material.

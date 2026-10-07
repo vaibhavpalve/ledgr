@@ -1,6 +1,5 @@
-Pill buttons; `bk-btn--primary` once per view.
+Buttons, 48px (36px small), `radius-sm`.
 
-- Consumer provides: label (sentence case, verb first), optional leading 18px icon, optional trailing arrow disc (`bk-btn__end`) for the step that moves forward.
-- `--primary` uses `action`/`on-action` (forest in light, pistachio in dark). `--secondary` is an outline pill in `line-strong`. `--ghost` for Skip/Cancel. `--sm` is 36px for table rows.
+- `--primary` uses `action` / `on-action`; one per view. `--secondary` white with `line-strong` border. `--ghost` for Skip/Cancel. `--block` fills the column.
+- Consumer provides: label (sentence case, verb first) and an optional 18px leading icon.
 - Disabled at 40% with the reason shown nearby.
-- Don't fill a button with `lemon`; `lemon` is for highlights.

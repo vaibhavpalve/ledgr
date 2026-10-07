@@ -1,5 +1,4 @@
-Text field with label above and help or error below.
+Text field with the label above and help or error below.
 
-- Consumer provides: label, placeholder (an example), help, error.
-- 48px, `radius-sm`, `line-strong` border on `surface`. Errors replace help in `negative` with a warning icon and say how to fix it.
-- A field action (Show, Look up) sits right on the label row as a leaf-underlined link.
+- Consumer provides: label, placeholder (an example), help, error, optional label-row action (Forgot password?, Look up).
+- 48px, `radius-sm`, `line-strong` border on `surface`; focus ring in `focus`. Errors replace help in `negative` and say how to fix it.

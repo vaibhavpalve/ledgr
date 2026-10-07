@@ -1,4 +1,3 @@
-Receipt review: the receipt in a `forest` lightbox left, the proposed entry right, the seal and Book entry at the bottom.
+Receipt review: receipt left, proposed entry right, booking bar at the bottom.
 
-- Book entry stays disabled until the entry balances; the seal is replaced by the difference in `negative`.
-- Keyboard: J/K to move, Enter to book.
+- Book entry stays disabled until balanced; the chip shows the difference in `negative` when not. J/K to move, Enter to book.

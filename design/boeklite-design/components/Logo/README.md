@@ -1,4 +1,4 @@
-The balanced B: a stem and two equal bowls split by a hairline; forest over lemon means debit equals credit.
+The B mark and lockups.
 
-- App icon: forest tile, cream stem and top bowl, lemon lower bowl. On `cream`: forest + `leaf` glyph. On `forest`: cream + lemon. On `pistachio`: forest with the lower bowl outlined (mono).
-- Lockup with "Boeklite" in Instrument Serif, glyph at cap height, gap `space-2`. Clear space: one bowl height on every side.
+- App icon: forest tile, light B, lemon lower bowl. On light grounds: forest with a mid-green lower bowl. On forest and in dark theme: light with a lemon lower bowl.
+- Clear space: one bowl height on every side.
