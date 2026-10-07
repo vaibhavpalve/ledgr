@@ -148,10 +148,10 @@ describe("the pre-paint script in index.html", () => {
   it("declares a theme-color for each theme, matching the tokens", () => {
     // These cannot be custom properties — the address bar cannot read CSS —
     // so they are literals, and literals are exactly what drifts.
-    // Since ADR-104 the page ground is the design system's `cream`
-    // (packages/design-tokens/bk-tokens.css: light #f8f6ea, dark #101912).
-    expect(INDEX_HTML).toContain('content="#f8f6ea"');
-    expect(INDEX_HTML).toContain('content="#101912"');
+    // Since ADR-106 the page ground is the design system's `canvas`
+    // (packages/design-tokens/bk-tokens.css: light #fafaf5, dark #0f1712).
+    expect(INDEX_HTML).toContain('content="#fafaf5"');
+    expect(INDEX_HTML).toContain('content="#0f1712"');
   });
 });
 

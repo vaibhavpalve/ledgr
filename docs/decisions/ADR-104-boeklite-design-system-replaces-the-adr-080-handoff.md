@@ -1,6 +1,6 @@
 # ADR-104: The Boeklite design system replaces the ADR-080 handoff, screen by screen
 
-- **Status**: Accepted (sign-in, app shell and dashboard rebuilt; other screens bridged)
+- **Status**: Superseded in its look by [ADR-106](ADR-106-boeklite-design-system-v2-inter-and-forest.md); the `.bk` scoping and the bridge below still stand
 - **Date**: 2026-10-06
 - **Supersedes**: [ADR-080](ADR-080-ledgr-ui-handoff-tokens.md) as each screen moves across
 

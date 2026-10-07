@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Building,
+  Camera,
   ChartColumn,
   ChevronDown,
   FileText,
@@ -150,8 +151,18 @@ const VAT: NavDef = {
   icon: Percent,
 };
 
-/** The bottom bar: home, and the three places most of a day is spent (FR-UX-005). */
-const COMPACT_TABS: readonly NavDef[] = [HOME, PURCHASES, INVOICES, LEDGER];
+/**
+ * The bottom bar (SCREENS.md): four sections around a central Capture button, the
+ * one thing a phone is most often opened for (FR-UX-005, MOB-002). Capture is the
+ * purchases screen, where uploading sits at the top.
+ */
+const CAPTURE: NavDef = {
+  id: "purchases",
+  to: "/purchases",
+  labelKey: "common.nav.capture",
+  icon: Camera,
+};
+const COMPACT_TABS: readonly NavDef[] = [HOME, INVOICES, CAPTURE, LEDGER, VAT];
 
 export function AppShell() {
   const { t } = useI18n();
@@ -316,7 +327,7 @@ export function AppShell() {
 
       <ClientHeader badge={badge}>
         <span className="shell__header-brand">
-          <Logo size={24} />
+          <Logo size={18} />
         </span>
         {isFirm ? (
           <button
@@ -401,11 +412,11 @@ export function AppShell() {
               key={item.id}
               to={item.to}
               end={item.end}
-              className="shell__tab"
+              className={`shell__tab${item === CAPTURE ? " shell__tab--capture" : ""}`}
               data-testid={`mobile-tab-${item.id}`}
             >
               <span className="shell__tab-icon" aria-hidden="true">
-                <item.icon size={20} strokeWidth={1.7} />
+                <item.icon size={item === CAPTURE ? 22 : 20} strokeWidth={1.75} />
               </span>
               <span>{t(item.labelKey)}</span>
             </NavLink>

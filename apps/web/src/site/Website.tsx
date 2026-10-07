@@ -15,9 +15,9 @@ import { COPY } from "./copy";
  */
 export function Website() {
   return (
-    <div className="ui-root site">
+    <div className="ui-root bk site">
       <header className="site__header">
-        <Logo size={30} />
+        <Logo size={24} />
         <nav aria-label={"Main"} className="site__nav">
           <a href="#product">{COPY.nav.product}</a>
           <a href="#books">{COPY.nav.books}</a>
@@ -90,7 +90,7 @@ export function Website() {
 
       <footer className="site__footer">
         <div className="site__footer-brand">
-          <Logo size={30} />
+          <Logo size={24} />
           <p>{COPY.footer.blurb}</p>
         </div>
         <div className="site__footer-cols">

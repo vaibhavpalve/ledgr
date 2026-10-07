@@ -1,116 +1,118 @@
 /*
- * Boeklite design system tokens (design/boeklite-design/tokens.css, ADR-104).
+ * Boeklite design system tokens (design/boeklite-design/tokens.css, ADR-106).
  * Token names are the design system's own.
  *
- * Seven names collide with the earlier handoff in ui-tokens.css (--surface, --ink,
- * --ink-muted, --focus, --radius-sm, --radius-md, --font-*). Until every screen has
- * moved across, those are declared under `.bk` only, so a screen opts in by wearing
- * the class and the rest of the app keeps its current values. Names that do not
+ * Some names collide with the earlier handoff in ui-tokens.css (--surface, --ink,
+ * --ink-muted, --focus, --radius-sm/md/lg, --font-*). Until every screen has moved
+ * across, those are declared under `.bk` only, so a screen opts in by wearing the
+ * class and the rest of the app keeps its current values. Names that do not
  * collide are global. When the last screen has moved, the `.bk` blocks fold into
  * :root and ui-tokens.css goes.
  */
 
 :root,
 [data-theme="light"] {
-  --pistachio: #d4e9a8;
-  --pistachio-ink: #3d5a1e;
+  --forest: #173f2e;
+  --on-forest: #f4f7ee;
+  --on-forest-muted: #b7d0b0;
+  --leaf: #cbe7a9;
+  --leaf-tint: #e7f3da;
+  --leaf-ink: #2f6a1f;
   --lemon: #ffd84d;
   --lemon-tint: #fff1b8;
   --lemon-ink: #5a4a00;
-  --leaf: #5c9a3a;
-  --forest: #1e4632;
-  --cream: #f8f6ea;
-  --sand: #e9edd9;
-  --mint: #e3efc9;
-  --action: #1e4632;
-  --on-action: #f8f6ea;
-  --line: #dfe4cf;
-  --line-strong: #7f8a75;
-  --positive: #2e7d4f;
-  --negative: #c2362b;
-  --shadow-card: 0 1px 0 rgba(20, 38, 27, 0.04), 0 8px 24px -12px rgba(20, 38, 27, 0.18);
-  --shadow-float: 0 30px 60px -20px rgba(20, 38, 27, 0.4);
-  /* Logo roles: forest + leaf on light grounds, cream + lemon on dark ones. */
-  --glyph-a: #1e4632;
+  --canvas: #fafaf5;
+  --sunken: #f1f3ea;
+  --line: #e3e6dc;
+  --line-strong: #8a9384;
+  --action: #173f2e;
+  --on-action: #ffffff;
+  --negative: #b42318;
+  --shadow-card: 0 1px 2px rgba(19, 32, 26, 0.05), 0 1px 1px rgba(19, 32, 26, 0.03);
+  --shadow-float: 0 24px 48px -12px rgba(5, 20, 12, 0.45);
+  /* Logo roles: forest + green on light grounds, light ink + leaf in the dark theme. */
+  --glyph-a: #173f2e;
   --glyph-b: #5c9a3a;
 }
 .bk,
 [data-theme="light"] .bk {
-  --surface: #fffef8;
-  --ink: #14261b;
-  --ink-muted: #4f5e52;
-  --focus: #1e4632;
+  --surface: #ffffff;
+  --ink: #13201a;
+  --ink-muted: #56625a;
+  --focus: #173f2e;
 }
 
 [data-theme="dark"] {
-  --pistachio: #d4e9a8;
-  --pistachio-ink: #3d5a1e;
+  --forest: #173f2e;
+  --on-forest: #f4f7ee;
+  --on-forest-muted: #b7d0b0;
+  --leaf: #bfe39a;
+  --leaf-tint: #1f3324;
+  --leaf-ink: #bfe39a;
   --lemon: #ffd84d;
-  --lemon-tint: #4a4210;
+  --lemon-tint: #3d3410;
   --lemon-ink: #fff1b8;
-  --leaf: #8cc46a;
-  --forest: #0b120d;
-  --cream: #101912;
-  --sand: #223126;
-  --mint: #2b3d2a;
-  --action: #d4e9a8;
-  --on-action: #14261b;
-  --line: #2a3a2e;
-  --line-strong: #7b8a7c;
-  --positive: #7cc79a;
+  --canvas: #0f1712;
+  --sunken: #1d2a21;
+  --line: #26342a;
+  --line-strong: #6f7d72;
+  --action: #cbe7a9;
+  --on-action: #13201a;
   --negative: #ff8f80;
-  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.5);
-  --shadow-float: 0 30px 60px -20px rgba(20, 38, 27, 0.4);
-  --glyph-a: #f8f6ea;
-  --glyph-b: #ffd84d;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-float: 0 24px 48px -12px rgba(5, 20, 12, 0.45);
+  --glyph-a: #e9efe6;
+  --glyph-b: #bfe39a;
 }
 [data-theme="dark"] .bk {
-  --surface: #18241b;
-  --ink: #eef3e4;
-  --ink-muted: #b5c2ae;
-  --focus: #ffd84d;
+  --surface: #17221b;
+  --ink: #e9efe6;
+  --ink-muted: #a3b2a7;
+  --focus: #cbe7a9;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --pistachio: #d4e9a8;
-    --pistachio-ink: #3d5a1e;
+    --forest: #173f2e;
+    --on-forest: #f4f7ee;
+    --on-forest-muted: #b7d0b0;
+    --leaf: #bfe39a;
+    --leaf-tint: #1f3324;
+    --leaf-ink: #bfe39a;
     --lemon: #ffd84d;
-    --lemon-tint: #4a4210;
+    --lemon-tint: #3d3410;
     --lemon-ink: #fff1b8;
-    --leaf: #8cc46a;
-    --forest: #0b120d;
-    --cream: #101912;
-    --sand: #223126;
-    --mint: #2b3d2a;
-    --action: #d4e9a8;
-    --on-action: #14261b;
-    --line: #2a3a2e;
-    --line-strong: #7b8a7c;
-    --positive: #7cc79a;
+    --canvas: #0f1712;
+    --sunken: #1d2a21;
+    --line: #26342a;
+    --line-strong: #6f7d72;
+    --action: #cbe7a9;
+    --on-action: #13201a;
     --negative: #ff8f80;
-    --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.5);
-    --shadow-float: 0 30px 60px -20px rgba(20, 38, 27, 0.4);
-    --glyph-a: #f8f6ea;
-    --glyph-b: #ffd84d;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-float: 0 24px 48px -12px rgba(5, 20, 12, 0.45);
+    --glyph-a: #e9efe6;
+    --glyph-b: #bfe39a;
   }
   :root:not([data-theme="light"]) .bk {
-    --surface: #18241b;
-    --ink: #eef3e4;
-    --ink-muted: #b5c2ae;
-    --focus: #ffd84d;
+    --surface: #17221b;
+    --ink: #e9efe6;
+    --ink-muted: #a3b2a7;
+    --focus: #cbe7a9;
   }
 }
 
 :root {
-  --radius-xl: 32px;
+  --font-display: "Inter Display", Inter, system-ui, sans-serif;
 }
 .bk {
-  --radius-sm: 12px;
-  --radius-md: 20px;
-  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
-  --font-sans: Geist, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Older screens still name a serif; it is the display cut now. */
+  --font-serif: var(--font-display);
 }
 
 /*
@@ -122,33 +124,32 @@
 .bk {
   /* ADR-080 handoff names */
   --surface-raised: var(--surface);
-  --surface-sunken: var(--sand);
+  --surface-sunken: var(--sunken);
   --border-subtle: var(--line);
   --border: var(--line-strong);
   --brand: var(--action);
   --brand-hover: var(--action);
-  --brand-tint: var(--mint);
+  --brand-tint: var(--leaf-tint);
   --on-brand: var(--on-action);
   --accent: var(--lemon);
-  --on-accent: #14261b;
+  --on-accent: #13201a;
   --danger: var(--negative);
   --danger-tint: color-mix(in srgb, var(--negative) 12%, var(--surface));
   --warning: var(--lemon-ink);
   --warning-tint: var(--lemon-tint);
   --info: var(--ink-muted);
-  --info-tint: var(--sand);
-  --panel: var(--pistachio);
-  --on-panel: #14261b;
-  --on-panel-muted: var(--pistachio-ink);
+  --info-tint: var(--sunken);
+  --panel: var(--forest);
+  --on-panel: var(--on-forest);
+  --on-panel-muted: var(--on-forest-muted);
   --shadow-sm: var(--shadow-card);
   --shadow-md: var(--shadow-card);
-  --radius-lg: var(--radius-md);
 
   /* Legacy --ledgr-* names */
-  --ledgr-surface-ground: var(--cream);
+  --ledgr-surface-ground: var(--canvas);
   --ledgr-surface-paper: var(--surface);
-  --ledgr-surface-raised: var(--sand);
-  --ledgr-surface-sunken: var(--sand);
+  --ledgr-surface-raised: var(--sunken);
+  --ledgr-surface-sunken: var(--sunken);
   --ledgr-surface-input: var(--surface);
   --ledgr-border-subtle: var(--line);
   --ledgr-border-strong: var(--line-strong);
@@ -159,9 +160,9 @@
   --ledgr-text-on-accent: var(--on-action);
   --ledgr-accent: var(--action);
   --ledgr-accent-hover: var(--action);
-  --ledgr-accent-wash: var(--mint);
-  --ledgr-positive: var(--positive);
-  --ledgr-positive-wash: var(--mint);
+  --ledgr-accent-wash: var(--leaf-tint);
+  --ledgr-positive: var(--leaf-ink);
+  --ledgr-positive-wash: var(--leaf-tint);
   --ledgr-caution: var(--lemon-ink);
   --ledgr-caution-wash: var(--lemon-tint);
   --ledgr-attention: var(--negative);
@@ -169,10 +170,11 @@
   --ledgr-shadow-sm: var(--shadow-card);
   --ledgr-shadow-md: var(--shadow-card);
   --ledgr-shadow-lg: var(--shadow-float);
-  --ledgr-radius-chip: var(--radius-sm);
+  --ledgr-radius-chip: var(--radius-pill);
   --ledgr-radius-control: var(--radius-sm);
   --ledgr-radius-panel: var(--radius-md);
   --ledgr-font-sans: var(--font-sans);
-  --ledgr-font-serif: var(--font-serif);
-  --ledgr-font-mono: var(--font-mono);
+  --ledgr-font-serif: var(--font-display);
+  /* One family: legacy number columns are Inter with tabular figures (.ledgr-num). */
+  --ledgr-font-mono: var(--font-sans);
 }

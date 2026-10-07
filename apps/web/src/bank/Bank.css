@@ -109,6 +109,6 @@
 
 /* A panel opened inside a table row is a tinted tray, not a second card. */
 .bank-row__panel .panel {
-  background: var(--sand);
+  background: var(--sunken);
   box-shadow: none;
 }

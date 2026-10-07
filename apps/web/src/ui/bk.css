@@ -1,65 +1,69 @@
 /*
  * The Boeklite design system's look for the `ui-*` primitives (design/boeklite-design,
- * ADR-104). Everything is scoped to `.bk`, which the sign-in frame and the app shell
+ * ADR-106). Everything is scoped to `.bk`, which the sign-in frame and the app shell
  * wear, so a screen inside either gets it without its own stylesheet changing.
- * Colours come from the design tokens; none is written here except the two fixed
- * inks the system itself writes on `lemon` and `pistachio` grounds.
+ * Colours come from the design tokens; none is written here except the fixed ink
+ * the system itself writes on `lemon` grounds.
  */
 
-/* ---- Button: pills, 48px, one primary per view ------------------------------ */
+/* ---- Button: 48px, radius-sm, one primary per view --------------------------- */
 
 .bk .ui-btn {
   height: 48px;
-  padding: 0 22px;
-  gap: 10px;
-  border-radius: var(--radius-pill);
+  padding: 0 20px;
+  gap: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink);
-  font: 500 15px/20px var(--font-sans);
+  font: 600 15px/20px var(--font-sans);
 }
 .bk .ui-btn:hover {
-  background: var(--sand);
+  background: var(--sunken);
 }
 .bk .ui-btn--primary {
   border-color: transparent;
   background: var(--action);
   color: var(--on-action);
-  font-weight: 500;
 }
 .bk .ui-btn--primary:hover {
   background: var(--action);
-  filter: brightness(1.12);
+  filter: brightness(1.15);
 }
 .bk .ui-btn--ghost {
   border-color: transparent;
   background: transparent;
-  color: var(--ink);
-  padding: 0 14px;
+  color: var(--ink-muted);
+  padding: 0 12px;
 }
 .bk .ui-btn--ghost:hover {
-  background: var(--sand);
+  background: var(--sunken);
+  color: var(--ink);
   text-decoration: none;
 }
 .bk .ui-btn--sm {
   height: 36px;
-  padding: 0 16px;
+  padding: 0 14px;
   font-size: 14px;
 }
 .bk .ui-btn--lg,
 .bk .ui-btn--xl {
   height: 48px;
-  padding: 0 22px;
-  border-radius: var(--radius-pill);
+  padding: 0 20px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
-  font-weight: 500;
 }
 .bk .ui-btn--icon {
   width: 40px;
   height: 40px;
   padding: 0;
-  background: var(--sand);
+  background: transparent;
   border-color: transparent;
+  color: var(--ink-muted);
+}
+.bk .ui-btn--icon:hover {
+  background: var(--sunken);
+  color: var(--ink);
 }
 .bk .ui-btn:disabled,
 .bk .ui-btn[aria-disabled="true"] {
@@ -73,19 +77,23 @@
   color: var(--on-action);
 }
 .bk a.ui-btn--ghost {
-  color: var(--ink);
+  color: var(--ink-muted);
 }
 .bk .ui-btn:focus-visible,
 .bk .ui-textbutton:focus-visible,
 .bk .ui-nav:focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 /* ---- Input, links ----------------------------------------------------------- */
 
+.bk .ui-field {
+  gap: 6px;
+}
 .bk .ui-input {
   height: 48px;
+  padding: 0 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -94,13 +102,15 @@
 }
 .bk .ui-input:focus {
   outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: 1px;
+  border-color: var(--focus);
 }
 .bk .ui-input[aria-invalid="true"] {
   border-color: var(--negative);
 }
 .bk .ui-label {
-  font: 500 13px/16px var(--font-sans);
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink);
 }
 .bk .ui-help {
   color: var(--ink-muted);
@@ -108,31 +118,29 @@
 .bk .ui-error {
   color: var(--negative);
 }
-/* The design system's link: ink text on a 2px leaf underline. */
+/* The design system's link: action-coloured, 600, underlined on hover. */
 .bk .ui-textbutton {
-  color: var(--ink);
-  font-weight: 500;
-  text-decoration: underline;
-  text-decoration-color: var(--leaf);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
+  color: var(--action);
+  font-weight: 600;
+  text-decoration: none;
 }
 .bk .ui-textbutton:hover {
-  text-decoration-color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* ---- Badge: a chip with a word; lemon only for what needs attention --------- */
+/* ---- Badge: a chip with a word; leaf for done, lemon for look-here ----------- */
 
 .bk .ui-badge {
-  height: 26px;
-  padding: 0 11px;
-  background: var(--sand);
+  height: 24px;
+  padding: 0 10px;
+  background: var(--sunken);
   color: var(--ink);
   font: 500 12px/16px var(--font-sans);
 }
 .bk .ui-badge--booked {
-  background: var(--sand);
-  color: var(--positive);
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
 }
 .bk .ui-badge--draft,
 .bk .ui-badge--review,
@@ -141,63 +149,70 @@
   color: var(--lemon-ink);
 }
 .bk .ui-badge--overdue {
-  background: var(--sand);
+  background: none;
+  border: 1px solid currentColor;
   color: var(--negative);
 }
 .bk .ui-badge--delta {
   background: var(--lemon);
-  color: #14261b;
+  color: #13201a;
 }
 
-/* ---- Card: cream-white paper, radius-md, soft shadow instead of a border ---- */
+/* ---- Card: white, radius-md, a 1px line instead of a shadow ------------------ */
 
 .bk .ui-card {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 .bk .ui-card--pad {
-  padding: 24px;
+  padding: 20px 24px;
+}
+.bk .ui-card__head {
+  min-height: 56px;
+  padding: 0 24px;
 }
 .bk .ui-card__title {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
+  font: 600 15px/22px var(--font-sans);
+  color: var(--ink);
 }
 .bk .ui-kpi__label {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink-muted);
 }
 .bk .ui-kpi__value {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: 44px;
-  line-height: 48px;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 44px;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
 }
 .bk .ui-row {
   border-top-color: var(--line);
 }
 
-/* ---- Nav: pills; the current page is the one action-coloured pill ---------- */
+/* ---- Nav: the current page is leaf-tint, its icon leaf-ink ------------------ */
 
 .bk .ui-nav {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
   font: 500 14px/20px var(--font-sans);
   color: var(--ink-muted);
 }
 .bk .ui-nav:hover {
-  background: var(--sand);
+  background: var(--sunken);
   color: var(--ink);
 }
 .bk .ui-nav[aria-current="page"] {
-  background: var(--action);
-  color: var(--on-action);
+  background: var(--leaf-tint);
+  color: var(--ink);
+  font-weight: 600;
+}
+.bk .ui-nav[aria-current="page"] svg {
+  color: var(--leaf-ink);
 }
 .bk .ui-nav svg {
   width: 18px;
@@ -206,43 +221,52 @@
 .bk .ui-nav .ui-badge {
   height: auto;
   padding: 4px 7px;
+  border: 0;
   background: var(--lemon);
-  color: #14261b;
-  font: 500 11px/1 var(--font-mono);
+  color: #13201a;
+  font: 600 11px/1 var(--font-sans);
 }
 .bk .ui-navgroup {
-  padding: var(--space-5) 14px var(--space-2);
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
+  padding: var(--space-5) 12px var(--space-2);
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-muted);
 }
 
-/* ---- Table: 48px rows, `line` between rows, header band in `sand` ----------- */
+/* ---- Table: header band in sunken, 44px rows, totals on a 1px ink rule ----- */
 
 .bk .ui-table th {
-  height: 40px;
-  background: var(--sand);
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  height: 36px;
+  background: var(--sunken);
+  color: var(--ink-muted);
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
 }
 .bk .ui-table td {
-  height: 48px;
+  height: 44px;
   border-top-color: var(--line);
 }
+.bk .ui-table tfoot td {
+  border-top: 1px solid var(--ink);
+}
 .bk .ui-table tr[aria-selected="true"] td {
-  background: var(--mint);
+  background: var(--leaf-tint);
 }
 .bk .ui-amount,
 .bk .ui-num {
+  font-family: var(--font-sans);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---- Empty state: a mint ground, one sentence, one action ------------------- */
+/* ---- Empty state: one sentence, one action ----------------------------------- */
 
 .bk .ui-empty {
-  border: 0;
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius-md);
-  background: var(--mint);
+  background: var(--surface);
   color: var(--ink);
 }
 .bk .ui-empty__body {
@@ -252,39 +276,28 @@
 /* ---- Avatar ------------------------------------------------------------------ */
 
 .bk .ui-avatar {
-  border-radius: 50%;
-  background: var(--mint);
-  color: var(--ink);
-  font: 500 12px/1 var(--font-mono);
+  border-radius: 8px;
+  background: var(--leaf);
+  color: #13201a;
+  font: 600 12px/1 var(--font-sans);
 }
 
-/* Serif figures stay at their one weight; the face has no bold. */
+/* One family: the old serif and mono utilities resolve to Inter, numbers tabular. */
+.bk .ui-serif {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.bk .ui-mono {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
 .bk .figure {
-  font-weight: 400;
-}
-
-/* A primary button's lemon end cap, the design system's "go" mark. */
-.bk .ui-btn__end,
-.bk .login-passkey__end {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-left: auto;
-  margin-right: -14px;
-  border-radius: 50%;
-  background: var(--lemon);
-  color: #14261b;
-}
-[data-theme="dark"] .bk .ui-btn__end {
-  background: #14261b;
-  color: var(--lemon);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bk .ui-btn__end {
-    background: #14261b;
-    color: var(--lemon);
-  }
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* The chart's invisible hover columns must stay invisible under the button reset. */
@@ -294,19 +307,27 @@
   border-radius: 0;
   box-shadow: none;
 }
+.bk .ui-chart__dot {
+  background: var(--forest);
+}
+.bk .ui-chart__tip {
+  border-radius: var(--radius-sm);
+  font: 500 12px/16px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ---- Legacy button, chip, heading and segmented-control classes ---------------
  * Screens not yet rebuilt on the primitives still use these. They take the same
- * pill, ink and action colours, so a page reads as one product while it waits. */
+ * shape, ink and action colours, so a page reads as one product while it waits. */
 
 .bk .button-link,
 .bk .button--primary,
 .bk .button--quiet,
 .bk .button--danger,
-.bk button[type="submit"] {
-  border-radius: var(--radius-pill);
-  padding: 0 22px;
-  font: 500 15px/20px var(--font-sans);
+.bk button[type="submit"]:not(.ui-btn) {
+  border-radius: var(--radius-sm);
+  padding: 0 20px;
+  font: 600 15px/20px var(--font-sans);
 }
 .bk .button-link {
   background: var(--surface);
@@ -320,18 +341,18 @@
 }
 .bk .button--primary,
 .bk a.button-link--primary,
-.bk button[type="submit"] {
+.bk button[type="submit"]:not(.ui-btn) {
   background: var(--action);
   border-color: transparent;
   color: var(--on-action);
 }
 .bk .button--primary:hover:not(:disabled),
 .bk a.button-link--primary:hover,
-.bk button[type="submit"]:hover:not(:disabled) {
+.bk button[type="submit"]:not(.ui-btn):hover:not(:disabled) {
   background: var(--action);
   border-color: transparent;
   color: var(--on-action);
-  filter: brightness(1.12);
+  filter: brightness(1.15);
   box-shadow: none;
 }
 .bk .button--quiet,
@@ -348,61 +369,69 @@
 .bk .button--primary:focus-visible,
 .bk .button--quiet:focus-visible,
 .bk .button--danger:focus-visible,
-.bk button[type="submit"]:focus-visible {
+.bk button[type="submit"]:not(.ui-btn):focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .bk .chip {
-  height: 26px;
-  padding: 0 11px;
-  background: var(--sand);
+  height: 24px;
+  padding: 0 10px;
+  background: var(--sunken);
   color: var(--ink);
   font: 500 12px/16px var(--font-sans);
   letter-spacing: 0;
 }
 .bk .chip--accent {
-  background: var(--mint);
-  color: var(--ink);
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
 }
 .bk .chip--positive {
-  background: var(--sand);
-  color: var(--positive);
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
 }
 .bk .chip--caution {
   background: var(--lemon-tint);
   color: var(--lemon-ink);
 }
 .bk .chip--attention {
-  background: var(--sand);
+  background: none;
+  border: 1px solid currentColor;
   color: var(--negative);
 }
-/* Page titles: Instrument Serif at its one weight. */
+/* Page titles: the `heading` style, Inter display 600 with negative tracking. */
 :where(.bk) h1 {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: 40px;
-  line-height: 44px;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 34px;
+  letter-spacing: -0.025em;
 }
 .bk .language-switcher,
 .bk .theme-toggle {
   padding: 3px;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--sand);
+  background: var(--sunken);
 }
 .bk .language-switcher button,
 .bk .theme-toggle__option {
+  height: 28px;
+  min-height: 0;
+  min-width: 40px;
+  padding: 0 10px;
+  border: 0;
   border-radius: var(--radius-pill);
-  font: 500 12px/16px var(--font-mono);
-  letter-spacing: 0.06em;
+  background: none;
+  color: var(--ink-muted);
+  font: 600 12px/16px var(--font-sans);
+  letter-spacing: 0;
   box-shadow: none;
 }
 .bk .language-switcher button[aria-pressed="true"],
 .bk .theme-toggle__option[aria-pressed="true"] {
-  background: var(--action);
-  color: var(--on-action);
-  box-shadow: none;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
 }
 
 .bk input[type="checkbox"],
@@ -425,68 +454,74 @@
 .bk .capture__drop:hover,
 .bk .capture__drop[data-active="true"] {
   border-color: var(--action);
-  background: var(--mint);
+  background: var(--leaf-tint);
 }
 .bk .capture__drop-icon {
-  background: var(--sand);
+  background: var(--sunken);
 }
-.bk .capture__shutter {
+.bk .capture__shutter,
+.bk .capture__shutter:hover:not(:disabled),
+.bk .capture__shutter:active {
   background: var(--lemon);
-  color: #14261b;
+  color: #13201a;
   border-color: transparent;
 }
 
 /* ---- Legacy panel, table, alert, dialog and skeleton classes ---------------- */
 
 .bk .panel {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 .bk .panel__header {
   border-bottom-color: var(--line);
 }
 .bk .panel__header h2 {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
+  font: 600 15px/22px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
 }
 .bk .table th {
-  height: 40px;
-  background: var(--sand);
+  height: 36px;
+  background: var(--sunken);
   color: var(--ink-muted);
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
 }
 .bk .table td {
+  height: 44px;
   border-bottom-color: var(--line);
 }
 .bk .table .table__num {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .bk .table tbody tr:hover {
-  background: color-mix(in srgb, var(--sand) 50%, transparent);
+  background: color-mix(in srgb, var(--sunken) 60%, transparent);
 }
 .bk .table tfoot td {
   background: var(--surface);
   border-top: 1px solid var(--line);
+  font-weight: 600;
 }
-/* A total sits on the accountant's double rule. */
+/* A total sits on a 1px ink rule. */
 .bk .table tfoot tr:last-child td.table__num:not(:empty) {
-  border-top: 6px double var(--ink);
+  border-top: 1px solid var(--ink);
 }
 /* A state is a word and an edge, in the ink colour; the fill is only a tint. */
 .bk .alert {
   border-radius: var(--radius-sm);
-  background: var(--sand);
+  background: var(--sunken);
   color: var(--ink);
 }
 .bk .alert--attention {
   border-left-color: var(--negative);
-  background: color-mix(in srgb, var(--negative) 10%, var(--surface));
+  background: color-mix(in srgb, var(--negative) 8%, var(--surface));
   color: var(--ink);
 }
 .bk .alert--caution {
@@ -495,26 +530,28 @@
   color: var(--lemon-ink);
 }
 .bk .alert--positive {
-  border-left-color: var(--positive);
-  background: var(--mint);
+  border-left-color: var(--leaf-ink);
+  background: var(--leaf-tint);
   color: var(--ink);
 }
 .bk .dialog-backdrop {
-  background: rgba(20, 38, 27, 0.5);
+  background: rgba(19, 32, 26, 0.5);
 }
 .bk .dialog {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-float);
 }
+/* Loading: sunken skeleton rows. */
 .bk .skeleton {
-  background-image: linear-gradient(90deg, var(--sand) 0%, var(--mint) 50%, var(--sand) 100%);
+  background: var(--sunken);
+  background-image: none;
 }
 .bk .empty-state {
-  border: 0;
+  border: 1px dashed var(--line-strong);
   border-radius: var(--radius-md);
-  background: var(--mint);
+  background: var(--surface);
   box-shadow: none;
 }
 
@@ -528,8 +565,8 @@
   padding: 3px;
   border: 0;
   /* A pill when it fits on one line, a soft bar when it wraps on a phone. */
-  border-radius: 22px;
-  background: var(--sand);
+  border-radius: 20px;
+  background: var(--sunken);
   align-self: flex-start;
 }
 .bk .tabs {
@@ -556,20 +593,20 @@
 .bk .subnav a[aria-current="page"],
 .bk .subnav button[aria-current="page"],
 .bk .subnav button[aria-pressed="true"] {
-  background: var(--action);
-  color: var(--on-action);
-  box-shadow: none;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
 }
 .bk .ledgr-num {
-  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 .bk .card,
 .bk .drawer {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 .bk .drawer {
   border-radius: var(--radius-md) 0 0 var(--radius-md);
@@ -577,15 +614,15 @@
 }
 .bk .facts dt,
 .bk .label {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 500 13px/18px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--ink-muted);
 }
 .bk .choice:has(input:checked),
 .bk .option-row label:has(input:checked) {
   border-color: var(--action);
-  background: var(--mint);
+  background: var(--leaf-tint);
   color: var(--ink);
 }
 .bk .chip--dot::before {
@@ -593,11 +630,12 @@
   height: 6px;
 }
 
-/* A plain, unclassed button is a secondary pill like every other. */
-.bk button:not([class]) {
-  border-radius: var(--radius-pill);
-  padding: 0 22px;
-  font: 500 15px/20px var(--font-sans);
+/* A plain, unclassed button is a secondary like every other (not a segment of the
+   language switch, whose buttons are unclassed too). */
+.bk :not(.language-switcher) > button:not([class]) {
+  border-radius: var(--radius-sm);
+  padding: 0 20px;
+  font: 600 15px/20px var(--font-sans);
 }
 
 /* ---- Grootboek: reversal chain, actions ---------------------------------------- */
@@ -618,30 +656,32 @@
   height: 22px;
   border-radius: 50%;
   background: var(--lemon);
-  color: #14261b;
+  color: #13201a;
 }
 .bk .table__row-button {
   border-radius: var(--radius-sm);
+  color: var(--ink);
   font-weight: 500;
+  text-decoration: none;
+}
+.bk .table__row-button:hover {
   text-decoration: underline;
-  text-decoration-color: var(--leaf);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
+  text-underline-offset: 3px;
 }
 
-/* ---- Reports: the statements' totals sit on the double rule -------------------- */
+/* ---- Reports: the statements' totals sit on a 1px ink rule --------------------- */
 
 .bk .panel.table-wrap > .caption {
   padding: var(--space-4) var(--space-5) var(--space-3);
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 600 15px/22px var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
 }
 .bk .panel.table-wrap > p[aria-live] {
   padding: var(--space-3) var(--space-5) var(--space-4);
 }
 .bk .table th.table__section {
-  background: var(--mint);
+  background: var(--leaf-tint);
   color: var(--ink);
 }
 .bk .table td[data-testid="total-assets"],
@@ -649,22 +689,22 @@
 .bk .table td[data-testid="total-revenue"],
 .bk .table td[data-testid="total-expense"],
 .bk .table td[data-testid="net-result"] {
-  border-top: 6px double var(--ink);
+  border-top: 1px solid var(--ink);
 }
 
 /* ---- Settings and other sectioned screens --------------------------------------- */
 
 .bk .screen__section > h2,
 .bk .section-head h2 {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: 28px;
-  line-height: 32px;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.02em;
 }
 .bk .list__row-amount {
-  font-family: var(--font-mono);
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 .bk .list > li + li {
   border-top-color: var(--line);
@@ -693,7 +733,7 @@
 }
 .bk .form__field label,
 .bk label.form__field {
-  font: 500 13px/16px var(--font-sans);
+  font: 500 13px/18px var(--font-sans);
 }
 .bk .table input,
 .bk .table select {
@@ -701,15 +741,10 @@
   min-height: 0;
 }
 
-/* A row link that is a number (entry or invoice number) is mono; a name stays sans. */
-.bk td.ledgr-num .table__row-button {
-  font-family: var(--font-mono);
-}
-
-/* ---- Firm portfolio cards: the open client is lemon-tint, the rest are paper ----- */
+/* ---- Firm portfolio cards: the open client is lemon-tint, the rest are white ----- */
 
 .bk .card-grid {
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: 0;
   list-style: none;
 }
@@ -717,24 +752,25 @@
   padding: var(--space-5);
 }
 .bk .card__title {
-  font: 600 15px/20px var(--font-sans);
+  font: 600 15px/22px var(--font-sans);
 }
 .bk .card__meta {
-  font: 400 13px/18px var(--font-sans);
+  font: 400 13px/20px var(--font-sans);
   color: var(--ink-muted);
 }
 .bk .card:has(.chip--accent) {
   background: var(--lemon-tint);
+  border-color: var(--lemon-tint);
 }
 .bk .card:has(.chip--accent) .card__meta {
   color: var(--lemon-ink);
 }
 .bk .card .chip--accent {
   background: var(--lemon);
-  color: #14261b;
+  color: #13201a;
 }
 
-/* An option card sits on paper: an edge, not a shadow. */
+/* An option card sits on white: an edge, not a shadow. */
 .bk .choice {
   border: 1px solid var(--line-strong);
   box-shadow: none;
@@ -746,13 +782,12 @@
 /* ---- Invoice detail: the total, the timeline, the PDF frame ----------------------- */
 
 .bk .facts .figure {
-  font-family: var(--font-serif);
-  font-size: 36px;
-  line-height: 40px;
-  letter-spacing: -0.015em;
+  font-size: 40px;
+  line-height: 44px;
 }
 .bk .timeline__when {
-  font: 500 12px/16px var(--font-mono);
+  font: 500 12px/16px var(--font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ink-muted);
 }
 .bk .timeline li {
@@ -771,9 +806,9 @@
   box-shadow: 0 0 0 2px var(--ink);
 }
 .bk .document-frame {
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--sand);
+  background: var(--sunken);
 }
 
 .bk .timeline.panel {

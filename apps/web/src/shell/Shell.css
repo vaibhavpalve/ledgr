@@ -1,6 +1,6 @@
 /*
  * The application shell: sidebar, header, content column and the compact
- * bottom bar, from design/reference/Home.html, in handoff tokens (ADR-080).
+ * bottom bar, in the Boeklite design system (design/boeklite-design SCREENS.md, ADR-106).
  *
  * Two layouts from one DOM, decided here and only here: a grid with a 248px
  * sidebar beside a header-over-main column from 64rem up, a single column with
@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  background: var(--cream);
+  background: var(--canvas);
   color: var(--ink);
 }
 
@@ -39,11 +39,11 @@
   gap: 10px;
   width: 100%;
   min-height: 0;
-  padding: 12px;
-  border: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   color: var(--ink);
   text-align: left;
   font: inherit;
@@ -57,10 +57,10 @@
   color: var(--ink-muted);
 }
 .shell__company .shell__company-marker {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  font: 500 12px/1 var(--font-mono);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font: 600 12px/1 var(--font-sans);
   letter-spacing: 0;
 }
 .shell__company-text {
@@ -73,10 +73,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 600 13px/17px var(--font-sans);
+  font: 600 13px/18px var(--font-sans);
 }
 .shell__company-kvk {
-  font: 400 12px/16px var(--font-sans);
+  font: 400 13px/18px var(--font-sans);
   color: var(--ink-muted);
 }
 
@@ -118,12 +118,12 @@
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--mint);
-  color: var(--ink);
-  font: 500 12px/1 var(--font-mono);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--leaf);
+  color: #13201a;
+  font: 600 12px/1 var(--font-sans);
 }
 .shell__user-text {
   display: flex;
@@ -183,7 +183,7 @@
   gap: var(--space-2) var(--space-3);
   min-height: 64px;
   padding: var(--space-2) var(--space-4);
-  background: var(--cream);
+  background: var(--canvas);
   border-bottom: 1px solid var(--line);
 }
 .client-header[data-state="active"] {
@@ -358,17 +358,17 @@
   display: none;
   align-items: center;
   gap: 10px;
-  flex: 0 1 440px;
-  width: 440px;
+  flex: 0 1 320px;
+  width: 320px;
   max-width: 100%;
-  height: 48px;
+  height: 40px;
   min-height: 0;
-  padding: 0 var(--space-4) 0 22px;
+  padding: 0 10px 0 14px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   color: var(--ink-muted);
-  font: 400 15px/1 var(--font-sans);
+  font: 400 14px/1 var(--font-sans);
   letter-spacing: 0;
   text-align: left;
   cursor: pointer;
@@ -377,9 +377,10 @@
   flex-grow: 1;
 }
 .shell__kbd {
-  padding: 2px 6px;
-  border: 0;
-  font: 500 11px/16px var(--font-mono);
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 500 12px/18px var(--font-sans);
   color: var(--ink-muted);
 }
 
@@ -396,10 +397,10 @@
   min-height: 0;
   padding: 0 32px 0 var(--space-4);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font: 500 13px/1 var(--font-sans);
+  font: 600 14px/1 var(--font-sans);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
@@ -433,10 +434,10 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: var(--mint);
-  color: var(--ink);
-  font: 500 12px/1 var(--font-mono);
+  border-radius: 8px;
+  background: var(--leaf);
+  color: #13201a;
+  font: 600 12px/1 var(--font-sans);
 }
 .user-menu__panel {
   position: absolute;
@@ -449,7 +450,7 @@
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--surface);
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-float);
 }
@@ -480,7 +481,7 @@
   gap: var(--space-2);
   min-height: 44px;
   padding: var(--space-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--ink);
   font: 500 14px/20px var(--font-sans);
   text-decoration: none;
@@ -577,8 +578,19 @@
   border-radius: var(--radius-pill);
 }
 .shell__tab[aria-current="page"] .shell__tab-icon {
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
+}
+/* The central Capture button: the bar's one filled control. */
+.shell__tab--capture .shell__tab-icon,
+.shell__tab--capture[aria-current="page"] .shell__tab-icon {
+  width: 52px;
+  height: 52px;
+  margin-top: -22px;
+  border-radius: 50%;
   background: var(--action);
   color: var(--on-action);
+  box-shadow: 0 0 0 4px var(--surface);
 }
 
 /* ==========================================================================
@@ -588,7 +600,15 @@
 @media (min-width: 64rem) {
   .shell {
     display: grid;
-    grid-template-columns: 232px minmax(0, 1fr);
+    grid-template-columns: 240px minmax(0, 1fr);
+    /* The sidebar's white column and its rule run the full height of a long page; the
+       sticky rail itself is only one viewport tall. */
+    background: linear-gradient(
+      90deg,
+      var(--surface) 239px,
+      var(--line) 239px 240px,
+      var(--canvas) 240px
+    );
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "rail header"
@@ -603,9 +623,9 @@
     height: 100dvh;
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-    padding: var(--space-5) var(--space-4);
-    background: var(--cream);
+    gap: 2px;
+    padding: 20px 12px;
+    background: var(--surface);
     border-right: 1px solid var(--line);
     overflow-y: auto;
   }
@@ -615,7 +635,8 @@
     flex-wrap: nowrap;
     gap: var(--space-4);
     min-height: 72px;
-    padding: 0 var(--space-6);
+    padding: 0 36px;
+    border-bottom-color: transparent;
   }
   .client-header[data-state="active"] {
     /* One 3px rule replaces the 72px header's 1px hairline; keep the height. */
@@ -651,22 +672,23 @@
   /* Brand, nav, then the company card, then settings and who is signed in. */
   .shell__brand {
     order: 0;
-    padding: 0 var(--space-2) var(--space-5);
+    padding: 4px 10px 24px;
   }
   .shell__nav {
     order: 1;
   }
-  .shell__company {
-    order: 2;
-    margin-top: var(--space-3);
-  }
   .shell__rail-foot {
+    order: 2;
+  }
+  /* The administration card closes the sidebar (SCREENS.md). */
+  .shell__company {
     order: 3;
+    margin-top: var(--space-3);
   }
 
   .shell__main {
     grid-area: main;
-    padding: 28px var(--space-6) var(--space-7);
+    padding: 28px 36px var(--space-7);
   }
 
   .shell__tabs {

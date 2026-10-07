@@ -148,25 +148,22 @@ export function HomeScreen({
 
   return (
     <section className="home" aria-label={t("mobile.home.title")}>
+      {/* A small label above a `heading` title, one action button top-right (SCREENS.md). */}
       <div className="home__top">
         <div>
-          <p className="bk-over" data-testid="home-today">
-            {longToday(language)}
+          <p className="bk-label">
+            {companyName ? `${companyName} · ` : null}
+            <span data-testid="home-today">{longToday(language)}</span>
           </p>
-          <h1 className="home__title bk-serif">
-            {t("mobile.home.headline_lead")} <em>{t("mobile.home.headline_mark")}</em>
-          </h1>
+          <h1 className="home__title bk-h">{t("common.nav.dashboard")}</h1>
         </div>
         <div className="home__actions">
           <Button onClick={() => onNavigate("/invoices/new")}>
-            <Plus size={18} strokeWidth={1.5} aria-hidden="true" />
+            <Plus size={18} strokeWidth={1.75} aria-hidden="true" />
             {t("mobile.home.action.new_invoice")}
           </Button>
           <Button variant="primary" onClick={() => onNavigate("/purchases")}>
             {t("mobile.home.action.capture_receipt")}
-            <span className="ui-btn__end" aria-hidden="true">
-              <ArrowRight size={16} strokeWidth={2} />
-            </span>
           </Button>
         </div>
       </div>
@@ -195,31 +192,36 @@ export function HomeScreen({
 
       {summary !== null ? (
         <>
-          {/* The bento's top row: forest cash, lemon BTW, one pistachio card. */}
+          {/* The bento's top row: forest cash, lemon BTW, leaf-tint to book (SCREENS.md). */}
           <section
             className="home__kpis"
             aria-label={t("mobile.home.figures_heading")}
             data-testid="home-figures"
           >
             <Card className="home__card home__card--forest home__cash">
-              <p className="bk-over">{t("mobile.home.cash_position_label")}</p>
-              <p className="home__hero bk-serif">
+              <p className="bk-label">{t("mobile.home.cash_position_label")}</p>
+              <p className="home__hero bk-h">
                 <span data-testid="home-cash-position">{money(summary.cash_position)}</span>
               </p>
               <p className="home__caption">
                 {cashChip ? (
                   <>
-                    <Badge variant="delta">{cashChip}</Badge>{" "}
+                    <Badge variant="delta" className="home__delta">
+                      {cashChip}
+                    </Badge>{" "}
                     {t("mobile.home.cash_vs", { month: previousMonth })}
-                    <br />
+                    {" · "}
                   </>
                 ) : null}
                 <span data-testid="home-cash-position-caption">
                   {t(isSetup ? "mobile.home.kpi.cash_empty" : "mobile.home.cash_position_caption")}
                 </span>
               </p>
+              {!isSetup && history.length >= 2 ? (
+                <Sparkline values={history.map((point) => point.balance)} />
+              ) : null}
               <div className="home__owed">
-                <p className="bk-over">{t("mobile.home.receivables_label")}</p>
+                <p className="bk-label">{t("mobile.home.receivables_label")}</p>
                 <p className="home__owed-amount bk-num">
                   <span data-testid="home-receivables">{money(summary.receivables)}</span>
                 </p>
@@ -234,7 +236,7 @@ export function HomeScreen({
             </Card>
 
             <Card className="home__card home__card--lemon" aria-label={t("mobile.home.btw.title")}>
-              <p className="bk-over">
+              <p className="bk-label">
                 {t("mobile.home.vat_estimate_label")}
                 {daysLeft !== null ? (
                   <>
@@ -245,8 +247,8 @@ export function HomeScreen({
                   </>
                 ) : null}
               </p>
-              <p className="home__hero home__hero--btw bk-serif">
-                <span className="bk-total" data-testid="home-vat-estimate">
+              <p className="home__hero bk-h">
+                <span data-testid="home-vat-estimate">
                   {money(vatReturn?.estimate ?? summary.vat_estimate)}
                 </span>
               </p>
@@ -283,28 +285,38 @@ export function HomeScreen({
                 onClick={() => onNavigate("/vat")}
               >
                 {t("vat.open_from_home")}
-                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
               </Button>
             </Card>
 
             <Card
-              className="home__card home__card--pistachio"
+              className="home__card home__card--leaf"
               aria-label={t("mobile.home.unbooked_label")}
             >
-              <p className="bk-over">{t("mobile.home.unbooked_label")}</p>
-              <p className="home__count bk-serif" data-testid="home-unbooked">
+              <p className="bk-label">{t("mobile.home.unbooked_label")}</p>
+              <p className="home__hero bk-h" data-testid="home-unbooked">
                 {draftReceipts}
               </p>
-              <p className="home__caption home__caption--pistachio">
+              <p className="home__caption">
                 {draftReceipts > 0 ? (
                   <>
-                    <CircleAlert size={14} strokeWidth={1.8} aria-hidden="true" />{" "}
+                    <CircleAlert size={14} strokeWidth={1.75} aria-hidden="true" />{" "}
                     {t("mobile.home.btw.receipts_to_review", { count: draftReceipts })}
                   </>
                 ) : (
                   t("mobile.home.unbooked_empty")
                 )}
               </p>
+              {draftReceipts > 0 ? (
+                <button
+                  type="button"
+                  className="ui-textbutton home__start"
+                  data-testid="home-start-booking"
+                  onClick={() => onNavigate("/purchases")}
+                >
+                  {t("mobile.home.start_booking")}
+                  <ArrowRight size={16} strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              ) : null}
             </Card>
           </section>
 
@@ -420,7 +432,7 @@ export function HomeScreen({
                 <Card padded aria-label={t("mobile.home.cash_position_label")}>
                   <div className="home__chart-head">
                     <h2 className="ui-card__title">{t("mobile.home.cash_position_label")}</h2>
-                    <span className="bk-over">
+                    <span className="bk-label">
                       {t("mobile.home.chart.months", { count: history.length })}
                     </span>
                   </div>
@@ -520,6 +532,41 @@ function SetupCard({
         ))}
       </ol>
     </Card>
+  );
+}
+
+/**
+ * The cash card's sparkline, in `leaf` on forest. Decorative: the cash chart card
+ * carries the same series with an accessible summary. The balances are turned into
+ * screen coordinates only, so a float here never reaches a figure anyone reads.
+ */
+function Sparkline({ values }: { values: readonly string[] }) {
+  const points = values.map(Number);
+  const min = Math.min(...points);
+  const span = Math.max(...points) - min || 1;
+  const step = 300 / Math.max(points.length - 1, 1);
+  const path = points
+    .map((value, index) => {
+      const y = 56 - ((value - min) / span) * 48;
+      return `${index === 0 ? "M" : "L"}${(index * step).toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg
+      className="home__spark"
+      viewBox="0 0 300 64"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      data-testid="home-sparkline"
+    >
+      <path
+        d={path}
+        fill="none"
+        stroke="var(--leaf)"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 

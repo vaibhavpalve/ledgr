@@ -1,40 +1,43 @@
 /*
- * The home screen (design/reference/Home.png, Home-empty.png): title row, three
- * figure cards, then a 688 / 420 split. Handoff tokens only (ADR-080). Card
- * anatomy, rows and badges come from the primitives in ../ui/ui.css; this file
- * is layout and the few home-only pieces.
+ * The overview (design/boeklite-design: DashboardScreen, ADR-106): label and title
+ * row, three coloured cards, then a 7 / 5 split. Card anatomy, rows and badges come
+ * from the primitives (ui/ui.css restyled by ui/bk.css); this file is layout and
+ * the few home-only pieces.
  */
 
 .home {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-4);
 }
 
 .home__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 .home__title {
-  margin: 6px 0 0;
-  font-size: 44px;
-  line-height: 48px;
-  text-wrap: balance;
+  margin-top: 4px;
+  font-size: 28px;
+  line-height: 34px;
 }
 .home__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 10px;
+}
+.home .home__actions .ui-btn {
+  height: 40px;
 }
 
-/* Bento: 12 columns, 12px gaps. Cash 5, BTW 4, unbooked 3; to-do 7, chart 5. */
+/* Bento: 12 columns, 16px gaps. Cash 5, BTW 4, to book 3; to-do 7, chart 5. */
 .home__kpis {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 @media (min-width: 64rem) {
   .home__kpis {
@@ -46,7 +49,7 @@
   .home__card--lemon {
     grid-column: span 4;
   }
-  .home__card--pistachio {
+  .home__card--leaf {
     grid-column: span 3;
   }
 }
@@ -54,7 +57,7 @@
 .home__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: start;
 }
 @media (min-width: 64rem) {
@@ -65,100 +68,149 @@
 .home__column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-width: 0;
 }
 
-/* The three coloured cards. `ui-card` already gives radius and padding rules. */
+/* The three coloured cards. */
 .home .home__card {
   display: flex;
   flex-direction: column;
+  min-height: 200px;
   padding: var(--space-5);
   box-shadow: none;
 }
 .home .home__card--forest {
   background: var(--forest);
-  color: #f8f6ea;
+  border-color: var(--forest);
+  color: var(--on-forest);
 }
-.home .home__card--forest .bk-over,
+.home .home__card--forest .bk-label,
 .home .home__card--forest .home__caption {
-  color: #b5c2ae;
+  color: var(--on-forest-muted);
 }
 .home .home__card--lemon {
   background: var(--lemon);
-  color: #14261b;
+  border-color: var(--lemon);
+  color: #13201a;
 }
-.home .home__card--lemon .bk-over,
-.home .home__card--lemon .home__caption {
+.home .home__card--lemon .bk-label,
+.home .home__card--lemon .home__caption,
+.home .home__card--lemon .home__btw-period {
   color: #5a4a00;
 }
-.home .home__card--pistachio {
-  background: var(--pistachio);
-  color: #14261b;
+.home .home__card--leaf {
+  background: var(--leaf-tint);
+  border-color: var(--leaf-tint);
+  color: var(--ink);
 }
-.home .home__card--pistachio .bk-over,
-.home .home__caption--pistachio {
-  color: var(--pistachio-ink);
+.home .home__card--leaf .bk-label,
+.home .home__card--leaf .home__caption {
+  color: var(--leaf-ink);
 }
 .home__hero {
-  margin: 18px 0 6px;
-  font-size: 60px;
-  line-height: 60px;
-  letter-spacing: -0.015em;
-}
-.home__card--forest .home__hero {
-  color: var(--lemon);
-}
-.home__hero .bk-total {
-  display: inline-block;
-}
-.home__hero--btw {
-  font-size: 52px;
-  line-height: 56px;
-}
-.home__count {
-  margin: 12px 0 0;
-  font-size: 112px;
-  line-height: 100px;
+  margin: 14px 0 4px;
+  font-size: 40px;
+  line-height: 44px;
+  font-variant-numeric: tabular-nums;
 }
 .home__caption {
-  margin: 0;
-  font: 400 13px/18px var(--font-sans);
+  font: 400 13px/20px var(--font-sans);
 }
 .home__caption svg {
   display: inline;
   vertical-align: -2px;
 }
-.home__card--pistachio .home__caption {
+/* "+ € 2.310,00 since 1 Sep": the change is leaf on forest, a word not a pill. */
+.home .home__card--forest .ui-badge--delta {
+  height: auto;
+  padding: 0;
+  background: none;
+  color: var(--leaf);
+  font: 500 13px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.home__spark {
+  display: block;
+  width: 100%;
+  height: 64px;
   margin-top: auto;
   padding-top: var(--space-4);
 }
 .home__owed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(244, 247, 238, 0.16);
+}
+.home__spark + .home__owed {
+  margin-top: var(--space-3);
+}
+.home__cash > .home__caption + .home__owed {
   margin-top: auto;
-  padding-top: var(--space-4);
-  border-top: 1px solid #2c5a40;
 }
 .home__owed-amount {
-  margin: var(--space-1) 0;
-  font-size: 20px;
-  line-height: 26px;
-  color: var(--lemon);
+  font: 600 15px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--on-forest);
 }
-.home__card--forest .ui-badge--delta {
-  margin-right: var(--space-1);
+.home__owed .home__caption {
+  flex-basis: 100%;
 }
 .home__clip {
   overflow: hidden;
 }
 
-/* Attention list */
+/* BTW card */
+.home__btw-period {
+  margin: 0 0 var(--space-1);
+  font: 400 13px/20px var(--font-sans);
+}
+.home__btw-due {
+  display: block;
+}
+/* Its one button: dark ink on lemon, so it is not a second `action` on the page. */
+.home .home__btw-open {
+  align-self: flex-start;
+  margin-top: auto;
+  background: #13201a;
+  border-color: transparent;
+  color: #ffffff;
+}
+.home .home__btw-open:hover {
+  background: #13201a;
+  filter: brightness(1.3);
+}
+
+/* To book card */
+.home .home__start {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: var(--space-4);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* To-do list */
+.home .home__list-row {
+  gap: 12px;
+  padding: 12px 24px;
+}
+.home .ui-list > li:first-child .home__list-row {
+  border-top: 0;
+}
 .home__item-badge {
-  width: 72px;
   flex-shrink: 0;
 }
 .home__item-row {
   display: block;
-  justify-content: flex-start;
   flex-grow: 1;
   min-width: 0;
   min-height: 0;
@@ -166,25 +218,25 @@
   border: 0;
   background: none;
   color: var(--ink);
-  font: 500 15px/22px var(--font-sans);
+  font: 400 14px/20px var(--font-sans);
   letter-spacing: 0;
   text-align: left;
   cursor: pointer;
 }
 .home__item-row:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .home__item-amount {
-  width: 92px;
   flex-shrink: 0;
   text-align: right;
+  font-weight: 500;
 }
 .home__item-action {
-  width: 128px;
   flex-shrink: 0;
 }
 .home__caught-up {
-  padding: 0 20px 20px;
+  padding: 0 24px 24px;
 }
 
 /* Recent invoices */
@@ -197,19 +249,19 @@
   font: 400 14px/20px var(--font-sans);
 }
 .home__recent-date {
-  width: 88px;
+  width: 96px;
   flex-shrink: 0;
   text-align: right;
   font: 400 13px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ink-muted);
 }
 
 /* Setup checklist (empty state) */
 .home__setup-head {
-  padding: 16px 20px;
+  padding: 20px 24px 12px;
 }
 .home__setup-sub {
-  margin: 0;
   font: 400 13px/20px var(--font-sans);
   color: var(--ink-muted);
 }
@@ -217,17 +269,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--sand);
+  border-radius: 8px;
+  background: var(--sunken);
   color: var(--ink);
-  font: 500 13px/1 var(--font-mono);
+  font: 600 13px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .home__step-mark--done {
-  background: var(--brand-tint);
-  color: var(--brand);
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
 }
 .home__step-text {
   display: flex;
@@ -247,84 +300,58 @@
 .home__chart-empty {
   margin-top: var(--space-3);
 }
-.home__btw-due {
-  display: block;
-  font: 400 13px/20px var(--font-sans);
-}
-.home__btw-period {
-  margin: var(--space-1) 0 var(--space-3);
-  font: 500 13px/18px var(--font-sans);
-}
 .home__chart-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
 }
-/* Loading */
+
+/* Loading: sunken skeleton rows. */
 .home__loading {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 .home__loading-row {
   height: 132px;
   border-radius: var(--radius-md);
-  background: var(--sand);
+  background: var(--sunken);
 }
 
 @media (max-width: 40rem) {
-  .home__title {
-    font-size: 34px;
-    line-height: 38px;
-  }
   /* Badge and action share the first line, the sentence takes the line below. */
   .home__item-badge {
     order: 1;
-    width: auto;
-    padding-inline: var(--space-3);
   }
   .home__item-amount {
     order: 2;
-    width: auto;
     margin-left: auto;
   }
   .home__item-action {
     order: 2;
-    width: auto;
   }
   .home__item-row {
     order: 3;
     flex-basis: 100%;
   }
-  .home__list-row {
+  .home .home__list-row {
     flex-wrap: wrap;
-    padding-block: 12px;
+    padding: 12px 16px;
   }
   .home__recent-date {
     display: none;
   }
+  .home .home__card {
+    min-height: 0;
+  }
 }
 
-/* The BTW card's way to the return itself (ADR-087). */
-.home .home__btw-open {
-  align-self: flex-start;
-  margin-top: auto;
-  background: #14261b;
-  border-color: transparent;
-  color: #f8f6ea;
-}
-.home .home__btw-open:hover {
-  background: #14261b;
-  filter: brightness(1.25);
-}
-
-/* Focus on the coloured cards: the ring is the card's own ink, since the page's focus colour is
-   lemon in the dark theme and would vanish on the lemon card. */
-.home .home__card--lemon :focus-visible,
-.home .home__card--pistachio :focus-visible {
-  outline-color: #14261b;
+/* Focus on the coloured cards: the ring is the card's own ink, since the page's focus
+   colour would vanish on lemon and on forest. */
+.home .home__card--lemon :focus-visible {
+  outline-color: #13201a;
 }
 .home .home__card--forest :focus-visible {
-  outline-color: var(--lemon);
+  outline-color: var(--leaf);
 }

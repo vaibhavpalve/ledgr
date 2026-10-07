@@ -521,8 +521,17 @@
 .ui-logo {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
   color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.ui-logo__glyph {
+  height: 1.05em;
+  width: auto;
+  flex: none;
 }
 .ui-logo__glyph .a {
   fill: var(--glyph-a);
@@ -530,24 +539,15 @@
 .ui-logo__glyph .b {
   fill: var(--glyph-b);
 }
-.ui-logo__word {
-  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  font-size: 26px;
-  line-height: 1;
-  letter-spacing: -0.01em;
+/* Reversed on the forest ground: light stem and bowl, lemon lower bowl. */
+.ui-logo--on-forest {
+  color: var(--on-forest);
 }
-/* One-colour glyph on pistachio: the lower bowl is outlined, never filled. */
-.ui-logo--on-pistachio {
-  color: #14261b;
+.ui-logo--on-forest .ui-logo__glyph .a {
+  fill: var(--on-forest);
 }
-.ui-logo--on-pistachio .ui-logo__glyph .a {
-  fill: #14261b;
-}
-.ui-logo--on-pistachio .ui-logo__glyph .b {
-  fill: none;
-  stroke: #14261b;
-  stroke-width: 3;
+.ui-logo--on-forest .ui-logo__glyph .b {
+  fill: var(--lemon);
 }
 /* Touch targets: 44px minimum on a phone (DESIGN.md section 8). */
 @media (max-width: 63.99rem) {

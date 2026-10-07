@@ -38,16 +38,14 @@
   border-collapse: collapse;
 }
 
-/* Header band in `sand`, mono overlines; 48px rows with `line` between them. */
+/* Header band in `sunken`, 44px rows with `line` between them. */
 .purchases__table th {
-  height: 40px;
+  height: 36px;
   padding: 0 20px;
-  background: var(--sand);
+  background: var(--sunken);
   color: var(--ink-muted);
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
+  font: 500 13px/18px var(--font-sans);
   text-align: left;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -66,7 +64,7 @@
   position: relative;
 }
 .purchases__table tbody tr:hover {
-  background: color-mix(in srgb, var(--sand) 50%, transparent);
+  background: color-mix(in srgb, var(--sunken) 50%, transparent);
 }
 
 .purchases__supplier {
@@ -90,7 +88,7 @@
   display: block;
   margin-top: 2px;
   color: var(--ink-muted);
-  font: 400 12px/16px var(--font-mono);
+  font: 400 13px/18px var(--font-sans);
 }
 .purchases__sub:empty {
   display: none;
@@ -130,10 +128,10 @@
 .purchases__num {
   text-align: right;
 }
-/* Amounts: mono, tabular, right-aligned. */
+/* Amounts: tabular, right-aligned. */
 .purchases__amount {
   color: var(--ink);
-  font: 500 14px/20px var(--font-mono);
+  font: 500 14px/20px var(--font-sans);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -142,10 +140,10 @@
 .purchases__status {
   display: inline-flex;
   align-items: center;
-  height: 26px;
-  padding: 0 11px;
+  height: 24px;
+  padding: 0 10px;
   border-radius: var(--radius-pill);
-  background: var(--sand);
+  background: var(--sunken);
   color: var(--ink);
   font: 500 12px/16px var(--font-sans);
   white-space: nowrap;
@@ -155,12 +153,12 @@
   color: var(--lemon-ink);
 }
 .purchases__status--ready {
-  background: var(--sand);
+  background: var(--sunken);
   color: var(--ink);
 }
 .purchases__status--posted {
-  background: var(--sand);
-  color: var(--positive);
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
 }
 .purchases__status--posted::before {
   content: "✓";
@@ -181,13 +179,12 @@
   align-self: flex-start;
   color: var(--ink);
   font: 500 14px/20px var(--font-sans);
-  text-decoration: underline;
-  text-decoration-color: var(--leaf);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
+  text-decoration: none;
 }
 .purchase-detail__back:hover {
   color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .purchase-detail__body {
@@ -203,7 +200,7 @@
   }
 }
 
-/* The original sits in the `forest` lightbox on the left; the form is the proposed
+/* The original sits on a `sunken` card on the left; the form is the proposed
    entry's card on the right. The form stays first in the DOM, so a keyboard or
    screen-reader user reaches the fields before the picture. */
 .purchase-original {
@@ -212,21 +209,20 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--forest);
-  color: #f8f6ea;
+  background: var(--sunken);
+  color: var(--ink);
 }
 .purchase-original h2 {
   margin: 0;
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #b5c2ae;
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink-muted);
 }
 .purchase-original [role="status"],
 .purchase-original [role="alert"] {
   margin: 0;
-  color: #f8f6ea;
+  color: var(--ink);
 }
 .purchase-original__frame {
   width: 100%;
@@ -234,25 +230,22 @@
   min-height: 24rem;
   border: 0;
   border-radius: var(--radius-sm);
-  background: #fffef8;
+  background: #ffffff;
 }
 
 .purchase-detail .expense-form {
   padding: var(--space-5);
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
 }
 .purchase-detail .expense-form > h2 {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 500 13px/18px var(--font-sans);
   color: var(--ink-muted);
 }
 .purchase-detail .expense-form__notice {
-  border-left-color: var(--leaf);
-  background: var(--mint);
+  border-left-color: var(--leaf-ink);
+  background: var(--leaf-tint);
 }
 .purchase-detail .expense-form__check {
   background: var(--lemon-tint);

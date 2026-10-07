@@ -209,9 +209,7 @@ test("a new business goes from sign-up to its BTW return", async ({ page, reques
   await page.getByTestId("expense-supplier").fill("Staples");
   await page.getByTestId("expense-gross-amount").fill("121.00");
   await page.getByTestId("expense-vat-treatment").selectOption("btw_21");
-  await page.getByTestId("expense-payment-method").selectOption("business_account");
-  await page.getByTestId("expense-save").click();
-  await expect(page.getByTestId("expense-saved")).toBeVisible();
+  // Business funds is the default (ADR-096) and the review form has one button, Submit.
   await shot(page, "14-purchase-filled");
   await page.getByTestId("expense-submit").click();
   await expect(page.getByTestId("purchases")).toBeVisible();

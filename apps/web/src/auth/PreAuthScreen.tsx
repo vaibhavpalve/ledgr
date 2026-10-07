@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Check } from "lucide-react";
+import { Check, ReceiptText } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 
 import "./PreAuthScreen.css";
@@ -32,12 +32,6 @@ const POINTS = ["permanent", "exact", "passkey"] as const;
  */
 const DEMO = {
   vendor: "Papierhuis Amsterdam",
-  address: "Herengracht 112",
-  stamp: "18-09-2026 14:32",
-  farewell: "PIN · BEDANKT",
-  entryNumber: "0412",
-  vat: "BTW 21%",
-  total: "EUR 52,80",
   expense: "4300 Kantoorkosten",
   vatAccount: "1520 BTW te vorderen",
   bank: "1100 Bank",
@@ -94,15 +88,9 @@ export function PreAuthScreen({
 
         <div className="pre-auth__column">
           <header className="pre-auth__header">
-            {screen === "login" ? <p className="bk-over">{t("auth.sign_in.heading")}</p> : null}
-            <h1 className="pre-auth__heading bk-serif" data-testid="pre-auth-heading">
+            <h1 className="pre-auth__heading bk-h" data-testid="pre-auth-heading">
               {t(HEADING_KEY[screen])}
-              {screen === "login" ? (
-                <>
-                  {" "}
-                  <em>{t("auth.sign_in.title_mark")}</em>
-                </>
-              ) : null}
+              {screen === "login" ? ` ${t("auth.sign_in.title_mark")}` : null}
             </h1>
             {screen === "login" || screen === "recover" ? (
               <p className="pre-auth__subtitle">
@@ -119,74 +107,36 @@ export function PreAuthScreen({
           <p className="pre-auth__language-hint" data-testid="pre-auth-language-hint">
             {t("auth.language.hint")}
           </p>
-          <p className="bk-over">
-            {t("auth.footer.copyright", { year: new Date().getFullYear() })}
-          </p>
+          <p>{t("auth.footer.copyright", { year: new Date().getFullYear() })}</p>
         </footer>
       </div>
 
-      <aside className="pre-auth__rail bk-on-pistachio" aria-label={t("auth.rail.headline_lead")}>
-        <div className="pre-auth__rail-top">
-          <Logo size={30} onPanel />
-          <span className="bk-over pre-auth__rail-overline">{t("auth.rail.overline")}</span>
-        </div>
+      <aside className="pre-auth__rail bk-on-forest" aria-label={t("auth.rail.headline_lead")}>
+        <Logo size={22} onForest />
 
         <div className="pre-auth__rail-pitch">
-          <h2 className="pre-auth__rail-headline bk-serif">
-            <span className="pre-auth__rail-lead">{t("auth.rail.headline_lead")}</span>
-            <em className="pre-auth__mark bk-total">{t("auth.rail.headline_mark")}</em>
+          <h2 className="pre-auth__rail-headline bk-h">
+            {t("auth.rail.headline_lead")}{" "}
+            <span className="pre-auth__mark">{t("auth.rail.headline_mark")}</span>
           </h2>
           <p className="pre-auth__rail-sub">{t("auth.rail.subhead")}</p>
         </div>
 
+        {/* A real product card: the receipt becomes this entry. Fixed light colours,
+            since it is a picture of the product on the forest panel in either theme. */}
         <div className="pre-auth__demo" aria-hidden="true">
-          <div className="pre-auth__receipt">
-            <div className="bk-receipt">
-              <div className="bk-receipt__sup">{DEMO.vendor}</div>
-              <div>{DEMO.address}</div>
-              <div>{DEMO.stamp}</div>
-              <hr />
-              <div className="bk-receipt__row">
-                <span>{t("auth.rail.demo_item")}</span>
-                <span>43,64</span>
-              </div>
-              <div className="bk-receipt__row">
-                <span>{DEMO.vat}</span>
-                <span>9,16</span>
-              </div>
-              <hr />
-              <div className="bk-receipt__row pre-auth__receipt-total">
-                <span>{t("auth.rail.demo_total")}</span>
-                <span>{DEMO.total}</span>
-              </div>
-              <div className="pre-auth__receipt-farewell">{DEMO.farewell}</div>
-            </div>
-          </div>
-
-          <svg
-            className="pre-auth__arrow"
-            viewBox="0 0 120 70"
-            width="120"
-            height="70"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 52 C 30 8, 78 4, 108 30" />
-            <path d="M96 22 L 109 31 L 95 37" />
-          </svg>
-
-          <div className="bk-je bk-je--forest bk-je--tight pre-auth__journal">
+          <div className="bk-je pre-auth__journal">
             <div className="bk-je__head">
-              <span className="bk-over">
-                {t("auth.rail.demo_journal")} · {DEMO.entryNumber}
-              </span>
-              <span className="bk-chip pre-auth__booked">
-                <Check size={12} strokeWidth={2.5} />
-                {t("auth.rail.demo_booked")}
-              </span>
+              <div className="pre-auth__receipt-id">
+                <span className="pre-auth__receipt-icon">
+                  <ReceiptText size={18} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <div className="pre-auth__receipt-vendor">{DEMO.vendor}</div>
+                  <div className="pre-auth__receipt-meta">{t("auth.rail.demo_receipt_meta")}</div>
+                </div>
+              </div>
+              <span className="bk-chip bk-chip--review">{t("auth.rail.demo_vat_detected")}</span>
             </div>
             <table>
               <thead>
@@ -216,41 +166,24 @@ export function PreAuthScreen({
               <tfoot>
                 <tr>
                   <td>{t("auth.rail.demo_total")}</td>
-                  <td className="r">
-                    <span className="bk-total bk-total--lemon">52,80</span>
-                  </td>
-                  <td className="r">
-                    <span className="bk-total bk-total--lemon">52,80</span>
-                  </td>
+                  <td className="r">52,80</td>
+                  <td className="r">52,80</td>
                 </tr>
               </tfoot>
             </table>
+            <div className="bk-je__foot">
+              <span className="bk-chip bk-chip--done">
+                <Check strokeWidth={1.75} />
+                {t("auth.rail.demo_balanced")}
+              </span>
+              <span className="pre-auth__auto">{t("auth.rail.demo_auto")}</span>
+            </div>
           </div>
-
-          <svg className="bk-seal pre-auth__seal" viewBox="0 0 128 128" width="112" height="112">
-            <defs>
-              <path id="pre-auth-seal-path" d="M64 64m-47 0a47 47 0 1 1 94 0a47 47 0 1 1 -94 0" />
-            </defs>
-            <circle className="ring" cx="64" cy="64" r="64" />
-            <text>
-              <textPath href="#pre-auth-seal-path">{t("auth.rail.seal")}</textPath>
-            </text>
-            <circle className="core" cx="64" cy="64" r="27" />
-            <path
-              d="M52 64.5l8 8 16-17"
-              fill="none"
-              stroke="#14261b"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
         </div>
 
         <ul className="pre-auth__points">
-          {POINTS.map((point, index) => (
+          {POINTS.map((point) => (
             <li key={point} className="pre-auth__point">
-              <div className="bk-over pre-auth__point-number">{`0${index + 1}`}</div>
               <div className="pre-auth__point-title">{t(`auth.rail.point_${point}_title`)}</div>
               <div className="pre-auth__point-body">{t(`auth.rail.point_${point}_body`)}</div>
             </li>

@@ -72,7 +72,7 @@ export function CashChart({ series, summary }: { series: readonly CashPoint[]; s
             <line key={k} x1={LEFT} x2={W} y1={BASE - k * STEP_Y} y2={BASE - k * STEP_Y} />
           ))}
         </g>
-        <g fontFamily="var(--font-mono)" fontSize="11" fill="var(--ink-muted)">
+        <g fontFamily="var(--font-sans)" fontSize="11" fill="var(--ink-muted)">
           {[0, 1, 2, 3].map((k) => (
             <text key={k} x="0" y={BASE - k * STEP_Y + 4}>
               {axisLabel(lo + k * step)}

@@ -1,12 +1,13 @@
 /*
  * The frame every pre-authenticated screen renders inside: login, signup and
  * ADR-054's MFA gate. Layout and look from the Boeklite design system
- * (design/boeklite-design: SignInScreen preview, ADR-104): an inset `pistachio`
- * story panel on the left, the form on `cream` on the right.
+ * (design/boeklite-design: SignInScreen, ADR-106): an inset `forest` story panel
+ * on the left (at most 44% of the width), the form centred in a 400px column on
+ * `canvas` on the right.
  *
  * The task panel is FIRST in the markup so a keyboard or screen-reader user
  * reaches the form before the pitch; `grid-template-areas` puts the story panel
- * on the left. Under 900px it becomes a 200px band with the lockup and the
+ * on the left. Under 900px it collapses to a 160px band with the lockup and the
  * headline only.
  *
  * The root wears `.bk`, which scopes the design system's colliding token names
@@ -14,23 +15,24 @@
  * `ui-textbutton`) are restyled once, in ui/bk.css, for everything inside `.bk`.
  */
 
-.pre-auth {
+.pre-auth.bk {
   min-height: 100dvh;
   display: grid;
   grid-template-areas: "rail" "panel";
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--cream);
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--canvas);
   color: var(--ink);
 }
 
 @media (min-width: 56.25rem) {
-  .pre-auth {
+  .pre-auth.bk {
     grid-template-areas: "rail panel";
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(44%, 620px)) minmax(0, 1fr);
     grid-template-rows: none;
+    gap: 0;
   }
 }
 
@@ -45,29 +47,35 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 88px var(--space-4) 72px;
+  padding: 64px 0 96px;
 }
 @media (min-width: 56.25rem) {
   .pre-auth__panel {
-    padding: 0 64px;
+    padding: 72px var(--space-6) 96px;
   }
 }
 
 .pre-auth__tools {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: 0;
+  right: 0;
+}
+@media (min-width: 56.25rem) {
+  .pre-auth__tools {
+    top: var(--space-4);
+    right: var(--space-4);
+  }
 }
 
 .pre-auth__controls {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .pre-auth__column {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
@@ -80,23 +88,19 @@
 }
 
 .pre-auth__heading {
-  margin: 0;
-  font-size: 52px;
-  line-height: 54px;
+  font-size: 36px;
+  line-height: 42px;
   text-wrap: balance;
 }
 
 .pre-auth__subtitle {
-  margin: 0;
-  font-size: 15px;
-  line-height: 22px;
   color: var(--ink-muted);
 }
 
 .pre-auth__body {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--space-5);
 }
 
 .pre-auth__footer {
@@ -112,84 +116,27 @@
   color: var(--ink-muted);
   text-align: center;
 }
-.pre-auth__footer p {
-  margin: 0;
-}
 .pre-auth__language-hint {
-  max-width: 44ch;
-}
-
-/* Language switch: the design system's segmented control (EN | NL). */
-.pre-auth .language-switcher {
-  display: inline-flex;
-  gap: 0;
-  padding: 3px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--sand);
-}
-.pre-auth .language-switcher button {
-  min-height: 0;
-  min-width: 42px;
-  height: 30px;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--ink-muted);
-  font: 500 12px/16px var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  box-shadow: none;
-  cursor: pointer;
-}
-.pre-auth .language-switcher button[aria-pressed="true"] {
-  background: var(--action);
-  color: var(--on-action);
-  box-shadow: none;
+  max-width: 48ch;
 }
 
 .pre-auth__body [role="alert"]:not(.ui-error) {
-  margin: 0;
   color: var(--negative);
-}
-
-/* The passkey button's lemon end cap. */
-.login-passkey__end {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-left: auto;
-  margin-right: -14px;
-  border-radius: 50%;
-  background: var(--lemon);
-  color: #14261b;
-}
-[data-theme="dark"] .login-passkey__end {
-  background: #14261b;
-  color: var(--lemon);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .login-passkey__end {
-    background: #14261b;
-    color: var(--lemon);
-  }
 }
 
 /* Fields, buttons and links used by signup and MFA (not yet on the primitives). */
 .pre-auth__body label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  font: 500 13px/16px var(--font-sans);
+  gap: 6px;
+  font: 500 13px/18px var(--font-sans);
   color: var(--ink);
 }
 .pre-auth__body input:not([type="checkbox"]) {
   width: 100%;
   height: 48px;
   min-height: 0;
-  padding: 0 var(--space-4);
+  padding: 0 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -202,18 +149,18 @@
 .pre-auth__body form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-4);
 }
 .pre-auth__body button:not(.ui-btn):not(.ui-textbutton) {
   min-height: 0;
   height: 48px;
   width: 100%;
-  padding: 0 22px;
+  padding: 0 20px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
-  font: 500 15px/20px var(--font-sans);
+  font: 600 15px/20px var(--font-sans);
   letter-spacing: 0;
 }
 .pre-auth__body button[type="submit"]:not(.ui-btn) {
@@ -225,8 +172,7 @@
   height: auto;
   border: 0;
   background: none;
-  color: var(--ink);
-  font-weight: 500;
+  color: var(--action);
 }
 .pre-auth__body .auth-form {
   display: flex;
@@ -246,16 +192,15 @@
   padding: 0;
   margin-bottom: 10px;
   color: var(--ink);
-  font: 500 15px/20px var(--font-sans);
+  font: 600 15px/20px var(--font-sans);
 }
 .account-model__options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--line-strong);
+  padding: 3px;
   border-radius: var(--radius-sm);
-  background: var(--sand);
+  background: var(--sunken);
 }
 .account-model__option {
   position: relative;
@@ -264,8 +209,8 @@
   justify-content: center;
   min-height: 40px;
   padding: 8px 12px;
-  border-radius: var(--radius-pill);
-  color: var(--ink);
+  border-radius: 8px;
+  color: var(--ink-muted);
   font: 500 14px/18px var(--font-sans);
   text-align: center;
   cursor: pointer;
@@ -284,47 +229,63 @@
   border: 0;
 }
 .account-model__option:has(input:checked) {
-  background: var(--action);
-  color: var(--on-action);
+  background: var(--surface);
+  color: var(--ink);
   font-weight: 600;
+  box-shadow: var(--shadow-card);
 }
 .account-model__option:has(input:focus-visible) {
-  outline: 3px solid var(--action);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 .account-model__hint {
-  margin: 0;
   color: var(--ink-muted);
-  font: 400 13px/18px var(--font-sans);
+  font: 400 13px/20px var(--font-sans);
 }
 
-/* Login form: passkey, "or", email and password, then Sign in and Google. */
+/* Login form: passkey, divider, email and password, then Sign in and Google. */
 .login-fields {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-4);
 }
-.login-forgot {
-  display: flex;
-  justify-content: flex-end;
-  margin: -2px 0 0;
-}
-.login-forgot .ui-textbutton {
+.login-fields .ui-textbutton {
   font-size: 13px;
+  line-height: 18px;
+}
+/* The password field's show/hide eye, inside the input's right edge. */
+.login-password {
+  position: relative;
+}
+.login-password .ui-input {
+  padding-right: 48px;
+}
+.pre-auth .login-reveal {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: var(--ink-muted);
+}
+.pre-auth .login-reveal:hover {
+  color: var(--ink);
+  background: var(--sunken);
 }
 .login-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 20px;
 }
 .pre-auth .login-divider {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: var(--space-5) 0;
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 400 13px/18px var(--font-sans);
   color: var(--ink-muted);
 }
 .login-divider::before,
@@ -335,10 +296,9 @@
   background: var(--line);
 }
 .login-alt {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .pre-auth .login-switch {
   margin: 28px 0 0;
@@ -350,6 +310,7 @@
   font-size: 14px;
   line-height: 20px;
 }
+
 /* ==========================================================================
  * STORY PANEL
  * ========================================================================== */
@@ -360,59 +321,37 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
+  min-height: 160px;
   padding: var(--space-5);
-  border-radius: var(--radius-xl);
-  background: var(--pistachio);
-  color: #14261b;
+  border-radius: var(--radius-lg);
+  background: var(--forest);
+  color: var(--on-forest);
   /* The brand field keeps its colours in Windows high-contrast: it is its identity. */
   forced-color-adjust: none;
-}
-
-.pre-auth__rail-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.pre-auth__rail-overline,
-.pre-auth__point-number {
-  color: var(--pistachio-ink);
-}
-.pre-auth__rail-brand .ui-logo__word,
-.pre-auth__rail-top .ui-logo__word {
-  font-size: 30px;
 }
 
 .pre-auth__rail-pitch {
   margin-top: var(--space-4);
 }
 .pre-auth__rail-headline {
-  margin: 0;
-  max-width: 656px;
-  font-size: clamp(34px, 9vw, 44px);
-  line-height: 0.95;
-  letter-spacing: -0.025em;
-}
-/* The lead balances onto two lines; the key word takes its own, italic, on the double rule. */
-.pre-auth__rail-lead {
-  display: block;
-  max-width: 6.4em;
+  max-width: 520px;
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.07;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 }
 .pre-auth__mark {
-  display: block;
-  width: fit-content;
-  line-height: 0.9;
+  color: var(--lemon);
 }
 .pre-auth .pre-auth__rail-sub {
-  margin: 20px 0 0;
-  max-width: 500px;
+  margin-top: 20px;
+  max-width: 440px;
   font-size: 17px;
-  line-height: 26px;
+  line-height: 27px;
+  color: var(--on-forest-muted);
 }
 
 /* Only the lockup and the headline survive on a phone. */
-.pre-auth__rail-overline,
 .pre-auth__rail-sub,
 .pre-auth__demo,
 .pre-auth__points {
@@ -421,76 +360,89 @@
 
 @media (min-width: 56.25rem) {
   .pre-auth__rail {
-    padding: 40px 52px;
+    padding: 48px 56px;
   }
-  .pre-auth__rail-overline,
-  .pre-auth__rail-sub,
-  .pre-auth__points {
+  .pre-auth__rail-sub {
     display: block;
   }
   .pre-auth__rail-pitch {
-    margin-top: 40px;
+    margin-top: auto;
+    padding-top: var(--space-6);
   }
   .pre-auth__rail-headline {
-    font-size: clamp(48px, 5.6vw, 72px);
+    font-size: clamp(40px, 3.9vw, 56px);
+    line-height: 1.07;
   }
 }
 
-/* The paper composition: a fixed 590x262 stage, shown only where it fits. */
-@media (min-width: 80rem) {
+/* The product card, shown where the panel is tall enough to hold it. */
+@media (min-width: 56.25rem) and (min-height: 50rem) {
   .pre-auth__demo {
     display: block;
-    position: relative;
-    height: 262px;
-    margin-top: var(--space-2);
+    margin-top: 40px;
   }
 }
-.pre-auth__demo > * {
-  position: absolute;
-}
-.pre-auth__receipt {
-  left: 0;
-  top: 4px;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 26px 30px rgba(20, 38, 27, 0.35));
-}
-.pre-auth__receipt-total {
-  font-weight: 500;
-}
-.pre-auth__receipt-farewell {
-  margin-top: 10px;
-  font-size: 10px;
-  opacity: 0.7;
-}
-.pre-auth__arrow {
-  left: 196px;
-  top: -14px;
-  color: #14261b;
-}
-.pre-auth__journal {
-  left: 290px;
-  top: 8px;
-  width: 300px;
-  padding: 16px 20px 14px;
+/* A picture of the product, so its colours are the light theme's in either theme. */
+.pre-auth .pre-auth__journal {
+  max-width: 460px;
+  background: #ffffff;
+  color: #13201a;
+  border-color: transparent;
   box-shadow: var(--shadow-float);
 }
-.pre-auth__booked {
-  background: #2c5a40;
-  color: var(--pistachio);
+.pre-auth .pre-auth__journal .bk-je__head,
+.pre-auth .pre-auth__journal td,
+.pre-auth .pre-auth__journal .bk-je__foot {
+  border-color: #e3e6dc;
 }
-.pre-auth__seal {
-  left: 156px;
-  top: 138px;
-  z-index: 3;
-  transform: rotate(-14deg);
+.pre-auth .pre-auth__journal th {
+  background: #f1f3ea;
+  color: #56625a;
+}
+.pre-auth .pre-auth__journal tfoot td {
+  border-top-color: #13201a;
+}
+.pre-auth .pre-auth__journal .bk-chip--review {
+  background: #fff1b8;
+  color: #5a4a00;
+}
+.pre-auth .pre-auth__journal .bk-chip--done {
+  background: #e7f3da;
+  color: #2f6a1f;
+}
+.pre-auth__receipt-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pre-auth__receipt-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f1f3ea;
+  color: #56625a;
+}
+.pre-auth__receipt-vendor {
+  font: 600 14px/20px var(--font-sans);
+}
+.pre-auth__receipt-meta {
+  font: 400 12px/16px var(--font-sans);
+  color: #56625a;
+}
+.pre-auth__auto {
+  margin-left: auto;
+  font: 400 12px/16px var(--font-sans);
+  color: #56625a;
 }
 
 .pre-auth__points {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-5);
-  margin: auto 0 0;
-  padding: var(--space-4) 0 0;
-  border-top: 1px solid rgba(20, 38, 27, 0.35);
+  margin: 40px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid rgba(244, 247, 238, 0.16);
   list-style: none;
 }
 @media (min-width: 56.25rem) {
@@ -499,20 +451,19 @@
   }
 }
 .pre-auth__point-title {
-  margin-top: var(--space-1);
-  font: 600 15px/22px var(--font-sans);
+  font: 600 14px/24px var(--font-sans);
 }
 .pre-auth__point-body {
   font: 400 13px/20px var(--font-sans);
-}
-
-/* Overlines on the forest journal card keep the card's muted cream, not the page's. */
-.pre-auth__journal .bk-over {
-  color: #b5c2ae;
+  color: var(--on-forest-muted);
 }
 
 /* The Google link step's heading (IAM-010c): a form title, not a page title. */
 .pre-auth .google-link__heading {
-  margin: 0;
   font: 600 18px/24px var(--font-sans);
+}
+
+/* Focus on the forest panel stays visible in the light theme's focus colour too. */
+.pre-auth__rail :focus-visible {
+  outline-color: var(--lemon);
 }

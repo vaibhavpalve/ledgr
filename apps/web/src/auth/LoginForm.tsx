@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, CircleAlert, KeyRound } from "lucide-react";
+import { CircleAlert, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 
 import type { AuthApi, AuthResult } from "./api";
@@ -64,7 +64,7 @@ export function LoginForm({
   return (
     <div className="auth-form" data-testid="login-form">
       {/* Passkey first: IAM-012 counts it as a full factor, so it is the one primary
-          action. Password and Google stay below it, as outline pills. */}
+          action. Password and Google stay below it, as secondary buttons. */}
       <Button
         variant="primary"
         size="lg"
@@ -79,11 +79,8 @@ export function LoginForm({
           })
         }
       >
-        <KeyRound size={18} strokeWidth={1.5} aria-hidden="true" />
+        <KeyRound size={18} strokeWidth={1.75} aria-hidden="true" />
         {t("auth.sign_in.passkey_short")}
-        <span className="login-passkey__end" aria-hidden="true">
-          <ArrowRight size={16} strokeWidth={2} />
-        </span>
       </Button>
 
       <p className="login-divider">{t("auth.sign_in.or")}</p>
@@ -111,42 +108,52 @@ export function LoginForm({
             onChange={(event) => setEmail(event.target.value)}
           />
 
-          <Field
-            id="login-password"
-            label={t("auth.sign_in.password")}
-            type={showPassword ? "text" : "password"}
-            size="lg"
-            autoComplete="current-password"
-            placeholder={t("auth.sign_in.password_placeholder")}
-            required
-            data-testid="login-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            labelAction={
-              <button
-                type="button"
-                className="ui-textbutton"
-                aria-controls="login-password"
-                data-testid="login-show-password"
-                onClick={() => setShowPassword((shown) => !shown)}
-              >
-                {t(showPassword ? "auth.sign_in.hide_password" : "auth.sign_in.show_password")}
-              </button>
-            }
-          />
-        </div>
-        {onForgotPassword ? (
-          <div className="login-forgot">
+          {/* "Forgot password?" sits on the label row; Show / Hide is the eye inside
+              the field's right edge, its word kept for assistive technology. */}
+          <div className="login-password">
+            <Field
+              id="login-password"
+              label={t("auth.sign_in.password")}
+              type={showPassword ? "text" : "password"}
+              size="lg"
+              autoComplete="current-password"
+              placeholder={t("auth.sign_in.password_placeholder")}
+              required
+              data-testid="login-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              labelAction={
+                onForgotPassword ? (
+                  <button
+                    type="button"
+                    className="ui-textbutton"
+                    data-testid="login-forgot"
+                    onClick={onForgotPassword}
+                  >
+                    {t("auth.sign_in.forgot")}
+                  </button>
+                ) : null
+              }
+            />
             <button
               type="button"
-              className="ui-textbutton"
-              data-testid="login-forgot"
-              onClick={onForgotPassword}
+              className="ui-btn ui-btn--icon login-reveal"
+              aria-controls="login-password"
+              aria-pressed={showPassword}
+              data-testid="login-show-password"
+              onClick={() => setShowPassword((shown) => !shown)}
             >
-              {t("auth.sign_in.forgot")}
+              {showPassword ? (
+                <EyeOff size={18} strokeWidth={1.75} aria-hidden="true" />
+              ) : (
+                <Eye size={18} strokeWidth={1.75} aria-hidden="true" />
+              )}
+              <span className="ui-visually-hidden">
+                {t(showPassword ? "auth.sign_in.hide_password" : "auth.sign_in.show_password")}
+              </span>
             </button>
           </div>
-        ) : null}
+        </div>
 
         {problem ? (
           <p role="alert" className="ui-error" data-testid="login-error">
@@ -156,14 +163,20 @@ export function LoginForm({
         ) : null}
 
         <div className="login-alt">
-          <Button type="submit" size="lg" data-testid="login-submit" disabled={submitting !== null}>
+          <Button
+            type="submit"
+            size="lg"
+            block
+            data-testid="login-submit"
+            disabled={submitting !== null}
+          >
             {t("auth.sign_in.submit")}
           </Button>
 
           <Button
             size="lg"
+            block
             data-testid="login-google"
-            aria-label={t("auth.sign_in.google")}
             disabled={submitting !== null}
             onClick={() =>
               void withProblem("google", async () => {
@@ -173,7 +186,7 @@ export function LoginForm({
             }
           >
             <GoogleIcon />
-            {t("auth.sign_in.google_short")}
+            {t("auth.sign_in.google")}
           </Button>
         </div>
       </form>
@@ -195,7 +208,7 @@ export function LoginForm({
   );
 } /**
  * Google's own four-colour "G" mark, at the fixed proportions and colours
- * Google's brand guidelines require for a "Sign in with Google" button —
+ * Google's brand guidelines require for a "Continue with Google" button —
  * literal hexes, not `var(--ledgr-*)` tokens, for the same reason the client
  * marker colours and the pre-auth marketing rail are literals rather than
  * theme-following ones (see tokens.css and ADR-057): this mark's colour IS
@@ -203,7 +216,7 @@ export function LoginForm({
  * regardless of Boeklite's own light/dark setting.
  *
  * `aria-hidden` — the button's own visible text already names the action
- * fully ("Sign in with Google"), so this is decoration, not a second
+ * fully ("Continue with Google"), so this is decoration, not a second
  * announcement.
  */
 function GoogleIcon() {

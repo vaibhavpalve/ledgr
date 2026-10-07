@@ -9,8 +9,8 @@ import "@ledgr/design-tokens/tokens.css";
 // the `--ledgr-*` set above, so the two coexist while screens move across.
 import "@ledgr/design-tokens/ui-tokens.css";
 import "@ledgr/design-tokens/ui-fonts.css";
-// The Boeklite design system (design/boeklite-design, ADR-104): palette, Instrument Serif /
-// Geist / Geist Mono and the signature components. Colliding names are scoped to .bk.
+// The Boeklite design system (design/boeklite-design, ADR-106): palette, Inter and the
+// components. Colliding names are scoped to .bk.
 import "@ledgr/design-tokens/bk-tokens.css";
 import "@ledgr/design-tokens/bk-fonts.css";
 import "@ledgr/design-tokens/bk-components.css";

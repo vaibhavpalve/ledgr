@@ -114,18 +114,16 @@
 
 .page-header__titles {
   display: flex;
-  /* The context is a mono overline: after the title in the DOM, above it on screen. */
+  /* The context is a small label: after the title in the DOM, above it on screen. */
   flex-direction: column-reverse;
   align-items: flex-start;
-  gap: 6px;
+  gap: 4px;
   flex-grow: 1;
   min-width: 0;
 }
 
 .page-header__context {
-  font: 500 11px/14px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font: 500 13px/18px var(--font-sans);
   color: var(--ink-muted);
 }
 

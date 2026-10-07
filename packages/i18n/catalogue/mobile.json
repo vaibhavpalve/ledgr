@@ -233,6 +233,11 @@
       "nl": "Alles is geboekt.",
       "en": "Everything is booked."
     },
+    "mobile.home.start_booking": {
+      "note": "Link on the dashboard's To book card, to the purchases screen where receipts are booked.",
+      "nl": "Begin met boeken",
+      "en": "Start booking"
+    },
     "mobile.home.cash_position_label": {
       "nl": "Liquide middelen",
       "en": "Cash position"

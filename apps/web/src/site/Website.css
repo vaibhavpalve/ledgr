@@ -1,6 +1,6 @@
 /*
- * The marketing page (design/reference/Website.html), in handoff tokens
- * (ADR-080). The reference is a fixed 1440px canvas; here the same section
+ * The marketing page (design/reference/Website.html). Its root wears .bk, so the
+ * handoff token names resolve to the Boeklite design system (ADR-106). The reference is a fixed 1440px canvas; here the same section
  * heights and gaps hold at desktop and the sections stack below 64rem.
  * Mockups may use large radii and shadows (DESIGN.md section 4).
  */
@@ -22,9 +22,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-}
-.site__header .ui-logo__word {
-  font-size: 30px;
 }
 .site__nav {
   display: none;
@@ -75,11 +72,11 @@
 }
 .site__h1 {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 400;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: clamp(48px, 12vw, 84px);
   line-height: 1.048;
-  letter-spacing: -2.4px;
+  letter-spacing: -0.035em;
 }
 .site__mark {
   background: var(--accent);
@@ -273,8 +270,8 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 .site__fact-title {
-  font-family: var(--font-serif);
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 30px;
   line-height: 36px;
 }
@@ -309,11 +306,11 @@
 }
 .site__h2 {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: clamp(36px, 7vw, 52px);
   line-height: 1.08;
-  letter-spacing: -1px;
+  letter-spacing: -0.025em;
 }
 .site__ticks {
   margin: 4px 0 0;
@@ -422,7 +419,6 @@
   border-radius: 6px;
   background: var(--surface-raised);
   color: var(--ink);
-  transform: rotate(-3deg);
   font: 400 10px/16px var(--font-mono);
 }
 .site__receipt hr {

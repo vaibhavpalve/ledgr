@@ -78,7 +78,7 @@ describe("IAM-010g: the control is on both pre-authentication screens", () => {
     // "Inloggen", not "Aanmelden" — Dutch "aanmelden" means both sign in and
     // register, so on a screen whose other option is creating an account it
     // would make the two choices read as one.
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug.");
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug");
     unmount();
 
     render(
@@ -118,11 +118,11 @@ describe("IAM-010g: selectable before authentication", () => {
     );
     render(inRouter(<App language="nl" />));
 
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug.");
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug");
 
     fireEvent.click(screen.getByTestId("language-option-en"));
 
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back.");
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back");
     expect(screen.getByTestId("login-form")).toBeTruthy();
   });
 
@@ -141,7 +141,7 @@ describe("IAM-010g: selectable before authentication", () => {
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
 
     render(inRouter(<App language={initialLanguage()} />));
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back.");
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back");
   });
 
   it("keeps a 401 from the language write invisible on this screen", () => {
@@ -154,7 +154,7 @@ describe("IAM-010g: selectable before authentication", () => {
     render(inRouter(<App language="nl" />));
     fireEvent.click(screen.getByTestId("language-option-en"));
 
-    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back.");
+    expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back");
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
   });
 });
