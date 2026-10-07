@@ -340,3 +340,127 @@ describe("splitting one line across several invoices — FR-BNK-005, ADR-098", (
     );
   });
 });
+
+describe("adding a bank account", () => {
+  const chart = [
+    {
+      id: "la-0200",
+      code: "0200",
+      name: "Machines en installaties",
+      account_type: "asset",
+      status: "active",
+      rgs_code: "BMvaMei",
+      control_kind: null,
+    },
+    {
+      id: "la-1000",
+      code: "1000",
+      name: "Kas",
+      account_type: "asset",
+      status: "active",
+      rgs_code: "BLimKas",
+      control_kind: null,
+    },
+    {
+      id: "la-1100",
+      code: "1100",
+      name: "Bank",
+      account_type: "asset",
+      status: "active",
+      rgs_code: "BLimBan",
+      control_kind: null,
+    },
+    {
+      id: "la-4400",
+      code: "4400",
+      name: "Kantoorkosten",
+      account_type: "expense",
+      status: "active",
+      rgs_code: "WBedKan",
+      control_kind: null,
+    },
+  ];
+
+  async function openDialog() {
+    services.ledger.listChartOfAccounts.mockResolvedValueOnce(chart as never);
+    open();
+    fireEvent.click(await screen.findByTestId("bank-new-account"));
+    return screen.findByTestId("bank-account-form");
+  }
+
+  it("offers only bank and cash accounts, and preselects 1100 Bank, never machinery", async () => {
+    const dialog = await openDialog();
+    const ledger = within(dialog).getByTestId("bank-field-ledger-account") as HTMLSelectElement;
+    expect(ledger.value).toBe("la-1100");
+    expect([...ledger.options].map((o) => o.value)).toEqual(["la-1100", "la-1000"]);
+  });
+
+  it("is a labelled dialog whose button says what it does", async () => {
+    const dialog = await openDialog();
+    expect(dialog.getAttribute("role")).toBe("dialog");
+    expect(within(dialog).getByTestId("bank-account-submit").textContent).toBe("Add bank account");
+    expect(dialog.textContent).not.toContain("asset");
+  });
+
+  it("groups the IBAN as it is typed, refuses a typo, and sends it without spaces", async () => {
+    services.bank.createAccount.mockResolvedValueOnce({ ...account, id: "ba-2" });
+    const dialog = await openDialog();
+    fireEvent.change(within(dialog).getByTestId("bank-field-name"), {
+      target: { value: "ABN AMRO zakelijk" },
+    });
+    const iban = within(dialog).getByTestId("bank-field-iban") as HTMLInputElement;
+    const submit = within(dialog).getByTestId("bank-account-submit") as HTMLButtonElement;
+
+    fireEvent.change(iban, { target: { value: "nl91abna0417164301" } });
+    fireEvent.blur(iban);
+    expect(iban.value).toBe("NL91 ABNA 0417 1643 01");
+    expect(within(dialog).getByTestId("bank-field-iban-error")).toBeTruthy();
+    expect(submit.disabled).toBe(true);
+
+    fireEvent.change(iban, { target: { value: "NL91 ABNA 0417 1643 00" } });
+    expect(within(dialog).queryByTestId("bank-field-iban-error")).toBeNull();
+    expect(submit.disabled).toBe(false);
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(services.bank.createAccount).toHaveBeenCalledWith("adm-A", {
+        name: "ABN AMRO zakelijk",
+        iban: "NL91ABNA0417164300",
+        currency: "EUR",
+        ledgerAccountId: "la-1100",
+      }),
+    );
+  });
+
+  it("closes on Escape without creating anything", async () => {
+    await openDialog();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("bank-account-form")).toBeNull());
+    expect(services.bank.createAccount).not.toHaveBeenCalled();
+  });
+  it("preselects nothing when the chart has no bank or cash account", async () => {
+    services.ledger.listChartOfAccounts.mockResolvedValueOnce([chart[0]] as never);
+    open();
+    fireEvent.click(await screen.findByTestId("bank-new-account"));
+    const ledger = (await screen.findByTestId("bank-field-ledger-account")) as HTMLSelectElement;
+    expect(ledger.value).toBe("");
+  });
+});
+
+describe("an account without transactions", () => {
+  it("offers the import inside the empty state, once", async () => {
+    services.bank.listTransactions.mockResolvedValueOnce([]);
+    open();
+    const empty = await screen.findByTestId("bank-transactions-empty");
+    expect(within(empty).getByTestId("bank-import-open").textContent).toBe("Import statement");
+    expect(screen.getAllByTestId("bank-import-open")).toHaveLength(1);
+  });
+
+  it("shows the account's IBAN as banks print it", async () => {
+    services.bank.listTransactions.mockResolvedValueOnce([]);
+    open();
+    expect((await screen.findByTestId("bank-summary-iban")).textContent).toBe(
+      "NL91 ABNA 0417 1643 00",
+    );
+  });
+});

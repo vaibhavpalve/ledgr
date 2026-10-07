@@ -224,6 +224,62 @@
         "one": "{count} payment matched; {failed} failed, please review those yourself.",
         "other": "{count} payments matched; {failed} failed, please review those yourself."
       }
+    },
+    "bank.form.intro": {
+      "nl": "Voeg de rekening eenmalig toe en importeer daarna hier de afschriften.",
+      "en": "Add the account once, then import its statements here."
+    },
+    "bank.form.submit": {
+      "nl": "Bankrekening toevoegen",
+      "en": "Add bank account"
+    },
+    "bank.form.submitting": {
+      "nl": "Toevoegen…",
+      "en": "Adding…"
+    },
+    "bank.action.cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    },
+    "bank.field.name_hint": {
+      "nl": "Hoe u hem herkent, bijvoorbeeld ABN AMRO zakelijk.",
+      "en": "How you recognise it, for example ABN AMRO zakelijk."
+    },
+    "bank.field.iban_hint": {
+      "nl": "Zoals op uw bankpas of afschrift.",
+      "en": "As on your bank card or statement."
+    },
+    "bank.field.iban_invalid": {
+      "note": "Shown when the IBAN's length or check digits are wrong (ISO 13616 mod-97), before anything is sent.",
+      "nl": "Dit IBAN klopt niet. Vergelijk het met uw bankafschrift.",
+      "en": "This IBAN is not valid. Check it against your bank statement."
+    },
+    "bank.field.ledger_hint": {
+      "nl": "De grootboekrekening waarop de transacties van deze bank worden geboekt. Meestal 1100 Bank.",
+      "en": "The grootboek account this bank's transactions are booked to. Usually 1100 Bank."
+    },
+    "bank.field.ledger_choose": {
+      "note": "Placeholder when the chart has no bank or cash account to preselect; nothing is guessed.",
+      "nl": "Kies een rekening",
+      "en": "Choose an account"
+    },
+    "bank.account.iban": {
+      "identical": true,
+      "nl": "IBAN",
+      "en": "IBAN"
+    },
+    "bank.account.no_iban": {
+      "nl": "Geen IBAN",
+      "en": "No IBAN"
+    },
+    "bank.account.ledger": {
+      "nl": "Grootboekrekening",
+      "en": "Grootboek account"
+    },
+    "bank.account.balance": {
+      "note": "The account's balance from the trial balance of the selected fiscal year; {year} is that year's label.",
+      "nl": "Saldo in het grootboek, {year}",
+      "en": "Balance in the grootboek, {year}"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@ledgr/i18n";
 import type {
   BankAccountView,
@@ -9,10 +9,13 @@ import type {
 
 import { describeError } from "../api/http";
 import { useAdministration } from "../session/SessionProvider";
+import { fiscalYearLabel } from "../shell/AppShell";
 import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { toDecimalInput } from "../ui/decimal";
+import { useModalFocus } from "../useModalFocus";
+import { formatIban, isValidIban, normaliseIban } from "./iban";
 import "./Bank.css";
 
 /**
@@ -23,7 +26,7 @@ import "./Bank.css";
  */
 export function BankScreen() {
   const { t } = useI18n();
-  const { administration } = useAdministration();
+  const { administration, fiscalYear } = useAdministration();
   const { bank, ledger } = useServices();
 
   const [accounts, setAccounts] = useState<readonly BankAccountView[] | null>(null);
@@ -32,6 +35,26 @@ export function BankScreen() {
   const [attempt, setAttempt] = useState(0);
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Each ledger account's balance in the selected fiscal year, from the trial balance. Secondary:
+  // when it cannot be read the summary simply shows no balance.
+  const [balances, setBalances] = useState<ReadonlyMap<string, string> | null>(null);
+  const fiscalYearId = fiscalYear?.id ?? null;
+
+  useEffect(() => {
+    if (fiscalYearId === null) return;
+    let cancelled = false;
+    setBalances(null);
+    void Promise.resolve()
+      .then(() => ledger.getTrialBalance(administration.id, fiscalYearId))
+      .then((trial) => {
+        if (!cancelled)
+          setBalances(new Map(trial.rows.map((row) => [row.account_id, row.balance])));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [ledger, administration.id, fiscalYearId, attempt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +81,9 @@ export function BankScreen() {
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
   const selected = accounts?.find((account) => account.id === selectedId) ?? null;
+  // One primary action per view: adding the first account when there is none, otherwise
+  // importing a statement (in the transactions panel), so this one steps back to secondary.
+  const firstAccount = accounts !== null && accounts.length === 0;
 
   return (
     <section className="screen" aria-label={t("bank.title")} data-testid="bank-screen">
@@ -65,7 +91,12 @@ export function BankScreen() {
         title={t("bank.title")}
         action={
           chartAccounts !== null ? (
-            <button type="button" onClick={() => setCreating(true)} data-testid="bank-new-account">
+            <button
+              type="button"
+              className={firstAccount ? "button--primary" : "button-link"}
+              onClick={() => setCreating(true)}
+              data-testid="bank-new-account"
+            >
               <Icon name="plus" size={16} /> {t("bank.new_account")}
             </button>
           ) : undefined
@@ -81,7 +112,8 @@ export function BankScreen() {
           testId="bank-empty"
         />
       ) : null}
-      {accounts !== null && accounts.length > 0 ? (
+      {/* Several accounts: a pill per account to switch between them. One account needs none. */}
+      {accounts !== null && accounts.length > 1 ? (
         <nav className="subnav" aria-label={t("bank.accounts_label")}>
           {accounts.map((account) => (
             <button
@@ -98,6 +130,17 @@ export function BankScreen() {
       ) : null}
 
       {selected !== null && chartAccounts !== null ? (
+        <AccountSummary
+          account={selected}
+          ledgerAccount={chartAccounts.find((a) => a.id === selected.ledger_account_id) ?? null}
+          balance={balances?.get(selected.ledger_account_id) ?? null}
+          yearLabel={
+            fiscalYear ? fiscalYearLabel(fiscalYear.start_date, fiscalYear.end_date) : null
+          }
+        />
+      ) : null}
+
+      {selected !== null && chartAccounts !== null ? (
         <AccountTransactions
           administrationId={administration.id}
           account={selected}
@@ -106,7 +149,7 @@ export function BankScreen() {
       ) : null}
 
       {creating && chartAccounts !== null ? (
-        <CreateBankAccountForm
+        <CreateBankAccountDialog
           administrationId={administration.id}
           accounts={chartAccounts}
           onClose={() => setCreating(false)}
@@ -121,7 +164,83 @@ export function BankScreen() {
   );
 }
 
-function CreateBankAccountForm({
+/**
+ * The selected account at a glance: its name, IBAN as banks print it, the grootboek account its
+ * lines are booked to, and that account's balance in the selected fiscal year. The balance is the
+ * ledger's own figure, formatted, never computed here (NFR-031). There is no "last imported" line:
+ * the API does not record one yet.
+ */
+function AccountSummary({
+  account,
+  ledgerAccount,
+  balance,
+  yearLabel,
+}: {
+  account: BankAccountView;
+  ledgerAccount: ChartAccountView | null;
+  balance: string | null;
+  yearLabel: string | null;
+}) {
+  const { t, money } = useI18n();
+  return (
+    <section className="panel bank-summary" aria-label={account.name} data-testid="bank-summary">
+      <div className="bank-summary__who">
+        <h2 className="bank-summary__name">{account.name}</h2>
+        <dl className="bank-summary__facts">
+          <div>
+            <dt>{t("bank.account.iban")}</dt>
+            <dd className="ledgr-num" data-testid="bank-summary-iban">
+              {account.iban ? formatIban(account.iban) : t("bank.account.no_iban")}
+            </dd>
+          </div>
+          {ledgerAccount !== null ? (
+            <div>
+              <dt>{t("bank.account.ledger")}</dt>
+              <dd data-testid="bank-summary-ledger">
+                {ledgerAccount.code} — {ledgerAccount.name}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      </div>
+      {balance !== null && yearLabel !== null ? (
+        <div className="bank-summary__balance">
+          <span className="label">{t("bank.account.balance", { year: yearLabel })}</span>
+          <span className="bank-summary__amount figure" data-testid="bank-summary-balance">
+            {money(balance)}
+          </span>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * The bank and cash accounts of the chart (RGS `BLim*`: BLimBan bank, BLimKas cash), bank first.
+ * A chart without RGS codes falls back to every asset account, with nothing preselected, so a
+ * bank is never quietly booked against machinery.
+ */
+export function bankLedgerChoices(accounts: readonly ChartAccountView[]): {
+  options: readonly ChartAccountView[];
+  preselected: string;
+} {
+  const liquid = accounts
+    .filter((a) => a.account_type === "asset" && (a.rgs_code ?? "").startsWith("BLim"))
+    .sort(
+      (a, b) =>
+        Number(b.rgs_code === "BLimBan") - Number(a.rgs_code === "BLimBan") ||
+        a.code.localeCompare(b.code),
+    );
+  if (liquid.length > 0) return { options: liquid, preselected: liquid[0]?.id ?? "" };
+  return { options: accounts.filter((a) => a.account_type === "asset"), preselected: "" };
+}
+
+/**
+ * Adding a bank account, as a dialog over the page rather than a form under the transactions:
+ * it opens where the button is, and the rest of the screen waits. Each field says what it is for;
+ * the IBAN is grouped as it is typed and checked before anything is sent.
+ */
+function CreateBankAccountDialog({
   administrationId,
   accounts,
   onClose,
@@ -134,23 +253,41 @@ function CreateBankAccountForm({
 }) {
   const { t } = useI18n();
   const { bank } = useServices();
-  const assetAccounts = accounts.filter((a) => a.account_type === "asset");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(true, dialogRef);
+  // Escape closes it, as every dialog does; listened for on the document so it works wherever
+  // focus is inside the dialog.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const { options, preselected } = bankLedgerChoices(accounts);
 
   const [name, setName] = useState("");
   const [iban, setIban] = useState("");
-  const [ledgerAccountId, setLedgerAccountId] = useState(assetAccounts[0]?.id ?? "");
+  const [ibanTouched, setIbanTouched] = useState(false);
+  const [ledgerAccountId, setLedgerAccountId] = useState(preselected);
   const [sending, setSending] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+
+  const ibanEntered = normaliseIban(iban) !== "";
+  const ibanInvalid = ibanEntered && !isValidIban(iban);
+  const canSubmit = !sending && name.trim() !== "" && ledgerAccountId !== "" && !ibanInvalid;
 
   const submit = useCallback(
     async (event: React.FormEvent) => {
       event.preventDefault();
+      setIbanTouched(true);
+      if (!canSubmit) return;
       setSending(true);
       setProblem(null);
       try {
         const account = await bank.createAccount(administrationId, {
-          name,
-          iban: iban.trim() === "" ? null : iban,
+          name: name.trim(),
+          iban: ibanEntered ? normaliseIban(iban) : null,
           currency: "EUR",
           ledgerAccountId,
         });
@@ -161,53 +298,111 @@ function CreateBankAccountForm({
         setSending(false);
       }
     },
-    [bank, administrationId, name, iban, ledgerAccountId, onCreated],
+    [bank, administrationId, name, iban, ibanEntered, ledgerAccountId, canSubmit, onCreated],
   );
 
   return (
-    <div className="panel form" data-testid="bank-account-form">
-      <h3>{t("bank.new_account")}</h3>
-      {problem !== null ? <ErrorState message={problem} /> : null}
-      <form onSubmit={(event) => void submit(event)}>
-        <div className="form__row">
+    <div className="dialog-backdrop bank-dialog-backdrop">
+      <div
+        ref={dialogRef}
+        className="dialog bank-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bank-dialog-title"
+        data-testid="bank-account-form"
+      >
+        <div>
+          <h2 id="bank-dialog-title" className="bank-dialog__title">
+            {t("bank.new_account")}
+          </h2>
+          <p className="bank-dialog__intro">{t("bank.form.intro")}</p>
+        </div>
+        {problem !== null ? <ErrorState message={problem} /> : null}
+        <form className="bank-dialog__form" onSubmit={(event) => void submit(event)} noValidate>
           <label className="form__field">
             <span>{t("bank.field.name")}</span>
             <input
               type="text"
               required
+              autoComplete="off"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              aria-describedby="bank-field-name-hint"
               data-testid="bank-field-name"
             />
+            <span id="bank-field-name-hint" className="form__hint">
+              {t("bank.field.name_hint")}
+            </span>
           </label>
           <label className="form__field">
             <span>{t("bank.field.iban")}</span>
-            <input type="text" value={iban} onChange={(event) => setIban(event.target.value)} />
+            <input
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={iban}
+              onChange={(event) => setIban(formatIban(event.target.value))}
+              onBlur={() => setIbanTouched(true)}
+              aria-invalid={ibanTouched && ibanInvalid ? true : undefined}
+              aria-describedby="bank-field-iban-note"
+              data-testid="bank-field-iban"
+            />
+            {ibanTouched && ibanInvalid ? (
+              <span
+                id="bank-field-iban-note"
+                className="ui-error"
+                role="alert"
+                data-testid="bank-field-iban-error"
+              >
+                <Icon name="warning" size={14} />
+                {t("bank.field.iban_invalid")}
+              </span>
+            ) : (
+              <span id="bank-field-iban-note" className="form__hint">
+                {t("bank.field.iban_hint")}
+              </span>
+            )}
           </label>
           <label className="form__field">
             <span>{t("bank.field.ledger_account")}</span>
             <select
+              required
               value={ledgerAccountId}
               onChange={(event) => setLedgerAccountId(event.target.value)}
+              aria-describedby="bank-field-ledger-hint"
               data-testid="bank-field-ledger-account"
             >
-              {assetAccounts.map((account) => (
+              {preselected === "" ? (
+                <option value="" disabled>
+                  {t("bank.field.ledger_choose")}
+                </option>
+              ) : null}
+              {options.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.code} — {account.name}
                 </option>
               ))}
             </select>
+            <span id="bank-field-ledger-hint" className="form__hint">
+              {t("bank.field.ledger_hint")}
+            </span>
           </label>
-        </div>
-        <div className="form__actions">
-          <button type="submit" disabled={sending} data-testid="bank-account-submit">
-            {sending ? t("assets.form.saving") : t("assets.form.save")}
-          </button>
-          <button type="button" className="button--quiet" onClick={onClose}>
-            {t("journal.periods.unlock_cancel")}
-          </button>
-        </div>
-      </form>
+          <div className="dialog__actions">
+            <button type="button" className="button--quiet" onClick={onClose}>
+              {t("bank.action.cancel")}
+            </button>
+            <button
+              type="submit"
+              className="button--primary"
+              disabled={!canSubmit}
+              data-testid="bank-account-submit"
+            >
+              {sending ? t("bank.form.submitting") : t("bank.form.submit")}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -326,9 +521,18 @@ function AccountTransactions({
             {t("bank.status.reconciled")}
           </button>
         </nav>
-        <button type="button" onClick={() => setImporting(true)} data-testid="bank-import-open">
-          {t("bank.import")}
-        </button>
+        {/* With nothing to show, the import is the empty state's own action instead. */}
+        {!importing && (transactions === null || transactions.length > 0) ? (
+          <button
+            type="button"
+            className="button--primary"
+            disabled={importing}
+            onClick={() => setImporting(true)}
+            data-testid="bank-import-open"
+          >
+            {t("bank.import")}
+          </button>
+        ) : null}
       </div>
 
       {importing ? (
@@ -368,11 +572,21 @@ function AccountTransactions({
       ) : null}
       {problem !== null ? <ErrorState message={problem} onRetry={reload} /> : null}
       {transactions === null && problem === null ? <LoadingSkeleton rows={5} /> : null}
-      {transactions !== null && transactions.length === 0 ? (
+      {transactions !== null && transactions.length === 0 && !importing ? (
         <EmptyState
           title={t("bank.no_transactions_title")}
           body={t("bank.no_transactions_body")}
           testId="bank-transactions-empty"
+          action={
+            <button
+              type="button"
+              className="button--primary"
+              onClick={() => setImporting(true)}
+              data-testid="bank-import-open"
+            >
+              {t("bank.import")}
+            </button>
+          }
         />
       ) : null}
       {transactions !== null && transactions.length > 0 ? (
@@ -511,7 +725,7 @@ function ImportStatementForm({
   );
 
   return (
-    <div className="panel form" data-testid="bank-import-form">
+    <div className="panel form bank-import" data-testid="bank-import-form">
       <h3>{t("bank.import")}</h3>
       <p className="caption">{t("bank.import_hint")}</p>
       {problem !== null ? <ErrorState message={problem} /> : null}
@@ -542,7 +756,7 @@ function ImportStatementForm({
           </button>
         ) : (
           <button type="button" className="button--quiet" onClick={onClose}>
-            {t("journal.periods.unlock_cancel")}
+            {t("bank.action.cancel")}
           </button>
         )}
       </div>
@@ -698,8 +912,7 @@ function ReconcilePanel({
               const partial = candidate.reasons.includes("partial");
               return (
                 <li key={candidate.document_id}>
-                  <ConfidenceChip candidate={candidate} /> <CandidateText candidate={candidate} />{" "}
-                  —{" "}
+                  <ConfidenceChip candidate={candidate} /> <CandidateText candidate={candidate} /> —{" "}
                   {partial ? (
                     // FR-BNK-005 (ADR-097): both figures, never a client-side subtraction of
                     // money (NFR-031) - the invoice stays open for the rest afterward.
@@ -817,7 +1030,9 @@ function SplitAllocationPanel({
   const toggle = (candidate: BankMatchCandidateView) => {
     setSelected((current) => {
       const { [candidate.document_id]: existing, ...rest } = current;
-      return existing === undefined ? { ...current, [candidate.document_id]: candidate.amount } : rest;
+      return existing === undefined
+        ? { ...current, [candidate.document_id]: candidate.amount }
+        : rest;
     });
   };
 

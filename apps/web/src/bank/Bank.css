@@ -112,3 +112,129 @@
   background: var(--sunken);
   box-shadow: none;
 }
+
+/* ---- The selected account: who it is, where it books, what it holds (ADR-106) ---- */
+
+.bank-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+  padding: var(--space-5) var(--space-5);
+}
+.bank-summary__name {
+  margin: 0;
+  font: 600 20px/28px var(--font-display);
+  letter-spacing: -0.02em;
+}
+.bank-summary__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-6);
+  margin: var(--space-2) 0 0;
+}
+.bank-summary__facts > div {
+  display: flex;
+  flex-direction: column;
+}
+.bank-summary__facts dt {
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink-muted);
+}
+.bank-summary__facts dd {
+  margin: 0;
+  font: 500 15px/22px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.bank-summary__balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.bank-summary__amount {
+  font-size: 28px;
+  line-height: 34px;
+}
+@media (max-width: 40rem) {
+  .bank-summary__balance {
+    align-items: flex-start;
+  }
+}
+
+/* ---- Adding an account: a dialog, centred on a wide screen ---- */
+
+@media (min-width: 40rem) {
+  .bank-dialog-backdrop {
+    align-items: center;
+  }
+}
+.bank-dialog {
+  max-width: 30rem;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  overflow-y: auto;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+.bank-dialog__title {
+  margin: 0;
+  font: 600 22px/28px var(--font-display);
+  letter-spacing: -0.02em;
+}
+.bank-dialog__intro {
+  margin: var(--space-1) 0 0;
+  font: 400 14px/20px var(--font-sans);
+  color: var(--ink-muted);
+}
+.bank-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.bank-dialog .form__field {
+  gap: 6px;
+}
+.bank-dialog .form__field > span:first-child {
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink);
+}
+.bank-dialog .form__hint {
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-muted);
+}
+.bank-dialog .ui-error {
+  align-items: center;
+}
+.bank-dialog input[aria-invalid="true"] {
+  border-color: var(--negative);
+}
+.bank-dialog .dialog__actions {
+  margin-top: var(--space-2);
+  gap: var(--space-3);
+}
+
+/* The statement import opens inside the transactions panel, with the panel's own padding. */
+.bk .bank-import {
+  margin: 0 var(--space-5) var(--space-4);
+  padding: var(--space-5);
+  background: var(--sunken);
+  border-color: transparent;
+}
+.bank-import h3 {
+  margin: 0;
+  font: 600 15px/22px var(--font-sans);
+}
+.bank-import .caption {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--ink-muted);
+}
+.bank-import > .button-link {
+  align-self: flex-start;
+}
+
+/* The transactions panel's empty state sits inside the panel, not as a second box in it. */
+.panel > [data-testid="bank-transactions-empty"] {
+  margin: 0 var(--space-5) var(--space-5);
+}
