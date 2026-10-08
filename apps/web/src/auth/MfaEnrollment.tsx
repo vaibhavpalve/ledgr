@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import QRCode from "qrcode";
 import { useI18n } from "@ledgr/i18n";
 
@@ -39,11 +40,9 @@ export function MfaEnrollment({
   enrollment: MfaEnrollmentStatus;
   onVerified: (result: AuthResult) => void;
 }) {
-  const { t } = useI18n();
-
+  // The intro (auth.mfa.intro) is the frame's subtitle, under the heading.
   return (
-    <div className="auth-form" data-testid="mfa-enrollment">
-      <p>{t("auth.mfa.intro")}</p>
+    <div className="auth-form mfa-enrollment" data-testid="mfa-enrollment">
       <TotpSection api={api} alreadyEnrolled={enrollment.hasTotp} onVerified={onVerified} />
       <PasskeySection api={api} alreadyEnrolled={enrollment.hasPasskey} onVerified={onVerified} />
     </div>
@@ -127,12 +126,18 @@ export function TotpSection({
   };
 
   return (
-    <section data-testid="mfa-totp-section">
-      <h2>{t("auth.mfa.totp.heading")}</h2>
+    <section className="mfa-section" data-testid="mfa-totp-section">
+      <div className="mfa-section__head">
+        <h2>{t("auth.mfa.totp.heading")}</h2>
+        {alreadyEnrolled ? (
+          <p>{t("auth.mfa.totp.verify_heading")}</p>
+        ) : secret !== null ? (
+          <p>{t("auth.mfa.totp.instructions")}</p>
+        ) : null}
+      </div>
 
       {alreadyEnrolled ? (
         <>
-          <p>{t("auth.mfa.totp.verify_heading")}</p>
           <label>
             {t("auth.mfa.totp.code_label")}
             <input
@@ -165,43 +170,45 @@ export function TotpSection({
       ) : secret === null ? (
         <button
           type="button"
+          className="button--primary"
           data-testid="mfa-totp-begin"
           disabled={busy}
           onClick={() => void beginEnrollment()}
         >
-          {t("auth.mfa.totp.heading")}
+          {t("auth.mfa.totp.begin")}
+          <ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
       ) : (
         <>
-          <p>{t("auth.mfa.totp.instructions")}</p>
+          <div className="mfa-totp-scan">
+            {qrSvg !== null ? (
+              // Decorative: the QR code is a visual shortcut to the SAME
+              // secret already rendered as text below it, which is what a
+              // screen reader user (or anyone who can't scan) uses instead —
+              // announcing the encoded URI a second time here would be noise,
+              // not a second way to reach it.
+              <div
+                className="mfa-totp-qr"
+                data-testid="mfa-totp-qr"
+                aria-hidden="true"
+                // The markup rendered here is this component's OWN SVG output
+                // from the `qrcode` package, built from a provisioning URI
+                // this same browser just requested from our API — not
+                // third-party or user-supplied content.
+                dangerouslySetInnerHTML={{ __html: qrSvg }}
+              />
+            ) : provisioningUri !== null ? (
+              <p className="caption" data-testid="mfa-totp-qr-unavailable">
+                {t("auth.mfa.totp.qr_unavailable")}
+              </p>
+            ) : null}
 
-          {qrSvg !== null ? (
-            // Decorative: the QR code is a visual shortcut to the SAME
-            // secret already rendered as text below it, which is what a
-            // screen reader user (or anyone who can't scan) uses instead —
-            // announcing the encoded URI a second time here would be noise,
-            // not a second way to reach it.
-            <div
-              className="mfa-totp-qr"
-              data-testid="mfa-totp-qr"
-              aria-hidden="true"
-              // The markup rendered here is this component's OWN SVG output
-              // from the `qrcode` package, built from a provisioning URI
-              // this same browser just requested from our API — not
-              // third-party or user-supplied content.
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
-          ) : provisioningUri !== null ? (
-            <p className="caption" data-testid="mfa-totp-qr-unavailable">
-              {t("auth.mfa.totp.qr_unavailable")}
-            </p>
-          ) : null}
-
-          {provisioningUri ? (
-            <a href={provisioningUri} className="mfa-totp-open-link" data-testid="mfa-totp-uri">
-              {t("auth.mfa.totp.open_in_app")}
-            </a>
-          ) : null}
+            {provisioningUri ? (
+              <a href={provisioningUri} className="mfa-totp-open-link" data-testid="mfa-totp-uri">
+                {t("auth.mfa.totp.open_in_app")}
+              </a>
+            ) : null}
+          </div>
 
           <div className="mfa-totp-no-app" data-testid="mfa-totp-no-app">
             <p className="label">{t("auth.mfa.totp.no_app_heading")}</p>
@@ -215,26 +222,29 @@ export function TotpSection({
             </p>
           </div>
 
-          <label>
-            {t("auth.mfa.totp.code_label")}
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              data-testid="mfa-totp-code"
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            className="button--primary"
-            data-testid="mfa-totp-confirm"
-            disabled={busy || code.length === 0}
-            onClick={() => void submitCode()}
-          >
-            {t("auth.mfa.totp.confirm")}
-          </button>
+          <div className="mfa-totp-entry">
+            <label>
+              {t("auth.mfa.totp.code_label")}
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                data-testid="mfa-totp-code"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="button--primary"
+              data-testid="mfa-totp-confirm"
+              disabled={busy || code.length === 0}
+              onClick={() => void submitCode()}
+            >
+              {t("auth.mfa.totp.confirm")}
+            </button>
+          </div>
         </>
       )}
 
@@ -303,7 +313,7 @@ export function PasskeySection({
   };
 
   return (
-    <section data-testid="mfa-passkey-section">
+    <section className="mfa-section" data-testid="mfa-passkey-section">
       <h2>{t("auth.mfa.passkey.heading")}</h2>
 
       {!supported ? (
@@ -341,11 +351,13 @@ export function PasskeySection({
           </label>
           <button
             type="button"
+            className="button--primary"
             data-testid="mfa-passkey-enroll"
             disabled={busy}
             onClick={() => void enroll()}
           >
             {t("auth.mfa.passkey.enroll_button")}
+            <ArrowRight size={18} strokeWidth={1.75} aria-hidden="true" />
           </button>
         </>
       )}

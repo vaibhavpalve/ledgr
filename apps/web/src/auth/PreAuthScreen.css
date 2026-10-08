@@ -179,6 +179,140 @@
   flex-direction: column;
   gap: 0;
 }
+/* Forms that are themselves the `.auth-form` (signup, both Google callback
+   forms) stack fields directly, so they need the field rhythm back; the
+   zero gap above is for the div wrappers that space their own children. */
+.pre-auth__body form.auth-form {
+  gap: var(--space-5);
+}
+.pre-auth__body form.auth-form > h2 {
+  margin: 0;
+  color: var(--ink);
+  font: 600 20px/26px var(--font-sans);
+}
+.pre-auth__body form.auth-form > h2 + p {
+  margin: -12px 0 4px;
+  color: var(--ink-muted);
+  font: 400 14px/21px var(--font-sans);
+}
+.pre-auth__body form.auth-form > button[type="submit"] {
+  margin-top: var(--space-2);
+}
+/* ADR-054's MFA gate: an authenticator section, a rule, then a passkey section.
+   Scoped to this frame - settings reuses TotpSection/PasskeySection with its
+   own look. */
+.pre-auth__body .mfa-enrollment {
+  gap: 40px;
+}
+.mfa-enrollment .mfa-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.mfa-enrollment .mfa-section:has(.mfa-totp-scan) {
+  gap: var(--space-5);
+}
+.mfa-enrollment .mfa-section + .mfa-section {
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+.mfa-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mfa-enrollment h2 {
+  margin: 0;
+  color: var(--ink);
+  font: 600 18px/26px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+.mfa-enrollment .mfa-section__head p {
+  margin: 0;
+  color: var(--ink-muted);
+  font: 400 15px/24px var(--font-sans);
+}
+.pre-auth__body .mfa-enrollment label {
+  gap: var(--space-2);
+}
+.pre-auth__body .mfa-enrollment .mfa-remember-device {
+  flex-direction: row;
+  align-items: center;
+}
+.pre-auth__body .mfa-enrollment button.button--primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--action);
+  border-color: transparent;
+  color: var(--on-action);
+}
+.mfa-totp-scan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.mfa-enrollment .mfa-totp-qr {
+  align-self: stretch;
+  justify-content: center;
+  padding: var(--space-5);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: none;
+}
+.mfa-enrollment .mfa-totp-qr svg {
+  width: 192px;
+  height: 192px;
+}
+.mfa-enrollment .mfa-totp-open-link {
+  align-self: center;
+  text-align: center;
+  color: var(--action);
+  font: 500 13px/20px var(--font-sans);
+}
+.mfa-enrollment .mfa-totp-no-app {
+  gap: 4px;
+  padding: var(--space-4) 20px;
+  background: var(--sunken);
+  border-radius: var(--radius-sm);
+}
+.mfa-enrollment .mfa-totp-no-app p,
+.mfa-enrollment .mfa-totp-manual p {
+  margin: 0;
+}
+.mfa-enrollment .mfa-totp-no-app .label {
+  color: var(--ink);
+  font: 600 13px/20px var(--font-sans);
+}
+.mfa-enrollment .mfa-totp-no-app .caption {
+  color: var(--ink-muted);
+  font: 400 13px/20px var(--font-sans);
+}
+.mfa-enrollment .mfa-totp-manual {
+  gap: var(--space-2);
+}
+.mfa-enrollment .mfa-totp-manual .label {
+  color: var(--ink);
+  font: 500 13px/18px var(--font-sans);
+}
+.mfa-enrollment .mfa-totp-manual code {
+  display: block;
+  padding: 10px var(--space-4);
+  background: var(--sunken);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font: 500 14px/20px var(--font-sans);
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.mfa-totp-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 /* Account-model picker: a two-segment toggle. The global `input` rule
    (width:100%, min-height) would otherwise stretch each radio into a block
    of its own, so the radio is visually hidden here. */

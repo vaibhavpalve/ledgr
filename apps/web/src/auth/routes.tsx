@@ -145,13 +145,16 @@ export function GoogleCallbackRoute({
 }) {
   const navigate = useNavigate();
   const { authApi, handleAuthResult } = useAuth();
+  // A Google identity with no account yet is signing up, not signing back in.
+  const [screen, setScreen] = useState<"login" | "signup">("login");
 
   return (
-    <PreAuthScreen screen="login">
+    <PreAuthScreen screen={screen}>
       <GoogleCallback
         api={authApi}
         code={code}
         state={state}
+        onSignupRequired={() => setScreen("signup")}
         onSignedIn={(result) => {
           handleAuthResult(result);
           onDone();

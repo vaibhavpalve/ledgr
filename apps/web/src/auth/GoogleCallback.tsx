@@ -31,12 +31,15 @@ export function GoogleCallback({
   state,
   onSignedIn,
   onBackToLogin,
+  onSignupRequired,
 }: {
   api: AuthApi;
   code: string;
   state: string;
   onSignedIn: (result: AuthResult) => void;
   onBackToLogin: () => void;
+  /** Lets the surrounding frame stop saying "Welcome back" to someone new. */
+  onSignupRequired?: () => void;
 }) {
   const { t } = useI18n();
   const [outcome, setOutcome] = useState<
@@ -61,6 +64,7 @@ export function GoogleCallback({
         } else if (result.kind === "signup_required") {
           setSignup({ ticket: result.ticket, email: result.email });
           setOutcome("signup_required");
+          onSignupRequired?.();
         } else {
           setMessage(result.message);
           setLink(result.ticket === null ? null : { ticket: result.ticket, email: result.email });

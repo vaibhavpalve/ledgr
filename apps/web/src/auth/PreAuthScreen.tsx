@@ -23,6 +23,13 @@ const HEADING_KEY: Record<PreAuthScreenKind, string> = {
   verify: "auth.verify_email.heading",
 };
 
+const SUBTITLE_KEY: Partial<Record<PreAuthScreenKind, string>> = {
+  login: "auth.sign_in.subtitle",
+  recover: "auth.recover.subtitle",
+  // Why the MFA gate exists, said right under its heading (IAM-011).
+  mfa: "auth.mfa.intro",
+};
+
 const POINTS = ["permanent", "exact", "passkey"] as const;
 
 /**
@@ -70,6 +77,7 @@ export function PreAuthScreen({
   children: ReactNode;
 }) {
   const { t } = useI18n();
+  const subtitleKey = SUBTITLE_KEY[screen];
 
   return (
     <main
@@ -92,11 +100,7 @@ export function PreAuthScreen({
               {t(HEADING_KEY[screen])}
               {screen === "login" ? ` ${t("auth.sign_in.title_mark")}` : null}
             </h1>
-            {screen === "login" || screen === "recover" ? (
-              <p className="pre-auth__subtitle">
-                {t(screen === "login" ? "auth.sign_in.subtitle" : "auth.recover.subtitle")}
-              </p>
-            ) : null}
+            {subtitleKey ? <p className="pre-auth__subtitle">{t(subtitleKey)}</p> : null}
           </header>
 
           <div className="pre-auth__body">{children}</div>
