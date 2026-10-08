@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { I18nProvider, useI18n, type FormattingLocale, type Language } from "@ledgr/i18n";
 
@@ -32,7 +32,6 @@ import { OpeningBalanceScreen } from "./opening/OpeningBalanceScreen";
 import { AuthenticatedLayout } from "./router/AuthenticatedLayout";
 import { RedirectIfAuthenticated, RequireAdministration, RequireAuth } from "./router/guards";
 import { NotFound } from "./router/NotFound";
-import { Website } from "./site/Website";
 import type { Services } from "./session/ServicesProvider";
 import {
   AppearanceSettings,
@@ -139,12 +138,26 @@ function Routed({ services }: { services?: Partial<Services> }) {
         <Route path="/signup" element={<SignupRoute />} />
         <Route path="/forgot-password" element={<ForgotPasswordRoute />} />
       </Route>
-      {/* The public marketing page (ADR-080). "/" stays the signed-in home. */}
-      <Route path="/welcome" element={<Website />} />
+      {/* The public site (design/site, ADR-107). "/" is its home for a visitor who has never
+          signed in in this tab, and the dashboard for everyone else (RequireAuth below). */}
+      <Route element={<Site />}>
+        <Route path="/welcome" element={<Navigate to="/" replace />} />
+        <Route path="/product" element={<SitePage name="ProductPage" />} />
+        <Route path="/accountants" element={<SitePage name="AccountantsPage" />} />
+        <Route path="/pricing" element={<SitePage name="PricingPage" />} />
+        <Route path="/security" element={<SitePage name="SecurityPage" />} />
+        <Route path="/demo" element={<SitePage name="DemoPage" />} />
+        <Route path="/contact" element={<SitePage name="DemoPage" />} />
+        <Route path="/articles" element={<SitePage name="ArticlesPage" />} />
+        <Route path="/articles/:slug" element={<SitePage name="ArticlePage" />} />
+        <Route path="/privacy" element={<SitePage name="PrivacyPage" />} />
+        <Route path="/cookies" element={<SitePage name="CookiesPage" />} />
+        <Route path="/responsible-disclosure" element={<SitePage name="DisclosurePage" />} />
+      </Route>
       <Route path="/mfa" element={<MfaRoute />} />
       <Route path="/verify-email" element={<VerifyEmailRoute />} />
 
-      <Route element={<RequireAuth />}>
+      <Route element={<RequireAuth publicHome={<SiteHome />} />}>
         <Route element={<AuthenticatedLayout services={services} />}>
           <Route path="/onboarding" element={<OnboardingRoute />} />
 
@@ -194,6 +207,43 @@ function Routed({ services }: { services?: Partial<Services> }) {
         </Route>
       </Route>
     </Routes>
+  );
+}
+
+/**
+ * The public site, loaded only when someone opens it: a signed-in bookkeeper never downloads the
+ * marketing pages, and a visitor reading an article never downloads the ledger (ADR-107).
+ */
+const siteModule = () => import("./marketing/routes");
+const LazySiteLayout = lazy(() => siteModule().then((m) => ({ default: m.SiteLayout })));
+const LazySitePages = lazy(() => siteModule().then((m) => ({ default: m.SitePageByName })));
+const LazySiteHome = lazy(() => siteModule().then((m) => ({ default: m.SiteHome })));
+
+function SiteSuspense({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<div className="site-loading" />}>{children}</Suspense>;
+}
+
+function Site() {
+  return (
+    <SiteSuspense>
+      <LazySiteLayout />
+    </SiteSuspense>
+  );
+}
+
+function SitePage({ name }: { name: string }) {
+  return (
+    <SiteSuspense>
+      <LazySitePages name={name} />
+    </SiteSuspense>
+  );
+}
+
+function SiteHome() {
+  return (
+    <SiteSuspense>
+      <LazySiteHome />
+    </SiteSuspense>
   );
 }
 

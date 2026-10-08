@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthProvider";
@@ -31,10 +32,19 @@ export function intendedPath(state: unknown): string {
   return `${from.pathname}${from.search}`;
 }
 
-export function RequireAuth() {
-  const { status } = useAuth();
+/**
+ * `publicHome`: what an anonymous visitor sees at `/` instead of being sent to /login (ADR-107),
+ * the public site's home page. Only at `/`, and only for a tab that has never been signed in:
+ * signing out or an expired session still lands on the sign-in screen, and every other protected
+ * URL still redirects there.
+ */
+export function RequireAuth({ publicHome }: { publicHome?: ReactNode } = {}) {
+  const { status, wasSignedIn } = useAuth();
   const location = useLocation();
   if (status === "anonymous") {
+    if (publicHome !== undefined && location.pathname === "/" && !wasSignedIn) {
+      return <>{publicHome}</>;
+    }
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
   if (status === "mfa_pending") {

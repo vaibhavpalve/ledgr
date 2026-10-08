@@ -112,7 +112,7 @@ describe("FR-LOC-001a: one click, immediately, without a reload", () => {
     const fetchSpy = vi.fn(() => never);
     vi.stubGlobal("fetch", fetchSpy);
 
-    render(inRouter(<App language="nl" />));
+    render(inRouter(<App language="nl" />, "/login"));
     fireEvent.click(screen.getByTestId("language-option-en"));
 
     expect(screen.getByTestId("language-option-en").getAttribute("aria-pressed")).toBe("true");

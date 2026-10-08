@@ -116,7 +116,7 @@ describe("IAM-010g: selectable before authentication", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    render(inRouter(<App language="nl" />));
+    render(inRouter(<App language="nl" />, "/login"));
 
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welkom terug");
 
@@ -134,13 +134,13 @@ describe("IAM-010g: selectable before authentication", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    const first = render(inRouter(<App language="nl" />));
+    const first = render(inRouter(<App language="nl" />, "/login"));
     fireEvent.click(screen.getByTestId("language-option-en"));
     first.unmount();
 
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
 
-    render(inRouter(<App language={initialLanguage()} />));
+    render(inRouter(<App language={initialLanguage()} />, "/login"));
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back");
   });
 
@@ -151,7 +151,7 @@ describe("IAM-010g: selectable before authentication", () => {
     const refuse = vi.fn(async () => new Response(null, { status: 401 }));
     vi.stubGlobal("fetch", refuse);
 
-    render(inRouter(<App language="nl" />));
+    render(inRouter(<App language="nl" />, "/login"));
     fireEvent.click(screen.getByTestId("language-option-en"));
 
     expect(screen.getByTestId("pre-auth-heading").textContent).toBe("Welcome back");
@@ -202,7 +202,7 @@ describe("FR-LOC-004: the page declares the language it is actually in", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    render(inRouter(<App language="nl" />));
+    render(inRouter(<App language="nl" />, "/login"));
 
     expect(document.documentElement.lang).toBe("nl");
 

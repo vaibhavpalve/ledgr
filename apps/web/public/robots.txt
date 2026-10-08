@@ -1,0 +1,11 @@
+# Boeklite (ADR-107). The public site is open to crawlers; the app behind the sign-in and the API are not.
+User-agent: *
+Allow: /
+Disallow: /v1/
+Disallow: /login
+Disallow: /signup
+Disallow: /mfa
+Disallow: /onboarding
+Disallow: /settings
+
+Sitemap: https://boeklite.nl/sitemap.xml

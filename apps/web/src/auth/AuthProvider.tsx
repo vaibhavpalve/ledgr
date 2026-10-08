@@ -66,6 +66,12 @@ export interface AuthContextValue {
   readonly status: AuthStatus;
   readonly pendingMfa: MfaEnrollmentStatus | null;
   readonly notice: SessionNotice | null;
+  /**
+   * Whether this tab has been signed in at any point. A visitor who never was sees the public
+   * site at `/`; someone who just signed out, or whose session expired, sees the sign-in screen
+   * there instead, as before (ADR-107).
+   */
+  readonly wasSignedIn: boolean;
   readonly authApi: AuthApi;
   /**
    * The `fetch` every authenticated client is built on: carries the bearer
@@ -100,6 +106,7 @@ export function AuthProvider({
   );
   const [pendingMfa, setPendingMfa] = useState<MfaEnrollmentStatus | null>(null);
   const [notice, setNotice] = useState<SessionNotice | null>(null);
+  const [wasSignedIn, setWasSignedIn] = useState(() => status !== "anonymous");
   // `null` = no prompt showing; a number = capturesAtRisk()'s answer, shown
   // in SignOutConfirm before the purge runs (MOB-009's warning).
   const [captureRisk, setCaptureRisk] = useState<number | null>(null);
@@ -141,6 +148,7 @@ export function AuthProvider({
     }
     ending.current = false;
     setNotice(null);
+    setWasSignedIn(true);
     if (result.mfaVerified) {
       setPendingMfa(null);
       setStatus("authenticated");
@@ -183,13 +191,24 @@ export function AuthProvider({
       status,
       pendingMfa,
       notice,
+      wasSignedIn,
       authApi,
       fetchImpl,
       clearNotice,
       handleAuthResult,
       requestSignOut,
     }),
-    [status, pendingMfa, notice, authApi, fetchImpl, clearNotice, handleAuthResult, requestSignOut],
+    [
+      status,
+      pendingMfa,
+      notice,
+      wasSignedIn,
+      authApi,
+      fetchImpl,
+      clearNotice,
+      handleAuthResult,
+      requestSignOut,
+    ],
   );
 
   return (
