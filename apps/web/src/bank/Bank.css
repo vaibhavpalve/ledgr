@@ -238,3 +238,97 @@
 .panel > [data-testid="bank-transactions-empty"] {
   margin: 0 var(--space-5) var(--space-5);
 }
+
+/* ---- The live bank feed (ADR-108): a row across the summary card's foot ---- */
+
+.bank-summary .bank-feed {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.bank-feed__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.bank-feed__meta,
+.bank-feed__hint {
+  margin: 0;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-muted);
+}
+.bank-feed__hint {
+  max-width: 60ch;
+}
+.bank-feed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.bank-feed__actions button {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.bank-feed__why {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: 500 13px/18px var(--font-sans);
+  color: var(--lemon-ink);
+}
+.bank-feed__message {
+  flex-basis: 100%;
+  margin: 0;
+}
+.bank-feed__banks {
+  display: grid;
+  gap: 6px;
+  max-height: 50vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.bk .bank-feed__bank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 15px/20px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.bk .bank-feed__bank:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--sunken);
+}
+.bank-feed__bank-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--leaf-tint);
+  color: var(--leaf-ink);
+  font: 600 12px/1 var(--font-sans);
+}
+.bank-feed__bank-name {
+  flex-grow: 1;
+}

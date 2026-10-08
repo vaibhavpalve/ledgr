@@ -1355,6 +1355,35 @@ export interface BankAccountView {
   readonly status: "active" | "archived";
 }
 
+/** One PSD2 consent for one bank account — `api.bank.feed_routes.connection_json` (ADR-108). */
+export interface BankFeedConnectionView {
+  readonly id: string;
+  readonly bank_account_id: string;
+  readonly provider: string;
+  readonly institution_id: string;
+  readonly institution_name: string | null;
+  readonly status: "pending" | "linked" | "expired" | "revoked" | "failed";
+  readonly consent_expires_at: string | null;
+  readonly last_synced_at: string | null;
+  /** An i18n reason (`bank_feed_*`) for the last refusal, cleared by the next success. */
+  readonly last_error: string | null;
+}
+
+/** `GET .../bank-accounts/{id}/feed`. `configured` false: this deployment has no provider. */
+export interface BankFeedStatusView {
+  readonly configured: boolean;
+  readonly provider: string;
+  readonly connection: BankFeedConnectionView | null;
+}
+
+/** A bank the provider can connect to (`GET .../bank-feed/institutions`). */
+export interface BankFeedInstitutionView {
+  readonly id: string;
+  readonly name: string;
+  readonly bic: string | null;
+  readonly logo: string | null;
+}
+
 /** `GET .../bank-accounts/{id}/transactions` rows — `api.bank.model.BankTransaction`. */
 export interface BankTransactionView {
   readonly id: string;

@@ -31,8 +31,7 @@ from fastapi import Depends, FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.audit.log import AuditCategory, AuditLog
-from api.audit.repository import SqlAuditRepository
+from api.audit.log import AuditCategory
 from api.authz.dependencies import (
     administration_from_path,
     get_authorization_service,
@@ -40,6 +39,7 @@ from api.authz.dependencies import (
 )
 from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
+from api.bank.compose import build_bank_service
 from api.bank.csv_parser import CsvStatementError, InvalidRow, MissingColumns
 from api.bank.matching import ScoredCandidate
 from api.bank.model import (
@@ -57,7 +57,6 @@ from api.bank.model import (
     TransactionNotFound,
     TransactionStatus,
 )
-from api.bank.repository import SqlBankRepository
 from api.bank.service import BankService, StatementForAnotherAccount
 from api.bank.statement_formats import (
     AmbiguousAccount,
@@ -66,9 +65,6 @@ from api.bank.statement_formats import (
 )
 from api.db import get_db_session
 from api.i18n.http import problem
-from api.invoicing.payments import SalesPaymentService
-from api.invoicing.payments_repository import SqlPaymentRepository
-from api.ledger.service import build_ledger_service
 from api.tenancy import TenantContext, get_tenant_context
 
 _BASE = "/v1/administrations/{administration_id}"
@@ -131,18 +127,7 @@ async def get_bank_service(
     session: AsyncSession = Depends(get_db_session),
     authorization: AuthorizationService = Depends(get_authorization_service),
 ) -> BankService:
-    audit_log = AuditLog(SqlAuditRepository(session))
-    return BankService(
-        SqlBankRepository(session),
-        build_ledger_service(session, audit_log),
-        SalesPaymentService(
-            repository=SqlPaymentRepository(session),
-            ledger=build_ledger_service(session, audit_log),
-            authorization=authorization,
-            audit_log=audit_log,
-        ),
-        audit_log,
-    )
+    return build_bank_service(session, authorization)
 
 
 # ---------------------------------------------------------------------------

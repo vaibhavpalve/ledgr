@@ -150,14 +150,42 @@ class BankService:
         own = normalise_iban(account.iban)
         if parsed.account_iban is not None and own is not None and parsed.account_iban != own:
             raise StatementForAnotherAccount(parsed.account_iban)
-        rows = parsed.rows
+        return await self.import_rows(
+            organization_id=organization_id,
+            administration_id=administration_id,
+            bank_account_id=bank_account_id,
+            rows=parsed.rows,
+            filename=filename,
+            source_format="csv",
+            actor_user_id=actor_user_id,
+        )
 
+    async def import_rows(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        administration_id: uuid.UUID,
+        bank_account_id: uuid.UUID,
+        rows: Sequence[StatementRow],
+        filename: str | None,
+        source_format: str,
+        actor_user_id: uuid.UUID | None,
+    ) -> ImportResult:
+        """The one write path for statement lines, whatever brought them in: an uploaded file
+        ('csv', any format) or a sync of the live bank feed ('psd2', ADR-108). Every line is keyed
+        by the same content hash, so a line fetched by the feed and the same line in a file
+        uploaded later de-duplicate against each other. `actor_user_id` is None for the scheduled
+        sync, which is audited as the system."""
+        await self._account_or_refuse(
+            administration_id=administration_id, bank_account_id=bank_account_id
+        )
         import_id = await self._repository.create_import(
             organization_id=organization_id,
             administration_id=administration_id,
             bank_account_id=bank_account_id,
             filename=filename,
             user_id=actor_user_id,
+            source_format=source_format,
         )
 
         inserted = 0
@@ -185,14 +213,15 @@ class BankService:
                 organization_id=organization_id,
                 administration_id=administration_id,
                 category=AuditCategory.CONFIGURATION,
-                action="import_bank_statement",
+                action="import_bank_statement" if source_format == "csv" else "sync_bank_feed",
                 resource_type="bank_statement_import",
                 resource_id=import_id,
                 outcome=AuditOutcome.SUCCESS,
-                actor_type=ActorType.USER,
+                actor_type=ActorType.USER if actor_user_id is not None else ActorType.SYSTEM,
                 actor_user_id=actor_user_id,
                 detail={
                     "bank_account_id": str(bank_account_id),
+                    "source_format": source_format,
                     "transaction_count": inserted,
                     "duplicate_count": duplicates,
                 },

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { configure, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { axeViolations } from "../testing/axe";
@@ -18,6 +18,10 @@ import { PRODUCT } from "./content/product";
  * The public site (ADR-107): reachable without signing in, both languages complete, every page
  * and article rendering, and the sitemap naming all of them.
  */
+
+// The site is a lazy chunk (ADR-107): the first render waits for it to load, which under a busy
+// machine takes longer than the default 1s. Generous, and still instant when nothing is wrong.
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom implements no scrolling; the layout scrolls on every navigation.
 beforeEach(() => {

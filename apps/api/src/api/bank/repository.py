@@ -210,22 +210,24 @@ class SqlBankRepository:
         administration_id: uuid.UUID,
         bank_account_id: uuid.UUID,
         filename: str | None,
-        user_id: uuid.UUID,
+        user_id: uuid.UUID | None,
+        source_format: str = "csv",
     ) -> uuid.UUID:
         result = await self._session.execute(
             text(
                 "INSERT INTO bank_statement_import "
                 "  (organization_id, administration_id, bank_account_id, source_format, "
                 "   filename, imported_by_user_id) "
-                "VALUES (:org, :admin, :account, 'csv', :filename, :user) "
+                "VALUES (:org, :admin, :account, :source_format, :filename, :user) "
                 "RETURNING id"
             ),
             {
                 "org": str(organization_id),
                 "admin": str(administration_id),
                 "account": str(bank_account_id),
+                "source_format": source_format,
                 "filename": filename,
-                "user": str(user_id),
+                "user": str(user_id) if user_id is not None else None,
             },
         )
         return result.scalar_one()  # type: ignore[no-any-return]

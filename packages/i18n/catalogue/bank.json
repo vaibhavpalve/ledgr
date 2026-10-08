@@ -280,6 +280,137 @@
       "note": "The account's balance from the trial balance of the selected fiscal year; {year} is that year's label.",
       "nl": "Saldo in het grootboek, {year}",
       "en": "Balance in the grootboek, {year}"
+    },
+    "bank.feed.connect": {
+      "note": "ADR-108, the live bank feed.",
+      "nl": "Koppel uw bank",
+      "en": "Connect your bank"
+    },
+    "bank.feed.connect_hint": {
+      "nl": "Haal de transacties van deze rekening elke dag op bij uw bank, in plaats van afschriften te importeren.",
+      "en": "Fetch this account's transactions from your bank every day, instead of importing statements."
+    },
+    "bank.feed.choose_title": {
+      "nl": "Kies uw bank",
+      "en": "Choose your bank"
+    },
+    "bank.feed.choose_intro": {
+      "note": "Read-only (PSD2 account information); the 90 days is BANK_FEED_CONSENT_DAYS' default.",
+      "nl": "U gaat naar uw bank om Boeklite 90 dagen alleen-lezen toegang te geven tot de transacties van deze rekening. Boeklite kan nooit betalingen doen.",
+      "en": "You go to your bank to give Boeklite read-only access to this account's transactions, for 90 days. Boeklite can never make payments."
+    },
+    "bank.feed.search": {
+      "nl": "Zoek een bank",
+      "en": "Search banks"
+    },
+    "bank.feed.no_results": {
+      "nl": "Geen bank gevonden met die naam.",
+      "en": "No bank matches that name."
+    },
+    "bank.feed.loading_banks": {
+      "nl": "Banken laden…",
+      "en": "Loading banks…"
+    },
+    "bank.feed.redirecting": {
+      "nl": "Uw bank wordt geopend…",
+      "en": "Opening your bank…"
+    },
+    "bank.feed.live": {
+      "note": "Done chip on a linked feed.",
+      "nl": "Live van uw bank",
+      "en": "Live from your bank"
+    },
+    "bank.feed.via": {
+      "identical": true,
+      "nl": "via {bank}",
+      "en": "via {bank}"
+    },
+    "bank.feed.last_synced": {
+      "nl": "Laatst opgehaald {date}",
+      "en": "Last fetched {date}"
+    },
+    "bank.feed.never_synced": {
+      "nl": "Nog niet opgehaald",
+      "en": "Not fetched yet"
+    },
+    "bank.feed.consent_until": {
+      "nl": "Toegang tot {date}",
+      "en": "Access until {date}"
+    },
+    "bank.feed.sync": {
+      "nl": "Nu ophalen",
+      "en": "Fetch now"
+    },
+    "bank.feed.syncing": {
+      "nl": "Ophalen…",
+      "en": "Fetching…"
+    },
+    "bank.feed.sync_result": {
+      "note": "After 'Fetch now': lines new to Boeklite; lines already there (from a file or an earlier fetch) are not counted.",
+      "nl": {
+        "one": "{count} nieuwe transactie opgehaald.",
+        "other": "{count} nieuwe transacties opgehaald."
+      },
+      "en": {
+        "one": "{count} new transaction fetched.",
+        "other": "{count} new transactions fetched."
+      }
+    },
+    "bank.feed.disconnect": {
+      "nl": "Ontkoppelen",
+      "en": "Disconnect"
+    },
+    "bank.feed.disconnected": {
+      "nl": "Ontkoppeld. Boeklite leest deze rekening niet meer; de transacties die al zijn opgehaald blijven staan.",
+      "en": "Disconnected. Boeklite no longer reads this account; the transactions already fetched stay."
+    },
+    "bank.feed.pending": {
+      "nl": "Wachten op toestemming van uw bank.",
+      "en": "Waiting for your bank's consent."
+    },
+    "bank.feed.start_again": {
+      "nl": "Opnieuw beginnen",
+      "en": "Start again"
+    },
+    "bank.feed.reconnect": {
+      "nl": "Opnieuw koppelen",
+      "en": "Connect again"
+    },
+    "bank.feed.returning": {
+      "nl": "De koppeling met uw bank wordt afgerond…",
+      "en": "Finishing the connection with your bank…"
+    },
+    "bank.feed.connected": {
+      "nl": "Gekoppeld aan {bank}. Transacties worden elke dag opgehaald.",
+      "en": "Connected to {bank}. Transactions are fetched every day."
+    },
+    "bank.feed.still_pending": {
+      "nl": "Uw bank heeft de toegang nog niet bevestigd. Probeer het zo opnieuw.",
+      "en": "Your bank has not confirmed the access yet. Try again in a moment."
+    },
+    "bank.feed.back_to_bank": {
+      "nl": "Terug naar Bank",
+      "en": "Back to Bank"
+    },
+    "bank.feed.reason.bank_feed_consent_failed": {
+      "nl": "Uw bank heeft geen toegang gegeven. Koppel opnieuw om het nog eens te proberen.",
+      "en": "Your bank did not give access. Connect again to retry."
+    },
+    "bank.feed.reason.bank_feed_account_mismatch": {
+      "nl": "De rekening waartoe u toegang gaf is niet deze: het IBAN klopt niet. Koppel opnieuw en kies bij uw bank deze rekening.",
+      "en": "The account you gave access to is not this one: its IBAN does not match. Connect again and choose this account at your bank."
+    },
+    "bank.feed.reason.bank_feed_consent_expired": {
+      "nl": "De toegang tot uw bank is verlopen. Koppel opnieuw om transacties te blijven ophalen.",
+      "en": "Access to your bank has ended. Connect again to keep fetching transactions."
+    },
+    "bank.feed.reason.bank_feed_provider_unavailable": {
+      "nl": "Uw bank was bij de laatste poging niet bereikbaar. Boeklite probeert het automatisch opnieuw.",
+      "en": "Your bank could not be reached at the last attempt. Boeklite tries again automatically."
+    },
+    "bank.feed.reason.bank_feed_consent_abandoned": {
+      "nl": "De vorige koppeling is niet afgerond.",
+      "en": "The previous connection was not finished."
     }
   }
 }

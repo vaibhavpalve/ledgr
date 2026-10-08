@@ -9,13 +9,23 @@
  *   POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile-with-invoice
  *   POST /v1/administrations/{id}/bank-transactions/{transaction_id}/reconcile
  *
- * No live feed (PSD2/AISP) exists - statement import is a canonical CSV
- * (see api.bank.csv_parser) a person exports from their own bank. Every
- * amount is a Decimal-shaped STRING end to end (NFR-031).
+ * And the live bank feed (ADR-108, api.bank.feed_routes):
+ *
+ *   GET  .../bank-accounts/{account_id}/feed
+ *   GET  .../bank-feed/institutions?country=NL
+ *   POST .../bank-accounts/{account_id}/feed/connect
+ *   POST .../bank-feed/connections/{connection_id}/complete
+ *   POST .../bank-accounts/{account_id}/feed/sync
+ *   POST .../bank-accounts/{account_id}/feed/disconnect
+ *
+ * Every amount is a Decimal-shaped STRING end to end (NFR-031).
  */
 
 import type {
   BankAccountView,
+  BankFeedConnectionView,
+  BankFeedInstitutionView,
+  BankFeedStatusView,
   BankImportResultView,
   BankMatchCandidateView,
   BankTransactionView,
@@ -201,5 +211,99 @@ export class BankApi {
       ),
       { offset_account_id: offsetAccountId, description },
     );
+  }
+
+  // -- The live bank feed (ADR-108) ---------------------------------------------------------
+
+  private feedPath(administrationId: string, bankAccountId: string, ...rest: string[]): string {
+    return pathOf(
+      "v1",
+      "administrations",
+      administrationId,
+      "bank-accounts",
+      bankAccountId,
+      "feed",
+      ...rest,
+    );
+  }
+
+  getFeed(administrationId: string, bankAccountId: string): Promise<BankFeedStatusView> {
+    return callJson<BankFeedStatusView>(
+      this.options,
+      "GET",
+      this.feedPath(administrationId, bankAccountId),
+    );
+  }
+
+  async listFeedInstitutions(
+    administrationId: string,
+    country = "NL",
+  ): Promise<BankFeedInstitutionView[]> {
+    const raw = await callJson<{ institutions: readonly BankFeedInstitutionView[] }>(
+      this.options,
+      "GET",
+      pathOf("v1", "administrations", administrationId, "bank-feed", "institutions") +
+        queryOf({ country }),
+    );
+    return unwrapList<BankFeedInstitutionView>(raw, "institutions");
+  }
+
+  /** Starts a consent; the caller sends the person to `link`, their bank's own page. */
+  connectFeed(
+    administrationId: string,
+    bankAccountId: string,
+    institution: { id: string; name: string },
+    language: "en" | "nl",
+  ): Promise<{ connection: BankFeedConnectionView; link: string }> {
+    return callJson(
+      this.options,
+      "POST",
+      this.feedPath(administrationId, bankAccountId, "connect"),
+      {
+        institution_id: institution.id,
+        institution_name: institution.name,
+        language,
+      },
+    );
+  }
+
+  /** The person came back from their bank (`/bank/feed-return?ref=<connection id>`). */
+  async completeFeed(
+    administrationId: string,
+    connectionId: string,
+  ): Promise<BankFeedConnectionView> {
+    const result = await callJson<{ connection: BankFeedConnectionView }>(
+      this.options,
+      "POST",
+      pathOf(
+        "v1",
+        "administrations",
+        administrationId,
+        "bank-feed",
+        "connections",
+        connectionId,
+        "complete",
+      ),
+    );
+    return result.connection;
+  }
+
+  syncFeed(
+    administrationId: string,
+    bankAccountId: string,
+  ): Promise<{ connection: BankFeedConnectionView; imported: BankImportResultView | null }> {
+    return callJson(this.options, "POST", this.feedPath(administrationId, bankAccountId, "sync"));
+  }
+
+  async disconnectFeed(
+    administrationId: string,
+    bankAccountId: string,
+  ): Promise<BankFeedConnectionView> {
+    const result = await callJson<{ connection: BankFeedConnectionView }>(
+      this.options,
+      "POST",
+      this.feedPath(administrationId, bankAccountId, "disconnect"),
+    );
+    return result.connection;
   }
 }

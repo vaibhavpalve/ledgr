@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { I18nProvider } from "@ledgr/i18n";
 import type {
   BankAccountView,
@@ -111,9 +112,11 @@ vi.mock("../session/ServicesProvider", () => ({ useServices: () => services }));
 
 function open() {
   render(
-    <I18nProvider initialLanguage="en">
-      <BankScreen />
-    </I18nProvider>,
+    <MemoryRouter initialEntries={["/bank"]}>
+      <I18nProvider initialLanguage="en">
+        <BankScreen />
+      </I18nProvider>
+    </MemoryRouter>,
   );
 }
 

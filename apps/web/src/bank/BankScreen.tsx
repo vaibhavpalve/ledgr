@@ -1,4 +1,5 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useI18n } from "@ledgr/i18n";
 import type {
   BankAccountView,
@@ -15,14 +16,16 @@ import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { toDecimalInput } from "../ui/decimal";
 import { useModalFocus } from "../useModalFocus";
+import { BankFeedPanel, FeedNoticeLine, type FeedNotice } from "./BankFeed";
 import { formatIban, isValidIban, normaliseIban } from "./iban";
 import "./Bank.css";
 
 /**
- * `/bank` — bank accounts, statement import, and reconciliation. No live feed (PSD2/AISP) exists
- * yet: a person imports the statement file their bank exports (CAMT.053, MT940 or the bank's CSV,
- * ADR-091). Each unmatched incoming line shows its best open invoice and how sure that is; the
- * certain ones can be matched in one go.
+ * `/bank` — bank accounts, statement import, and reconciliation. Lines come in two ways: the
+ * statement file a bank exports (CAMT.053, MT940 or its CSV, ADR-091), or, where a provider is
+ * configured, the live bank feed (PSD2, ADR-108, `BankFeed.tsx`). Both land the same way. Each
+ * unmatched incoming line shows its best open invoice and how sure that is; the certain ones can
+ * be matched in one go.
  */
 export function BankScreen() {
   const { t } = useI18n();
@@ -39,6 +42,11 @@ export function BankScreen() {
   // when it cannot be read the summary simply shows no balance.
   const [balances, setBalances] = useState<ReadonlyMap<string, string> | null>(null);
   const fiscalYearId = fiscalYear?.id ?? null;
+  // Bumped when the bank feed brings in new lines, so the transactions list reads them.
+  const [fetched, setFetched] = useState(0);
+  // What the return from the bank (`/bank/feed-return`) has to say, once.
+  const location = useLocation();
+  const returnNotice = (location.state as { feedNotice?: FeedNotice } | null)?.feedNotice ?? null;
 
   useEffect(() => {
     if (fiscalYearId === null) return;
@@ -102,6 +110,7 @@ export function BankScreen() {
           ) : undefined
         }
       />
+      {returnNotice !== null ? <FeedNoticeLine notice={returnNotice} /> : null}
       {problem !== null ? <ErrorState message={problem} onRetry={reload} /> : null}
       {accounts === null && problem === null ? <LoadingSkeleton rows={4} /> : null}
       {accounts !== null && accounts.length === 0 ? (
@@ -137,11 +146,21 @@ export function BankScreen() {
           yearLabel={
             fiscalYear ? fiscalYearLabel(fiscalYear.start_date, fiscalYear.end_date) : null
           }
-        />
+        >
+          <BankFeedPanel
+            administrationId={administration.id}
+            account={selected}
+            onFetched={() => {
+              setFetched((n) => n + 1);
+              reload();
+            }}
+          />
+        </AccountSummary>
       ) : null}
 
       {selected !== null && chartAccounts !== null ? (
         <AccountTransactions
+          key={`${selected.id}-${fetched}`}
           administrationId={administration.id}
           account={selected}
           accounts={chartAccounts}
@@ -175,11 +194,14 @@ function AccountSummary({
   ledgerAccount,
   balance,
   yearLabel,
+  children,
 }: {
   account: BankAccountView;
   ledgerAccount: ChartAccountView | null;
   balance: string | null;
   yearLabel: string | null;
+  /** The live bank feed's row (ADR-108), across the card's foot. */
+  children?: ReactNode;
 }) {
   const { t, money } = useI18n();
   return (
@@ -211,6 +233,7 @@ function AccountSummary({
           </span>
         </div>
       ) : null}
+      {children}
     </section>
   );
 }

@@ -141,6 +141,21 @@ class Settings(BaseSettings):
     # api.expenses.extraction.mistral.
     extraction_mistral_api_key: str | None = None
 
+    # --- Live bank feed (FR-BNK-001, ADR-108) ---
+    # "none" (the default) leaves statement import as the only way in, and the screen offers no
+    # "Connect your bank". "gocardless" is GoCardless Bank Account Data, a licensed PSD2
+    # account-information provider (EU). Selected without both secrets it is treated as "none",
+    # the same posture extraction takes without its key. Secrets are never logged.
+    bank_feed_provider: Literal["none", "gocardless"] = "none"
+    gocardless_secret_id: str | None = None
+    gocardless_secret_key: str | None = None
+    gocardless_base_url: str = "https://bankaccountdata.gocardless.com/api/v2"
+    # How far back the first sync reads, and how long a consent lasts. PSD2 allows up to 180 days
+    # of consent; many banks give 90 days of history on the first read.
+    bank_feed_history_days: int = 90
+    bank_feed_consent_days: int = 90
+    bank_feed_timeout_seconds: float = 20.0
+
     # --- Invoice delivery (FR-AR-005) ---
     # "collecting" is dev/test only: it assembles the message, keeps it, and
     # sends nothing. Production must set "smtp" - see

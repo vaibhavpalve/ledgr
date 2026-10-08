@@ -24,6 +24,7 @@ from api.authz.engagement_revocation import (
 from api.authz.firm_access_repository import SqlEngagementRevocationRepository
 from api.authz.model import AuthorizationDecision
 from api.authz_middleware import AuthorizationEnforcementMiddleware
+from api.bank import feed_routes as bank_feed_routes
 from api.bank import routes as bank_routes
 from api.canonical_host import CanonicalHostMiddleware
 from api.customers import routes as customer_routes
@@ -147,6 +148,8 @@ asset_routes.register(app)
 # already existed in Appendix A before this module did - see
 # api.bank.routes' module docstring.
 bank_routes.register(app)
+# The live bank feed (migration 0077, ADR-108): PSD2 consent and sync, behind api.bank.adapters.
+bank_feed_routes.register(app)
 # The Reports screen: balance sheet and income statement, built entirely on
 # LedgerService.balances_as_of - no new table, no new permission. Same
 # registration reason; see api.reports.routes' module docstring.

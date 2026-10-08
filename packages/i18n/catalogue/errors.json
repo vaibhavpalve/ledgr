@@ -1110,6 +1110,41 @@
       "note": "ADR-091: an XML statement with a DTD or entity declaration - refused as unsafe.",
       "nl": "Dit bestand bevat XML-onderdelen die een bankafschrift nooit heeft en wordt daarom niet ingelezen.",
       "en": "This file contains XML a bank statement never has, so it is not imported."
+    },
+    "errors.bank_feed_not_configured": {
+      "note": "ADR-108: no PSD2 provider is configured on this deployment (BANK_FEED_PROVIDER=none).",
+      "nl": "Een live bankkoppeling is hier nog niet beschikbaar. Importeer in plaats daarvan een afschriftbestand.",
+      "en": "A live bank connection is not available here yet. Import a statement file instead."
+    },
+    "errors.bank_feed_already_linked": {
+      "note": "ADR-108: one pending or linked connection per bank account (0077).",
+      "nl": "Deze bankrekening is al gekoppeld aan de bank. Ontkoppel hem eerst om opnieuw te koppelen.",
+      "en": "This bank account is already connected to its bank. Disconnect it first to connect again."
+    },
+    "errors.bank_feed_not_linked": {
+      "note": "ADR-108: sync or disconnect asked of an account without a linked connection.",
+      "nl": "Deze bankrekening is niet gekoppeld aan de bank.",
+      "en": "This bank account is not connected to its bank."
+    },
+    "errors.bank_feed_connection_not_found": {
+      "note": "ADR-108: the return from the bank names a connection this administration does not have.",
+      "nl": "Deze bankkoppeling bestaat niet, of hoort bij een andere administratie.",
+      "en": "This bank connection does not exist, or belongs to another administration."
+    },
+    "errors.bank_feed_consent_failed": {
+      "note": "ADR-108: the provider refused to start, or never completed, the consent.",
+      "nl": "De bank heeft geen toegang gegeven. Probeer opnieuw te koppelen.",
+      "en": "The bank did not give access. Try connecting again."
+    },
+    "errors.bank_feed_provider_unavailable": {
+      "note": "ADR-108: the account-information provider could not be reached or answered with an error.",
+      "nl": "De verbinding met uw bank is nu niet bereikbaar. Probeer het over een paar minuten opnieuw.",
+      "en": "The connection to your bank is not reachable right now. Try again in a few minutes."
+    },
+    "errors.bank_feed_failed": {
+      "note": "ADR-108: catch-all for a bank feed refusal without a more specific reason.",
+      "nl": "De bankkoppeling werkte niet. Probeer het opnieuw, of importeer een afschriftbestand.",
+      "en": "The bank connection did not work. Try again, or import a statement file."
     }
   }
 }
