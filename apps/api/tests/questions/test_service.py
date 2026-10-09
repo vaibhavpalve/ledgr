@@ -23,6 +23,7 @@ from api.questions.model import (
     Side,
     Thread,
     ThreadStatus,
+    awaiting_filter,
     excerpt,
 )
 from api.questions.routes import CreateQuestionBody
@@ -65,6 +66,7 @@ class FakeQuestionRepository:
         self.threads: dict[uuid.UUID, Thread] = {}
         self.message_log: list[Message] = []
         self.reads: list[tuple[uuid.UUID, uuid.UUID, datetime]] = []
+        self.inbox_awaiting: list[Side | None] = []
 
     async def owning_organization(self, administration_id: uuid.UUID) -> uuid.UUID | None:
         return self.owners.get(administration_id)
@@ -191,10 +193,14 @@ class FakeQuestionRepository:
         administration_ids: Sequence[uuid.UUID],
         unread_only: bool,
         limit: int,
+        awaiting: Side | None = None,
     ) -> Inbox:
+        self.inbox_awaiting.append(awaiting)
         items = []
         for t in sorted(self.threads.values(), key=lambda t: t.last_message_at, reverse=True):
             if t.status is not ThreadStatus.OPEN or t.administration_id not in administration_ids:
+                continue
+            if awaiting is not None and t.awaiting is not awaiting:
                 continue
             side = (
                 Side.CLIENT
@@ -550,3 +556,47 @@ async def test_unread_only_and_the_limit(
         limit=1,
     )
     assert len(capped.items) == 1 and capped.unread_count == 1
+
+
+async def test_the_inbox_splits_replies_from_questions_still_out(
+    service: QuestionService, repo: FakeQuestionRepository, clock: _Clock
+) -> None:
+    """`awaiting=firm` is "replies to you": the firm's own unanswered questions are not in it,
+    nor in its unread count (the sidebar badge)."""
+    answered = await _firm_asks(service)
+    clock.tick()
+    still_out = await _firm_asks(service, subject="Nog open")
+    clock.tick()
+    await service.post_message(
+        administration_id=ADMIN,
+        thread_id=answered.id,
+        session_organization_id=CLIENT_ORG,
+        user_id=OWNER,
+        body="Antwoord",
+    )
+
+    async def inbox(awaiting: Side | None) -> Inbox:
+        return await service.inbox(
+            user_id=ACCOUNTANT,
+            session_organization_id=FIRM_ORG,
+            administration_ids=[ADMIN],
+            unread_only=False,
+            limit=20,
+            awaiting=awaiting,
+        )
+
+    replies = await inbox(Side.FIRM)
+    assert [i.thread_id for i in replies.items] == [answered.id]
+    assert replies.unread_count == 1
+    waiting = await inbox(Side.CLIENT)
+    assert [i.thread_id for i in waiting.items] == [still_out.id]
+    assert waiting.unread_count == 0
+    both = await inbox(None)
+    assert {i.thread_id for i in both.items} == {answered.id, still_out.id}
+    assert repo.inbox_awaiting == [Side.FIRM, Side.CLIENT, None]
+
+
+def test_the_inbox_awaiting_parameter() -> None:
+    assert awaiting_filter("firm") is Side.FIRM
+    assert awaiting_filter("client") is Side.CLIENT
+    assert awaiting_filter("any") is None

@@ -67,7 +67,7 @@ ignored, and the integration test sends one to prove it).
 | `GET /v1/administrations/{id}/questions/{thread_id}` (marks read) | `view administration` | financial_read |
 | `POST …/questions/{thread_id}/messages` | `view administration` | configuration |
 | `POST …/questions/{thread_id}/resolve` | `view administration` | configuration |
-| `GET /v1/firm/inbox?unread=&limit=` | `require_portfolio_permission("view", "administration")` | - |
+| `GET /v1/firm/inbox?unread=&limit=&awaiting=` | `require_portfolio_permission("view", "administration")` | - |
 
 - **Nested paths are a deviation from the contract** (`/v1/questions/{thread_id}`). The library
   scopes a check to an administration read from the path; a route that names none could only be
@@ -87,6 +87,11 @@ ignored, and the integration test sends one to prove it).
   threads only in the portfolio's administration ids - there is no second grant join or authorize
   loop in `api.questions`, and no entry in `AUTHORIZATION_EXEMPT_PATHS`. Unread means a message from the **other** side newer than the caller's last read, so a
   colleague's message on the caller's own side is not "waiting for them".
+- **`awaiting=firm|client|any`** (default `any`) on the inbox narrows the items **and**
+  `unread_count` to threads awaiting that side. The firm home's "Client replies" panel and the
+  sidebar's unread badge ask for `awaiting=firm`, so the firm's own questions still waiting on
+  the client never show up as replies (QA, 2026-10-09). `/inbox` has two tabs: "Replies to you"
+  (`firm`, default) and "Waiting on client" (`client`).
 
 **Notification.** When the firm writes, the client's users are e-mailed; when the client writes,
 nobody is (the firm's inbox is where a reply lands). Sending happens in a **sweep**,

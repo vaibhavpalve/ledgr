@@ -224,6 +224,10 @@ export function DeadlinesPanel({ deadlines }: { deadlines: Resource<FirmDeadline
   );
 }
 
+/**
+ * "Client replies": the caller loads it with `awaiting=firm` (ADR-111), so it lists only threads
+ * where the client wrote last - never the firm's own questions still waiting on the client.
+ */
 export function RepliesPanel({ inbox }: { inbox: Resource<FirmInboxView> }) {
   const { t, date } = useI18n();
   const data = inbox.data;

@@ -41,6 +41,12 @@ FR-FRM-005 (question threads), FR-BNK-003/004 (confidence, propose), FR-UX-005.
 8. Money is always a decimal **string** on the wire (`"1234.56"`), never a float (NFR-031).
 9. Every mutating endpoint takes `Idempotency-Key` (NFR-032). Every endpoint ships with an
    `@pytest.mark.isolation` tenant-isolation test (IAM-005).
+10. **`assigned=me` means "Mine + unassigned"** (2026-10-09): clients assigned to the caller or
+    to nobody; `chip_counts` follow it; `assigned=<user_id>` is exact. The summary is
+    portfolio-wide (no `assigned`), and the UI says so. ADR-109.
+11. **"Client replies" are replies** (2026-10-09): the panel and the sidebar badge read
+    `GET /v1/firm/inbox?awaiting=firm`; `/inbox` has "Replies to you" (`firm`) and "Waiting on
+    client" (`client`) tabs. ADR-111.
 
 ## Numbers reserved per agent
 
@@ -131,7 +137,7 @@ shapes over their own administrations.
   "chip_counts": { "my_move": 38, "waiting_on_client": 21, "vat_not_filed": 18, "books_behind": 7,
                    "up_to_date": 62, "snoozed": 4, "all": 200 } }
 ```
-`page_size` defaults to 50, max 1000 (the UI's "Show all" asks for 1000). `chip_counts` are computed
+`page_size` defaults to 50, max 1000 (the UI's "Show all" asks for 1000). `assigned=me` = assigned to me OR to nobody (decision 10). `chip_counts` are computed
 with `assigned` and `q` applied but WITHOUT `chip`, so the chips show what each tab would contain.
 `broken_feed` and `vat` may be `null`. `last_chased_at` is always `null` in this wave (chasing is wave 2).
 
@@ -170,7 +176,8 @@ audited individually. Partial failure is reported, never rolled up into a 500.
 `GET /v1/questions/{thread_id}` → thread + messages (marks read for caller)
 `POST /v1/questions/{thread_id}/messages` `{ "body" }` → message (flips `awaiting`)
 `POST /v1/questions/{thread_id}/resolve` → thread
-`GET /v1/firm/inbox?unread=true&limit=20` →
+`GET /v1/firm/inbox?unread=true&limit=20&awaiting=firm|client|any` (default `any`; narrows both
+`items` and `unread_count`) →
 ```json
 { "unread_count": 5, "items": [ { "thread_id": "…", "administration_id": "…", "display_name": "…",
    "subject": "…", "excerpt": "first 120 chars", "last_message_at": "…", "unread": true } ] }

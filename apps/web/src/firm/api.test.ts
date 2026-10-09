@@ -94,6 +94,18 @@ describe("FirmApi", () => {
     expect(calls[0]?.url).toBe("/v1/firm/inbox?unread=true&limit=3");
   });
 
+  it("asks the inbox for one side's threads with awaiting=", async () => {
+    const { client, calls } = api({
+      "GET /v1/firm/inbox": () => jsonResponse({ unread_count: 0, items: [] }),
+    });
+    await client.getInbox({ limit: 3, awaiting: "firm" });
+    await client.getInbox({ awaiting: "client" });
+    expect(calls.map((call) => call.url)).toEqual([
+      "/v1/firm/inbox?limit=3&awaiting=firm",
+      "/v1/firm/inbox?awaiting=client",
+    ]);
+  });
+
   it("accepts the staff and deadlines lists bare or wrapped", async () => {
     const { client } = api({
       "GET /v1/firm/staff": () =>

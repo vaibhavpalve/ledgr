@@ -275,8 +275,10 @@ class QuestionService:
         administration_ids: Sequence[uuid.UUID],
         unread_only: bool,
         limit: int,
+        awaiting: Side | None = None,
     ) -> Inbox:
-        """`administration_ids` is the caller's authorized portfolio; nothing outside it is read."""
+        """`administration_ids` is the caller's authorized portfolio; nothing outside it is read.
+        `awaiting` (None = either side) narrows the items and the unread count alike."""
         limit = max(1, min(limit, INBOX_LIMIT_MAX))
         return await self._repository.inbox(
             user_id=user_id,
@@ -284,6 +286,7 @@ class QuestionService:
             administration_ids=administration_ids,
             unread_only=unread_only,
             limit=limit,
+            awaiting=awaiting,
         )
 
 

@@ -89,6 +89,12 @@ Waiting on client: missing_receipts, open threads awaiting the client (their old
 `last_message_at` feeds `waiting_on_client_since`), and a broken feed. `counts.open_questions` is
 the total of open threads either way.
 
+**`assigned=me` is "Mine + unassigned".** It admits clients assigned to the caller **or to
+nobody** (`AssignedFilter.mine`), and `chip_counts` follow the same rule. A firm that has not
+assigned anyone yet would otherwise land on an empty "Mine" list with every chip at 0 while the
+count strip shows work (QA, 2026-10-09). `assigned=<user_id>` stays exact. The summary takes no
+`assigned`: its count strip covers the whole portfolio, and the web labels it so.
+
 **Risk (decision 7).** `days to the next unfiled VAT deadline (90 when none) − ceil(my-move items /
 10) − 3 for a broken feed − 5 when more than one month behind`; ascending. Snoozed clients leave
 `my_move` and `waiting_on_client` only.

@@ -281,6 +281,11 @@ async def test_snoozing_a_client_and_not_someone_elses(world: FirmWorld) -> None
 @pytest.mark.isolation("POST", "/v1/firm/clients/assign")
 async def test_assigning_reports_what_it_could_not_assign(world: FirmWorld) -> None:
     a, b = world.tenants.admin_a, world.tenants.admin_b
+    # "Mine" also holds clients assigned to nobody (ADR-109): before any assignment, A is there.
+    unassigned = (await _as_firm(world, "GET", "/v1/firm/worklist?chip=all&assigned=me")).json()
+    assert [r["administration_id"] for r in unassigned["rows"]] == [str(a)]
+    assert unassigned["rows"][0]["assigned_user_id"] is None
+
     response = await _as_firm(
         world,
         "POST",

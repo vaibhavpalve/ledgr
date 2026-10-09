@@ -150,8 +150,9 @@
       "en": { "one": "Review {count} auto-booking", "other": "Review {count} auto-bookings" }
     },
     "client.todo.counts_label": {
-      "nl": "Uw klanten in één oogopslag",
-      "en": "All your clients at a glance"
+      "note": "Label and tooltip of the count strip. The counts cover every client the user can see, NOT the Mine/Everyone toggle below them, so the text says so.",
+      "nl": "Al uw klanten in één oogopslag, ongeacht aan wie ze zijn toegewezen",
+      "en": "All your clients at a glance, whoever they are assigned to"
     },
     "client.todo.count.auto_bookings": {
       "nl": "Boekingsvoorstellen",
@@ -217,8 +218,9 @@
       "en": "Whose clients"
     },
     "client.todo.assigned.me": {
-      "nl": "Mijn klanten",
-      "en": "My clients"
+      "note": "The list toggle: clients assigned to me plus clients assigned to nobody yet (ADR-109).",
+      "nl": "Mijn + niet toegewezen",
+      "en": "Mine + unassigned"
     },
     "client.todo.assigned.any": {
       "nl": "Iedereen",
@@ -725,6 +727,28 @@
     "client.todo.inbox.open_client": {
       "nl": "{name} openen",
       "en": "Open {name}"
+    },
+    "client.todo.inbox.tabs": {
+      "nl": "Berichten tonen",
+      "en": "Show messages"
+    },
+    "client.todo.inbox.tab.firm": {
+      "note": "Threads where the client wrote last: the accountant's move.",
+      "nl": "Antwoorden aan u",
+      "en": "Replies to you"
+    },
+    "client.todo.inbox.tab.client": {
+      "note": "The accountant's own questions the client has not answered yet.",
+      "nl": "Wacht op klant",
+      "en": "Waiting on client"
+    },
+    "client.todo.inbox.waiting_empty_title": {
+      "nl": "Geen openstaande vragen",
+      "en": "No questions waiting"
+    },
+    "client.todo.inbox.waiting_empty_body": {
+      "nl": "Een vraag die u een klant stelt, staat hier tot de klant antwoordt.",
+      "en": "A question you ask a client stays here until they answer."
     }
   }
 }

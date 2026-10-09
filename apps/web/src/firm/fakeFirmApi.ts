@@ -9,6 +9,7 @@
 
 import type {
   FirmDeadlineView,
+  FirmInboxAwaiting,
   FirmInboxView,
   FirmProposalsView,
   FirmStaffView,
@@ -241,6 +242,33 @@ export const fakeInbox: FirmInboxView = {
   ],
 };
 
+/** The firm's own question, still waiting on the client (`awaiting: "client"`). */
+export const fakeWaitingOnClient: FirmInboxView = {
+  unread_count: 0,
+  items: [
+    {
+      thread_id: "t-2",
+      administration_id: "adm-1",
+      display_name: "Bakkerij Jansen",
+      subject: "Betaling KPN",
+      excerpt: "Waar is deze betaling van 12 september voor?",
+      last_message_at: "2026-10-06T09:30:00+00:00",
+      unread: false,
+      awaiting: "client",
+    },
+  ],
+};
+
+/** Like the server: `awaiting` narrows the items and the unread count; absent or `any` is both. */
+function fakeInboxFor(awaiting: FirmInboxAwaiting | undefined): FirmInboxView {
+  if (awaiting === "firm") return fakeInbox;
+  if (awaiting === "client") return fakeWaitingOnClient;
+  return {
+    unread_count: fakeInbox.unread_count + fakeWaitingOnClient.unread_count,
+    items: [...fakeInbox.items, ...fakeWaitingOnClient.items],
+  };
+}
+
 export interface FakeFirmApi extends FirmApiShape {
   readonly calls: { method: string; args: unknown[] }[];
 }
@@ -268,7 +296,7 @@ export function fakeFirmApi(overrides: Partial<FirmApiShape> = {}): FakeFirmApi 
       rejected: decisions.filter((entry) => entry.decision === "reject").length,
       failed: [],
     }),
-    getInbox: async () => fakeInbox,
+    getInbox: async (options) => fakeInboxFor(options?.awaiting),
     ...overrides,
   };
 

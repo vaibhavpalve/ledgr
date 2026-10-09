@@ -2093,6 +2093,13 @@ export interface FirmInboxItemView {
   readonly awaiting: "client" | "firm";
 }
 
+/**
+ * `GET /v1/firm/inbox?awaiting=`: `firm` = replies to the firm (the client wrote last),
+ * `client` = the firm's questions still waiting on the client, `any` (default) = both. It narrows
+ * `unread_count` as well as `items`.
+ */
+export type FirmInboxAwaiting = "firm" | "client" | "any";
+
 /** `GET /v1/firm/inbox`. */
 export interface FirmInboxView {
   readonly unread_count: number;

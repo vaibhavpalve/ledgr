@@ -204,8 +204,9 @@ export function AppShell() {
     };
   }, [dashboard, administrationId, fiscalYearId]);
 
-  // A firm's unread client replies, beside "Client inbox" (FR-FRM-005). Secondary chrome as
-  // above: an inbox endpoint that fails or is not deployed yet just shows no badge.
+  // A firm's unread client replies, beside "Client inbox" (FR-FRM-005): awaiting=firm, so the
+  // firm's own questions still waiting on the client never count. Secondary chrome as above: an
+  // inbox endpoint that fails or is not deployed yet just shows no badge.
   const { firm } = useServices();
   const isFirmOrg = me.organization.kind === "firm";
   const [unreadReplies, setUnreadReplies] = useState<number | null>(null);
@@ -213,7 +214,7 @@ export function AppShell() {
     if (!isFirmOrg) return;
     let cancelled = false;
     void Promise.resolve()
-      .then(() => firm.getInbox({ unread: true, limit: 1 }))
+      .then(() => firm.getInbox({ unread: true, limit: 1, awaiting: "firm" }))
       .then((inbox) => {
         if (!cancelled) setUnreadReplies(inbox.unread_count);
       })

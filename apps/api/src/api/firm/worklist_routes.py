@@ -119,7 +119,8 @@ def _assigned_filter(request: Request, raw: str, user_id: uuid.UUID) -> Assigned
     if raw == "any":
         return AssignedFilter(any=True)
     if raw == "me":
-        return AssignedFilter(any=False, user_id=user_id)
+        # "Mine + unassigned" (ADR-109): my clients plus those assigned to nobody yet.
+        return AssignedFilter.mine(user_id)
     try:
         return AssignedFilter(any=False, user_id=uuid.UUID(raw))
     except ValueError as exc:

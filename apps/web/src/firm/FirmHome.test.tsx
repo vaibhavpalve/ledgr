@@ -106,6 +106,27 @@ describe("the firm home renders the portfolio from the API", () => {
       dir: "asc",
       q: "",
     });
+    // "Mine" also holds unassigned clients (ADR-109), and the toggle says so.
+    expect(screen.getByTestId("firm-assigned-me").textContent).toBe("Mine + unassigned");
+  });
+
+  it("says the count strip covers every client, whatever the toggle", async () => {
+    await ready();
+    expect(screen.getByTestId("firm-counts").getAttribute("title")).toBe(
+      "All your clients at a glance, whoever they are assigned to",
+    );
+  });
+
+  it("client replies are replies only: the panel asks for awaiting=firm", async () => {
+    const api = await ready();
+    expect(await screen.findByTestId("firm-reply-t-1")).toBeTruthy();
+    // The firm's own question still waiting on the client is not a reply.
+    expect(screen.queryByTestId("firm-reply-t-2")).toBeNull();
+    const inboxCalls = api.calls.filter((call) => call.method === "getInbox");
+    expect(inboxCalls.length).toBeGreaterThan(0);
+    for (const call of inboxCalls) {
+      expect(call.args[0]).toMatchObject({ awaiting: "firm" });
+    }
   });
 
   it("has no automated WCAG 2.2 AA violations", async () => {

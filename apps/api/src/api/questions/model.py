@@ -75,6 +75,12 @@ def awaiting_after(author: Side) -> Side:
     return author.other
 
 
+def awaiting_filter(value: str) -> Side | None:
+    """The inbox's `awaiting=firm|client|any`: `any` is no filter (None). `firm` is "replies to
+    you" - the client wrote last - and `client` is the firm's own questions still out."""
+    return None if value == "any" else Side(value)
+
+
 def excerpt(body: str, length: int = EXCERPT_LENGTH) -> str:
     """The first `length` characters, whitespace collapsed so a multi-line message reads as one
     line in a list."""

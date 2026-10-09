@@ -5,7 +5,7 @@
     GET  /v1/administrations/{id}/questions/{thread_id}                  thread + messages, read
     POST /v1/administrations/{id}/questions/{thread_id}/messages         reply (flips `awaiting`)
     POST /v1/administrations/{id}/questions/{thread_id}/resolve          resolve
-    GET  /v1/firm/inbox?unread=true&limit=20                             across every granted client
+    GET  /v1/firm/inbox?unread=true&limit=20&awaiting=firm|client|any    across every granted client
 
 Registered via `register(app)`, not `include_router` - see `api.documents.routes.register`.
 
@@ -51,7 +51,7 @@ from api.authz.model import AuthorizationDecision
 from api.db import get_db_session
 from api.firm.worklist_access import Portfolio, require_portfolio_permission
 from api.i18n.http import problem
-from api.questions.model import InboxItem, Message, ResourceType, Thread
+from api.questions.model import InboxItem, Message, ResourceType, Thread, awaiting_filter
 from api.questions.repository import SqlQuestionRepository
 from api.questions.service import (
     AdministrationNotFound,
@@ -341,15 +341,19 @@ async def firm_inbox(
     request: Request,
     unread: bool = Query(default=False),
     limit: int = Query(default=20, ge=1, le=100),
+    awaiting: Literal["firm", "client", "any"] = Query(default="any"),
     service: QuestionService = Depends(get_question_service),
     portfolio: Portfolio = Depends(_INBOX),
 ) -> dict[str, object]:
+    """`awaiting=firm` is "replies to you" (the firm home's panel and badge); `client` is the
+    firm's own questions still waiting on the client; `any` (default) is both."""
     inbox = await service.inbox(
         user_id=portfolio.user_id,
         session_organization_id=portfolio.organization_id,
         administration_ids=portfolio.administration_ids,
         unread_only=unread,
         limit=limit,
+        awaiting=awaiting_filter(awaiting),
     )
     return {
         "unread_count": inbox.unread_count,

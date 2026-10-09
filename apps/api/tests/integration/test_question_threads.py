@@ -365,6 +365,12 @@ async def test_the_inbox_lists_only_granted_administrations(
     assert body["items"][0]["excerpt"] == "Het abonnement van de telefoon."
     assert other.json()["id"] not in inbox.text
 
+    # The client replied, so the thread awaits the firm: a reply, not a question still out.
+    replies = (await _call(w.firm_org, w.accountant, "GET", f"{_INBOX}?awaiting=firm")).json()
+    assert [i["thread_id"] for i in replies["items"]] == [thread["id"]]
+    out = (await _call(w.firm_org, w.accountant, "GET", f"{_INBOX}?awaiting=client")).json()
+    assert out == {"unread_count": 0, "items": []}
+
     # Another firm sees nothing of either client.
     stranger = await _call(w.other_firm_org, w.other_firm_user, "GET", _INBOX)
     assert stranger.status_code == 200

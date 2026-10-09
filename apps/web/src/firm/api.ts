@@ -10,7 +10,7 @@
  *   GET  /v1/firm/deadlines
  *   GET  /v1/firm/proposals                   booking proposals, grouped (ADR-110)
  *   POST /v1/firm/proposals/decide
- *   GET  /v1/firm/inbox                       client replies (question threads)
+ *   GET  /v1/firm/inbox                       question threads; awaiting=firm is client replies
  *
  * Built on `api/http`'s `callJson`, so every mutating call carries a fresh Idempotency-Key
  * (NFR-032) and every call carries Accept-Language (FR-UX-007). Responses stay in the wire's
@@ -25,6 +25,7 @@ import type {
   FirmAssignResultView,
   FirmDeadlineView,
   FirmDecideResultView,
+  FirmInboxAwaiting,
   FirmInboxView,
   FirmProposalDecision,
   FirmProposalsView,
@@ -50,6 +51,13 @@ export interface WorklistQuery {
   readonly pageSize: number;
 }
 
+export interface InboxOptions {
+  readonly unread?: boolean;
+  readonly limit?: number;
+  /** `firm` = replies to you (the panel and the badge); `client` = questions still out. */
+  readonly awaiting?: FirmInboxAwaiting;
+}
+
 export interface FirmApiShape {
   getSummary(since?: string): Promise<FirmSummaryView>;
   markSeen(): Promise<void>;
@@ -65,7 +73,7 @@ export interface FirmApiShape {
   decideProposals(
     decisions: readonly { proposalId: string; decision: FirmProposalDecision }[],
   ): Promise<FirmDecideResultView>;
-  getInbox(options?: { unread?: boolean; limit?: number }): Promise<FirmInboxView>;
+  getInbox(options?: InboxOptions): Promise<FirmInboxView>;
 }
 
 export class FirmApi implements FirmApiShape {
@@ -164,13 +172,14 @@ export class FirmApi implements FirmApiShape {
     );
   }
 
-  getInbox(options: { unread?: boolean; limit?: number } = {}): Promise<FirmInboxView> {
+  getInbox(options: InboxOptions = {}): Promise<FirmInboxView> {
     return callJson<FirmInboxView>(
       this.options,
       "GET",
       `${pathOf("v1", "firm", "inbox")}${queryOf({
         unread: options.unread === true ? "true" : undefined,
         limit: options.limit,
+        awaiting: options.awaiting,
       })}`,
     );
   }

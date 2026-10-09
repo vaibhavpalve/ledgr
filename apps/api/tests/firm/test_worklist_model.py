@@ -18,6 +18,7 @@ from api.firm.worklist_model import (
     SortKey,
     VatPeriodFacts,
     VatStatus,
+    WorklistPage,
     WorklistRow,
     activity_lines,
     booked_until,
@@ -292,6 +293,83 @@ def test_assigned_filter_and_paging() -> None:
     )
     assert page.total == 5
     assert [r.facts.display_name for r in page.rows] == ["Client 05", "Client 07"]
+
+
+def _mine_page(rows: list[WorklistRow], me: uuid.UUID, chip: Chip = Chip.ALL) -> WorklistPage:
+    return worklist_page(
+        rows,
+        chip=chip,
+        query=None,
+        assigned=AssignedFilter.mine(me),
+        sort=SortKey.NAME,
+        descending=False,
+        page=1,
+        page_size=50,
+    )
+
+
+def test_mine_includes_unassigned_clients_but_not_a_colleagues() -> None:
+    me, colleague = uuid.uuid4(), uuid.uuid4()
+    rows = [
+        build_row(_client("Mine", assigned_user_id=me, to_book=1), today=TODAY),
+        build_row(_client("Nobody's", to_book=2), today=TODAY),
+        build_row(_client("Theirs", assigned_user_id=colleague, to_book=3), today=TODAY),
+    ]
+    page = _mine_page(rows, me)
+    assert [r.facts.display_name for r in page.rows] == ["Mine", "Nobody's"]
+    assert page.total == 2
+
+
+def test_a_firm_that_assigned_nobody_sees_everything_under_mine() -> None:
+    """The QA case: no assignments yet must not mean an empty "Mine" with every chip at 0."""
+    me = uuid.uuid4()
+    rows = _rows()  # none assigned
+    mine = _mine_page(rows, me, Chip.MY_MOVE)
+    everyone = worklist_page(
+        rows,
+        chip=Chip.MY_MOVE,
+        query=None,
+        assigned=AssignedFilter(),
+        sort=SortKey.NAME,
+        descending=False,
+        page=1,
+        page_size=50,
+    )
+    assert mine.total == everyone.total == 2
+    assert mine.chip_counts == everyone.chip_counts
+
+
+def test_chip_counts_follow_mine_plus_unassigned() -> None:
+    me, colleague = uuid.uuid4(), uuid.uuid4()
+    rows = [
+        build_row(_client("Mine", assigned_user_id=me, to_book=1), today=TODAY),
+        build_row(_client("Nobody's"), today=TODAY),
+        build_row(_client("Theirs", assigned_user_id=colleague, to_book=3), today=TODAY),
+    ]
+    counts = _mine_page(rows, me, Chip.MY_MOVE).chip_counts
+    assert counts[Chip.ALL] == 2
+    assert counts[Chip.MY_MOVE] == 1  # "Theirs" has work, but is a colleague's
+    assert counts[Chip.UP_TO_DATE] == 1
+
+
+def test_naming_a_colleague_is_exact() -> None:
+    me, colleague = uuid.uuid4(), uuid.uuid4()
+    rows = [
+        build_row(_client("Nobody's"), today=TODAY),
+        build_row(_client("Theirs", assigned_user_id=colleague), today=TODAY),
+        build_row(_client("Mine", assigned_user_id=me), today=TODAY),
+    ]
+    page = worklist_page(
+        rows,
+        chip=Chip.ALL,
+        query=None,
+        assigned=AssignedFilter(any=False, user_id=colleague),
+        sort=SortKey.NAME,
+        descending=False,
+        page=1,
+        page_size=50,
+    )
+    assert [r.facts.display_name for r in page.rows] == ["Theirs"]
 
 
 def test_missing_values_sort_last_both_ways() -> None:

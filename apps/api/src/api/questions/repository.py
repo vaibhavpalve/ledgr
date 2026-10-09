@@ -154,6 +154,7 @@ class QuestionRepository(Protocol):
         administration_ids: Sequence[uuid.UUID],
         unread_only: bool,
         limit: int,
+        awaiting: Side | None = None,
     ) -> Inbox: ...
 
 
@@ -348,7 +349,10 @@ class SqlQuestionRepository:
         administration_ids: Sequence[uuid.UUID],
         unread_only: bool,
         limit: int,
+        awaiting: Side | None = None,
     ) -> Inbox:
+        """`awaiting` narrows both the items and `unread_count`, so a badge read with
+        `awaiting=firm` counts only client replies, never the firm's own questions still out."""
         if not administration_ids:
             return Inbox(unread_count=0, items=())
         unread = _unread(_SIDE_PER_ROW)
@@ -362,6 +366,9 @@ class SqlQuestionRepository:
             "FROM question_thread t JOIN administration a ON a.id = t.administration_id "
             "WHERE t.status = 'open' AND t.administration_id = ANY(cast(:ids as uuid[]))"
         )
+        if awaiting is not None:
+            base += " AND t.awaiting = :awaiting"
+            params["awaiting"] = awaiting.value
         count = await self._session.execute(text(f"SELECT count(*) {base} AND {unread}"), params)
         unread_count = int(count.scalar_one())
 

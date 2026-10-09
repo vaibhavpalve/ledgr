@@ -350,13 +350,26 @@ def _earliest(*dates: date | None) -> date | None:
 
 @dataclass(frozen=True, slots=True)
 class AssignedFilter:
-    """`assigned=me|any|<user_id>`. `user_id` None with `any` False never happens."""
+    """`assigned=me|any|<user_id>`. `user_id` None with `any` False never happens.
+
+    `me` also admits clients assigned to NOBODY (`include_unassigned`): a firm that has not
+    assigned anyone yet would otherwise land on an empty "Mine" list while the work is there.
+    Naming a colleague's id is exact - their clients only.
+    """
 
     any: bool = True
     user_id: uuid.UUID | None = None
+    include_unassigned: bool = False
+
+    @classmethod
+    def mine(cls, user_id: uuid.UUID) -> AssignedFilter:
+        return cls(any=False, user_id=user_id, include_unassigned=True)
 
     def admits(self, row: WorklistRow) -> bool:
-        return self.any or row.facts.assigned_user_id == self.user_id
+        assignee = row.facts.assigned_user_id
+        if self.any or assignee == self.user_id:
+            return True
+        return self.include_unassigned and assignee is None
 
 
 def matches_query(row: WorklistRow, query: str | None) -> bool:

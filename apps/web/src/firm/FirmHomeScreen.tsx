@@ -103,7 +103,8 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
     [api, chip, q, assigned, sort, dir, page, pageSize],
   );
   const loadDeadlines = useCallback(() => api.getDeadlines(), [api]);
-  const loadInbox = useCallback(() => api.getInbox({ limit: 3 }), [api]);
+  // "Client replies": only threads where the client wrote last, never our own questions still out.
+  const loadInbox = useCallback(() => api.getInbox({ limit: 3, awaiting: "firm" }), [api]);
 
   const summary = useResource(loadSummary);
   const worklist = useResource(loadWorklist);
@@ -447,6 +448,8 @@ function CountStrip({
     <ul
       className="firm-counts"
       aria-label={t("client.todo.counts_label")}
+      // The summary is firm-wide: it ignores the list's Mine/Everyone toggle, and says so.
+      title={t("client.todo.counts_label")}
       data-testid="firm-counts"
     >
       {COUNT_ORDER.map((key) => {

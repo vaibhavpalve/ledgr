@@ -3,6 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useI18n } from "@ledgr/i18n";
 import type { FirmInboxItemView } from "@ledgr/shared-types";
 
+type InboxTab = "firm" | "client";
+const TABS: readonly InboxTab[] = ["firm", "client"];
+
 import "./FirmHome.css";
 import { describeError } from "../api/http";
 import { useSession } from "../session/SessionProvider";
@@ -18,6 +21,9 @@ import { localDateOf, useResource } from "./useResource";
  * `/v1/administrations/{id}/questions/{thread_id}`, and posting or resolving with a different
  * client open is refused with 409 `active_client_mismatch`.
  *
+ * Two tabs (ADR-111): "Replies to you" (`awaiting=firm`, the default and what the sidebar badge
+ * counts) and "Waiting on client" (`awaiting=client`, the firm's own questions still out).
+ *
  * There is no thread screen in this wave; this is the list the sidebar's unread badge points at.
  */
 export function FirmInboxRoute() {
@@ -31,7 +37,8 @@ function FirmInboxScreen() {
   const navigate = useNavigate();
   const { firm } = useServices();
   const { administration, switchAdministration } = useSession();
-  const load = useCallback(() => firm.getInbox({ limit: 50 }), [firm]);
+  const [tab, setTab] = useState<InboxTab>("firm");
+  const load = useCallback(() => firm.getInbox({ limit: 50, awaiting: tab }), [firm, tab]);
   const inbox = useResource(load);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -60,9 +67,26 @@ function FirmInboxScreen() {
       <PageHeader
         title={t("common.nav.inbox")}
         context={
-          data !== null ? t("client.todo.inbox.context", { count: data.unread_count }) : undefined
+          data !== null && tab === "firm"
+            ? t("client.todo.inbox.context", { count: data.unread_count })
+            : undefined
         }
       />
+      <div className="tabs" role="tablist" aria-label={t("client.todo.inbox.tabs")}>
+        {TABS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
+            className="tabs__tab"
+            data-testid={`firm-inbox-tab-${value}`}
+            onClick={() => setTab(value)}
+          >
+            {t(`client.todo.inbox.tab.${value}`)}
+          </button>
+        ))}
+      </div>
       {problem !== null ? <ErrorState message={problem} /> : null}
       {data === null && inbox.loading ? (
         <LoadingSkeleton rows={4} />
@@ -71,8 +95,16 @@ function FirmInboxScreen() {
       ) : data.items.length === 0 ? (
         <EmptyState
           icon={<Icon name="mail" size={32} />}
-          title={t("client.todo.inbox.empty_title")}
-          body={t("client.todo.inbox.empty_body")}
+          title={
+            tab === "firm"
+              ? t("client.todo.inbox.empty_title")
+              : t("client.todo.inbox.waiting_empty_title")
+          }
+          body={
+            tab === "firm"
+              ? t("client.todo.inbox.empty_body")
+              : t("client.todo.inbox.waiting_empty_body")
+          }
           testId="firm-inbox-empty"
         />
       ) : (

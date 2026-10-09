@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CaptureQueue } from "@ledgr/offline-queue";
@@ -98,6 +98,44 @@ describe("routing the firm home", () => {
 
     expect(await screen.findByTestId("firm-inbox")).toBeTruthy();
     expect(await screen.findByText("Bonnetje Coolblue")).toBeTruthy();
+  });
+
+  it("the inbox opens on replies to you, with the firm's open questions on their own tab", async () => {
+    stubMe(firmMe);
+    const firm = fakeFirmApi();
+    renderApp({ authenticated: true, language: "en", services: { firm } }, { route: "/inbox" });
+
+    const replies = await screen.findByTestId("firm-inbox-tab-firm");
+    expect(replies.textContent).toBe("Replies to you");
+    expect(replies.getAttribute("aria-selected")).toBe("true");
+    expect(await screen.findByText("Bonnetje Coolblue")).toBeTruthy();
+    expect(screen.queryByText("Betaling KPN")).toBeNull();
+
+    const waiting = screen.getByTestId("firm-inbox-tab-client");
+    expect(waiting.textContent).toBe("Waiting on client");
+    fireEvent.click(waiting);
+    expect(await screen.findByText("Betaling KPN")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText("Bonnetje Coolblue")).toBeNull());
+    expect(waiting.getAttribute("aria-selected")).toBe("true");
+
+    const awaited = firm.calls
+      .filter((call) => call.method === "getInbox")
+      .map((call) => (call.args[0] as { awaiting?: string } | undefined)?.awaiting);
+    // The rail's badge and the screen ask for replies; the tab asks for questions still out.
+    expect(awaited).toContain("client");
+    expect(awaited.filter((value) => value !== "client").every((value) => value === "firm")).toBe(
+      true,
+    );
+  });
+
+  it("the inbox tabs read in Dutch", async () => {
+    stubMe(firmMe);
+    renderApp(
+      { authenticated: true, language: "nl", services: { firm: fakeFirmApi() } },
+      { route: "/inbox" },
+    );
+    expect((await screen.findByTestId("firm-inbox-tab-firm")).textContent).toBe("Antwoorden aan u");
+    expect(screen.getByTestId("firm-inbox-tab-client").textContent).toBe("Wacht op klant");
   });
 
   it("a business user has no firm home: /todo goes to their dashboard", async () => {
