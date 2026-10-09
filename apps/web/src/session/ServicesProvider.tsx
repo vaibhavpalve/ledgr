@@ -11,6 +11,7 @@ import { browserDecode, type DecodeFile } from "../capture/decode";
 import { captureQueue } from "../capture/queue";
 import { ClientApi } from "../client/api";
 import { CustomerApi } from "../customers/api";
+import { FirmApi, type FirmApiShape } from "../firm/api";
 import { DashboardApi } from "../home/api";
 import { SalesInvoiceApi } from "../invoicing/api";
 import { JournalApi } from "../journal/api";
@@ -54,6 +55,8 @@ export interface Services {
   readonly templates: TemplateApi;
   readonly vat: VatApi;
   readonly opening: OpeningApi;
+  /** The firm home ("To do"): cross-client reads over the caller's grants (ADR-109). */
+  readonly firm: FirmApiShape;
   readonly queue: CaptureQueue;
   readonly decode: DecodeFile;
 }
@@ -90,6 +93,7 @@ export function ServicesProvider({
       templates: lazy("templates", () => new TemplateApi(options)),
       vat: lazy("vat", () => new VatApi(options)),
       opening: lazy("opening", () => new OpeningApi(options)),
+      firm: lazy<FirmApiShape>("firm", () => new FirmApi(options)),
       // Built lazily and only when nothing was injected: `captureQueue()`
       // opens IndexedDB, which jsdom does not have.
       queue: lazy("queue", () => captureQueue()),

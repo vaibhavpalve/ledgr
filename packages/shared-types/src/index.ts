@@ -1889,3 +1889,212 @@ export interface OpeningBalanceView {
   /** The posted opening entry that still stands, or null. */
   readonly posted: OpeningEntryView | null;
 }
+
+/*
+ * The firm home ("To do", docs/firm-home/contract.md) - FR-FRM-001, FR-FRM-002, FR-FRM-004b,
+ * FR-FRM-005, FR-BNK-003/004. Cross-client reads over the administrations the caller holds a live
+ * grant on (ADR-109). Wire shapes, snake_case as received. Money is a decimal STRING (NFR-031).
+ */
+
+/** The six portfolio counts at the top of the firm home. */
+export interface FirmSummaryCounts {
+  readonly auto_bookings: number;
+  readonly receipts_to_book: number;
+  readonly missing_receipts: number;
+  readonly bank_to_match: number;
+  readonly open_questions: number;
+  readonly broken_feeds: number;
+}
+
+export type FirmActivityKind =
+  | "receipts_uploaded"
+  | "auto_bookings_ready"
+  | "client_replies"
+  | "bank_feeds_broken"
+  | "possible_duplicates";
+
+export interface FirmClientRef {
+  readonly administration_id: string;
+  readonly display_name: string;
+}
+
+/** One "Since you were away" line. `clients` lists at most three. */
+export interface FirmActivityView {
+  readonly kind: FirmActivityKind;
+  readonly count: number;
+  readonly client_count: number;
+  readonly clients: readonly FirmClientRef[];
+}
+
+/** `GET /v1/firm/summary`. */
+export interface FirmSummaryView {
+  readonly previous_login_at: string | null;
+  /** The start of the "since you were away" window (an ISO timestamp). */
+  readonly since: string;
+  readonly client_count: number;
+  readonly counts: FirmSummaryCounts;
+  readonly activity: readonly FirmActivityView[];
+}
+
+export type FirmWorklistChip =
+  | "my_move"
+  | "waiting_on_client"
+  | "vat_not_filed"
+  | "books_behind"
+  | "up_to_date"
+  | "snoozed"
+  | "all";
+
+export type FirmWorklistSort =
+  | "risk"
+  | "name"
+  | "booked_until"
+  | "to_book"
+  | "missing_receipts"
+  | "bank_to_match"
+  | "open_questions"
+  | "vat_due";
+
+export type FirmVatStatus =
+  "not_started" | "in_progress" | "ready_to_review" | "ready_to_file" | "filed";
+
+export interface FirmWorklistCounts {
+  readonly auto_bookings: number;
+  readonly to_book: number;
+  readonly missing_receipts: number;
+  readonly bank_to_match: number;
+  readonly open_questions: number;
+}
+
+export interface FirmBrokenFeedView {
+  readonly bank_name: string;
+  readonly status: "expired" | "failed";
+}
+
+export interface FirmWorklistVatView {
+  readonly period_label: string;
+  readonly frequency: "monthly" | "quarterly" | "yearly";
+  readonly status: FirmVatStatus;
+  readonly due_date: string;
+  readonly days_to_due: number;
+}
+
+/** One client row of `GET /v1/firm/worklist`. */
+export interface FirmWorklistRowView {
+  readonly administration_id: string;
+  readonly display_name: string;
+  readonly legal_name: string;
+  readonly kvk_number: string | null;
+  readonly initials: string;
+  readonly colour: ClientColour;
+  readonly assigned_user_id: string | null;
+  readonly assigned_name: string | null;
+  /** `least(last fully-matched date, oldest feed sync)` - a broken feed never reads as complete. */
+  readonly booked_until: string | null;
+  readonly booked_until_capped_by_feed: boolean;
+  readonly months_behind: number;
+  readonly counts: FirmWorklistCounts;
+  readonly waiting_on_client_since: string | null;
+  readonly broken_feed: FirmBrokenFeedView | null;
+  readonly vat: FirmWorklistVatView | null;
+  readonly snoozed_until: string | null;
+  readonly snooze_reason: string | null;
+  /** Always null in this wave (chasing is wave 2). */
+  readonly last_chased_at: string | null;
+  readonly risk: number;
+}
+
+/** `GET /v1/firm/worklist`. */
+export interface FirmWorklistView {
+  readonly rows: readonly FirmWorklistRowView[];
+  readonly total: number;
+  readonly page: number;
+  readonly page_size: number;
+  readonly chip_counts: Readonly<Record<FirmWorklistChip, number>>;
+}
+
+/** `POST /v1/firm/clients/assign`. Partial failure is reported, never a 500. */
+export interface FirmAssignResultView {
+  readonly assigned: number;
+  readonly failed: readonly { readonly administration_id: string; readonly reason: string }[];
+}
+
+/** `GET /v1/firm/staff` - the users of the caller's organization. */
+export interface FirmStaffView {
+  readonly user_id: string;
+  readonly name: string;
+  readonly email: string;
+}
+
+export interface FirmDeadlineBuckets {
+  readonly filed: number;
+  readonly ready_to_file: number;
+  readonly ready_to_review: number;
+  readonly in_progress: number;
+  readonly not_started: number;
+}
+
+/** One row of `GET /v1/firm/deadlines`. Only obligations Boeklite tracks (VAT now). */
+export interface FirmDeadlineView {
+  readonly kind: "vat" | "icp";
+  readonly period_label: string;
+  readonly due_date: string;
+  readonly days_to_due: number;
+  readonly client_count: number;
+  readonly buckets: FirmDeadlineBuckets;
+}
+
+/** One pending booking proposal (ADR-110): outside the ledger until approved. */
+export interface FirmProposalView {
+  readonly id: string;
+  readonly administration_id: string;
+  readonly display_name: string;
+  readonly date: string;
+  readonly amount: string;
+  readonly description: string;
+}
+
+/** Proposals grouped by counterparty and target account, for review in bulk. */
+export interface FirmProposalGroupView {
+  readonly group_key: string;
+  readonly counterparty: string | null;
+  readonly account_code: string | null;
+  readonly account_name: string | null;
+  readonly count: number;
+  readonly client_count: number;
+  readonly total_amount: string;
+  readonly proposals: readonly FirmProposalView[];
+}
+
+/** `GET /v1/firm/proposals`. */
+export interface FirmProposalsView {
+  readonly total: number;
+  readonly groups: readonly FirmProposalGroupView[];
+}
+
+export type FirmProposalDecision = "approve" | "reject";
+
+/** `POST /v1/firm/proposals/decide`. Each decision stands alone; failures are listed. */
+export interface FirmDecideResultView {
+  readonly approved: number;
+  readonly rejected: number;
+  readonly failed: readonly { readonly proposal_id: string; readonly reason: string }[];
+}
+
+export interface FirmInboxItemView {
+  readonly thread_id: string;
+  readonly administration_id: string;
+  readonly display_name: string;
+  readonly subject: string;
+  readonly excerpt: string;
+  readonly last_message_at: string;
+  readonly unread: boolean;
+  /** Whose turn it is on the thread. */
+  readonly awaiting: "client" | "firm";
+}
+
+/** `GET /v1/firm/inbox`. */
+export interface FirmInboxView {
+  readonly unread_count: number;
+  readonly items: readonly FirmInboxItemView[];
+}

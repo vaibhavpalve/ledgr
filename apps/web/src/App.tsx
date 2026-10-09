@@ -18,6 +18,8 @@ import { ClientsScreen } from "./clients/ClientsScreen";
 import { CustomerDetailScreen } from "./customers/CustomerDetailScreen";
 import { CustomerFormScreen } from "./customers/CustomerFormScreen";
 import { CustomerListScreen } from "./customers/CustomerListScreen";
+import { FirmHomeRoute } from "./firm/FirmHomeScreen";
+import { FirmInboxRoute } from "./firm/FirmInboxScreen";
 import { DashboardRoute } from "./home/DashboardRoute";
 import { applyAccountLanguage, initialLanguage, persistLanguage } from "./i18n";
 import { InvoiceDetailScreen } from "./invoicing/InvoiceDetailScreen";
@@ -164,6 +166,9 @@ function Routed({ services }: { services?: Partial<Services> }) {
 
           <Route element={<AppShell />}>
             <Route path="/clients" element={<ClientsScreen />} />
+            {/* The firm home: where a firm user lands with no client open (docs/firm-home). */}
+            <Route path="/todo" element={<FirmHomeRoute />} />
+            <Route path="/inbox" element={<FirmInboxRoute />} />
             <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<ProfileSettings />} />
               <Route path="profile" element={<ProfileSettings />} />

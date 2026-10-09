@@ -261,6 +261,16 @@
     "common.nav.group.sales": {
       "nl": "Verkoop",
       "en": "Sales"
+    },
+    "common.nav.todo": {
+      "note": "The firm home (FR-FRM-001/002): everything across all clients that is waiting on the accountant. A firm user lands here when no client is open.",
+      "nl": "Te doen",
+      "en": "To do"
+    },
+    "common.nav.inbox": {
+      "note": "Firm rail item: replies from clients to the firm's questions (FR-FRM-005). Carries an unread count.",
+      "nl": "Klantberichten",
+      "en": "Client inbox"
     }
   }
 }

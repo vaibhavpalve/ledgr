@@ -1,0 +1,707 @@
+/*
+ * The firm home ("To do") and the client inbox. Tokens only (ADR-106 via bk-tokens.css, and the
+ * ADR-080 names it bridges); the few literal sizes are component measurements.
+ */
+
+.firm-home {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.firm-muted {
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.firm-negative {
+  color: var(--negative);
+}
+
+/* ---- Count strip -------------------------------------------------------- */
+
+.firm-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 40rem) {
+  .firm-counts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (min-width: 56rem) {
+  .firm-counts {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.firm-count-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.firm-count-tile:hover {
+  background: var(--sunken);
+}
+.firm-count-tile__value {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 600;
+  text-align: left;
+}
+.firm-count-tile__label {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-muted);
+}
+.firm-count-tile--negative {
+  border-color: var(--negative);
+}
+.firm-count-tile--negative .firm-count-tile__value,
+.firm-count-tile__flag {
+  color: var(--negative);
+}
+.firm-count-tile__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- Layout: worklist + right column ------------------------------------ */
+
+.firm-home__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+/* The right column sits beside the table only when there is room for both (~1100px of
+   content); below that it drops under the table. */
+@container (min-width: 68.75rem) {
+  .firm-home__layout {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+  .firm-home__layout--wide {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.firm-home__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.firm-home__side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.firm-side-toggle {
+  align-self: flex-end;
+}
+.firm-home__panels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---- Bulk bar ------------------------------------------------------------ */
+
+.firm-bulk {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--leaf-tint);
+  color: var(--ink);
+}
+.firm-bulk__count {
+  font-weight: 600;
+  margin-right: var(--space-2);
+}
+
+/* ---- Worklist controls --------------------------------------------------- */
+
+.firm-worklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.firm-worklist__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.firm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.firm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+.firm-chip[aria-pressed="true"] {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--on-action);
+}
+.firm-chip__count {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.firm-worklist__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.firm-filter {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+}
+
+/* ---- Table --------------------------------------------------------------- */
+
+.firm-tablewrap {
+  /* The containing block for the cells' visually-hidden (position: absolute) words: without it
+     they escape this scroll box's clip and widen the whole page once the table scrolls. */
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.bk .firm-table th,
+.bk .firm-table td {
+  padding: var(--space-2) 10px;
+  height: auto;
+}
+.firm-table td {
+  vertical-align: top;
+}
+.firm-table__select {
+  width: 2.5rem;
+}
+.firm-row--active td {
+  box-shadow:
+    inset 0 1px 0 var(--focus),
+    inset 0 -1px 0 var(--focus);
+}
+.firm-row--active td:first-child {
+  box-shadow:
+    inset 3px 0 0 var(--focus),
+    inset 0 1px 0 var(--focus),
+    inset 0 -1px 0 var(--focus);
+}
+.firm-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.firm-client {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 12rem;
+}
+.firm-client__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.firm-client__name {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 600 14px/20px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.firm-client__name:hover {
+  text-decoration: underline;
+}
+.firm-cell-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 12px;
+  line-height: 16px;
+}
+.firm-cell-line.firm-negative {
+  font-weight: 600;
+}
+.firm-cell-note {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.firm-zero {
+  color: var(--ink-muted);
+}
+.firm-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.firm-booked {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+.firm-booked .ui-num {
+  text-align: left;
+}
+.firm-behind {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lemon-ink);
+}
+
+.firm-vat {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+.firm-vat__period {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.firm-due {
+  white-space: nowrap;
+}
+.firm-due--soon {
+  font-weight: 700;
+}
+
+/* ---- Row menu ------------------------------------------------------------ */
+
+.firm-menu {
+  position: relative;
+}
+.firm-menu__list {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 3;
+  min-width: 10rem;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.firm-menu__list button {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink);
+  font: 500 14px/1 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.firm-menu__list button:hover {
+  background: var(--sunken);
+}
+
+/* ---- Cards (phone) ------------------------------------------------------- */
+
+.firm-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-card {
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.firm-card--active {
+  border-color: var(--focus);
+}
+.firm-card__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
+}
+.firm-card__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+.firm-card__facts dt {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.firm-card__facts dd {
+  margin: 0;
+  text-align: left;
+}
+.firm-card .firm-client {
+  min-width: 0;
+}
+
+/* ---- Pager --------------------------------------------------------------- */
+
+.firm-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.firm-pager__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.firm-worklist__hint {
+  margin: 0;
+}
+
+/* ---- Right-column panels ------------------------------------------------- */
+
+.firm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.firm-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.firm-panel__title {
+  margin: 0;
+  font: 600 15px/22px var(--font-sans);
+}
+.firm-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-panel__error {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.firm-activity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-1) 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.firm-activity__what {
+  font-weight: 600;
+  font-size: 14px;
+}
+.firm-activity:hover .firm-activity__what {
+  text-decoration: underline;
+}
+
+.firm-deadline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.firm-deadline__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.firm-deadline__name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.firm-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--sunken);
+}
+.firm-bar__part {
+  display: block;
+  flex-basis: 0;
+}
+.firm-bar__part--filed {
+  background: var(--leaf-ink);
+}
+.firm-bar__part--ready_to_file {
+  background: var(--action);
+}
+.firm-bar__part--ready_to_review {
+  background: var(--lemon);
+}
+.firm-bar__part--in_progress {
+  background: var(--line-strong);
+}
+.firm-bar__part--not_started {
+  background: var(--line);
+}
+.firm-deadline__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.firm-deadline__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.firm-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.firm-reply {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.firm-reply__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.firm-reply__client {
+  font-weight: 600;
+  font-size: 14px;
+}
+.firm-reply__subject {
+  font-size: 14px;
+}
+.firm-reply__excerpt {
+  overflow-wrap: anywhere;
+}
+.firm-inbox__list {
+  margin: 0;
+  list-style: none;
+  gap: var(--space-4);
+}
+
+/* ---- Dialogs and the review sheet ---------------------------------------- */
+
+.firm-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.firm-dialog__title {
+  margin: 0;
+  font: 600 18px/26px var(--font-sans);
+}
+.firm-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.firm-textarea {
+  height: auto;
+  min-height: 5rem;
+  padding: var(--space-2) 14px;
+  resize: vertical;
+}
+.firm-failures__heading {
+  margin: 0;
+  font-weight: 600;
+}
+.firm-failures__list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}
+
+/* The review sheet docks to the right on a wide screen; on a phone it is the bottom sheet
+   every dialog already is. */
+.firm-dialog--drawer {
+  max-width: 44rem;
+  max-height: 100%;
+  overflow-y: auto;
+}
+@media (min-width: 64rem) {
+  .firm-drawer-backdrop {
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0;
+  }
+  .firm-dialog--drawer {
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+.firm-review__groups,
+.firm-review__items {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-review__group {
+  border-top: 1px solid var(--line);
+  padding: var(--space-3) 0;
+}
+.firm-review__group-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+}
+.firm-review__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.firm-review__who {
+  display: flex;
+  flex-direction: column;
+}
+.firm-review__counterparty {
+  font-weight: 600;
+}
+.firm-review__account {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.firm-review__total {
+  font-weight: 600;
+}
+.firm-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+.firm-review__group-head .firm-review__actions {
+  grid-column: 1 / -1;
+}
+.firm-review__items {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+}
+.firm-review__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+.firm-review__item .firm-review__actions {
+  grid-column: 1 / -1;
+}
+.firm-review__item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+@media (min-width: 40rem) {
+  .firm-review__group-head,
+  .firm-review__item {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .firm-review__group-head .firm-review__meta {
+    grid-column: 1;
+  }
+  .firm-review__group-head .firm-review__actions,
+  .firm-review__item .firm-review__actions {
+    grid-column: auto;
+  }
+}

@@ -8,7 +8,9 @@ import {
   ChevronDown,
   FileText,
   House,
+  Inbox,
   Landmark,
+  ListTodo,
   LayoutGrid,
   LogOut,
   Percent,
@@ -84,6 +86,9 @@ const CLIENTS: NavDef = {
   labelKey: "common.nav.clients",
   icon: Users,
 };
+/** The firm home (docs/firm-home): everything waiting on the accountant, across clients. */
+const TODO: NavDef = { id: "todo", to: "/todo", labelKey: "common.nav.todo", icon: ListTodo };
+const INBOX: NavDef = { id: "inbox", to: "/inbox", labelKey: "common.nav.inbox", icon: Inbox };
 
 /**
  * The rail's nine sections, in the order of the Boekje design. Their ids are the
@@ -199,6 +204,27 @@ export function AppShell() {
     };
   }, [dashboard, administrationId, fiscalYearId]);
 
+  // A firm's unread client replies, beside "Client inbox" (FR-FRM-005). Secondary chrome as
+  // above: an inbox endpoint that fails or is not deployed yet just shows no badge.
+  const { firm } = useServices();
+  const isFirmOrg = me.organization.kind === "firm";
+  const [unreadReplies, setUnreadReplies] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isFirmOrg) return;
+    let cancelled = false;
+    void Promise.resolve()
+      .then(() => firm.getInbox({ unread: true, limit: 1 }))
+      .then((inbox) => {
+        if (!cancelled) setUnreadReplies(inbox.unread_count);
+      })
+      .catch(() => {
+        if (!cancelled) setUnreadReplies(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [firm, isFirmOrg, location.pathname]);
+
   const mainRef = useRef<HTMLElement>(null);
   const mounted = useRef(false);
   useEffect(() => {
@@ -215,6 +241,12 @@ export function AppShell() {
     reviewCount !== null && reviewCount > 0 ? (
       <Badge variant="review" data-testid="nav-review-count">
         {reviewCount}
+      </Badge>
+    ) : undefined;
+  const inboxBadge =
+    unreadReplies !== null && unreadReplies > 0 ? (
+      <Badge variant="review" data-testid="nav-inbox-count">
+        {unreadReplies}
       </Badge>
     ) : undefined;
   const navItem = (item: NavDef, badge?: ReactNode) => (
@@ -245,7 +277,13 @@ export function AppShell() {
           { to: "/reports", label: t("common.nav.reports") },
         ]
       : []),
-    ...(isFirm ? [{ to: "/clients", label: t("common.nav.clients") }] : []),
+    ...(isFirm
+      ? [
+          { to: "/todo", label: t("common.nav.todo") },
+          { to: "/inbox", label: t("common.nav.inbox") },
+          { to: "/clients", label: t("common.nav.clients") },
+        ]
+      : []),
   ];
 
   return (
@@ -289,6 +327,8 @@ export function AppShell() {
           {isFirm ? (
             <div className="shell__nav-group">
               <NavGroup>{t("common.nav.group.firm")}</NavGroup>
+              {navItem(TODO)}
+              {navItem(INBOX, inboxBadge)}
               {navItem(CLIENTS)}
             </div>
           ) : null}

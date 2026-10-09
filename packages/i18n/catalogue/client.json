@@ -122,6 +122,609 @@
       "note": "FR-FRM-000a. Another client in this user's switcher carries the same colour marker, so the colour is not distinguishing and the name is what to read.",
       "nl": "Een andere klant heeft dezelfde kleur — controleer de naam",
       "en": "Another client shares this colour — check the name"
+    },
+    "client.todo.title": {
+      "note": "The firm home's heading (docs/firm-home/contract.md). Same words as the rail item.",
+      "nl": "Te doen",
+      "en": "To do"
+    },
+    "client.todo.welcome": {
+      "note": "{date} is the previous sign-in date; {ago} is client.todo.days_ago or client.todo.today.",
+      "nl": "Welkom terug. U was voor het laatst ingelogd op {date}, {ago}.",
+      "en": "Welcome back. Your last sign-in was {date}, {ago}."
+    },
+    "client.todo.days_ago": {
+      "nl": { "one": "{count} dag geleden", "other": "{count} dagen geleden" },
+      "en": { "one": "{count} day ago", "other": "{count} days ago" }
+    },
+    "client.todo.today": {
+      "nl": "vandaag",
+      "en": "today"
+    },
+    "client.todo.review_button": {
+      "note": "The page's one primary action. Opens the review sheet; it never approves in one click (ADR-110).",
+      "nl": {
+        "one": "{count} boekingsvoorstel beoordelen",
+        "other": "{count} boekingsvoorstellen beoordelen"
+      },
+      "en": { "one": "Review {count} auto-booking", "other": "Review {count} auto-bookings" }
+    },
+    "client.todo.counts_label": {
+      "nl": "Uw klanten in één oogopslag",
+      "en": "All your clients at a glance"
+    },
+    "client.todo.count.auto_bookings": {
+      "nl": "Boekingsvoorstellen",
+      "en": "Auto-bookings to review"
+    },
+    "client.todo.count.receipts_to_book": {
+      "nl": "Bonnen te boeken",
+      "en": "Receipts to book"
+    },
+    "client.todo.count.missing_receipts": {
+      "nl": "Ontbrekende bonnen",
+      "en": "Missing receipts"
+    },
+    "client.todo.count.bank_to_match": {
+      "nl": "Banktransacties te koppelen",
+      "en": "Bank lines to match"
+    },
+    "client.todo.count.open_questions": {
+      "nl": "Openstaande vragen",
+      "en": "Open questions"
+    },
+    "client.todo.count.broken_feeds": {
+      "nl": "Bankkoppelingen verbroken",
+      "en": "Bank feeds broken"
+    },
+    "client.todo.count.needs_attention": {
+      "note": "The word beside the warning icon on the broken-feeds count, so the state is never carried by colour alone.",
+      "nl": "Actie nodig",
+      "en": "Needs attention"
+    },
+    "client.todo.chips_label": {
+      "nl": "Lijst filteren",
+      "en": "Filter the list"
+    },
+    "client.todo.chip.my_move": {
+      "note": "Clients where the next step is the accountant's: proposals, receipts to book, bank lines, BTW ready to review.",
+      "nl": "Aan mij",
+      "en": "My move"
+    },
+    "client.todo.chip.waiting_on_client": {
+      "nl": "Wacht op klant",
+      "en": "Waiting on client"
+    },
+    "client.todo.chip.vat_not_filed": {
+      "note": "BTW stays BTW in English (glossary: keepDutch).",
+      "nl": "Btw niet ingediend",
+      "en": "BTW not filed"
+    },
+    "client.todo.chip.books_behind": {
+      "nl": "Achterstand",
+      "en": "Books behind"
+    },
+    "client.todo.chip.up_to_date": {
+      "nl": "Bijgewerkt",
+      "en": "Up to date"
+    },
+    "client.todo.chip.snoozed": {
+      "nl": "Uitgesteld",
+      "en": "Snoozed"
+    },
+    "client.todo.assigned.label": {
+      "nl": "Welke klanten",
+      "en": "Whose clients"
+    },
+    "client.todo.assigned.me": {
+      "nl": "Mijn klanten",
+      "en": "My clients"
+    },
+    "client.todo.assigned.any": {
+      "nl": "Iedereen",
+      "en": "Everyone"
+    },
+    "client.todo.filter.label": {
+      "nl": "Klanten filteren",
+      "en": "Filter clients"
+    },
+    "client.todo.filter.placeholder": {
+      "nl": "Naam of KvK-nummer",
+      "en": "Name or KvK number"
+    },
+    "client.todo.table_caption": {
+      "nl": "Klanten, meest urgente eerst",
+      "en": "Clients, most urgent first"
+    },
+    "client.todo.sort_by": {
+      "nl": "Sorteren op {column}",
+      "en": "Sort by {column}"
+    },
+    "client.todo.col.select": {
+      "nl": "Selecteren",
+      "en": "Select"
+    },
+    "client.todo.col.client": {
+      "nl": "Klant",
+      "en": "Client"
+    },
+    "client.todo.col.booked_until": {
+      "nl": "Geboekt t/m",
+      "en": "Booked until"
+    },
+    "client.todo.col.to_book": {
+      "nl": "Te boeken",
+      "en": "To book"
+    },
+    "client.todo.col.missing_receipts": {
+      "nl": "Geen bon",
+      "en": "No receipt"
+    },
+    "client.todo.col.bank": {
+      "note": "Column of unmatched bank lines. The same word in both languages.",
+      "identical": true,
+      "nl": "Bank",
+      "en": "Bank"
+    },
+    "client.todo.col.questions": {
+      "nl": "Vragen",
+      "en": "Questions"
+    },
+    "client.todo.col.vat": {
+      "nl": "Btw",
+      "en": "BTW"
+    },
+    "client.todo.col.due": {
+      "nl": "Termijn",
+      "en": "Due"
+    },
+    "client.todo.col.actions": {
+      "nl": "Acties",
+      "en": "Actions"
+    },
+    "client.todo.row.select": {
+      "nl": "{name} selecteren",
+      "en": "Select {name}"
+    },
+    "client.todo.row.actions": {
+      "nl": "Acties voor {name}",
+      "en": "Actions for {name}"
+    },
+    "client.todo.row.feed_expired": {
+      "nl": "Bankkoppeling {bank} verlopen",
+      "en": "{bank} bank feed expired"
+    },
+    "client.todo.row.feed_failed": {
+      "nl": "Bankkoppeling {bank} mislukt",
+      "en": "{bank} bank feed failing"
+    },
+    "client.todo.row.months_behind": {
+      "note": "Shown only when the books are more than one month behind; words, never colour alone.",
+      "nl": { "one": "{count} mnd achter", "other": "{count} mnd achter" },
+      "en": { "one": "{count} mo behind", "other": "{count} mo behind" }
+    },
+    "client.todo.row.capped_by_feed": {
+      "note": "booked_until was capped by the oldest bank-feed sync: the books cannot be called complete past the last day the bank told us about.",
+      "nl": "begrensd door bankkoppeling",
+      "en": "limited by bank feed"
+    },
+    "client.todo.row.nothing_booked": {
+      "nl": "Nog niets geboekt",
+      "en": "Nothing booked yet"
+    },
+    "client.todo.row.none": {
+      "note": "Screen-reader text behind the dash shown for a zero count.",
+      "nl": "geen",
+      "en": "none"
+    },
+    "client.todo.row.proposed": {
+      "nl": { "one": "{count} voorgesteld", "other": "{count} voorgesteld" },
+      "en": { "one": "{count} proposed", "other": "{count} proposed" }
+    },
+    "client.todo.row.snoozed_until": {
+      "nl": "Uitgesteld tot {date}",
+      "en": "Snoozed until {date}"
+    },
+    "client.todo.row.waiting_since": {
+      "nl": "Wacht sinds {date}",
+      "en": "Waiting since {date}"
+    },
+    "client.todo.row.assigned_to": {
+      "nl": "Toegewezen aan {name}",
+      "en": "Assigned to {name}"
+    },
+    "client.todo.row.unassigned": {
+      "nl": "Niet toegewezen",
+      "en": "Unassigned"
+    },
+    "client.todo.vat.not_started": {
+      "nl": "Niet begonnen",
+      "en": "Not started"
+    },
+    "client.todo.vat.in_progress": {
+      "nl": "Bezig",
+      "en": "In progress"
+    },
+    "client.todo.vat.ready_to_review": {
+      "nl": "Te controleren",
+      "en": "To review"
+    },
+    "client.todo.vat.ready_to_file": {
+      "nl": "Klaar om in te dienen",
+      "en": "Ready to file"
+    },
+    "client.todo.vat.filed": {
+      "nl": "Ingediend",
+      "en": "Filed"
+    },
+    "client.todo.due.days": {
+      "note": "Days until the BTW deadline, in a narrow table column. 'd' is the abbreviation in both languages.",
+      "identical": true,
+      "nl": "{days} d",
+      "en": "{days} d"
+    },
+    "client.todo.due.overdue": {
+      "nl": "{days} d te laat",
+      "en": "{days} d late"
+    },
+    "client.todo.due.today": {
+      "nl": "Vandaag",
+      "en": "Today"
+    },
+    "client.todo.due.soon": {
+      "note": "Screen-reader text beside a deadline less than a week away; the visual cue is weight, not colour alone.",
+      "nl": "binnen een week",
+      "en": "within a week"
+    },
+    "client.todo.page.showing": {
+      "nl": "{from}–{to} van {total}",
+      "en": "{from}–{to} of {total}"
+    },
+    "client.todo.page.previous": {
+      "nl": "Vorige",
+      "en": "Previous"
+    },
+    "client.todo.page.next": {
+      "nl": "Volgende",
+      "en": "Next"
+    },
+    "client.todo.page.show_all": {
+      "nl": "Alle {total} tonen",
+      "en": "Show all {total}"
+    },
+    "client.todo.keyboard_hint": {
+      "nl": "J / K om te bewegen · Enter om te openen · X om te selecteren",
+      "en": "J / K to move · Enter to open · X to select"
+    },
+    "client.todo.empty_title": {
+      "note": "FR-UX-004: the teaching empty state for a firm with no clients yet.",
+      "nl": "Uw takenlijst begint bij een klant",
+      "en": "Your to-do list starts with a client"
+    },
+    "client.todo.empty_body": {
+      "nl": "Zodra u een klant toevoegt, komt hier alles samen wat op u wacht: bonnen om te boeken, banktransacties om te koppelen en btw-aangiftes die eraan komen, voor al uw klanten tegelijk.",
+      "en": "Once you add a client, everything waiting on you gathers here: receipts to book, bank lines to match and BTW returns coming up, across all your clients at once."
+    },
+    "client.todo.list_empty": {
+      "nl": "Geen klanten in deze lijst.",
+      "en": "No clients in this list."
+    },
+    "client.todo.list_empty_my_move": {
+      "nl": "Er wacht nu niets op u. Kijk bij ‘Wacht op klant’ wat nog openstaat.",
+      "en": "Nothing is waiting on you right now. See ‘Waiting on client’ for what is still open."
+    },
+    "client.todo.list_no_matches": {
+      "nl": "Geen klanten gevonden voor ‘{query}’.",
+      "en": "No clients match ‘{query}’."
+    },
+    "client.todo.clear_filter": {
+      "nl": "Filter wissen",
+      "en": "Clear filter"
+    },
+    "client.todo.bulk.label": {
+      "nl": "Geselecteerde klanten",
+      "en": "Selected clients"
+    },
+    "client.todo.bulk.selected": {
+      "nl": { "one": "{count} geselecteerd", "other": "{count} geselecteerd" },
+      "en": { "one": "{count} selected", "other": "{count} selected" }
+    },
+    "client.todo.bulk.review": {
+      "nl": "Boekingsvoorstellen beoordelen",
+      "en": "Review auto-bookings"
+    },
+    "client.todo.bulk.assign": {
+      "nl": "Toewijzen",
+      "en": "Assign"
+    },
+    "client.todo.bulk.clear": {
+      "nl": "Selectie wissen",
+      "en": "Clear selection"
+    },
+    "client.todo.assign.action": {
+      "nl": "Toewijzen…",
+      "en": "Assign…"
+    },
+    "client.todo.assign.title": {
+      "nl": { "one": "{count} klant toewijzen", "other": "{count} klanten toewijzen" },
+      "en": { "one": "Assign {count} client", "other": "Assign {count} clients" }
+    },
+    "client.todo.assign.to": {
+      "nl": "Toewijzen aan",
+      "en": "Assign to"
+    },
+    "client.todo.assign.nobody": {
+      "nl": "Niemand (toewijzing opheffen)",
+      "en": "Nobody (unassign)"
+    },
+    "client.todo.assign.done": {
+      "nl": { "one": "{count} klant toegewezen.", "other": "{count} klanten toegewezen." },
+      "en": { "one": "{count} client assigned.", "other": "{count} clients assigned." }
+    },
+    "client.todo.assign.failed": {
+      "note": "Followed by one line per client that could not be assigned, with the server's reason.",
+      "nl": {
+        "one": "{count} kon niet worden toegewezen:",
+        "other": "{count} konden niet worden toegewezen:"
+      },
+      "en": { "one": "{count} could not be assigned:", "other": "{count} could not be assigned:" }
+    },
+    "client.todo.working": {
+      "nl": "Bezig…",
+      "en": "Working…"
+    },
+    "client.todo.snooze.action": {
+      "nl": "Uitstellen…",
+      "en": "Snooze…"
+    },
+    "client.todo.snooze.title": {
+      "nl": "{name} uitstellen",
+      "en": "Snooze {name}"
+    },
+    "client.todo.snooze.until": {
+      "nl": "Tot en met",
+      "en": "Until"
+    },
+    "client.todo.snooze.reason": {
+      "nl": "Reden",
+      "en": "Reason"
+    },
+    "client.todo.snooze.reason_hint": {
+      "nl": "Uw collega's zien dit, bijvoorbeeld ‘Wacht op jaarcijfers’.",
+      "en": "Your colleagues see this, for example ‘Waiting for annual figures’."
+    },
+    "client.todo.snooze.submit": {
+      "nl": "Uitstellen",
+      "en": "Snooze"
+    },
+    "client.todo.snooze.clear": {
+      "nl": "Uitstel beëindigen",
+      "en": "End snooze"
+    },
+    "client.todo.review.title": {
+      "nl": "Boekingsvoorstellen beoordelen",
+      "en": "Review auto-bookings"
+    },
+    "client.todo.review.scope_selection": {
+      "nl": {
+        "one": "Voor {count} geselecteerde klant",
+        "other": "Voor {count} geselecteerde klanten"
+      },
+      "en": { "one": "For {count} selected client", "other": "For {count} selected clients" }
+    },
+    "client.todo.review.intro": {
+      "note": "ADR-110: a proposal is not a posting. Approving posts it through the ledger service; rejecting changes nothing in the books.",
+      "nl": "Er wordt niets geboekt tot u het goedkeurt. Afwijzen laat de boekhouding ongemoeid.",
+      "en": "Nothing is posted until you approve it. Rejecting leaves the books untouched."
+    },
+    "client.todo.review.items": {
+      "nl": { "one": "{count} voorstel", "other": "{count} voorstellen" },
+      "en": { "one": "{count} item", "other": "{count} items" }
+    },
+    "client.todo.review.clients": {
+      "nl": { "one": "{count} klant", "other": "{count} klanten" },
+      "en": { "one": "{count} client", "other": "{count} clients" }
+    },
+    "client.todo.review.no_counterparty": {
+      "nl": "Onbekende tegenpartij",
+      "en": "Unknown counterparty"
+    },
+    "client.todo.review.no_account": {
+      "nl": "Geen grootboekrekening",
+      "en": "No grootboek account"
+    },
+    "client.todo.review.approve_all": {
+      "nl": "Alles goedkeuren",
+      "en": "Approve all"
+    },
+    "client.todo.review.reject_all": {
+      "nl": "Alles afwijzen",
+      "en": "Reject all"
+    },
+    "client.todo.review.approve_all_label": {
+      "nl": "Alle voorstellen voor {counterparty} goedkeuren",
+      "en": "Approve all for {counterparty}"
+    },
+    "client.todo.review.reject_all_label": {
+      "nl": "Alle voorstellen voor {counterparty} afwijzen",
+      "en": "Reject all for {counterparty}"
+    },
+    "client.todo.review.approve": {
+      "nl": "Goedkeuren",
+      "en": "Approve"
+    },
+    "client.todo.review.reject": {
+      "nl": "Afwijzen",
+      "en": "Reject"
+    },
+    "client.todo.review.approve_one_label": {
+      "nl": "Goedkeuren: {client}, {amount}",
+      "en": "Approve: {client}, {amount}"
+    },
+    "client.todo.review.reject_one_label": {
+      "nl": "Afwijzen: {client}, {amount}",
+      "en": "Reject: {client}, {amount}"
+    },
+    "client.todo.review.show_items": {
+      "nl": "Voorstellen tonen",
+      "en": "Show items"
+    },
+    "client.todo.review.hide_items": {
+      "nl": "Voorstellen verbergen",
+      "en": "Hide items"
+    },
+    "client.todo.review.empty_title": {
+      "nl": "Niets te beoordelen",
+      "en": "Nothing to review"
+    },
+    "client.todo.review.empty_body": {
+      "nl": "Er staan nu geen boekingsvoorstellen open.",
+      "en": "There are no pending auto-bookings right now."
+    },
+    "client.todo.review.result": {
+      "nl": "{approved} goedgekeurd, {rejected} afgewezen.",
+      "en": "{approved} approved, {rejected} rejected."
+    },
+    "client.todo.review.failed": {
+      "nl": {
+        "one": "{count} kon niet worden verwerkt:",
+        "other": "{count} konden niet worden verwerkt:"
+      },
+      "en": { "one": "{count} could not be processed:", "other": "{count} could not be processed:" }
+    },
+    "client.todo.side.hide": {
+      "nl": "Zijpaneel verbergen",
+      "en": "Hide side panel"
+    },
+    "client.todo.side.show": {
+      "nl": "Zijpaneel tonen",
+      "en": "Show side panel"
+    },
+    "client.todo.panel_error": {
+      "note": "One panel failed; the rest of the page still works.",
+      "nl": "Dit onderdeel kon niet worden geladen.",
+      "en": "This panel could not be loaded."
+    },
+    "client.todo.away.title": {
+      "nl": "Sinds uw laatste bezoek",
+      "en": "Since you were away"
+    },
+    "client.todo.away.range": {
+      "nl": "Sinds {date}",
+      "en": "Since {date}"
+    },
+    "client.todo.away.mark_seen": {
+      "nl": "Markeren als gezien",
+      "en": "Mark as seen"
+    },
+    "client.todo.away.nothing": {
+      "nl": "Sindsdien niets nieuws.",
+      "en": "Nothing new since then."
+    },
+    "client.todo.activity.receipts_uploaded": {
+      "nl": { "one": "{count} bon geüpload", "other": "{count} bonnen geüpload" },
+      "en": { "one": "{count} receipt uploaded", "other": "{count} receipts uploaded" }
+    },
+    "client.todo.activity.auto_bookings_ready": {
+      "nl": {
+        "one": "{count} boekingsvoorstel klaar",
+        "other": "{count} boekingsvoorstellen klaar"
+      },
+      "en": { "one": "{count} auto-booking ready", "other": "{count} auto-bookings ready" }
+    },
+    "client.todo.activity.client_replies": {
+      "nl": { "one": "{count} antwoord van een klant", "other": "{count} antwoorden van klanten" },
+      "en": { "one": "{count} client reply", "other": "{count} client replies" }
+    },
+    "client.todo.activity.bank_feeds_broken": {
+      "nl": {
+        "one": "{count} bankkoppeling verbroken",
+        "other": "{count} bankkoppelingen verbroken"
+      },
+      "en": { "one": "{count} bank feed broke", "other": "{count} bank feeds broke" }
+    },
+    "client.todo.activity.possible_duplicates": {
+      "nl": {
+        "one": "{count} mogelijk dubbele boeking",
+        "other": "{count} mogelijk dubbele boekingen"
+      },
+      "en": { "one": "{count} possible duplicate", "other": "{count} possible duplicates" }
+    },
+    "client.todo.activity.more": {
+      "nl": { "one": "en nog {count}", "other": "en nog {count}" },
+      "en": { "one": "and {count} more", "other": "and {count} more" }
+    },
+    "client.todo.deadlines.title": {
+      "nl": "Termijnen",
+      "en": "Deadlines"
+    },
+    "client.todo.deadlines.vat": {
+      "nl": "Btw {period}",
+      "en": "BTW {period}"
+    },
+    "client.todo.deadlines.due": {
+      "nl": "Uiterlijk {date}",
+      "en": "Due {date}"
+    },
+    "client.todo.deadlines.bar_label": {
+      "nl": "{filed} van {total} ingediend, {ready} klaar om in te dienen, {review} te controleren, {progress} bezig, {open} niet begonnen",
+      "en": "{filed} of {total} filed, {ready} ready to file, {review} in review, {progress} in progress, {open} not started"
+    },
+    "client.todo.deadlines.bucket.filed": {
+      "nl": "{count} ingediend",
+      "en": "{count} filed"
+    },
+    "client.todo.deadlines.bucket.ready_to_file": {
+      "nl": "{count} klaar om in te dienen",
+      "en": "{count} ready to file"
+    },
+    "client.todo.deadlines.bucket.ready_to_review": {
+      "nl": "{count} te controleren",
+      "en": "{count} in review"
+    },
+    "client.todo.deadlines.bucket.in_progress": {
+      "nl": "{count} bezig",
+      "en": "{count} in progress"
+    },
+    "client.todo.deadlines.bucket.not_started": {
+      "nl": "{count} niet begonnen",
+      "en": "{count} not started"
+    },
+    "client.todo.deadlines.none": {
+      "nl": "Geen termijnen in de komende weken.",
+      "en": "No deadlines in the coming weeks."
+    },
+    "client.todo.replies.title": {
+      "nl": "Antwoorden van klanten",
+      "en": "Client replies"
+    },
+    "client.todo.replies.open_inbox": {
+      "nl": "Alle klantberichten",
+      "en": "Open the client inbox"
+    },
+    "client.todo.replies.none": {
+      "nl": "Geen nieuwe antwoorden.",
+      "en": "No new replies."
+    },
+    "client.todo.replies.unread": {
+      "nl": "Nieuw",
+      "en": "New"
+    },
+    "client.todo.inbox.context": {
+      "nl": { "one": "{count} ongelezen", "other": "{count} ongelezen" },
+      "en": { "one": "{count} unread", "other": "{count} unread" }
+    },
+    "client.todo.inbox.empty_title": {
+      "nl": "Nog geen antwoorden",
+      "en": "No replies yet"
+    },
+    "client.todo.inbox.empty_body": {
+      "nl": "Als een klant op een van uw vragen antwoordt, verschijnt dat hier.",
+      "en": "When a client answers one of your questions, it appears here."
+    },
+    "client.todo.inbox.open_client": {
+      "nl": "{name} openen",
+      "en": "Open {name}"
     }
   }
 }

@@ -12,7 +12,7 @@ import { useSession } from "../session/SessionProvider";
  *   RequireAuth               unauthenticated → /login, remembering the URL
  *                             (`state.from`), and MFA pending → /mfa.
  *   RequireAdministration     no administration → /onboarding for a business,
- *                             /clients (the empty portfolio) for a firm.
+ *                             /todo (the firm home, docs/firm-home) for a firm.
  *   RedirectIfAuthenticated   /login and /signup while signed in → where
  *                             the person was going, or the dashboard.
  *
@@ -62,7 +62,7 @@ export function RequireAuth({ publicHome }: { publicHome?: ReactNode } = {}) {
 export function RequireAdministration() {
   const { administration, me } = useSession();
   if (administration === null) {
-    return <Navigate to={me.organization.kind === "firm" ? "/clients" : "/onboarding"} replace />;
+    return <Navigate to={me.organization.kind === "firm" ? "/todo" : "/onboarding"} replace />;
   }
   return <Outlet />;
 }
