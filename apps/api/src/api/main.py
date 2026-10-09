@@ -33,6 +33,10 @@ from api.db import get_db_session
 from api.documents import routes as document_routes
 from api.expenses import routes as expense_routes
 from api.exports import routes as export_routes
+from api.firm import assignment_routes as firm_assignment_routes
+from api.firm import proposals_routes as firm_proposal_routes
+from api.firm import summary_routes as firm_summary_routes
+from api.firm import worklist_routes as firm_worklist_routes
 from api.firm.switcher import ClientSwitcher, SwitcherEntry
 from api.firm.switcher_repository import SqlSwitcherRepository
 from api.i18n.http import problem
@@ -45,6 +49,7 @@ from api.mail import dev_outbox
 from api.mfa_middleware import MfaEnforcementMiddleware
 from api.onboarding import routes as onboarding_routes
 from api.opening import routes as opening_routes
+from api.questions import routes as question_routes
 from api.reminders import routes as reminder_routes
 from api.reports import routes as report_routes
 from api.security.csrf import CsrfProtectionMiddleware
@@ -150,6 +155,9 @@ asset_routes.register(app)
 bank_routes.register(app)
 # The live bank feed (migration 0077, ADR-108): PSD2 consent and sync, behind api.bank.adapters.
 bank_feed_routes.register(app)
+# The firm home's auto-bookings review (migration 0079, ADR-110): booking proposals outside the
+# ledger, approved through the bank's own reconciliation path.
+firm_proposal_routes.register(app)
 # The Reports screen: balance sheet and income statement, built entirely on
 # LedgerService.balances_as_of - no new table, no new permission. Same
 # registration reason; see api.reports.routes' module docstring.
@@ -165,6 +173,14 @@ export_routes.register(app)
 # The caller's own reminder-e-mail preference (ADR-090); the reminders themselves are sent by
 # scripts/send_reminders.py.
 reminder_routes.register(app)
+# The accountant's firm home (migration 0078, ADR-109): the cross-client work queue, summary,
+# deadlines, assignment and snooze - portfolio reads authorized per administration.
+firm_worklist_routes.register(app)
+firm_summary_routes.register(app)
+firm_assignment_routes.register(app)
+# FR-FRM-005's question threads and the firm inbox (migration 0080, ADR-111); client e-mails are
+# sent by the api.questions.notifications sweep.
+question_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

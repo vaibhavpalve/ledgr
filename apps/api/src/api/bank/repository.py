@@ -329,6 +329,21 @@ class SqlBankRepository:
         )
         return [_transaction(row) for row in result]
 
+    async def unmatched_transactions(
+        self, *, administration_id: uuid.UUID
+    ) -> Sequence[BankTransaction]:
+        """Every unmatched line of the administration, across its bank accounts - what booking
+        proposals (ADR-110, api.firm.proposals) are generated over."""
+        result = await self._session.execute(
+            text(
+                f"SELECT {_TRANSACTION_COLUMNS} FROM bank_transaction "
+                "WHERE administration_id = :admin AND status = 'unmatched' "
+                "ORDER BY booking_date, id"
+            ),
+            {"admin": str(administration_id)},
+        )
+        return [_transaction(row) for row in result]
+
     async def bank_paid_expenses(
         self, *, administration_id: uuid.UUID, amount: Decimal | None = None
     ) -> list[MatchCandidate]:

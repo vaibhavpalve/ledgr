@@ -10,15 +10,19 @@ tests/integration/test_auth_schema.py, which proves the actual schema
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime
 from typing import Any, Protocol
 
 from sqlalchemy import text
 from sqlalchemy.engine import Row
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth.models import PasswordCredential, Session, User
+
+_log = logging.getLogger(__name__)
 
 
 class UserRepository(Protocol):
@@ -225,7 +229,28 @@ class SqlSessionRepository:
                 "user_agent": user_agent,
             },
         )
-        return _row_to_session(result.one())
+        session = _row_to_session(result.one())
+        await self._record_login(user_id=user_id, at=created_at)
+        return session
+
+    async def _record_login(self, *, user_id: uuid.UUID, at: datetime) -> None:
+        """The firm home's "since" window (ADR-109): previous_login_at := last_login_at,
+        last_login_at := now, on every session this creates.
+
+        In a savepoint, and never fatal: a timestamp for a summary screen must not be able to
+        refuse a sign-in - not when migration 0078 has not been applied yet, not ever.
+        """
+        try:
+            async with self._session.begin_nested():
+                await self._session.execute(
+                    text(
+                        "UPDATE users SET previous_login_at = last_login_at, last_login_at = :at "
+                        "WHERE id = :id"
+                    ),
+                    {"id": str(user_id), "at": at},
+                )
+        except DBAPIError:
+            _log.warning("could not record the login time for user %s", user_id, exc_info=True)
 
     async def get_by_token_hash(self, token_hash: str) -> Session | None:
         result = await self._session.execute(

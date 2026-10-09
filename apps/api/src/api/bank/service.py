@@ -18,6 +18,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
+from typing import Protocol
 
 from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditOutcome
 from api.bank.csv_parser import CsvStatementError, StatementRow
@@ -53,6 +54,18 @@ class StatementForAnotherAccount(CsvStatementError):
         self.iban = iban
 
 
+class ProposalHook(Protocol):
+    """Booking proposals (ADR-110, api.firm.proposals.ProposalHook): told when new lines arrive and
+    when a line is reconciled. Advisory - an implementation never raises into the import or the
+    reconciliation that called it, and never posts."""
+
+    async def refresh(self, *, administration_id: uuid.UUID) -> None: ...
+
+    async def transaction_settled(
+        self, *, administration_id: uuid.UUID, transaction_id: uuid.UUID
+    ) -> None: ...
+
+
 class BankService:
     def __init__(
         self,
@@ -60,11 +73,13 @@ class BankService:
         ledger: LedgerService,
         payments: SalesPaymentService,
         audit_log: AuditLog,
+        proposals: ProposalHook | None = None,
     ) -> None:
         self._repository = repository
         self._ledger = ledger
         self._payments = payments
         self._audit = audit_log
+        self._proposals = proposals
 
     # -- accounts -------------------------------------------------------------
 
@@ -208,6 +223,10 @@ class BankService:
         await self._repository.finalize_import(
             import_id=import_id, transaction_count=inserted, duplicate_count=duplicates
         )
+        # ADR-110: new lines may now have one certain match - propose it for review. The one hook
+        # for both sources (a file and the PSD2 sync both land here). Proposes only; posts nothing.
+        if inserted and self._proposals is not None:
+            await self._proposals.refresh(administration_id=administration_id)
         await self._audit.record(
             AuditEvent(
                 organization_id=organization_id,
@@ -613,6 +632,12 @@ class BankService:
             administration_id=administration_id
         )
         assert organization_id is not None
+        # ADR-110: every reconciliation path ends here - a pending proposal for this line, or for
+        # the document it just settled, is withdrawn rather than left to be approved twice.
+        if self._proposals is not None:
+            await self._proposals.transaction_settled(
+                administration_id=administration_id, transaction_id=transaction_id
+            )
         await self._audit.record(
             AuditEvent(
                 organization_id=organization_id,

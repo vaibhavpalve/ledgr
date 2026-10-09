@@ -45,6 +45,20 @@
     "reminders.signoff": {
       "nl": "Met vriendelijke groet,",
       "en": "Kind regards,"
+    },
+    "reminders.question.subject": {
+      "note": "ADR-111: the firm asked the client a question (FR-FRM-005). {name} is the administration. The mail never quotes the question itself.",
+      "nl": "Uw boekhouder heeft een vraag over {name}",
+      "en": "Your accountant has a question about {name}"
+    },
+    "reminders.question.body": {
+      "note": "ADR-111. Deliberately does not contain the question: it may name amounts or counterparties. Followed by a link to the app's start page; there is no client-side question screen yet, so the text promises none.",
+      "nl": "Uw boekhouder heeft een vraag gesteld over de administratie van {name}. Om privacyredenen staat de vraag niet in deze e-mail. Neem contact op met uw boekhouder, of log in bij {product}:",
+      "en": "Your accountant has asked a question about the books of {name}. For privacy, the question is not included in this e-mail. Contact your accountant, or sign in to {product}:"
+    },
+    "reminders.question.why": {
+      "nl": "U ontvangt dit bericht omdat u toegang heeft tot deze administratie in {product}.",
+      "en": "You receive this message because you have access to these books in {product}."
     }
   }
 }

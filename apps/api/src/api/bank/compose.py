@@ -14,6 +14,8 @@ from api.bank.feed import BankFeedService, FeedSettings
 from api.bank.feed_repository import SqlBankFeedRepository
 from api.bank.repository import SqlBankRepository
 from api.bank.service import BankService
+from api.firm.proposals import ProposalGenerator, ProposalHook
+from api.firm.proposals_repository import SqlProposalRepository
 from api.invoicing.payments import SalesPaymentService
 from api.invoicing.payments_repository import SqlPaymentRepository
 from api.ledger.service import build_ledger_service
@@ -23,8 +25,9 @@ def build_bank_service(
     session: AsyncSession, authorization: AuthorizationService | None = None
 ) -> BankService:
     audit_log = AuditLog(SqlAuditRepository(session))
+    repository = SqlBankRepository(session)
     return BankService(
-        SqlBankRepository(session),
+        repository,
         build_ledger_service(session, audit_log),
         SalesPaymentService(
             repository=SqlPaymentRepository(session),
@@ -34,6 +37,17 @@ def build_bank_service(
             audit_log=audit_log,
         ),
         audit_log,
+        build_proposal_hook(session, repository),
+    )
+
+
+def build_proposal_hook(session: AsyncSession, repository: SqlBankRepository) -> ProposalHook:
+    """ADR-110's booking proposals, on the same tenant-scoped session as the import or
+    reconciliation that triggers them."""
+    proposals = SqlProposalRepository(session)
+    return ProposalHook(
+        generator=ProposalGenerator(proposals=proposals, matching=repository),
+        proposals=proposals,
     )
 
 

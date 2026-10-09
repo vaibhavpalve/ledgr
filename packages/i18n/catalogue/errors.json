@@ -1,6 +1,36 @@
 {
   "namespace": "errors",
   "messages": {
+    "errors.question_thread_not_found": {
+      "note": "ADR-111: no such question thread in this administration - or one the caller cannot reach; the two are deliberately indistinguishable.",
+      "nl": "Deze vraag bestaat niet, of u heeft er geen toegang toe.",
+      "en": "This question does not exist, or you do not have access to it."
+    },
+    "errors.question_thread_resolved": {
+      "note": "ADR-111: a reply to a resolved thread. Resolved is final; a follow-up is a new question.",
+      "nl": "Deze vraag is al afgehandeld. Stel een nieuwe vraag als er nog iets is.",
+      "en": "This question has already been resolved. Ask a new question if something is still open."
+    },
+    "errors.question_text_empty": {
+      "note": "ADR-111: a question's subject or a message body was empty or only spaces.",
+      "nl": "Vul een onderwerp en een bericht in.",
+      "en": "Enter a subject and a message."
+    },
+    "errors.question_text_too_long": {
+      "note": "ADR-111: subject over 200 or message over 5000 characters.",
+      "nl": "Het onderwerp mag maximaal 200 tekens zijn en een bericht maximaal 5000.",
+      "en": "The subject can be at most 200 characters and a message at most 5000."
+    },
+    "errors.question_resource_incomplete": {
+      "note": "ADR-111: resource_type without resource_id or the other way round.",
+      "nl": "Geef zowel het soort als het nummer op van de boeking of het document waar de vraag over gaat.",
+      "en": "Give both the kind and the id of the transaction or document the question is about."
+    },
+    "errors.question_resource_not_found": {
+      "note": "ADR-111: the transaction, document, expense or invoice named does not exist in this administration.",
+      "nl": "De boeking of het document waar deze vraag over gaat, bestaat niet in deze administratie.",
+      "en": "The transaction or document this question is about does not exist in these books."
+    },
     "errors.tenant_context_required": {
       "note": "The 401 from TenantContextMiddleware: no token, an expired one, or one that does not verify. A person meets this when their session has run out mid-task, so it says what to do rather than naming a claim or a signature — the machine-readable half travels in `reason`, which is where a client looking to redirect to the login screen reads it.",
       "nl": "Uw sessie is verlopen of niet geldig. Meld u opnieuw aan.",
@@ -1145,6 +1175,31 @@
       "note": "ADR-108: catch-all for a bank feed refusal without a more specific reason.",
       "nl": "De bankkoppeling werkte niet. Probeer het opnieuw, of importeer een afschriftbestand.",
       "en": "The bank connection did not work. Try again, or import a statement file."
+    },
+    "errors.booking_proposals_invalid": {
+      "note": "ADR-110: the auto-bookings review refused a malformed request - an id that is not one, a decision other than approve/reject, or more than 500 decisions at once. {field} travels beside the sentence as a machine field, never inside it.",
+      "nl": "Dit verzoek over voorgestelde boekingen klopt niet. Vernieuw de lijst en probeer het opnieuw.",
+      "en": "This request about suggested bookings is not valid. Refresh the list and try again."
+    },
+    "errors.firm_assigned_filter_invalid": {
+      "note": "ADR-109: the firm work queue's `assigned` filter was neither 'me', 'any' nor a user id.",
+      "nl": "Dit filter op behandelaar klopt niet. Kies opnieuw wie u wilt zien.",
+      "en": "This filter on who looks after a client is not valid. Choose again whose clients to show."
+    },
+    "errors.firm_deadline_range_invalid": {
+      "note": "ADR-109: the deadlines view's `from` is after `to`, or the range is longer than a year (max_days travels beside the sentence as a machine field).",
+      "nl": "Deze periode klopt niet. Kies een begindatum vóór de einddatum, binnen één jaar.",
+      "en": "This date range is not valid. Choose a start before the end, within one year."
+    },
+    "errors.firm_snooze_until_not_future": {
+      "note": "ADR-109: a client can only be snoozed until a date after today; clearing a snooze sends no date.",
+      "nl": "Kies een datum na vandaag om deze klant tot dan te laten rusten.",
+      "en": "Choose a date after today to set this client aside until then."
+    },
+    "errors.firm_assignee_not_staff": {
+      "note": "ADR-109: clients can only be assigned to someone who works at this organization.",
+      "nl": "Deze persoon werkt niet bij uw organisatie. Kies een collega om de klanten aan toe te wijzen.",
+      "en": "This person does not work at your organization. Choose a colleague to assign the clients to."
     }
   }
 }

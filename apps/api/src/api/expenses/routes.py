@@ -53,6 +53,8 @@ from api.authz.dependencies import (
 )
 from api.authz.model import AuthorizationDecision
 from api.authz.service import AuthorizationService
+from api.bank.compose import build_proposal_hook
+from api.bank.repository import SqlBankRepository
 from api.config import settings
 from api.db import get_db_session
 from api.documents.content_type import ContentTypeError
@@ -958,6 +960,7 @@ async def post_expense(
     # IAM-010b: posting is the one action an unverified address cannot
     # perform - see api.auth.email_verification for where that line is drawn.
     __: None = Depends(require_verified_email),
+    session: AsyncSession = Depends(get_db_session),
 ) -> dict[str, object]:
     """Turn a confirmed claim into a ledger entry.
 
@@ -1013,6 +1016,11 @@ async def post_expense(
     except NoOpenPeriod as exc:
         raise problem(request, 409, "errors.no_open_period", reason="no_open_period") from exc
 
+    # ADR-110: a receipt paid from the business account is now a document an unmatched bank line
+    # can settle - propose the match if it is certain. Advisory, in a savepoint; posts nothing.
+    await build_proposal_hook(session, SqlBankRepository(session)).refresh(
+        administration_id=administration_id
+    )
     return {
         "expense_id": str(expense_id),
         "journal_entry_id": str(posted.id),
