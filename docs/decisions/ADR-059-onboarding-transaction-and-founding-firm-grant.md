@@ -77,6 +77,13 @@ to a colleague and revokes their own through the existing IAM-107 service.
 
 ### Seeding and year-opening run under the new client's tenant context
 
+> **Superseded by [ADR-112](ADR-112-audit-log-firm-acting-on-client.md) (2026-10-09).** Migration
+> 0081 widened `audit_log_insert` to admit an entry filed under the owning organization of an
+> administration the session is actively engaged on, and made the sealing trigger read the true
+> chain head. The transaction-local switch described below has been removed. Onboarding now seeds,
+> opens the year and records the founding grant under the firm's own context. The text below is
+> kept as the historical record.
+
 Between the founding grant and the switch, the route sets `app.current_org_id` to the **client**
 organization it just created (transaction-local `set_config`, exactly as `SignupService` does the
 moment a self-managed organization exists), records the founding grant as a
@@ -179,7 +186,8 @@ moment a posting lands between two pages.
   behalf can correct the legal name it typed. A firm without an engagement reaches nothing.
 - `POST /v1/administrations` is the first route to change `app.current_org_id` mid-request. It is
   bounded (one function, `try/finally`) and documented at the call site; a second such site should
-  prompt the `audit_log_insert` widening rather than a third.
+  prompt the `audit_log_insert` widening rather than a third. *(Done in ADR-112: the second site,
+  firm-side postings, prompted the widening, and this switch has been removed.)*
 - `GET /v1/me`'s `email_verified` reads `users.email_verified_at` (migration 0049, ADR-060), wired
   by backend-auth in the same working day; the route, the DB-backed suite (`seed_user`) and the
   running API all require that migration to be applied.

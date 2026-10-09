@@ -42,20 +42,28 @@ _COLUMNS = """
 # sequence_number, previous_hash, entry_hash and recorded_at are absent from
 # the column list on purpose: audit_log_seal_trg assigns all four, and
 # passing them would only mean passing values that get overwritten.
-_INSERT = f"""
+#
+# No RETURNING, deliberately (ADR-112). RETURNING makes Postgres evaluate the
+# SELECT policy against the new row, and a firm session filing an entry in an
+# engaged client's chain (migration 0081) may append to that chain but not
+# read it. The id is generated here instead, and the row is read back through
+# RLS by that id - which yields it for the session's own tenant and nothing
+# for a client's.
+_INSERT = """
     INSERT INTO audit_log (
-        organization_id, administration_id, actor_user_id, actor_type,
+        id, organization_id, administration_id, actor_user_id, actor_type,
         category, action, resource_type, resource_id, outcome,
         occurred_at, source_ip, user_agent, correlation_id, detail
     ) VALUES (
-        :organization_id, :administration_id, :actor_user_id, :actor_type,
+        :id, :organization_id, :administration_id, :actor_user_id, :actor_type,
         :category, :action, :resource_type, :resource_id, :outcome,
         coalesce(cast(:occurred_at as timestamptz), now()),
         cast(:source_ip as inet), :user_agent, :correlation_id,
         cast(:detail as jsonb)
     )
-    RETURNING {_COLUMNS}
 """
+
+_READ_BACK = f"SELECT {_COLUMNS} FROM audit_log WHERE id = :id"
 
 
 def _detail(raw: Any) -> Mapping[str, Any]:
@@ -95,10 +103,12 @@ class SqlAuditRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def append(self, event: AuditEvent, *, recorded_at: datetime) -> AuditEntry:
-        result = await self._session.execute(
+    async def append(self, event: AuditEvent, *, recorded_at: datetime) -> AuditEntry | None:
+        entry_id = uuid.uuid4()
+        await self._session.execute(
             text(_INSERT),
             {
+                "id": str(entry_id),
                 "organization_id": str(event.organization_id),
                 "administration_id": (
                     str(event.administration_id) if event.administration_id else None
@@ -117,7 +127,10 @@ class SqlAuditRepository:
                 "detail": json.dumps(dict(event.detail), sort_keys=True),
             },
         )
-        return _entry(result.one())
+        # None when the entry was filed in a chain this session may append to
+        # but not read: a firm acting in an engaged client's books (ADR-112).
+        row = (await self._session.execute(text(_READ_BACK), {"id": str(entry_id)})).first()
+        return None if row is None else _entry(row)
 
     async def verify_chain(self, organization_id: uuid.UUID) -> ChainBreak | None:
         # The verification runs in the DATABASE, over the stored rows,

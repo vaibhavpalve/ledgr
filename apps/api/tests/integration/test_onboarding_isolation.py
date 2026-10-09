@@ -401,3 +401,49 @@ async def test_a_firm_creating_a_client_can_work_in_it(
         ).one()
     assert row.granted_by_organization_id == firm
     assert row.owner != firm
+
+    # ADR-112: the founding grant, the chart seed and the year opening are all
+    # audited in the CLIENT's chain, written from the firm's own context (no
+    # tenant switch any more), and that chain verifies. The firm reads none of it.
+    client_org = row.owner
+    async with app_engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org_id, true)"),
+            {"org_id": str(client_org)},
+        )
+        actions = {
+            r.resource_type
+            for r in await conn.execute(
+                text("SELECT resource_type FROM audit_log WHERE organization_id = :org"),
+                {"org": str(client_org)},
+            )
+        }
+        broken = (
+            await conn.execute(
+                text("SELECT count(*) FROM app.verify_audit_chain(:org)"),
+                {"org": str(client_org)},
+            )
+        ).scalar_one()
+        # ADR-086's posting defaults, now created under the firm's context.
+        journals = (
+            await conn.execute(
+                text("SELECT count(*) FROM ledger_journal WHERE administration_id = :admin"),
+                {"admin": body["id"]},
+            )
+        ).scalar_one()
+    assert "firm_staff_access" in actions
+    assert len(actions) >= 2, actions
+    assert broken == 0
+    assert journals > 0
+    async with app_engine.begin() as conn:
+        await conn.execute(
+            text("SELECT set_config('app.current_org_id', :org_id, true)"),
+            {"org_id": str(firm)},
+        )
+        seen = (
+            await conn.execute(
+                text("SELECT count(*) FROM audit_log WHERE organization_id = :org"),
+                {"org": str(client_org)},
+            )
+        ).scalar_one()
+    assert seen == 0

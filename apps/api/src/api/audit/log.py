@@ -199,7 +199,12 @@ class VerificationResult:
 
 
 class AuditRepository(Protocol):
-    async def append(self, event: AuditEvent, *, recorded_at: datetime) -> AuditEntry: ...
+    async def append(self, event: AuditEvent, *, recorded_at: datetime) -> AuditEntry | None:
+        """The sealed entry, or None when it was filed in a chain the caller may
+        append to but not read - a firm acting in an engaged client's books
+        (ADR-112). Appending and reading are separate rights on purpose.
+        """
+        ...
 
     async def verify_chain(self, organization_id: uuid.UUID) -> ChainBreak | None: ...
 
@@ -232,7 +237,7 @@ class AuditLog:
         self._repository = repository
         self._clock = clock
 
-    async def record(self, event: AuditEvent) -> AuditEntry:
+    async def record(self, event: AuditEvent) -> AuditEntry | None:
         return await self._repository.append(event, recorded_at=self._clock())
 
     async def verify(self, organization_id: uuid.UUID) -> VerificationResult:

@@ -299,20 +299,14 @@ async def test_deciding_the_ungranted_clients_proposal_is_refused(portfolio: Por
     assert rejected.json()["rejected"] == 0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "ADR-059's open gap: LedgerService files its post_journal_entry audit entry under the "
-        "client's organization, and audit_log_insert (0019) admits only the session's own "
-        "organization, so every posting from a firm session fails (reported as posting_failed). "
-        "Widening the policy alone would fork the client's hash chain (audit_log_seal reads the "
-        "predecessor under RLS). Needs a reviewed fix; this test flips when it lands."
-    ),
-)
 async def test_the_firm_approves_its_granted_clients_proposal_once(portfolio: Portfolio) -> None:
     """The review sheet's whole point: firm staff approve a client's proposal from the firm's own
     session. It books exactly one journal entry in the client's books, and the decision is audited
-    in the firm's trail (the session's organization), naming the client's administration."""
+    in the firm's trail (the session's organization), naming the client's administration.
+
+    Was strict-xfail until ADR-112 / migration 0081: the posting's own audit entry belongs in the
+    CLIENT's chain, which audit_log_insert did not admit from a firm session. The client's chain
+    must still verify afterwards."""
     p = portfolio
     approve = {"decisions": [{"proposal_id": p.proposal_a, "decision": "approve"}]}
 
@@ -340,6 +334,14 @@ async def test_the_firm_approves_its_granted_clients_proposal_once(portfolio: Po
         admin=str(p.tenants.admin_a),
     )
     assert audited == 1
+
+    # The posting's entry landed in the client's chain, not a fork of it.
+    broken = await _as_org(
+        p.tenants.org_a,
+        "SELECT count(*) FROM app.verify_audit_chain(:org)",
+        org=str(p.tenants.org_a),
+    )
+    assert broken == 0
 
 
 async def test_a_second_firm_sees_nothing(portfolio: Portfolio) -> None:

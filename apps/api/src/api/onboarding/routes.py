@@ -308,15 +308,6 @@ async def _organization_kind(session: AsyncSession, organization_id: uuid.UUID) 
     return str(row.kind)
 
 
-async def _set_tenant_context(session: AsyncSession, organization_id: uuid.UUID) -> None:
-    # is_local=true: transaction-scoped, exactly as api.db.get_db_session and
-    # api.auth.signup.SignupService set it. Nothing outlives this request.
-    await session.execute(
-        text("SELECT set_config('app.current_org_id', :org_id, true)"),
-        {"org_id": str(organization_id)},
-    )
-
-
 async def _create_business_administration(
     session: AsyncSession,
     *,
@@ -550,7 +541,8 @@ async def _seed_and_open(
     # ADR-086: the journals and posting-account mappings the seeded chart implies. Without
     # them the first invoice, receipt or bank line this administration posts is refused for
     # configuration nobody could have entered. Runs under the same tenant context as the seed
-    # (the client's own, for a firm), so RLS scopes it exactly as it scoped the chart.
+    # (the firm's, for a client it just created - its active engagement is what RLS admits,
+    # ADR-112), so RLS scopes it exactly as it scoped the chart.
     await session.execute(
         text("SELECT app.ensure_posting_defaults(:id)"), {"id": str(administration_id)}
     )
@@ -616,15 +608,13 @@ async def create_administration(
         await _grant_founding_firm_role(
             session, user_id=tenant.user_id, administration_id=administration_id
         )
-        # From here to the matching reset, the transaction runs as the client
-        # tenant this request just created. ADR-059 explains why: the chart
+        # Everything below runs under the FIRM's own tenant context. The chart
         # and fiscal-year services file their audit entries under the
-        # administration's OWNING organization (that is whose log "my
-        # accountant seeded my chart" belongs in, IAM-094), and
-        # audit_log_insert (0019) admits a row only for the session's own
-        # tenant. The same bootstrap move SignupService makes for a
-        # self-managed organization, for the same reason.
-        await _set_tenant_context(session, client_organization_id)
+        # administration's OWNING organization (whose log "my accountant
+        # seeded my chart" belongs in, IAM-094); since migration 0081
+        # audit_log_insert admits that for a firm actively engaged on the
+        # administration, so ADR-059's transaction-local switch into the
+        # client's context is gone (ADR-112).
         await AuditTrail(AuditLog(SqlAuditRepository(session))).permission_change(
             organization_id=client_organization_id,
             administration_id=administration_id,
@@ -639,18 +629,15 @@ async def create_administration(
                 "founding": True,
             },
         )
-        try:
-            seeded, _year = await _seed_and_open(
-                request,
-                session=session,
-                chart=chart,
-                fiscal=fiscal,
-                administration_id=administration_id,
-                actor_user_id=tenant.user_id,
-                fiscal_year=fiscal_year,
-            )
-        finally:
-            await _set_tenant_context(session, tenant.organization_id)
+        seeded, _year = await _seed_and_open(
+            request,
+            session=session,
+            chart=chart,
+            fiscal=fiscal,
+            administration_id=administration_id,
+            actor_user_id=tenant.user_id,
+            fiscal_year=fiscal_year,
+        )
     else:
         administration_id = await _create_business_administration(
             session,
