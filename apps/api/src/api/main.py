@@ -27,6 +27,7 @@ from api.authz_middleware import AuthorizationEnforcementMiddleware
 from api.bank import feed_routes as bank_feed_routes
 from api.bank import routes as bank_routes
 from api.canonical_host import CanonicalHostMiddleware
+from api.chasing import routes as chasing_routes
 from api.customers import routes as customer_routes
 from api.dashboard import routes as dashboard_routes
 from api.db import get_db_session
@@ -35,7 +36,9 @@ from api.expenses import routes as expense_routes
 from api.exports import routes as export_routes
 from api.firm import assignment_routes as firm_assignment_routes
 from api.firm import proposals_routes as firm_proposal_routes
+from api.firm import rules_routes as firm_rule_routes
 from api.firm import summary_routes as firm_summary_routes
+from api.firm import views_routes as firm_view_routes
 from api.firm import worklist_routes as firm_worklist_routes
 from api.firm.switcher import ClientSwitcher, SwitcherEntry
 from api.firm.switcher_repository import SqlSwitcherRepository
@@ -158,6 +161,9 @@ bank_feed_routes.register(app)
 # The firm home's auto-bookings review (migration 0079, ADR-110): booking proposals outside the
 # ledger, approved through the bank's own reconciliation path.
 firm_proposal_routes.register(app)
+# Approval rules (migration 0082, ADR-113): per-client "always do this", applied at proposal
+# generation through the same approve path.
+firm_rule_routes.register(app)
 # The Reports screen: balance sheet and income statement, built entirely on
 # LedgerService.balances_as_of - no new table, no new permission. Same
 # registration reason; see api.reports.routes' module docstring.
@@ -178,9 +184,14 @@ reminder_routes.register(app)
 firm_worklist_routes.register(app)
 firm_summary_routes.register(app)
 firm_assignment_routes.register(app)
+# The work queue's saved views (migration 0084, ADR-115): per person, counted through the worklist.
+firm_view_routes.register(app)
 # FR-FRM-005's question threads and the firm inbox (migration 0080, ADR-111); client e-mails are
 # sent by the api.questions.notifications sweep.
 question_routes.register(app)
+# Receipt chasing (migration 0083, ADR-114): the client's missing-receipts list, the per-client
+# opt-in and the firm's bulk request; the e-mails are sent by the api.chasing.sweep cron.
+chasing_routes.register(app)
 # §4.4: the account's own security settings (IAM-017 sessions, passkeys,
 # password, TOTP) - see api.account.security_routes and ADR-060. And the
 # development-only e-mail outbox, which registers nothing unless

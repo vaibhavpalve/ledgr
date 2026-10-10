@@ -705,3 +705,191 @@
     grid-column: auto;
   }
 }
+
+/* ---- Wave 2 (docs/firm-home/contract-wave2.md) -------------------------- */
+
+/* Review sheet: "Always do this for these clients" and what a rule does. */
+.firm-review__remember {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 0;
+}
+.firm-review__remember input {
+  margin-top: 3px;
+  flex: none;
+}
+.firm-review__remember-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+/* "More filters" and select inputs that should not stretch. */
+.firm-worklist__more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.firm-select-input {
+  width: auto;
+  max-width: 100%;
+}
+
+/* Chase preview: one line per client, wraps on a phone. */
+.firm-chase__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-chase__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+.firm-chase__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.firm-chase__facts {
+  grid-column: 1;
+}
+.firm-chase__status {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+}
+
+/* Saved views: in the rail (wide screens) and as chips above the list (phone). */
+.firm-views__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-views__item {
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.firm-views__count {
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.firm-views-chips {
+  margin-bottom: var(--space-2);
+}
+
+/* "Next client with work →" in the client header. */
+.firm-next {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.firm-next--done {
+  font-size: 13px;
+}
+.firm-next__short {
+  display: none;
+}
+@media (max-width: 39.99rem) {
+  .firm-next__long {
+    display: none;
+  }
+  .firm-next__short {
+    display: inline;
+  }
+  .firm-next--done > span:first-child {
+    display: none;
+  }
+}
+.firm-next__left {
+  white-space: nowrap;
+}
+
+/* /rules: one client's rules, rule postings and reminder setting. */
+.firm-rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.firm-rules__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.firm-rules__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+.firm-rules__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.firm-rules__what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.firm-rules__name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.firm-rules__facts,
+.firm-rules__reason {
+  margin: 0;
+}
+.firm-rules__reason {
+  font-size: 13px;
+}
+.firm-rules__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.firm-rules__inline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 28rem;
+}
+.firm-rules__inline p {
+  margin: 0;
+}
+.firm-rules__amount {
+  max-width: 12rem;
+}
+.firm-rules__check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.firm-rules__notice {
+  margin: 0;
+}
+.firm-views__stale {
+  font-style: italic;
+}

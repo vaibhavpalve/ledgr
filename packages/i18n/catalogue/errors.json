@@ -1181,6 +1181,21 @@
       "nl": "Dit verzoek over voorgestelde boekingen klopt niet. Vernieuw de lijst en probeer het opnieuw.",
       "en": "This request about suggested bookings is not valid. Refresh the list and try again."
     },
+    "errors.booking_rules_invalid": {
+      "note": "ADR-113: a rules request was malformed - a maximum amount that is not a positive amount with at most two decimals, or a postings limit outside 1-200. {field} travels beside the sentence as a machine field, never inside it.",
+      "nl": "Dit verzoek over een vaste regel klopt niet. Controleer het bedrag en probeer het opnieuw.",
+      "en": "This request about a standing rule is not valid. Check the amount and try again."
+    },
+    "errors.booking_rule_not_found": {
+      "note": "ADR-113: no such rule in this administration (another client's rule is not found either).",
+      "nl": "Deze vaste regel bestaat niet (meer). Vernieuw de lijst.",
+      "en": "This standing rule does not exist (any more). Refresh the list."
+    },
+    "errors.booking_rule_retired": {
+      "note": "ADR-113: a retired rule cannot be changed; it never books again.",
+      "nl": "Deze vaste regel is uitgezet en kan niet meer worden aangepast.",
+      "en": "This standing rule has been switched off and can no longer be changed."
+    },
     "errors.firm_assigned_filter_invalid": {
       "note": "ADR-109: the firm work queue's `assigned` filter was neither 'me', 'any' nor a user id.",
       "nl": "Dit filter op behandelaar klopt niet. Kies opnieuw wie u wilt zien.",
@@ -1200,6 +1215,26 @@
       "note": "ADR-109: clients can only be assigned to someone who works at this organization.",
       "nl": "Deze persoon werkt niet bij uw organisatie. Kies een collega om de klanten aan toe te wijzen.",
       "en": "This person does not work at your organization. Choose a colleague to assign the clients to."
+    },
+    "errors.firm_view_name_invalid": {
+      "note": "ADR-115: a saved view's name must be 1 to 60 characters after trimming (max_length travels beside the sentence as a machine field).",
+      "nl": "Geef deze weergave een naam van maximaal 60 tekens.",
+      "en": "Give this view a name of up to 60 characters."
+    },
+    "errors.firm_view_limit_reached": {
+      "note": "ADR-115: a person can keep at most 20 active saved views (max_views travels beside the sentence as a machine field).",
+      "nl": "U heeft het maximale aantal opgeslagen weergaven. Archiveer er een om een nieuwe op te slaan.",
+      "en": "You have the maximum number of saved views. Archive one to save a new one."
+    },
+    "errors.firm_view_not_found": {
+      "note": "ADR-115: the saved view does not exist, is archived, or belongs to someone else - answered the same way for all three.",
+      "nl": "Deze weergave bestaat niet meer. Vernieuw de lijst en probeer het opnieuw.",
+      "en": "This view no longer exists. Refresh the list and try again."
+    },
+    "errors.chase_too_many_administrations": {
+      "note": "ADR-114: a receipt-chase preview or request names more clients than one call takes (max travels beside the sentence as a machine field).",
+      "nl": "U heeft te veel klanten tegelijk gekozen. Kies er minder en probeer het opnieuw.",
+      "en": "You chose too many clients at once. Choose fewer and try again."
     }
   }
 }

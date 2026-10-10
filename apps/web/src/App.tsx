@@ -18,6 +18,7 @@ import { ClientsScreen } from "./clients/ClientsScreen";
 import { CustomerDetailScreen } from "./customers/CustomerDetailScreen";
 import { CustomerFormScreen } from "./customers/CustomerFormScreen";
 import { CustomerListScreen } from "./customers/CustomerListScreen";
+import { ClientRulesRoute } from "./firm/ClientRulesScreen";
 import { FirmHomeRoute } from "./firm/FirmHomeScreen";
 import { FirmInboxRoute } from "./firm/FirmInboxScreen";
 import { DashboardRoute } from "./home/DashboardRoute";
@@ -29,6 +30,8 @@ import { JournalScreen } from "./journal/JournalScreen";
 import { LedgerScreen } from "./ledger/LedgerScreen";
 import { OnboardingRoute } from "./onboarding/OnboardingRoute";
 import { PurchasesRoute } from "./purchases/PurchasesRoute";
+import { QuestionsRoute } from "./questions/QuestionsScreen";
+import { ReceiptsNeededScreen } from "./receipts/ReceiptsNeededScreen";
 import { ReportsScreen } from "./reports/ReportsScreen";
 import { VatRoute } from "./vat/VatScreen";
 import { OpeningBalanceScreen } from "./opening/OpeningBalanceScreen";
@@ -208,6 +211,12 @@ function Routed({ services }: { services?: Partial<Services> }) {
               <Route path="/reports" element={<ReportsScreen />} />
               <Route path="/vat" element={<VatRoute />} />
               <Route path="/vat/:periodId" element={<VatRoute />} />
+              {/* FR-FRM-005 question threads and the missing-receipts list (contract-wave2). */}
+              <Route path="/questions" element={<QuestionsRoute />} />
+              <Route path="/questions/:threadId" element={<QuestionsRoute />} />
+              <Route path="/receipts-needed" element={<ReceiptsNeededScreen />} />
+              {/* One client's approval rules and receipt reminders (contract-wave2, ADR-113/114). */}
+              <Route path="/rules" element={<ClientRulesRoute />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

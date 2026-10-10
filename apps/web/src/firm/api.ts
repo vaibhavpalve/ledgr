@@ -12,6 +12,12 @@
  *   POST /v1/firm/proposals/decide
  *   GET  /v1/firm/inbox                       question threads; awaiting=firm is client replies
  *
+ * Wave 2 (docs/firm-home/contract-wave2.md):
+ *   POST /v1/firm/chase/preview|send          "Request missing receipts" (ADR-114)
+ *   GET|POST /v1/firm/views[/{id}/rename|archive]   saved views, per user (ADR-115)
+ *   GET  /v1/firm/worklist/next               the next client in the same query
+ *   /v1/administrations/{id}/rules, rule-postings, chase-setting   one client (ADR-113/114)
+ *
  * Built on `api/http`'s `callJson`, so every mutating call carries a fresh Idempotency-Key
  * (NFR-032) and every call carries Accept-Language (FR-UX-007). Responses stay in the wire's
  * snake_case, as `@ledgr/shared-types` declares them - the convention every client but
@@ -22,18 +28,27 @@
  */
 
 import type {
+  BookingRuleView,
+  ChaseSettingView,
   FirmAssignResultView,
+  FirmChasePreviewView,
+  FirmChaseSendResultView,
   FirmDeadlineView,
   FirmDecideResultView,
   FirmInboxAwaiting,
   FirmInboxView,
+  FirmNextClientView,
   FirmProposalDecision,
   FirmProposalsView,
+  FirmSavedView,
+  FirmSavedViewQuery,
   FirmStaffView,
   FirmSummaryView,
+  FirmVatFrequency,
   FirmWorklistChip,
   FirmWorklistSort,
   FirmWorklistView,
+  RulePostingView,
 } from "@ledgr/shared-types";
 
 import { callJson, pathOf, queryOf, unwrapList, type ApiOptions } from "../api/http";
@@ -49,6 +64,38 @@ export interface WorklistQuery {
   readonly dir: "asc" | "desc";
   readonly page: number;
   readonly pageSize: number;
+  /** "More filters" (wave 2): only clients filing BTW at this frequency. */
+  readonly vatFrequency?: FirmVatFrequency | null;
+}
+
+export interface ProposalDecisionInput {
+  readonly proposalId: string;
+  readonly decision: FirmProposalDecision;
+  /** "Always do this for these clients" (ADR-113): approve only. */
+  readonly remember?: boolean;
+}
+
+/** The worklist query without paging - what a saved view stores and `/next` follows. */
+export function savedQueryOf(query: WorklistQuery): FirmSavedViewQuery {
+  return {
+    chip: query.chip,
+    q: query.q.trim(),
+    assigned: query.assigned,
+    sort: query.sort,
+    dir: query.dir,
+    vat_frequency: query.vatFrequency ?? null,
+  };
+}
+
+function queryParams(query: FirmSavedViewQuery) {
+  return {
+    chip: query.chip,
+    q: query.q.trim(),
+    assigned: query.assigned,
+    sort: query.sort,
+    dir: query.dir,
+    vat_frequency: query.vat_frequency ?? undefined,
+  };
 }
 
 export interface InboxOptions {
@@ -70,10 +117,28 @@ export interface FirmApiShape {
   listStaff(): Promise<FirmStaffView[]>;
   getDeadlines(): Promise<FirmDeadlineView[]>;
   listProposals(administrationIds?: readonly string[]): Promise<FirmProposalsView>;
-  decideProposals(
-    decisions: readonly { proposalId: string; decision: FirmProposalDecision }[],
-  ): Promise<FirmDecideResultView>;
+  decideProposals(decisions: readonly ProposalDecisionInput[]): Promise<FirmDecideResultView>;
   getInbox(options?: InboxOptions): Promise<FirmInboxView>;
+
+  // --- wave 2 (docs/firm-home/contract-wave2.md) ---
+  previewChase(administrationIds: readonly string[]): Promise<FirmChasePreviewView>;
+  sendChase(administrationIds: readonly string[]): Promise<FirmChaseSendResultView>;
+  listViews(): Promise<FirmSavedView[]>;
+  createView(name: string, query: FirmSavedViewQuery): Promise<FirmSavedView>;
+  renameView(viewId: string, name: string): Promise<void>;
+  archiveView(viewId: string): Promise<void>;
+  nextClient(after: string, query: FirmSavedViewQuery): Promise<FirmNextClientView>;
+  listRules(administrationId: string): Promise<BookingRuleView[]>;
+  retireRule(administrationId: string, ruleId: string): Promise<void>;
+  setRuleMaxAmount(
+    administrationId: string,
+    ruleId: string,
+    maxAmount: string | null,
+  ): Promise<void>;
+  listRulePostings(administrationId: string, limit?: number): Promise<RulePostingView[]>;
+  undoRulePosting(administrationId: string, proposalId: string): Promise<void>;
+  getChaseSetting(administrationId: string): Promise<ChaseSettingView>;
+  setChaseSetting(administrationId: string, setting: ChaseSettingView): Promise<ChaseSettingView>;
 }
 
 export class FirmApi implements FirmApiShape {
@@ -103,6 +168,7 @@ export class FirmApi implements FirmApiShape {
         dir: query.dir,
         page: query.page,
         page_size: query.pageSize,
+        vat_frequency: query.vatFrequency ?? undefined,
       })}`,
     );
   }
@@ -156,9 +222,7 @@ export class FirmApi implements FirmApiShape {
     );
   }
 
-  decideProposals(
-    decisions: readonly { proposalId: string; decision: FirmProposalDecision }[],
-  ): Promise<FirmDecideResultView> {
+  decideProposals(decisions: readonly ProposalDecisionInput[]): Promise<FirmDecideResultView> {
     return callJson<FirmDecideResultView>(
       this.options,
       "POST",
@@ -167,6 +231,8 @@ export class FirmApi implements FirmApiShape {
         decisions: decisions.map((entry) => ({
           proposal_id: entry.proposalId,
           decision: entry.decision,
+          // Sent only when asked for, and only on an approval (contract-wave2: approve only).
+          ...(entry.remember === true && entry.decision === "approve" ? { remember: true } : {}),
         })),
       },
     );
@@ -181,6 +247,131 @@ export class FirmApi implements FirmApiShape {
         limit: options.limit,
         awaiting: options.awaiting,
       })}`,
+    );
+  }
+
+  // --- wave 2 ---
+
+  previewChase(administrationIds: readonly string[]): Promise<FirmChasePreviewView> {
+    return callJson<FirmChasePreviewView>(
+      this.options,
+      "POST",
+      pathOf("v1", "firm", "chase", "preview"),
+      { administration_ids: administrationIds },
+    );
+  }
+
+  sendChase(administrationIds: readonly string[]): Promise<FirmChaseSendResultView> {
+    return callJson<FirmChaseSendResultView>(
+      this.options,
+      "POST",
+      pathOf("v1", "firm", "chase", "send"),
+      { administration_ids: administrationIds },
+    );
+  }
+
+  async listViews(): Promise<FirmSavedView[]> {
+    const raw = await callJson<readonly FirmSavedView[] | { views: readonly FirmSavedView[] }>(
+      this.options,
+      "GET",
+      pathOf("v1", "firm", "views"),
+    );
+    return unwrapList<FirmSavedView>(raw, "views");
+  }
+
+  createView(name: string, query: FirmSavedViewQuery): Promise<FirmSavedView> {
+    return callJson<FirmSavedView>(this.options, "POST", pathOf("v1", "firm", "views"), {
+      name,
+      query,
+    });
+  }
+
+  async renameView(viewId: string, name: string): Promise<void> {
+    await callJson<unknown>(this.options, "POST", pathOf("v1", "firm", "views", viewId, "rename"), {
+      name,
+    });
+  }
+
+  async archiveView(viewId: string): Promise<void> {
+    await callJson<unknown>(
+      this.options,
+      "POST",
+      pathOf("v1", "firm", "views", viewId, "archive"),
+      {},
+    );
+  }
+
+  nextClient(after: string, query: FirmSavedViewQuery): Promise<FirmNextClientView> {
+    return callJson<FirmNextClientView>(
+      this.options,
+      "GET",
+      `${pathOf("v1", "firm", "worklist", "next")}${queryOf({ after, ...queryParams(query) })}`,
+    );
+  }
+
+  async listRules(administrationId: string): Promise<BookingRuleView[]> {
+    const raw = await callJson<readonly BookingRuleView[] | { rules: readonly BookingRuleView[] }>(
+      this.options,
+      "GET",
+      pathOf("v1", "administrations", administrationId, "rules"),
+    );
+    return unwrapList<BookingRuleView>(raw, "rules");
+  }
+
+  async retireRule(administrationId: string, ruleId: string): Promise<void> {
+    await callJson<unknown>(
+      this.options,
+      "POST",
+      pathOf("v1", "administrations", administrationId, "rules", ruleId, "retire"),
+      {},
+    );
+  }
+
+  async setRuleMaxAmount(
+    administrationId: string,
+    ruleId: string,
+    maxAmount: string | null,
+  ): Promise<void> {
+    await callJson<unknown>(
+      this.options,
+      "POST",
+      pathOf("v1", "administrations", administrationId, "rules", ruleId, "max-amount"),
+      { max_amount: maxAmount },
+    );
+  }
+
+  async listRulePostings(administrationId: string, limit?: number): Promise<RulePostingView[]> {
+    const raw = await callJson<readonly RulePostingView[] | { items: readonly RulePostingView[] }>(
+      this.options,
+      "GET",
+      `${pathOf("v1", "administrations", administrationId, "rule-postings")}${queryOf({ limit })}`,
+    );
+    return unwrapList<RulePostingView>(raw, "items");
+  }
+
+  async undoRulePosting(administrationId: string, proposalId: string): Promise<void> {
+    await callJson<unknown>(
+      this.options,
+      "POST",
+      pathOf("v1", "administrations", administrationId, "rule-postings", proposalId, "undo"),
+      {},
+    );
+  }
+
+  getChaseSetting(administrationId: string): Promise<ChaseSettingView> {
+    return callJson<ChaseSettingView>(
+      this.options,
+      "GET",
+      pathOf("v1", "administrations", administrationId, "chase-setting"),
+    );
+  }
+
+  setChaseSetting(administrationId: string, setting: ChaseSettingView): Promise<ChaseSettingView> {
+    return callJson<ChaseSettingView>(
+      this.options,
+      "POST",
+      pathOf("v1", "administrations", administrationId, "chase-setting"),
+      { enabled: setting.enabled, cadence: setting.cadence },
     );
   }
 }

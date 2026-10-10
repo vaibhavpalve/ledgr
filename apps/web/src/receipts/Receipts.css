@@ -1,0 +1,78 @@
+/* Receipts needed. Rows wrap at phone width; nothing scrolls sideways. */
+
+.receipts__intro {
+  color: var(--ledgr-text-secondary);
+  margin: 0 0 var(--ledgr-space-3);
+}
+
+.receipts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+
+.receipts__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-2) var(--ledgr-space-4);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  background: var(--ledgr-surface-paper);
+  min-width: 0;
+}
+
+.receipts__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.receipts__payee {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.receipts__muted {
+  color: var(--ledgr-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.receipts__amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.receipts__upload {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-1);
+}
+
+.receipts__capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+  margin-bottom: var(--ledgr-space-4);
+  min-width: 0;
+}
+
+.receipts__capture-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ledgr-space-2);
+}
+
+.receipts__capture-title {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}

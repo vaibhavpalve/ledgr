@@ -65,6 +65,8 @@ export const ACTIVITY_FILTER: Record<
   client_replies: { chip: "my_move", sort: "open_questions" },
   bank_feeds_broken: { chip: "waiting_on_client", sort: "risk" },
   possible_duplicates: { chip: "my_move", sort: "risk" },
+  // Wave 2 (ADR-113): bookings a rule posted on its own; each client's Rules screen lists them.
+  rule_postings: { chip: "my_move", sort: "risk" },
 };
 
 export function AwayPanel({

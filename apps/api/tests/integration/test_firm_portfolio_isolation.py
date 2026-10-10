@@ -323,7 +323,7 @@ async def test_the_firm_approves_its_granted_clients_proposal_once(portfolio: Po
     for _ in range(2):  # a retry under a new key books nothing more (NFR-032)
         decided = await _call(p.firm, p.accountant, "POST", "/v1/firm/proposals/decide", approve)
         assert decided.status_code == 200, decided.text
-        assert decided.json() == {"approved": 1, "rejected": 0, "failed": []}
+        assert decided.json() == {"approved": 1, "rejected": 0, "failed": [], "rules_created": 0}
     assert await entries() == before + 1
 
     audited = await _as_org(

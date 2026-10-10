@@ -1,10 +1,13 @@
-import { useCallback, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { PanelRightClose, PanelRightOpen, TriangleAlert } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 import type {
+  FirmClientRef,
+  FirmSavedViewQuery,
   FirmSummaryCounts,
   FirmSummaryView,
+  FirmVatFrequency,
   FirmWorklistChip,
   FirmWorklistRowView,
   FirmWorklistSort,
@@ -17,8 +20,11 @@ import { useServices } from "../session/ServicesProvider";
 import { Icon } from "../shell/icons";
 import { EmptyState, ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { Button } from "../ui";
-import type { FirmApiShape } from "./api";
+import { savedQueryOf, type FirmApiShape } from "./api";
+import { ChaseDialog } from "./ChaseDialog";
 import { AssignDialog, SnoozeDialog } from "./FirmDialogs";
+import { sameQuery, storeLastQuery } from "./lastQuery";
+import { appliedViewOf, SavedViewList, useSavedViews, ViewControls } from "./SavedViews";
 import { ReviewSheet } from "./ReviewSheet";
 import { AwayPanel, DeadlinesPanel, RepliesPanel } from "./SidePanels";
 import {
@@ -85,22 +91,57 @@ const DESC_FIRST: ReadonlySet<FirmWorklistSort> = new Set([
 export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
   const { t, date } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const { administrations, administration, switchAdministration } = useSession();
 
+  // A saved view clicked in the rail arrives as router state (SavedViews.tsx).
+  const applied = appliedViewOf(location.state);
+
   // --- the worklist's query, all of it server-side ---
-  const [chip, setChip] = useState<FirmWorklistChip>("my_move");
-  const [assigned, setAssigned] = useState<"me" | "any">("me");
-  const [query, setQuery] = useState("");
+  const [chip, setChip] = useState<FirmWorklistChip>(() => applied?.query.chip ?? "my_move");
+  const [assigned, setAssigned] = useState<string>(() => applied?.query.assigned ?? "me");
+  const [query, setQuery] = useState(() => applied?.query.q ?? "");
   const q = useDebounced(query, 300);
-  const [sort, setSort] = useState<FirmWorklistSort>("risk");
-  const [dir, setDir] = useState<"asc" | "desc">("asc");
+  const [sort, setSort] = useState<FirmWorklistSort>(() => applied?.query.sort ?? "risk");
+  const [dir, setDir] = useState<"asc" | "desc">(() => applied?.query.dir ?? "asc");
+  const [vatFrequency, setVatFrequency] = useState<FirmVatFrequency | null>(
+    () => applied?.query.vat_frequency ?? null,
+  );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
+  // A view clicked while this page is already open: apply it (state only, nothing is sent).
+  const appliedKey = applied !== null ? location.key : null;
+  useEffect(() => {
+    if (appliedKey === null || applied === null) return;
+    const next = applied.query;
+    setChip(next.chip);
+    setAssigned(next.assigned);
+    setQuery(next.q);
+    setSort(next.sort);
+    setDir(next.dir);
+    setVatFrequency(next.vat_frequency ?? null);
+    setPage(1);
+    // `applied` is the location's own state object: same navigation, same object, no re-run.
+  }, [appliedKey, applied]);
+
+  // The query on screen, unpaged: what "Save view" stores and "Next client with work" follows.
+  const current = useMemo<FirmSavedViewQuery>(
+    () => savedQueryOf({ chip, q, assigned, sort, dir, page: 1, pageSize, vatFrequency }),
+    [chip, q, assigned, sort, dir, pageSize, vatFrequency],
+  );
+  useEffect(() => storeLastQuery(current), [current]);
+
+  const views = useSavedViews(api);
+  const activeView = useMemo(
+    () => (views.data ?? []).find((view) => sameQuery(view.query, current)) ?? null,
+    [views.data, current],
+  );
+
   const loadSummary = useCallback(() => api.getSummary(), [api]);
   const loadWorklist = useCallback(
-    () => api.getWorklist({ chip, q, assigned, sort, dir, page, pageSize }),
-    [api, chip, q, assigned, sort, dir, page, pageSize],
+    () => api.getWorklist({ chip, q, assigned, sort, dir, page, pageSize, vatFrequency }),
+    [api, chip, q, assigned, sort, dir, page, pageSize, vatFrequency],
   );
   const loadDeadlines = useCallback(() => api.getDeadlines(), [api]);
   // "Client replies": only threads where the client wrote last, never our own questions still out.
@@ -118,6 +159,7 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
     readonly Pick<FirmWorklistRowView, "administration_id" | "display_name">[] | null
   >(null);
   const [snoozing, setSnoozing] = useState<FirmWorklistRowView | null>(null);
+  const [chasing, setChasing] = useState<readonly FirmClientRef[] | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [markingSeen, setMarkingSeen] = useState(false);
@@ -211,7 +253,7 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
     );
   }, [selected, worklist.data, administrations]);
 
-  const dialogOpen = review !== null || assigning !== null || snoozing !== null;
+  const dialogOpen = review !== null || assigning !== null || snoozing !== null || chasing !== null;
 
   // FR-UX-004: a firm with no clients is taught what this page is for, and how to start.
   if (administrations.length === 0) {
@@ -267,6 +309,10 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
 
       <div className={`firm-home__layout${sideOpen ? "" : " firm-home__layout--wide"}`}>
         <div className="firm-home__main">
+          {/* On a phone the rail is gone: the saved views sit above the list instead. */}
+          {narrow ? (
+            <SavedViewList api={api} variant="chips" activeId={activeView?.id ?? null} />
+          ) : null}
           {selected.size > 0 ? (
             <div
               className="firm-bulk"
@@ -290,6 +336,13 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
                 data-testid="firm-bulk-assign"
               >
                 {t("client.todo.bulk.assign")}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setChasing(selectedRows)}
+                data-testid="firm-bulk-chase"
+              >
+                {t("client.todo.bulk.chase")}
               </Button>
               <Button
                 size="sm"
@@ -338,6 +391,12 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
             onAssignRows={setAssigning}
             narrow={narrow}
             keyboardEnabled={!dialogOpen}
+            vatFrequency={vatFrequency}
+            onVatFrequency={(value) => {
+              setVatFrequency(value);
+              setPage(1);
+            }}
+            viewControls={<ViewControls api={api} query={current} activeView={activeView} />}
           />
         </div>
 
@@ -397,6 +456,14 @@ export function FirmHomeScreen({ api }: { api: FirmApiShape }) {
           row={snoozing}
           onClose={() => setSnoozing(null)}
           onDone={refreshAll}
+        />
+      ) : null}
+      {chasing !== null ? (
+        <ChaseDialog
+          api={api}
+          clients={chasing}
+          onClose={() => setChasing(null)}
+          onDone={() => worklist.reload()}
         />
       ) : null}
     </section>

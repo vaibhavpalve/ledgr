@@ -18,6 +18,8 @@ import { JournalApi } from "../journal/api";
 import { LedgerApi } from "../ledger/api";
 import { OnboardingApi } from "../onboarding/api";
 import { OpeningApi } from "../opening/api";
+import { QuestionsApi, type QuestionsApiShape } from "../questions/api";
+import { ReceiptsApi, type ReceiptsApiShape } from "../receipts/api";
 import { ReportsApi } from "../reports/api";
 import { TemplateApi } from "../templates/api";
 import { VatApi } from "../vat/api";
@@ -57,6 +59,10 @@ export interface Services {
   readonly opening: OpeningApi;
   /** The firm home ("To do"): cross-client reads over the caller's grants (ADR-109). */
   readonly firm: FirmApiShape;
+  /** Question threads inside one client (FR-FRM-005, ADR-111). */
+  readonly questions: QuestionsApiShape;
+  /** The client's bank payments still missing a receipt. */
+  readonly receipts: ReceiptsApiShape;
   readonly queue: CaptureQueue;
   readonly decode: DecodeFile;
 }
@@ -94,6 +100,8 @@ export function ServicesProvider({
       vat: lazy("vat", () => new VatApi(options)),
       opening: lazy("opening", () => new OpeningApi(options)),
       firm: lazy<FirmApiShape>("firm", () => new FirmApi(options)),
+      questions: lazy<QuestionsApiShape>("questions", () => new QuestionsApi(options)),
+      receipts: lazy<ReceiptsApiShape>("receipts", () => new ReceiptsApi(options)),
       // Built lazily and only when nothing was injected: `captureQueue()`
       // opens IndexedDB, which jsdom does not have.
       queue: lazy("queue", () => captureQueue()),

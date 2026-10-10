@@ -76,6 +76,8 @@ class Decision(enum.Enum):
 class DecisionRequest:
     proposal_id: uuid.UUID
     decision: Decision
+    #: "Always do this" (ADR-113): after the approval, keep a per-administration rule. Approve only.
+    remember: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +93,22 @@ class DecideOutcome:
     approved: int = 0
     rejected: int = 0
     failed: list[Failure] = field(default_factory=list)
+    rules_created: int = 0
+
+
+class RuleRemembering(Protocol):
+    """api.firm.rules.RuleKeeper: "remember" after an approval. Advisory - never raises."""
+
+    async def remember(
+        self,
+        *,
+        organization_id: uuid.UUID,
+        administration_id: uuid.UUID,
+        counterparty: str | None,
+        account_code: str | None,
+        user_id: uuid.UUID,
+        acting_organization_id: uuid.UUID,
+    ) -> bool: ...
 
 
 class ProposalStore(Protocol):
@@ -156,6 +174,37 @@ def failure_reason(exc: Exception) -> str:
     return "posting_failed"
 
 
+async def book(
+    bank: BankReconciler,
+    *,
+    administration_id: uuid.UUID,
+    bank_transaction_id: uuid.UUID | None,
+    document_id: uuid.UUID | None,
+    document_kind: CandidateKind | None,
+    actor_user_id: uuid.UUID,
+) -> None:
+    """The approve path's posting step: what a click on the Bank screen calls. Shared by a
+    person's approval and a rule's (ADR-113), so there is exactly one."""
+    if bank_transaction_id is None or document_id is None:
+        raise _NotBookable
+    if document_kind is CandidateKind.EXPENSE:
+        await bank.reconcile_with_expense(
+            administration_id=administration_id,
+            transaction_id=bank_transaction_id,
+            expense_id=document_id,
+            actor_user_id=actor_user_id,
+        )
+    elif document_kind is CandidateKind.SALES_INVOICE:
+        await bank.reconcile_with_invoice(
+            administration_id=administration_id,
+            transaction_id=bank_transaction_id,
+            invoice_id=document_id,
+            actor_user_id=actor_user_id,
+        )
+    else:
+        raise _NotBookable
+
+
 # ---------------------------------------------------------------------------
 # The review sheet
 # ---------------------------------------------------------------------------
@@ -215,11 +264,13 @@ class ProposalReviewService:
         authorization: AuthorizationService,
         bank: BankReconciler,
         audit_log: AuditLog,
+        rules: RuleRemembering | None = None,
     ) -> None:
         self._store = store
         self._authorization = authorization
         self._bank = bank
         self._audit = audit_log
+        self._rules = rules
 
     async def _allowed(
         self, user_id: uuid.UUID, administration_id: uuid.UUID, permission: tuple[str, str]
@@ -264,13 +315,33 @@ class ProposalReviewService:
         act, recorded in the firm's trail with the client's administration_id)."""
         outcome = DecideOutcome()
         for request in decisions:
-            reason = await self._decide_one(user_id, acting_organization_id, request, portfolio)
+            reason, record = await self._decide_one(
+                user_id, acting_organization_id, request, portfolio
+            )
             if reason is not None:
                 outcome.failed.append(Failure(request.proposal_id, reason))
-            elif request.decision is Decision.APPROVE:
+                continue
+            if request.decision is Decision.APPROVE:
                 outcome.approved += 1
             else:
                 outcome.rejected += 1
+            if (
+                request.remember
+                and request.decision is Decision.APPROVE
+                and record is not None
+                and self._rules is not None
+                and await self._rules.remember(
+                    organization_id=record.organization_id,
+                    administration_id=record.administration_id,
+                    counterparty=record.counterparty,
+                    account_code=record.account_code,
+                    user_id=user_id,
+                    acting_organization_id=acting_organization_id,
+                )
+            ):
+                # ADR-113: one rule per administration, made only after this person's own
+                # approval in it went through - authorized per item above.
+                outcome.rules_created += 1
         return outcome
 
     async def _decide_one(
@@ -279,12 +350,26 @@ class ProposalReviewService:
         acting_organization_id: uuid.UUID,
         request: DecisionRequest,
         portfolio: frozenset[uuid.UUID],
-    ) -> str | None:
-        """None when the proposal now stands decided as asked; otherwise why not."""
+    ) -> tuple[str | None, ProposalRecord | None]:
+        """(None, record) when the proposal now stands decided as asked; otherwise why not."""
         record = await self._store.get(proposal_id=request.proposal_id)
         if record is None:
             # Another tenant's proposal, or none at all - indistinguishable on purpose.
-            return "proposal_not_found"
+            return "proposal_not_found", None
+        reason = await self._decide_found(
+            user_id, acting_organization_id, request, portfolio, record
+        )
+        return reason, record
+
+    async def _decide_found(
+        self,
+        user_id: uuid.UUID,
+        acting_organization_id: uuid.UUID,
+        request: DecisionRequest,
+        portfolio: frozenset[uuid.UUID],
+        record: ProposalRecord,
+    ) -> str | None:
+        """None when the proposal now stands decided as asked; otherwise why not."""
 
         async def audit(outcome: AuditOutcome, reason: str | None = None) -> None:
             await self._record(
@@ -331,24 +416,14 @@ class ProposalReviewService:
         return None
 
     async def _book(self, record: ProposalRecord, user_id: uuid.UUID) -> None:
-        if record.bank_transaction_id is None or record.document_id is None:
-            raise _NotBookable
-        if record.document_kind is CandidateKind.EXPENSE:
-            await self._bank.reconcile_with_expense(
-                administration_id=record.administration_id,
-                transaction_id=record.bank_transaction_id,
-                expense_id=record.document_id,
-                actor_user_id=user_id,
-            )
-        elif record.document_kind is CandidateKind.SALES_INVOICE:
-            await self._bank.reconcile_with_invoice(
-                administration_id=record.administration_id,
-                transaction_id=record.bank_transaction_id,
-                invoice_id=record.document_id,
-                actor_user_id=user_id,
-            )
-        else:
-            raise _NotBookable
+        await book(
+            self._bank,
+            administration_id=record.administration_id,
+            bank_transaction_id=record.bank_transaction_id,
+            document_id=record.document_id,
+            document_kind=record.document_kind,
+            actor_user_id=user_id,
+        )
 
     async def _record(
         self,

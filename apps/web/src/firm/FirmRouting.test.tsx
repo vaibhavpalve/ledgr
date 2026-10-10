@@ -10,7 +10,8 @@ import { MemoryKeyVault, WebCryptoCipher } from "../capture/webCryptoCipher";
 import { jsonResponse } from "../testing/fakeFetch";
 import { renderApp } from "../testing/renderApp";
 import { meFixture, testAdministration } from "../testing/session";
-import { fakeFirmApi } from "./fakeFirmApi";
+import { fakeFirmApi, FIRM_MUTATIONS } from "./fakeFirmApi";
+import { clearLastQuery, storeLastQuery } from "./lastQuery";
 
 /**
  * Where a firm user lands: with no client open, the firm home ("To do"); it is in the rail with
@@ -163,7 +164,58 @@ describe("routing the firm home", () => {
     expect(await screen.findByTestId("firm-row-adm-1")).toBeTruthy();
     expect(await screen.findByTestId("firm-reply-t-1")).toBeTruthy();
     expect(await screen.findByTestId("firm-deadline-2026-Q3")).toBeTruthy();
-    const mutations = ["markSeen", "snooze", "assign", "decideProposals"];
-    expect(firm.calls.filter((call) => mutations.includes(call.method))).toEqual([]);
+    // The rail's saved views (wave 2) are read too, and still nothing is written.
+    expect(await screen.findByTestId("nav-view-view-1")).toBeTruthy();
+    expect(firm.calls.filter((call) => FIRM_MUTATIONS.includes(call.method))).toEqual([]);
+  });
+
+  it("inside a client, a firm user finds Client rules in the rail and the next-client control in the header", async () => {
+    stubMe(
+      meFixture({
+        organization: { id: "org-f", name: "Bakker & Co", kind: "firm", kvk_number: "11223344" },
+        administrations: [testAdministration],
+        active_administration_id: testAdministration.id,
+      }),
+    );
+    storeLastQuery({
+      chip: "my_move",
+      q: "",
+      assigned: "me",
+      sort: "risk",
+      dir: "asc",
+      vat_frequency: null,
+    });
+    try {
+      renderApp(
+        { authenticated: true, language: "en", services: { firm: fakeFirmApi() } },
+        { route: "/rules" },
+      );
+      expect(await screen.findByTestId("rules-screen")).toBeTruthy();
+      const rail = screen.getByTestId("shell-rail");
+      const entry = within(rail).getByTestId("nav-rules");
+      expect(entry.getAttribute("href")).toBe("/rules");
+      expect(entry.getAttribute("aria-current")).toBe("page");
+      const header = screen.getByTestId("client-header");
+      expect((await within(header).findByTestId("next-client-remaining")).textContent).toBe(
+        "3 left",
+      );
+    } finally {
+      clearLastQuery();
+    }
+  });
+
+  it("the rail lists the firm's saved views, with their count", async () => {
+    stubMe(firmMe);
+    renderApp(
+      { authenticated: true, language: "en", services: { firm: fakeFirmApi() } },
+      { route: "/todo" },
+    );
+    const rail = await screen.findByTestId("shell-rail");
+    const view = await within(rail).findByTestId("nav-view-view-1");
+    expect(view.textContent).toContain("BTW maand");
+    expect(within(rail).getByTestId("nav-views").textContent).toContain("Saved views");
+    // No client open: no client rules entry and no next-client control.
+    expect(within(rail).queryByTestId("nav-rules")).toBeNull();
+    expect(screen.queryByTestId("next-client")).toBeNull();
   });
 });

@@ -12,8 +12,11 @@ import {
   Landmark,
   ListTodo,
   LayoutGrid,
+  ListChecks,
   LogOut,
+  MessagesSquare,
   Percent,
+  Receipt,
   Search,
   Settings,
   ScrollText,
@@ -29,6 +32,8 @@ import "./Shell.css";
 import { useAuth } from "../auth/AuthProvider";
 import { ClientHeader } from "../client/ClientHeader";
 import { useSwitcherShortcut } from "../client/ClientSwitcher";
+import { NextClientControl } from "../firm/NextClient";
+import { SavedViewList } from "../firm/SavedViews";
 import { useServices } from "../session/ServicesProvider";
 import { useSession } from "../session/SessionProvider";
 import { Badge, Logo, NavGroup, NavItem } from "../ui";
@@ -89,6 +94,13 @@ const CLIENTS: NavDef = {
 /** The firm home (docs/firm-home): everything waiting on the accountant, across clients. */
 const TODO: NavDef = { id: "todo", to: "/todo", labelKey: "common.nav.todo", icon: ListTodo };
 const INBOX: NavDef = { id: "inbox", to: "/inbox", labelKey: "common.nav.inbox", icon: Inbox };
+/** The open client's approval rules and receipt reminders (contract-wave2, ADR-113/114). */
+const CLIENT_RULES: NavDef = {
+  id: "rules",
+  to: "/rules",
+  labelKey: "client.rules.nav",
+  icon: ListChecks,
+};
 
 /**
  * The rail's nine sections, in the order of the Boekje design. Their ids are the
@@ -154,6 +166,20 @@ const VAT: NavDef = {
   to: "/vat",
   labelKey: "common.nav.vat",
   icon: Percent,
+};
+/** FR-FRM-005: the questions between this client and its accountant (both sides use it). */
+const QUESTIONS: NavDef = {
+  id: "questions",
+  to: "/questions",
+  labelKey: "client.questions.nav",
+  icon: MessagesSquare,
+};
+/** The bank payments still waiting on a receipt (the chasing mail links here). */
+const RECEIPTS_NEEDED: NavDef = {
+  id: "receipts-needed",
+  to: "/receipts-needed",
+  labelKey: "client.receipts.nav",
+  icon: Receipt,
 };
 
 /**
@@ -268,6 +294,8 @@ export function AppShell() {
   const compactExtras = [
     ...(hasAdministration
       ? [
+          { to: "/questions", label: t("client.questions.nav") },
+          { to: "/receipts-needed", label: t("client.receipts.nav") },
           { to: "/invoices", label: t("common.nav.sales") },
           { to: "/customers", label: t("common.nav.contacts") },
           { to: "/ledger", label: t("common.nav.ledger") },
@@ -283,6 +311,7 @@ export function AppShell() {
           { to: "/todo", label: t("common.nav.todo") },
           { to: "/inbox", label: t("common.nav.inbox") },
           { to: "/clients", label: t("common.nav.clients") },
+          ...(hasAdministration ? [{ to: "/rules", label: t("client.rules.nav") }] : []),
         ]
       : []),
   ];
@@ -314,8 +343,10 @@ export function AppShell() {
             <div className="shell__nav-group">
               <NavGroup>{t("common.nav.group.bookkeeping")}</NavGroup>
               {navItem(DASHBOARD)}
+              {navItem(QUESTIONS)}
               {navItem(SALES)}
               {navItem(PURCHASES, reviewBadge)}
+              {navItem(RECEIPTS_NEEDED)}
               {navItem(BANK)}
               {navItem(VAT)}
               {navItem(JOURNAL)}
@@ -331,8 +362,10 @@ export function AppShell() {
               {navItem(TODO)}
               {navItem(INBOX, inboxBadge)}
               {navItem(CLIENTS)}
+              {hasAdministration ? navItem(CLIENT_RULES) : null}
             </div>
           ) : null}
+          {isFirm ? <SavedViewList api={firm} variant="rail" /> : null}
         </nav>
 
         <div className="shell__rail-foot">
@@ -383,6 +416,8 @@ export function AppShell() {
             <ChevronDown size={16} strokeWidth={1.8} aria-hidden="true" />
           </button>
         ) : null}
+        {/* "Next client with work →" (contract-wave2): renders only for a firm user inside a client. */}
+        <NextClientControl />
         <button
           type="button"
           className="shell__search"

@@ -16,6 +16,8 @@ from api.bank.repository import SqlBankRepository
 from api.bank.service import BankService
 from api.firm.proposals import ProposalGenerator, ProposalHook
 from api.firm.proposals_repository import SqlProposalRepository
+from api.firm.rules import RuleApplier
+from api.firm.rules_repository import SqlRuleRepository
 from api.invoicing.payments import SalesPaymentService
 from api.invoicing.payments_repository import SqlPaymentRepository
 from api.ledger.service import build_ledger_service
@@ -24,31 +26,49 @@ from api.ledger.service import build_ledger_service
 def build_bank_service(
     session: AsyncSession, authorization: AuthorizationService | None = None
 ) -> BankService:
+    service, _ = _wire(session, SqlBankRepository(session), authorization)
+    return service
+
+
+def build_proposal_hook(session: AsyncSession, repository: SqlBankRepository) -> ProposalHook:
+    """ADR-110's booking proposals, on the same tenant-scoped session as the import or
+    reconciliation that triggers them - with ADR-113's rules applied to what it proposes, booked
+    through a BankService on that same session."""
+    _, hook = _wire(session, repository, None)
+    return hook
+
+
+def _wire(
+    session: AsyncSession,
+    repository: SqlBankRepository,
+    authorization: AuthorizationService | None,
+) -> tuple[BankService, ProposalHook]:
     audit_log = AuditLog(SqlAuditRepository(session))
-    repository = SqlBankRepository(session)
-    return BankService(
+    authorization = authorization or AuthorizationService(SqlAuthorizationRepository(session))
+    proposals = SqlProposalRepository(session)
+    generator = ProposalGenerator(proposals=proposals, matching=repository)
+    hook = ProposalHook(generator=generator, proposals=proposals)
+    service = BankService(
         repository,
         build_ledger_service(session, audit_log),
         SalesPaymentService(
             repository=SqlPaymentRepository(session),
             ledger=build_ledger_service(session, audit_log),
-            authorization=authorization
-            or AuthorizationService(SqlAuthorizationRepository(session)),
+            authorization=authorization,
             audit_log=audit_log,
         ),
         audit_log,
-        build_proposal_hook(session, repository),
+        hook,
     )
-
-
-def build_proposal_hook(session: AsyncSession, repository: SqlBankRepository) -> ProposalHook:
-    """ADR-110's booking proposals, on the same tenant-scoped session as the import or
-    reconciliation that triggers them."""
-    proposals = SqlProposalRepository(session)
-    return ProposalHook(
-        generator=ProposalGenerator(proposals=proposals, matching=repository),
-        proposals=proposals,
+    # ADR-113: a rule approves through exactly this BankService - the wave-1 approve path. Wired
+    # after construction because the service and the generator each need the other.
+    generator.auto_approve = RuleApplier(
+        store=SqlRuleRepository(session),
+        authorization=authorization,
+        bank=service,
+        audit_log=audit_log,
     )
+    return service, hook
 
 
 def build_bank_feed_service(

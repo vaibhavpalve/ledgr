@@ -28,8 +28,8 @@ has already opened the thread since that message is not mailed about it.
 
 --- What the mail says ---
 
-That there is a question, for which administration, and a link to the app's start page (there is
-no client-side question screen yet, so the mail promises none). Not the subject and
+That there is a question, for which administration, and a link to the client's in-app question
+list (`/questions`, contract-wave2.md). Not the subject and
 not the body: either may name an amount or a counterparty, and the mail leaves the EU-hosted
 product for whatever mailbox the person reads (FR-NTF-004's rule for push, applied to e-mail;
 PRIV-012's plain text, no tracking).
@@ -106,8 +106,8 @@ def build_message(
                 "reminders.question.body", language, name=administration_name, product=product
             ),
             "",
-            # The app's start page: there is no client-side question screen yet (wave 2).
-            f"{base}/",
+            # The client's in-app question list (wave 2, contract-wave2.md).
+            f"{base}/questions",
             "",
             translate("reminders.question.why", language, product=product),
             "",

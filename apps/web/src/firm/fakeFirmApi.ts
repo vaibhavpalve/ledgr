@@ -8,6 +8,13 @@
  */
 
 import type {
+  BookingRuleView,
+  ChaseSettingView,
+  FirmChasePreviewView,
+  FirmClientRef,
+  FirmNextClientView,
+  FirmSavedView,
+  RulePostingView,
   FirmDeadlineView,
   FirmInboxAwaiting,
   FirmInboxView,
@@ -269,6 +276,92 @@ function fakeInboxFor(awaiting: FirmInboxAwaiting | undefined): FirmInboxView {
   };
 }
 
+// --- wave 2 (docs/firm-home/contract-wave2.md) ---
+
+export const fakeChasePreview: FirmChasePreviewView = {
+  items: [
+    {
+      administration_id: "adm-2",
+      display_name: "Eva Mulder Design",
+      missing_count: 6,
+      recipient_count: 1,
+      last_chased_at: null,
+      blocked_reason: null,
+    },
+    {
+      administration_id: "adm-1",
+      display_name: "Bakkerij Jansen",
+      missing_count: 3,
+      recipient_count: 2,
+      last_chased_at: "2026-10-08T09:00:00+00:00",
+      blocked_reason: "chased_recently",
+    },
+    {
+      administration_id: "adm-3",
+      display_name: "Hoveniersbedrijf De Linde",
+      missing_count: 0,
+      recipient_count: 1,
+      last_chased_at: null,
+      blocked_reason: "nothing_missing",
+    },
+  ],
+};
+
+export function fakeRule(overrides: Partial<BookingRuleView> = {}): BookingRuleView {
+  return {
+    id: "rule-1",
+    counterparty_key: "kpn",
+    counterparty_label: "KPN B.V.",
+    account_code: "4500",
+    account_name: "Telefoon",
+    max_amount: null,
+    status: "active",
+    suspended_reason: null,
+    created_by_name: "Sanne de Vries",
+    created_at: "2026-10-02T10:00:00+00:00",
+    postings_count: 2,
+    last_posted_at: "2026-10-07T06:00:00+00:00",
+    ...overrides,
+  };
+}
+
+export const fakeRulePostings: readonly RulePostingView[] = [
+  {
+    proposal_id: "p-10",
+    rule_id: "rule-1",
+    date: "2026-10-06",
+    amount: "70.27",
+    counterparty: "KPN B.V.",
+    account_code: "4500",
+    posted_at: "2026-10-07T06:00:00+00:00",
+    undoable: true,
+  },
+  {
+    proposal_id: "p-11",
+    rule_id: "rule-1",
+    date: "2026-09-06",
+    amount: "70.27",
+    counterparty: "KPN B.V.",
+    account_code: "4500",
+    posted_at: "2026-09-07T06:00:00+00:00",
+    undoable: false,
+  },
+];
+
+/** The fake's ordered client list for `/next`: adm-2 → adm-1 → adm-3, then the end. */
+const NEXT_ORDER: readonly FirmClientRef[] = [
+  { administration_id: "adm-2", display_name: "Eva Mulder Design" },
+  { administration_id: "adm-1", display_name: "Bakkerij Jansen" },
+  { administration_id: "adm-3", display_name: "Hoveniersbedrijf De Linde" },
+];
+
+export function fakeNextClient(after: string): FirmNextClientView {
+  const index = NEXT_ORDER.findIndex((entry) => entry.administration_id === after);
+  const next = NEXT_ORDER[index + 1];
+  if (next === undefined) return { administration_id: null, display_name: null, remaining: 0 };
+  return { ...next, remaining: NEXT_ORDER.length - (index + 1) };
+}
+
 export interface FakeFirmApi extends FirmApiShape {
   readonly calls: { method: string; args: unknown[] }[];
 }
@@ -282,6 +375,41 @@ export function fakeFirmApi(overrides: Partial<FirmApiShape> = {}): FakeFirmApi 
       return impl(...args);
     };
 
+  // Server-side state the wave-2 fakes keep, so create/rename/archive/retire read back.
+  let views: FirmSavedView[] = [
+    {
+      id: "view-1",
+      name: "BTW maand",
+      query: {
+        chip: "vat_not_filed",
+        q: "",
+        assigned: "any",
+        sort: "vat_due",
+        dir: "asc",
+        vat_frequency: "monthly",
+      },
+      count: 1,
+    },
+  ];
+  let rules: BookingRuleView[] = [
+    fakeRule(),
+    fakeRule({
+      id: "rule-2",
+      counterparty_key: "shell",
+      counterparty_label: "Shell",
+      account_code: "4310",
+      account_name: "Brandstof",
+      max_amount: "150.00",
+      status: "suspended",
+      suspended_reason: "The person who made this rule can no longer reconcile for this client.",
+      postings_count: 0,
+      last_posted_at: null,
+    }),
+  ];
+  let postings: RulePostingView[] = [...fakeRulePostings];
+  let chase: ChaseSettingView = { enabled: false, cadence: "weekly" };
+  let nextViewId = 2;
+
   const base: FirmApiShape = {
     getSummary: async () => fakeSummary,
     markSeen: async () => undefined,
@@ -291,12 +419,64 @@ export function fakeFirmApi(overrides: Partial<FirmApiShape> = {}): FakeFirmApi 
     listStaff: async () => [...fakeStaff],
     getDeadlines: async () => [...fakeDeadlines],
     listProposals: async () => fakeProposals,
-    decideProposals: async (decisions) => ({
-      approved: decisions.filter((entry) => entry.decision === "approve").length,
-      rejected: decisions.filter((entry) => entry.decision === "reject").length,
-      failed: [],
-    }),
+    decideProposals: async (decisions) => {
+      // Like the server (decision 1): one rule per administration among the remembered approvals.
+      const remembered = new Set(
+        decisions
+          .filter((entry) => entry.decision === "approve" && entry.remember === true)
+          .map((entry) => adminOfProposal(entry.proposalId)),
+      );
+      return {
+        approved: decisions.filter((entry) => entry.decision === "approve").length,
+        rejected: decisions.filter((entry) => entry.decision === "reject").length,
+        failed: [],
+        rules_created: remembered.size,
+      };
+    },
     getInbox: async (options) => fakeInboxFor(options?.awaiting),
+    previewChase: async (ids) => ({
+      items: fakeChasePreview.items.filter((item) => ids.includes(item.administration_id)),
+    }),
+    sendChase: async (ids) => {
+      const items = fakeChasePreview.items.filter((item) => ids.includes(item.administration_id));
+      const blocked = items.filter((item) => item.blocked_reason !== null);
+      return {
+        sent: items.length - blocked.length,
+        skipped: blocked.map((item) => ({
+          administration_id: item.administration_id,
+          reason: item.blocked_reason ?? "",
+        })),
+      };
+    },
+    listViews: async () => views.map((view) => ({ ...view })),
+    createView: async (name, query) => {
+      const view: FirmSavedView = { id: `view-${nextViewId++}`, name, query, count: 2 };
+      views = [...views, view];
+      return view;
+    },
+    renameView: async (id, name) => {
+      views = views.map((view) => (view.id === id ? { ...view, name } : view));
+    },
+    archiveView: async (id) => {
+      views = views.filter((view) => view.id !== id);
+    },
+    nextClient: async (after) => fakeNextClient(after),
+    listRules: async () => rules.map((rule) => ({ ...rule })),
+    retireRule: async (_administrationId, ruleId) => {
+      rules = rules.map((rule) => (rule.id === ruleId ? { ...rule, status: "retired" } : rule));
+    },
+    setRuleMaxAmount: async (_administrationId, ruleId, maxAmount) => {
+      rules = rules.map((rule) => (rule.id === ruleId ? { ...rule, max_amount: maxAmount } : rule));
+    },
+    listRulePostings: async () => postings.map((posting) => ({ ...posting })),
+    undoRulePosting: async (_administrationId, proposalId) => {
+      postings = postings.filter((posting) => posting.proposal_id !== proposalId);
+    },
+    getChaseSetting: async () => ({ ...chase }),
+    setChaseSetting: async (_administrationId, setting) => {
+      chase = { ...setting };
+      return { ...chase };
+    },
     ...overrides,
   };
 
@@ -312,5 +492,43 @@ export function fakeFirmApi(overrides: Partial<FirmApiShape> = {}): FakeFirmApi 
     listProposals: record("listProposals", base.listProposals),
     decideProposals: record("decideProposals", base.decideProposals),
     getInbox: record("getInbox", base.getInbox),
+    previewChase: record("previewChase", base.previewChase),
+    sendChase: record("sendChase", base.sendChase),
+    listViews: record("listViews", base.listViews),
+    createView: record("createView", base.createView),
+    renameView: record("renameView", base.renameView),
+    archiveView: record("archiveView", base.archiveView),
+    nextClient: record("nextClient", base.nextClient),
+    listRules: record("listRules", base.listRules),
+    retireRule: record("retireRule", base.retireRule),
+    setRuleMaxAmount: record("setRuleMaxAmount", base.setRuleMaxAmount),
+    listRulePostings: record("listRulePostings", base.listRulePostings),
+    undoRulePosting: record("undoRulePosting", base.undoRulePosting),
+    getChaseSetting: record("getChaseSetting", base.getChaseSetting),
+    setChaseSetting: record("setChaseSetting", base.setChaseSetting),
   };
 }
+
+function adminOfProposal(proposalId: string): string {
+  for (const group of fakeProposals.groups) {
+    const found = group.proposals.find((proposal) => proposal.id === proposalId);
+    if (found !== undefined) return found.administration_id;
+  }
+  return proposalId;
+}
+
+/** The mutating methods: none may run on mount (the StrictMode test). */
+export const FIRM_MUTATIONS: readonly string[] = [
+  "markSeen",
+  "snooze",
+  "assign",
+  "decideProposals",
+  "sendChase",
+  "createView",
+  "renameView",
+  "archiveView",
+  "retireRule",
+  "setRuleMaxAmount",
+  "undoRulePosting",
+  "setChaseSetting",
+];

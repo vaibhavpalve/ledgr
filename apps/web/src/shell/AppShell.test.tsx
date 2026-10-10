@@ -82,10 +82,13 @@ describe("the rail — the Boekje design's menu", () => {
     const rail = await railAt("/");
 
     expect(within(rail).getByText("Bookkeeping")).toBeTruthy();
+    // Questions and Receipts needed (contract-wave2) sit beside the sections they belong with.
     expect(labelsIn(rail)).toEqual([
       "Overview",
+      "Questions",
       "Sales",
       "Purchases",
+      "Receipts needed",
       "Bank",
       "BTW",
       "Journal",

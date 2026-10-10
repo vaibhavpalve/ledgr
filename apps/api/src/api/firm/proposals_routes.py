@@ -55,6 +55,8 @@ from api.firm.proposals_service import (
     ProposalGroup,
     ProposalReviewService,
 )
+from api.firm.rules import RuleKeeper
+from api.firm.rules_repository import SqlRuleRepository
 from api.firm.worklist_access import Portfolio, require_portfolio_permission
 from api.i18n.http import problem
 from api.tenancy import TenantContext, get_tenant_context
@@ -81,11 +83,13 @@ async def get_proposal_review_service(
     session: AsyncSession = Depends(get_db_session),
     authorization: AuthorizationService = Depends(get_authorization_service),
 ) -> ProposalReviewService:
+    audit_log = AuditLog(SqlAuditRepository(session))
     return ProposalReviewService(
         store=SqlProposalRepository(session),
         authorization=authorization,
         bank=build_bank_service(session, authorization),
-        audit_log=AuditLog(SqlAuditRepository(session)),
+        audit_log=audit_log,
+        rules=RuleKeeper(store=SqlRuleRepository(session), audit_log=audit_log),
     )
 
 
@@ -127,6 +131,7 @@ def _outcome_json(outcome: DecideOutcome) -> dict[str, object]:
         "approved": outcome.approved,
         "rejected": outcome.rejected,
         "failed": [{"proposal_id": str(f.proposal_id), "reason": f.reason} for f in outcome.failed],
+        "rules_created": outcome.rules_created,
     }
 
 
@@ -150,6 +155,8 @@ def _user(request: Request, tenant: TenantContext) -> uuid.UUID:
 class DecisionBody(BaseModel):
     proposal_id: str
     decision: str
+    #: ADR-113: "Always do this" - approve only.
+    remember: bool = False
 
 
 class DecideBody(BaseModel):
@@ -219,13 +226,19 @@ async def decide_proposals(
     decisions: list[DecisionRequest] = []
     for entry in body.decisions:
         try:
+            decision = Decision(entry.decision)
             decisions.append(
                 DecisionRequest(
-                    proposal_id=uuid.UUID(entry.proposal_id), decision=Decision(entry.decision)
+                    proposal_id=uuid.UUID(entry.proposal_id),
+                    decision=decision,
+                    remember=entry.remember,
                 )
             )
         except ValueError as exc:
             raise _invalid(request, "decisions") from exc
+        if entry.remember and decision is not Decision.APPROVE:
+            # A rule only ever approves; "remember a rejection" is not something it can do.
+            raise _invalid(request, "remember")
     outcome = await service.decide(
         user_id=user_id,
         acting_organization_id=tenant.organization_id,

@@ -1911,7 +1911,9 @@ export type FirmActivityKind =
   | "auto_bookings_ready"
   | "client_replies"
   | "bank_feeds_broken"
-  | "possible_duplicates";
+  | "possible_duplicates"
+  /** Wave 2 (ADR-113): bookings an approval rule posted on its own. */
+  | "rule_postings";
 
 export interface FirmClientRef {
   readonly administration_id: string;
@@ -1999,8 +2001,10 @@ export interface FirmWorklistRowView {
   readonly vat: FirmWorklistVatView | null;
   readonly snoozed_until: string | null;
   readonly snooze_reason: string | null;
-  /** Always null in this wave (chasing is wave 2). */
+  /** The last receipt-chase mail (`chase_send`, ADR-114); null if never chased. */
   readonly last_chased_at: string | null;
+  /** Active approval rules on this client (ADR-113). Absent from a wave-1 server. */
+  readonly rules_count?: number;
   readonly risk: number;
 }
 
@@ -2079,6 +2083,8 @@ export interface FirmDecideResultView {
   readonly approved: number;
   readonly rejected: number;
   readonly failed: readonly { readonly proposal_id: string; readonly reason: string }[];
+  /** Wave 2 (ADR-113): per-administration rules made by `remember: true`. Absent before it. */
+  readonly rules_created?: number;
 }
 
 export interface FirmInboxItemView {
@@ -2104,4 +2110,172 @@ export type FirmInboxAwaiting = "firm" | "client" | "any";
 export interface FirmInboxView {
   readonly unread_count: number;
   readonly items: readonly FirmInboxItemView[];
+}
+
+/*
+ * Firm home, wave 2 (docs/firm-home/contract-wave2.md): approval rules (ADR-113), receipt
+ * chasing (ADR-114), saved views and "next client with work" (ADR-115). Money stays a decimal
+ * STRING (NFR-031).
+ */
+
+export type FirmVatFrequency = "monthly" | "quarterly" | "yearly";
+
+/** A saved view's stored worklist query, as the wire names it. */
+export interface FirmSavedViewQuery {
+  readonly chip: FirmWorklistChip;
+  readonly q: string;
+  readonly assigned: string;
+  readonly sort: FirmWorklistSort;
+  readonly dir: "asc" | "desc";
+  readonly vat_frequency?: FirmVatFrequency | null;
+}
+
+/** One of the caller's own saved views, with its live count. */
+export interface FirmSavedView {
+  readonly id: string;
+  readonly name: string;
+  readonly query: FirmSavedViewQuery;
+  /** null when the stored query no longer validates (ADR-115). */
+  readonly count: number | null;
+}
+
+/** `GET /v1/firm/views`. */
+export interface FirmSavedViewsView {
+  readonly views: readonly FirmSavedView[];
+}
+
+/** `GET /v1/firm/worklist/next`: the next client in the same query; null at the end. */
+export interface FirmNextClientView {
+  readonly administration_id: string | null;
+  readonly display_name: string | null;
+  readonly remaining: number;
+}
+
+export type FirmChaseBlockedReason = "nothing_missing" | "chased_recently" | "no_recipient";
+
+/** One client in `POST /v1/firm/chase/preview`. */
+export interface FirmChasePreviewItem {
+  readonly administration_id: string;
+  readonly display_name: string;
+  readonly missing_count: number;
+  readonly recipient_count: number;
+  readonly last_chased_at: string | null;
+  readonly blocked_reason: FirmChaseBlockedReason | null;
+}
+
+export interface FirmChasePreviewView {
+  readonly items: readonly FirmChasePreviewItem[];
+}
+
+/** `POST /v1/firm/chase/send`. */
+export interface FirmChaseSendResultView {
+  readonly sent: number;
+  readonly skipped: readonly { readonly administration_id: string; readonly reason: string }[];
+}
+
+export type ChaseCadence = "weekly" | "fortnightly";
+
+/** `GET|POST /v1/administrations/{id}/chase-setting`. */
+export interface ChaseSettingView {
+  readonly enabled: boolean;
+  readonly cadence: ChaseCadence;
+}
+
+export type BookingRuleStatus = "active" | "suspended" | "retired";
+
+/** One per-administration approval rule (FR-BNK-006: never across tenants). */
+export interface BookingRuleView {
+  readonly id: string;
+  readonly counterparty_key: string;
+  readonly counterparty_label: string | null;
+  readonly account_code: string;
+  readonly account_name: string | null;
+  readonly max_amount: string | null;
+  readonly status: BookingRuleStatus;
+  readonly suspended_reason: string | null;
+  readonly created_by_name: string | null;
+  readonly created_at: string;
+  readonly postings_count: number;
+  readonly last_posted_at: string | null;
+}
+
+/** One booking a rule posted, `GET /v1/administrations/{id}/rule-postings`. */
+export interface RulePostingView {
+  readonly proposal_id: string;
+  readonly rule_id: string;
+  readonly date: string;
+  readonly amount: string;
+  readonly counterparty: string | null;
+  readonly account_code: string;
+  readonly posted_at: string;
+  readonly undoable: boolean;
+}
+
+/* ==========================================================================
+ * QUESTION THREADS (FR-FRM-005, ADR-111) - `api.questions.routes` exactly
+ * ========================================================================== */
+
+/** Which side wrote: the firm keeping the books, or the client whose books they are. */
+export type QuestionSide = "firm" | "client";
+export type QuestionThreadStatus = "open" | "resolved";
+/** `api.questions.model.ResourceType`: what a thread may be about. */
+export type QuestionResourceType = "bank_transaction" | "document" | "expense" | "sales_invoice";
+
+/** `thread_json`: one row of `GET /v1/administrations/{id}/questions?status=`. */
+export interface QuestionThreadView {
+  readonly id: string;
+  readonly administration_id: string;
+  readonly subject: string;
+  readonly status: QuestionThreadStatus;
+  /** Whose move it is: always the side that did NOT write the last message. */
+  readonly awaiting: QuestionSide;
+  readonly resource_type: QuestionResourceType | null;
+  readonly resource_id: string | null;
+  readonly created_by_user_id: string;
+  readonly created_at: string;
+  readonly last_message_at: string;
+  readonly resolved_at: string | null;
+  readonly resolved_by_user_id: string | null;
+  /** For the caller: a message from the other side newer than their last read. */
+  readonly unread: boolean;
+}
+
+/** `message_json`. */
+export interface QuestionMessageView {
+  readonly id: string;
+  readonly thread_id: string;
+  readonly author_user_id: string;
+  readonly author_email: string | null;
+  readonly author_side: QuestionSide;
+  readonly body: string;
+  readonly created_at: string;
+}
+
+/** `GET .../questions/{thread_id}` (which marks it read) and `POST .../questions`. */
+export interface QuestionThreadDetailView extends QuestionThreadView {
+  readonly messages: readonly QuestionMessageView[];
+}
+
+/** `POST .../questions/{thread_id}/messages`: the new message, and the thread after it. */
+export interface QuestionReplyView extends QuestionMessageView {
+  readonly thread: QuestionThreadView;
+}
+
+/* ==========================================================================
+ * MISSING RECEIPTS (docs/firm-home/contract-wave2.md, backend-chasing)
+ * ========================================================================== */
+
+/** One bank debit with no candidate document and no pending proposal. `amount` is a decimal string. */
+export interface MissingReceiptView {
+  readonly bank_transaction_id: string;
+  readonly booking_date: string;
+  readonly amount: string;
+  readonly counterparty: string | null;
+  readonly description: string | null;
+}
+
+/** `GET /v1/administrations/{id}/missing-receipts`. */
+export interface MissingReceiptsView {
+  readonly items: readonly MissingReceiptView[];
+  readonly count: number;
 }

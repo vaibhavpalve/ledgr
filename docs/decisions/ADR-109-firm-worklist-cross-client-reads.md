@@ -125,3 +125,11 @@ savepoint that never fails a sign-in (a build deployed before 0078 still signs p
 - "Possible duplicates" in the summary is the exact half of FR-EXP-001g only; the trigram half
   stays per receipt.
 - Reversal of 0078 is documented in the migration header.
+
+## Wave 2 (ADR-115)
+
+The filters, chip and sort are now one `WorklistQuery`, evaluated identically by the page, saved
+views' counts and `GET /v1/firm/worklist/next`. The worklist gains a `vat_frequency` filter, and
+rows gain `last_chased_at` (`chase_send`, 0083) and `rules_count` (active `booking_rule`, 0082):
+two more set-based queries, so a page costs about ten. The summary's activity gains
+`rule_postings`.

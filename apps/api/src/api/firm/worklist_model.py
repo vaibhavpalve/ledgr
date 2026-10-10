@@ -32,6 +32,11 @@ expired consent would otherwise make the books look complete.
          - 5 when the books are more than one month behind
 
 Lower is more urgent; the default sort is ascending risk.
+
+--- One query definition (ADR-115) ---
+
+`WorklistQuery` is what decides which rows show and in which order. The page, a saved view's live
+count and "next client with work" all evaluate it over the same rows, so they cannot disagree.
 """
 
 from __future__ import annotations
@@ -76,6 +81,16 @@ class SortKey(enum.Enum):
     BANK_TO_MATCH = "bank_to_match"
     OPEN_QUESTIONS = "open_questions"
     VAT_DUE = "vat_due"
+
+
+class VatFrequency(enum.Enum):
+    """The worklist's `vat_frequency` filter (contract-wave2). `fiscal_year.period_scheme` holds
+    only monthly and quarterly today (0029), so `yearly` is accepted and matches nobody until a
+    yearly scheme exists."""
+
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    YEARLY = "yearly"
 
 
 class VatStatus(enum.Enum):
@@ -197,6 +212,10 @@ class ClientFacts:
     assigned_name: str | None = None
     snoozed_until: date | None = None
     snooze_reason: str | None = None
+    #: The latest receipt-chasing e-mail sent for this client (`chase_send`, 0083).
+    last_chased_at: datetime | None = None
+    #: Active approval rules on this client (`booking_rule`, 0082).
+    rules_count: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -365,6 +384,16 @@ class AssignedFilter:
     def mine(cls, user_id: uuid.UUID) -> AssignedFilter:
         return cls(any=False, user_id=user_id, include_unassigned=True)
 
+    @classmethod
+    def parse(cls, raw: str, *, user_id: uuid.UUID) -> AssignedFilter:
+        """`me` / `any` / a user id; ValueError for anything else."""
+        if raw == "any":
+            return cls(any=True)
+        if raw == "me":
+            # "Mine + unassigned" (ADR-109): my clients plus those assigned to nobody yet.
+            return cls.mine(user_id)
+        return cls(any=False, user_id=uuid.UUID(raw))
+
     def admits(self, row: WorklistRow) -> bool:
         assignee = row.facts.assigned_user_id
         if self.any or assignee == self.user_id:
@@ -425,6 +454,47 @@ def sort_rows(rows: Iterable[WorklistRow], key: SortKey, *, descending: bool) ->
     return [row for _, row in present] + missing
 
 
+def matches_vat_frequency(row: WorklistRow, frequency: VatFrequency | None) -> bool:
+    """A client without a VAT period (not registered, or no fiscal year yet) has no frequency and
+    is left out by any frequency filter."""
+    if frequency is None:
+        return True
+    return row.vat is not None and row.vat.frequency == frequency.value
+
+
+@dataclass(frozen=True, slots=True)
+class WorklistQuery:
+    """Everything that decides which rows a worklist shows, in which order - the one definition
+    the page, a saved view's count and "next client" all evaluate (ADR-115), so the three can
+    never disagree. Paging is not part of it."""
+
+    chip: Chip = Chip.MY_MOVE
+    q: str | None = None
+    assigned: AssignedFilter = field(default_factory=AssignedFilter)
+    sort: SortKey = SortKey.RISK
+    descending: bool = False
+    vat_frequency: VatFrequency | None = None
+
+    def admits(self, row: WorklistRow) -> bool:
+        """The filters other than the chip (the chip counts are over these)."""
+        return (
+            matches_query(row, self.q)
+            and self.assigned.admits(row)
+            and matches_vat_frequency(row, self.vat_frequency)
+        )
+
+
+def select_rows(rows: Iterable[WorklistRow], query: WorklistQuery) -> list[WorklistRow]:
+    """The rows `query` shows, in the order it shows them."""
+    in_chip = [r for r in rows if query.admits(r) and query.chip in r.chips]
+    return sort_rows(in_chip, query.sort, descending=query.descending)
+
+
+def count_rows(rows: Iterable[WorklistRow], query: WorklistQuery) -> int:
+    """What `select_rows(...)` would return, counted - a saved view's live count."""
+    return sum(1 for r in rows if query.admits(r) and query.chip in r.chips)
+
+
 @dataclass(frozen=True, slots=True)
 class WorklistPage:
     rows: list[WorklistRow]
@@ -444,21 +514,63 @@ def worklist_page(
     descending: bool,
     page: int,
     page_size: int,
+    vat_frequency: VatFrequency | None = None,
 ) -> WorklistPage:
-    """Chip counts are over the search and assignee filters, so the numbers on the chips are what
-    clicking each would show."""
-    filtered = [r for r in rows if matches_query(r, query) and assigned.admits(r)]
+    """Chip counts are over the search, assignee and VAT-frequency filters, so the numbers on the
+    chips are what clicking each would show."""
+    worklist_query = WorklistQuery(
+        chip=chip,
+        q=query,
+        assigned=assigned,
+        sort=sort,
+        descending=descending,
+        vat_frequency=vat_frequency,
+    )
+    filtered = [r for r in rows if worklist_query.admits(r)]
     counts = {c: sum(1 for r in filtered if c in r.chips) for c in Chip}
-    in_chip = [r for r in filtered if chip in r.chips]
-    ordered = sort_rows(in_chip, sort, descending=descending)
+    ordered = select_rows(filtered, worklist_query)
     start = (page - 1) * page_size
     return WorklistPage(
         rows=ordered[start : start + page_size],
-        total=len(in_chip),
+        total=len(ordered),
         page=page,
         page_size=page_size,
         chip_counts=counts,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class NextClient:
+    """`row` None at the end of the queue; `remaining` counts it and everything after it."""
+
+    row: WorklistRow | None
+    remaining: int
+
+
+def next_client(
+    rows: Sequence[WorklistRow], query: WorklistQuery, *, after: uuid.UUID | None
+) -> NextClient:
+    """Contract-wave2 decision 7: the next administration in `query`'s order after `after`,
+    skipping snoozed clients.
+
+    `after` is placed where the sort puts it even when it no longer matches the query - the usual
+    case, since finishing a client's work takes it off "My move". Its position comes from its
+    current row in `rows` (the caller's authorized portfolio). An `after` that is not in `rows`
+    (unknown, or not authorized) has no position to disclose, and the answer starts from the top.
+    """
+    candidates = [
+        r for r in select_rows(rows, query) if not r.snoozed and r.facts.administration_id != after
+    ]
+    current = None
+    if after is not None:
+        current = next((r for r in rows if r.facts.administration_id == after), None)
+    if current is None:
+        following = candidates
+    else:
+        ordered = sort_rows([*candidates, current], query.sort, descending=query.descending)
+        index = next(i for i, r in enumerate(ordered) if r.facts.administration_id == after)
+        following = ordered[index + 1 :]
+    return NextClient(row=following[0] if following else None, remaining=len(following))
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +599,8 @@ class ActivityKind(enum.Enum):
     CLIENT_REPLIES = "client_replies"
     BANK_FEEDS_BROKEN = "bank_feeds_broken"
     POSSIBLE_DUPLICATES = "possible_duplicates"
+    #: Proposals an approval rule approved (contract-wave2 decision 4, ADR-113/ADR-115).
+    RULE_POSTINGS = "rule_postings"
 
 
 @dataclass(frozen=True, slots=True)

@@ -148,12 +148,13 @@ async def test_approving_books_once_and_another_tenant_cannot_decide(
         "approved": 0,
         "rejected": 0,
         "failed": [{"proposal_id": world["proposal_id"], "reason": "proposal_not_found"}],
+        "rules_created": 0,
     }
     assert await _balance(two_organizations, world["bank"]) == "0.00"
 
     decided = await _firm(two_organizations, "POST", "/v1/firm/proposals/decide", approve)
     assert decided.status_code == 200, decided.text
-    assert decided.json() == {"approved": 1, "rejected": 0, "failed": []}
+    assert decided.json() == {"approved": 1, "rejected": 0, "failed": [], "rules_created": 0}
     # Booked through ADR-092's path: Kruisposten cleared, the bank moved once.
     assert await _balance(two_organizations, world["transit"]) == "0.00"
     assert await _balance(two_organizations, world["bank"]) == "-121.00"
@@ -161,7 +162,7 @@ async def test_approving_books_once_and_another_tenant_cannot_decide(
     # NFR-032: a retry under a NEW key is answered again and books nothing more; one under the
     # SAME key is replayed by the idempotency middleware.
     again = await _firm(two_organizations, "POST", "/v1/firm/proposals/decide", approve)
-    assert again.json() == {"approved": 1, "rejected": 0, "failed": []}
+    assert again.json() == {"approved": 1, "rejected": 0, "failed": [], "rules_created": 0}
     key = str(uuid.uuid4())
     for _ in range(2):
         replay = await _firm(
@@ -204,7 +205,7 @@ async def test_rejecting_leaves_the_ledger_and_the_line_alone(
         "/v1/firm/proposals/decide",
         {"decisions": [{"proposal_id": world["proposal_id"], "decision": "reject"}]},
     )
-    assert rejected.json() == {"approved": 0, "rejected": 1, "failed": []}
+    assert rejected.json() == {"approved": 0, "rejected": 1, "failed": [], "rules_created": 0}
     assert await _balance(two_organizations, world["transit"]) == "-121.00"
     assert await _balance(two_organizations, world["bank"]) == "0.00"
     line_status = await _scalar(

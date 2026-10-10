@@ -1,0 +1,122 @@
+/* Question threads (FR-FRM-005). Tokens only; wraps rather than scrolls at phone width. */
+
+.questions__list,
+.questions__messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-2);
+}
+
+.questions__row {
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  background: var(--ledgr-surface-paper);
+  min-width: 0;
+}
+
+.questions__row--unread {
+  border-color: var(--ledgr-border-strong);
+}
+
+.questions__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.questions__link:hover .questions__subject {
+  text-decoration: underline;
+}
+
+.questions__subject {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.questions__row--unread .questions__subject {
+  font-weight: 700;
+}
+
+.questions__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ledgr-space-2);
+}
+
+.questions__awaiting {
+  color: var(--ledgr-text-secondary);
+}
+
+.questions__muted {
+  color: var(--ledgr-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.questions__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ledgr-space-1);
+  margin-bottom: var(--ledgr-space-3);
+}
+
+.questions__message {
+  border: 1px solid var(--ledgr-border-subtle);
+  border-radius: var(--ledgr-radius-panel);
+  background: var(--ledgr-surface-paper);
+  padding: var(--ledgr-space-3) var(--ledgr-space-4);
+  max-width: 44rem;
+  min-width: 0;
+}
+
+.questions__message--mine {
+  align-self: flex-end;
+  background: var(--ledgr-surface-raised);
+}
+
+.questions__author {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ledgr-space-2);
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+
+.questions__body {
+  margin: var(--ledgr-space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.questions__composer,
+.questions__reply {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+  margin: var(--ledgr-space-3) 0;
+}
+
+.questions__composer-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.questions__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-1);
+}
+
+.questions__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ledgr-space-2);
+}

@@ -59,6 +59,26 @@
     "reminders.question.why": {
       "nl": "U ontvangt dit bericht omdat u toegang heeft tot deze administratie in {product}.",
       "en": "You receive this message because you have access to these books in {product}."
+    },
+    "reminders.chase.subject": {
+      "note": "ADR-114: the client's accountant chases missing receipts. {name} is the administration. Never an amount or counterparty.",
+      "nl": "Uw boekhouder mist bonnen van {name}",
+      "en": "Your accountant needs receipts for {name}"
+    },
+    "reminders.chase.body": {
+      "note": "ADR-114 / FR-NTF-004: only the number of bank payments, never which ones (no amounts, counterparties or descriptions). Followed by a link to the client's in-app list (/receipts-needed).",
+      "nl": {
+        "one": "Bij {count} betaling van {name} ontbreekt nog een bon of factuur. Om privacyredenen staat in deze e-mail niet welke. U ziet de betaling en kunt de bon uploaden in uw lijst:",
+        "other": "Bij {count} betalingen van {name} ontbreekt nog een bon of factuur. Om privacyredenen staat in deze e-mail niet welke. U ziet de betalingen en kunt de bonnen uploaden in uw lijst:"
+      },
+      "en": {
+        "one": "{count} bank payment of {name} still needs a receipt or invoice. For privacy, this e-mail does not say which. You can see the payment and upload the receipt in your list:",
+        "other": "{count} bank payments of {name} still need a receipt or invoice. For privacy, this e-mail does not say which. You can see the payments and upload the receipts in your list:"
+      }
+    },
+    "reminders.chase.why": {
+      "nl": "U ontvangt dit bericht omdat uw boekhouder het opvragen van ontbrekende bonnen heeft aangezet of nu om de bonnen vraagt, en u bonnen kunt aanleveren in {product}.",
+      "en": "You receive this message because your accountant chases missing receipts for these books, and you can submit receipts in {product}."
     }
   }
 }

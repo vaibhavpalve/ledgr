@@ -1,7 +1,12 @@
 """The firm home's work queue and deadlines: FR-FRM-001, FR-FRM-002 (ADR-109).
 
-    GET /v1/firm/worklist?chip=&q=&assigned=me|any|<user_id>&sort=&dir=&page=&page_size=
+    GET /v1/firm/worklist?chip=&q=&assigned=me|any|<user_id>&sort=&dir=&vat_frequency=
+                         &page=&page_size=
+    GET /v1/firm/worklist/next?after=<administration_id>&<the same query, no paging>
     GET /v1/firm/deadlines?from=&to=
+
+`next` is contract-wave2 decision 7 (ADR-115): the next client in the same query, after the one
+open, skipping snoozed clients - `api.firm.worklist_model.next_client`.
 
 Registered via `register(app)`, not `include_router` - see `api.documents.routes.register`.
 
@@ -27,9 +32,12 @@ from api.firm.worklist_model import (
     Chip,
     Deadline,
     SortKey,
+    VatFrequency,
+    WorklistQuery,
     WorklistRow,
     build_row,
     deadlines,
+    next_client,
     worklist_page,
 )
 from api.firm.worklist_repository import SqlWorklistRepository
@@ -43,6 +51,12 @@ MAX_DEADLINE_RANGE_DAYS = 366
 
 def register(app: FastAPI) -> None:
     app.add_api_route("/v1/firm/worklist", get_worklist, methods=["GET"], name="get_firm_worklist")
+    app.add_api_route(
+        "/v1/firm/worklist/next",
+        get_next_client,
+        methods=["GET"],
+        name="get_firm_worklist_next",
+    )
     app.add_api_route(
         "/v1/firm/deadlines", get_deadlines, methods=["GET"], name="get_firm_deadlines"
     )
@@ -98,8 +112,10 @@ def row_json(row: WorklistRow) -> dict[str, object]:
         ),
         "snoozed_until": _iso(facts.snoozed_until),
         "snooze_reason": facts.snooze_reason,
-        # Chasing is wave 2 (contract): always null in this one.
-        "last_chased_at": None,
+        "last_chased_at": (
+            None if facts.last_chased_at is None else facts.last_chased_at.isoformat()
+        ),
+        "rules_count": facts.rules_count,
         "risk": row.risk,
     }
 
@@ -116,13 +132,8 @@ def deadline_json(deadline: Deadline) -> dict[str, object]:
 
 
 def _assigned_filter(request: Request, raw: str, user_id: uuid.UUID) -> AssignedFilter:
-    if raw == "any":
-        return AssignedFilter(any=True)
-    if raw == "me":
-        # "Mine + unassigned" (ADR-109): my clients plus those assigned to nobody yet.
-        return AssignedFilter.mine(user_id)
     try:
-        return AssignedFilter(any=False, user_id=uuid.UUID(raw))
+        return AssignedFilter.parse(raw, user_id=user_id)
     except ValueError as exc:
         raise problem(
             request,
@@ -132,6 +143,15 @@ def _assigned_filter(request: Request, raw: str, user_id: uuid.UUID) -> Assigned
         ) from exc
 
 
+async def load_rows(
+    portfolio: Portfolio, repository: SqlWorklistRepository, *, today: date
+) -> list[WorklistRow]:
+    """Every portfolio row, from one set-based load - what every worklist query is evaluated
+    over (the page, `next`, and every saved view's count)."""
+    facts = await repository.client_facts(portfolio.entries, today=today)
+    return [build_row(f, today=today) for f in facts]
+
+
 async def get_worklist(
     request: Request,
     chip: Chip = Chip.MY_MOVE,
@@ -139,6 +159,7 @@ async def get_worklist(
     assigned: str = "any",
     sort: SortKey = SortKey.RISK,
     dir: Literal["asc", "desc"] = "asc",
+    vat_frequency: VatFrequency | None = None,
     page: int = Query(default=1, ge=1),
     # Contract: up to 1000 - the frontend's "Show all"; anything larger is a 422.
     page_size: int = Query(default=50, ge=1, le=1000),
@@ -149,9 +170,7 @@ async def get_worklist(
     sorted and paged in memory - a portfolio is hundreds of rows, never millions, and the facts
     behind them are read set-based in a fixed number of queries."""
     filter_ = _assigned_filter(request, assigned, portfolio.user_id)
-    today = date.today()
-    facts = await repository.client_facts(portfolio.entries, today=today)
-    rows = [build_row(f, today=today) for f in facts]
+    rows = await load_rows(portfolio, repository, today=date.today())
     result = worklist_page(
         rows,
         chip=chip,
@@ -161,6 +180,7 @@ async def get_worklist(
         descending=dir == "desc",
         page=page,
         page_size=page_size,
+        vat_frequency=vat_frequency,
     )
     return {
         "rows": [row_json(row) for row in result.rows],
@@ -168,6 +188,40 @@ async def get_worklist(
         "page": result.page,
         "page_size": result.page_size,
         "chip_counts": {c.value: n for c, n in result.chip_counts.items()},
+    }
+
+
+async def get_next_client(
+    request: Request,
+    after: uuid.UUID | None = None,
+    chip: Chip = Chip.MY_MOVE,
+    q: str | None = Query(default=None, max_length=200),
+    assigned: str = "any",
+    sort: SortKey = SortKey.RISK,
+    dir: Literal["asc", "desc"] = "asc",
+    vat_frequency: VatFrequency | None = None,
+    portfolio: Portfolio = Depends(PORTFOLIO_READ),
+    repository: SqlWorklistRepository = Depends(get_worklist_repository),
+) -> dict[str, object]:
+    """Contract-wave2 decision 7. Evaluated now, against current data, over the caller's
+    authorized portfolio only - an `after` outside it is treated as "from the top" and its
+    position is never used (ADR-115)."""
+    query = WorklistQuery(
+        chip=chip,
+        q=q,
+        assigned=_assigned_filter(request, assigned, portfolio.user_id),
+        sort=sort,
+        descending=dir == "desc",
+        vat_frequency=vat_frequency,
+    )
+    rows = await load_rows(portfolio, repository, today=date.today())
+    result = next_client(rows, query, after=after)
+    return {
+        "administration_id": (
+            None if result.row is None else str(result.row.facts.administration_id)
+        ),
+        "display_name": None if result.row is None else result.row.facts.display_name,
+        "remaining": result.remaining,
     }
 
 

@@ -26,9 +26,8 @@ from dataclasses import dataclass, field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
+from api.bank.compose import build_proposal_hook
 from api.bank.repository import SqlBankRepository
-from api.firm.proposals import ProposalGenerator
-from api.firm.proposals_repository import SqlProposalRepository
 
 
 @dataclass
@@ -72,10 +71,8 @@ async def backfill(
                     text("SELECT set_config('app.current_org_id', :org_id, true)"),
                     {"org_id": str(organization_id)},
                 )
-                generator = ProposalGenerator(
-                    proposals=SqlProposalRepository(session),
-                    matching=SqlBankRepository(session),
-                )
+                # The import's own wiring, so ADR-113's rules apply here exactly as there.
+                generator = build_proposal_hook(session, SqlBankRepository(session)).generator
                 result = await generator.refresh(administration_id=administration_id)
         except Exception as exc:  # one tenant's failure must not stop the others
             report.failed += 1
@@ -87,7 +84,8 @@ async def backfill(
         report.superseded += result.superseded
         report.details.append(
             f"administration {administration_id}: {result.created} proposed, "
-            f"{result.superseded} withdrawn, {result.kept} unchanged"
+            f"{result.superseded} withdrawn, {result.kept} unchanged, "
+            f"{result.auto_approved} approved by a rule"
         )
     return report
 

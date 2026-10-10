@@ -42,6 +42,9 @@ class ProposalRecord:
     document_kind: CandidateKind | None
     status: ProposalStatus
     amount: Decimal
+    #: What a rule made from this approval is keyed by (ADR-113).
+    counterparty: str | None = None
+    account_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +65,7 @@ class ProposalRow:
 
 _RECORD_COLUMNS = (
     "id, organization_id, administration_id, bank_transaction_id, document_id, document_kind, "
-    "status, amount"
+    "status, amount, counterparty, account_code"
 )
 
 
@@ -76,6 +79,8 @@ def _record(row: Any) -> ProposalRecord:
         document_kind=CandidateKind(row.document_kind) if row.document_kind else None,
         status=ProposalStatus(row.status),
         amount=Decimal(row.amount),
+        counterparty=row.counterparty,
+        account_code=row.account_code,
     )
 
 

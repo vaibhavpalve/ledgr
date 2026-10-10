@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 import type {
@@ -45,7 +45,11 @@ export function ReviewSheet({
   const [lastNames, setLastNames] = useState<ReadonlyMap<string, string>>(new Map());
   const [problem, setProblem] = useState<string | null>(null);
 
-  const decide = async (items: readonly FirmProposalView[], decision: FirmProposalDecision) => {
+  const decide = async (
+    items: readonly FirmProposalView[],
+    decision: FirmProposalDecision,
+    remember: boolean,
+  ) => {
     if (items.length === 0) return;
     setBusy(true);
     setProblem(null);
@@ -54,7 +58,11 @@ export function ReviewSheet({
     );
     try {
       const answer = await api.decideProposals(
-        items.map((item) => ({ proposalId: item.id, decision })),
+        items.map((item) => ({
+          proposalId: item.id,
+          decision,
+          ...(remember && decision === "approve" ? { remember: true } : {}),
+        })),
       );
       setResult(answer);
       if (answer.approved + answer.rejected > 0) void onChanged();
@@ -88,6 +96,14 @@ export function ReviewSheet({
             approved: result.approved,
             rejected: result.rejected,
           })}
+          {result.rules_created !== undefined && result.rules_created > 0 ? (
+            <>
+              {" "}
+              <span data-testid="firm-review-rules-created">
+                {t("client.todo.review.rules_created", { count: result.rules_created })}
+              </span>
+            </>
+          ) : null}
         </p>
       ) : null}
       {result !== null && result.failed.length > 0 ? (
@@ -129,7 +145,7 @@ export function ReviewSheet({
                 key={group.group_key}
                 group={group}
                 busy={busy}
-                onDecide={(items, decision) => void decide(items, decision)}
+                onDecide={(items, decision, remember) => void decide(items, decision, remember)}
               />
             ))}
           </ul>
@@ -146,11 +162,18 @@ function ProposalGroup({
 }: {
   group: FirmProposalGroupView;
   busy: boolean;
-  onDecide: (items: readonly FirmProposalView[], decision: FirmProposalDecision) => void;
+  onDecide: (
+    items: readonly FirmProposalView[],
+    decision: FirmProposalDecision,
+    remember: boolean,
+  ) => void;
 }) {
   const { t, date } = useI18n();
   const money = useMoney();
   const [open, setOpen] = useState(false);
+  // "Always do this" (ADR-113): one rule per client in this group, made on approval only.
+  const [remember, setRemember] = useState(false);
+  const rememberId = useId();
   const counterparty = group.counterparty ?? t("client.todo.review.no_counterparty");
   const account =
     group.account_code !== null
@@ -193,7 +216,7 @@ function ProposalGroup({
             size="sm"
             disabled={busy}
             aria-label={t("client.todo.review.reject_all_label", { counterparty })}
-            onClick={() => onDecide(group.proposals, "reject")}
+            onClick={() => onDecide(group.proposals, "reject", false)}
             data-testid={`firm-review-reject-all-${group.group_key}`}
           >
             {t("client.todo.review.reject_all")}
@@ -202,11 +225,28 @@ function ProposalGroup({
             size="sm"
             disabled={busy}
             aria-label={t("client.todo.review.approve_all_label", { counterparty })}
-            onClick={() => onDecide(group.proposals, "approve")}
+            onClick={() => onDecide(group.proposals, "approve", remember)}
             data-testid={`firm-review-approve-all-${group.group_key}`}
           >
             {t("client.todo.review.approve_all")}
           </Button>
+        </span>
+      </div>
+      <div className="firm-review__remember">
+        <input
+          id={`${rememberId}-box`}
+          type="checkbox"
+          checked={remember}
+          disabled={busy}
+          aria-describedby={`${rememberId}-hint`}
+          data-testid={`firm-review-remember-${group.group_key}`}
+          onChange={(event) => setRemember(event.target.checked)}
+        />
+        <span className="firm-review__remember-text">
+          <label htmlFor={`${rememberId}-box`}>{t("client.todo.review.remember")}</label>
+          <span id={`${rememberId}-hint`} className="firm-muted">
+            {t("client.todo.review.remember_hint", { counterparty, account })}
+          </span>
         </span>
       </div>
       {open ? (
@@ -235,7 +275,7 @@ function ProposalGroup({
                     client: item.display_name,
                     amount: money(item.amount),
                   })}
-                  onClick={() => onDecide([item], "reject")}
+                  onClick={() => onDecide([item], "reject", false)}
                   data-testid={`firm-review-reject-${item.id}`}
                 >
                   {t("client.todo.review.reject")}
@@ -247,7 +287,7 @@ function ProposalGroup({
                     client: item.display_name,
                     amount: money(item.amount),
                   })}
-                  onClick={() => onDecide([item], "approve")}
+                  onClick={() => onDecide([item], "approve", remember)}
                   data-testid={`firm-review-approve-${item.id}`}
                 >
                   {t("client.todo.review.approve")}

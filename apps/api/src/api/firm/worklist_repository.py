@@ -10,7 +10,8 @@ table read is under RLS in the request's tenant session, so a stray id could onl
 the firm is engaged on - the predicate narrows, it never widens.
 
 Reads `booking_proposal` (0079) and `question_thread` / `question_message` (0080) by the
-contract's column names (docs/firm-home/contract.md).
+contract's column names (docs/firm-home/contract.md), and `booking_rule` /
+`booking_proposal.rule_id` (0082) and `chase_send` (0083) by contract-wave2.md's.
 
 `users` carries no RLS (users are global, 0003): every statement on it names the verified
 token's own user id, or reads only the users of the caller's organization for the staff list.
@@ -27,6 +28,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.chasing.missing import NO_CANDIDATE_RECEIPT, PENDING_HIGH_PROPOSAL
 from api.firm.switcher import SwitcherEntry
 from api.firm.worklist_model import (
     ActivityKind,
@@ -40,9 +42,9 @@ from api.firm.worklist_model import (
 # ---------------------------------------------------------------------------
 
 # Contract decision 5, per unmatched line: a pending HIGH proposal, else (for money out) whether
-# any receipt of exactly that amount exists that no other line has settled. Discarded captures
-# are not receipts.
-_BANK_BUCKETS = """
+# any receipt of exactly that amount exists that no other line has settled. The two predicates are
+# `api.chasing.missing`'s - the one definition shared with the client's list and the chase e-mail.
+_BANK_BUCKETS = f"""
     SELECT t.administration_id,
            count(*) FILTER (WHERE x.high)                          AS auto_bookings,
            count(*) FILTER (WHERE NOT x.high AND x.no_candidate)   AS missing_receipts,
@@ -51,20 +53,8 @@ _BANK_BUCKETS = """
            min(t.booking_date)                                     AS oldest_unmatched
       FROM bank_transaction t
       CROSS JOIN LATERAL (
-          SELECT EXISTS (
-                     SELECT 1 FROM booking_proposal p
-                      WHERE p.bank_transaction_id = t.id
-                        AND p.status = 'pending' AND p.confidence = 'high'
-                 ) AS high,
-                 (t.amount < 0 AND NOT EXISTS (
-                     SELECT 1 FROM expense e
-                       JOIN capture_item ci ON ci.id = e.capture_item_id
-                      WHERE e.administration_id = t.administration_id
-                        AND e.gross_amount = -t.amount
-                        AND ci.discarded_at IS NULL
-                        AND NOT EXISTS (SELECT 1 FROM bank_transaction b
-                                         WHERE b.matched_expense_id = e.id)
-                 )) AS no_candidate
+          SELECT {PENDING_HIGH_PROPOSAL} AS high,
+                 {NO_CANDIDATE_RECEIPT} AS no_candidate
       ) x
      WHERE t.administration_id = ANY(CAST(:ids AS uuid[]))
        AND t.status = 'unmatched'
@@ -152,6 +142,24 @@ _SNOOZES = """
       FROM client_snooze s
      WHERE s.administration_id = ANY(CAST(:ids AS uuid[]))
      ORDER BY s.administration_id, s.created_at DESC, s.id DESC
+"""
+
+# Receipt chasing (0083, contract-wave2): the latest send per client. chase_send is append-only.
+_LAST_CHASED = """
+    SELECT administration_id, max(sent_at) AS last_chased_at
+      FROM chase_send
+     WHERE administration_id = ANY(CAST(:ids AS uuid[]))
+     GROUP BY administration_id
+"""
+
+# Approval rules (0082, contract-wave2): active ones only - suspended and retired rules approve
+# nothing.
+_RULES = """
+    SELECT administration_id, count(*) AS rules_count
+      FROM booking_rule
+     WHERE administration_id = ANY(CAST(:ids AS uuid[]))
+       AND status = 'active'
+     GROUP BY administration_id
 """
 
 # A VAT period's facts - shared by the queue (one period per client) and the deadlines view
@@ -281,6 +289,12 @@ _ACTIVITY = """
               AND o.gross_amount = e.gross_amount
        )
      GROUP BY e.administration_id
+    UNION ALL
+    SELECT 'rule_postings', p.administration_id, count(*)
+      FROM booking_proposal p
+     WHERE p.administration_id = ANY(CAST(:ids AS uuid[])) AND p.rule_id IS NOT NULL
+       AND p.status = 'approved' AND p.decided_at > :since
+     GROUP BY p.administration_id
 """
 
 # ---------------------------------------------------------------------------
@@ -360,7 +374,7 @@ class SqlWorklistRepository:
     async def client_facts(
         self, entries: Sequence[SwitcherEntry], *, today: date
     ) -> list[ClientFacts]:
-        """Every fact the queue needs, for the whole portfolio, in eight queries."""
+        """Every fact the queue needs, for the whole portfolio, in ten queries."""
         if not entries:
             return []
         ids = [e.badge.administration_id for e in entries]
@@ -434,6 +448,10 @@ class SqlWorklistRepository:
             )
         for row in await self._session.execute(text(_SNOOZES), params):
             update(row.administration_id, snoozed_until=row.snoozed_until, snooze_reason=row.reason)
+        for row in await self._session.execute(text(_LAST_CHASED), params):
+            update(row.administration_id, last_chased_at=row.last_chased_at)
+        for row in await self._session.execute(text(_RULES), params):
+            update(row.administration_id, rules_count=int(row.rules_count))
 
         vat_ids = [e.badge.administration_id for e in entries if e.vat_registered]
         if vat_ids:

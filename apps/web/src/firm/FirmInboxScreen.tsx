@@ -24,7 +24,8 @@ import { localDateOf, useResource } from "./useResource";
  * Two tabs (ADR-111): "Replies to you" (`awaiting=firm`, the default and what the sidebar badge
  * counts) and "Waiting on client" (`awaiting=client`, the firm's own questions still out).
  *
- * There is no thread screen in this wave; this is the list the sidebar's unread badge points at.
+ * This is the list the sidebar's unread badge points at. Opening an item switches client, then
+ * lands on that thread at `/questions/{thread_id}` (the client-side thread screen, wave 2).
  */
 export function FirmInboxRoute() {
   const { me } = useSession();
@@ -50,7 +51,7 @@ function FirmInboxScreen() {
       if (item.administration_id !== administration?.id) {
         await switchAdministration(item.administration_id);
       }
-      navigate("/");
+      navigate(`/questions/${encodeURIComponent(item.thread_id)}`);
     } catch (error) {
       setProblem(describeError(error));
       setOpeningId(null);

@@ -214,12 +214,35 @@ class RefreshResult:
     created: int = 0
     superseded: int = 0
     kept: int = 0
+    auto_approved: int = 0
+
+
+class AutoApproved(Protocol):
+    approved: int
+
+
+class AutoApprover(Protocol):
+    """api.firm.rules.RuleApplier (ADR-113): approves, through the wave-1 path, what an active
+    rule of the administration covers among the lines just proposed. Never raises."""
+
+    async def apply(
+        self, *, administration_id: uuid.UUID, transaction_ids: Sequence[uuid.UUID]
+    ) -> AutoApproved: ...
 
 
 class ProposalGenerator:
-    def __init__(self, *, proposals: ProposalWrites, matching: MatchingReads) -> None:
+    def __init__(
+        self,
+        *,
+        proposals: ProposalWrites,
+        matching: MatchingReads,
+        auto_approve: AutoApprover | None = None,
+    ) -> None:
         self._proposals = proposals
         self._matching = matching
+        #: Wired after construction by api.bank.compose, which needs the BankService this
+        #: generator's hook is part of.
+        self.auto_approve = auto_approve
 
     async def refresh(self, *, administration_id: uuid.UUID) -> RefreshResult:
         """Bring one administration's pending proposals in line with what matching finds certain
@@ -249,12 +272,25 @@ class ProposalGenerator:
             administration_id=administration_id,
             documents=[(s.candidate.kind, s.candidate.document_id) for _, s in decided.create],
         )
-        created = 0
+        created: list[uuid.UUID] = []
         for transaction, scored in decided.create:
             proposal = new_proposal(transaction, scored, targets.get(scored.candidate.document_id))
             if await self._proposals.insert(administration_id=administration_id, proposal=proposal):
-                created += 1
-        return RefreshResult(created=created, superseded=superseded, kept=len(decided.keep))
+                created.append(transaction.id)
+        auto_approved = 0
+        if created and self.auto_approve is not None:
+            # ADR-113: a NEW pending proposal an active rule covers is approved now, through the
+            # wave-1 path. Only the lines proposed in this run - never older pending ones.
+            applied = await self.auto_approve.apply(
+                administration_id=administration_id, transaction_ids=created
+            )
+            auto_approved = applied.approved
+        return RefreshResult(
+            created=len(created),
+            superseded=superseded,
+            kept=len(decided.keep),
+            auto_approved=auto_approved,
+        )
 
     async def transaction_settled(
         self, *, administration_id: uuid.UUID, transaction_id: uuid.UUID

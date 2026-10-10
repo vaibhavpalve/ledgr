@@ -10,6 +10,7 @@ import {
 import { ArrowDown, ArrowUp, Ellipsis, TriangleAlert } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 import type {
+  FirmVatFrequency,
   FirmVatStatus,
   FirmWorklistChip,
   FirmWorklistRowView,
@@ -19,7 +20,7 @@ import type {
 
 import { ErrorState, LoadingSkeleton } from "../shell/ScreenState";
 import { Badge, Button, type BadgeVariant } from "../ui";
-import type { Resource } from "./useResource";
+import { daysSince, localDateOf, type Resource } from "./useResource";
 
 /**
  * The cross-client work queue (FR-FRM-002): one row per client, filtered server-side by chip,
@@ -51,7 +52,8 @@ export interface WorklistProps {
   resource: Resource<FirmWorklistView>;
   chip: FirmWorklistChip;
   onChip: (chip: FirmWorklistChip) => void;
-  assigned: "me" | "any";
+  /** `me`, `any`, or (from a saved view) a staff member's user id. */
+  assigned: string;
   onAssigned: (value: "me" | "any") => void;
   query: string;
   onQuery: (value: string) => void;
@@ -71,7 +73,15 @@ export interface WorklistProps {
   onAssignRows: (rows: readonly FirmWorklistRowView[]) => void;
   narrow: boolean;
   keyboardEnabled: boolean;
+  /** "More filters" (wave 2): BTW filing frequency, null = any. */
+  vatFrequency: FirmVatFrequency | null;
+  onVatFrequency: (value: FirmVatFrequency | null) => void;
+  /** The saved-view controls, rendered beside the filters. */
+  viewControls?: ReactNode;
 }
+
+/** No "yearly": fiscal years are only monthly or quarterly filers today, so it would match nobody. */
+const VAT_FREQUENCIES: readonly FirmVatFrequency[] = ["monthly", "quarterly"];
 
 export function Worklist(props: WorklistProps) {
   const { t } = useI18n();
@@ -81,6 +91,8 @@ export function Worklist(props: WorklistProps) {
   const [active, setActive] = useState(-1);
   const openRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const filterId = useId();
+  const [moreOpen, setMoreOpen] = useState(props.vatFrequency !== null);
+  const moreCount = props.vatFrequency !== null ? 1 : 0;
 
   // A new answer is a new list: the cursor starts over.
   useEffect(() => setActive(-1), [data]);
@@ -185,7 +197,45 @@ export function Worklist(props: WorklistProps) {
             data-testid="firm-filter"
             onChange={(event) => props.onQuery(event.target.value)}
           />
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={moreOpen}
+            aria-controls={`${filterId}-more`}
+            data-testid="firm-more-filters"
+            onClick={() => setMoreOpen((value) => !value)}
+          >
+            {moreCount > 0
+              ? t("client.todo.filter.more_active", { count: moreCount })
+              : t("client.todo.filter.more")}
+          </Button>
+          {props.viewControls}
         </div>
+        {moreOpen ? (
+          <div id={`${filterId}-more`} className="firm-worklist__more" data-testid="firm-more">
+            <label className="ui-label" htmlFor={`${filterId}-vat`}>
+              {t("client.todo.filter.vat_frequency")}
+            </label>
+            <select
+              id={`${filterId}-vat`}
+              className="ui-input firm-select-input"
+              value={props.vatFrequency ?? ""}
+              data-testid="firm-filter-vat-frequency"
+              onChange={(event) =>
+                props.onVatFrequency(
+                  event.target.value === "" ? null : (event.target.value as FirmVatFrequency),
+                )
+              }
+            >
+              <option value="">{t("client.todo.filter.vat_any")}</option>
+              {VAT_FREQUENCIES.map((value) => (
+                <option key={value} value={value}>
+                  {t(`client.todo.filter.vat.${value}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </div>
 
       <div aria-busy={resource.loading} className="firm-worklist__body">
@@ -519,6 +569,7 @@ function ClientCell({
             {t("client.todo.row.waiting_since", { date: date(row.waiting_on_client_since) })}
           </span>
         ) : null}
+        <ChasedLine at={row.last_chased_at} />
         {assigned === "any" ? (
           <span className="firm-muted firm-cell-line">
             {row.assigned_name !== null
@@ -528,6 +579,22 @@ function ClientCell({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** "Chased 3 d ago": the last receipt-chase mail to this client (ADR-114). */
+export function ChasedLine({ at }: { at: string | null }) {
+  const { t } = useI18n();
+  if (at === null) return null;
+  const day = localDateOf(at);
+  if (day === null) return null;
+  const days = Math.max(0, daysSince(day));
+  return (
+    <span className="firm-muted firm-cell-line" data-testid="firm-row-chased">
+      {days === 0
+        ? t("client.todo.row.chased_today")
+        : t("client.todo.row.chased_days_ago", { count: days })}
+    </span>
   );
 }
 

@@ -712,6 +712,262 @@
       "nl": "Nieuw",
       "en": "New"
     },
+    "client.questions.nav": {
+      "note": "FR-FRM-005: sidebar entry inside a client, for client and firm users alike.",
+      "nl": "Vragen",
+      "en": "Questions"
+    },
+    "client.questions.title": {
+      "nl": "Vragen",
+      "en": "Questions"
+    },
+    "client.questions.context": {
+      "nl": { "one": "{count} openstaand", "other": "{count} openstaand" },
+      "en": { "one": "{count} open", "other": "{count} open" }
+    },
+    "client.questions.tabs": {
+      "nl": "Vragen tonen",
+      "en": "Show questions"
+    },
+    "client.questions.tab.open": {
+      "nl": "Openstaand",
+      "en": "Open"
+    },
+    "client.questions.tab.resolved": {
+      "nl": "Afgerond",
+      "en": "Resolved"
+    },
+    "client.questions.status.open": {
+      "nl": "Openstaand",
+      "en": "Open"
+    },
+    "client.questions.status.resolved": {
+      "nl": "Afgerond",
+      "en": "Resolved"
+    },
+    "client.questions.unread": {
+      "nl": "Ongelezen",
+      "en": "Unread"
+    },
+    "client.questions.new": {
+      "note": "Firm users only: ask this client a question.",
+      "nl": "Nieuwe vraag",
+      "en": "New question"
+    },
+    "client.questions.empty.open_title": {
+      "nl": "Geen openstaande vragen",
+      "en": "No open questions"
+    },
+    "client.questions.empty.open_body_client": {
+      "nl": "Als uw boekhouder iets vraagt over uw administratie, staat dat hier.",
+      "en": "When your accountant asks something about your books, it appears here."
+    },
+    "client.questions.empty.open_body_firm": {
+      "nl": "Vragen die u deze klant stelt, en die van de klant aan u, staan hier.",
+      "en": "Questions you ask this client, and theirs to you, appear here."
+    },
+    "client.questions.empty.resolved_title": {
+      "nl": "Geen afgeronde vragen",
+      "en": "No resolved questions"
+    },
+    "client.questions.empty.resolved_body": {
+      "nl": "Een vraag komt hier te staan zodra die is afgerond.",
+      "en": "A question moves here once it is resolved."
+    },
+    "client.questions.awaiting.you": {
+      "note": "Whose move it is, from the reader's side: the reader's.",
+      "nl": "Wacht op uw antwoord",
+      "en": "Waiting for your reply"
+    },
+    "client.questions.awaiting.accountant": {
+      "nl": "Wacht op uw boekhouder",
+      "en": "Waiting for your accountant"
+    },
+    "client.questions.awaiting.client": {
+      "nl": "Wacht op de klant",
+      "en": "Waiting for the client"
+    },
+    "client.questions.last_message": {
+      "nl": "Laatste bericht {date}",
+      "en": "Last message {date}"
+    },
+    "client.questions.back": {
+      "nl": "Alle vragen",
+      "en": "All questions"
+    },
+    "client.questions.messages": {
+      "nl": "Berichten",
+      "en": "Messages"
+    },
+    "client.questions.author.you": {
+      "nl": "U",
+      "en": "You"
+    },
+    "client.questions.author.accountant": {
+      "nl": "Uw boekhouder",
+      "en": "Your accountant"
+    },
+    "client.questions.author.client": {
+      "note": "A firm user reading a message the client wrote; {name} is the client's name.",
+      "nl": "{name} (klant)",
+      "en": "{name} (client)"
+    },
+    "client.questions.author.colleague": {
+      "nl": "Collega",
+      "en": "Colleague"
+    },
+    "client.questions.author.colleague_named": {
+      "nl": "{email} (collega)",
+      "en": "{email} (colleague)"
+    },
+    "client.questions.about.bank_transaction": {
+      "nl": "Over een bankbetaling",
+      "en": "About a bank payment"
+    },
+    "client.questions.about.document": {
+      "nl": "Over een document",
+      "en": "About a document"
+    },
+    "client.questions.about.expense": {
+      "nl": "Over een inkoop",
+      "en": "About a purchase"
+    },
+    "client.questions.about.sales_invoice": {
+      "nl": "Over een verkoopfactuur",
+      "en": "About a sales invoice"
+    },
+    "client.questions.about.open": {
+      "nl": "Bekijken",
+      "en": "View"
+    },
+    "client.questions.reply.label": {
+      "nl": "Uw antwoord",
+      "en": "Your reply"
+    },
+    "client.questions.reply.send": {
+      "nl": "Antwoord versturen",
+      "en": "Send reply"
+    },
+    "client.questions.reply.sending": {
+      "nl": "Versturen…",
+      "en": "Sending…"
+    },
+    "client.questions.reply.empty": {
+      "nl": "Schrijf eerst een antwoord.",
+      "en": "Write a reply first."
+    },
+    "client.questions.resolve": {
+      "nl": "Als afgerond markeren",
+      "en": "Mark as resolved"
+    },
+    "client.questions.resolving": {
+      "nl": "Afronden…",
+      "en": "Resolving…"
+    },
+    "client.questions.resolved_note": {
+      "nl": "Deze vraag is afgerond op {date}.",
+      "en": "This question was resolved on {date}."
+    },
+    "client.questions.form.subject": {
+      "nl": "Onderwerp",
+      "en": "Subject"
+    },
+    "client.questions.form.body": {
+      "nl": "Uw vraag",
+      "en": "Your question"
+    },
+    "client.questions.form.send": {
+      "nl": "Vraag versturen",
+      "en": "Send question"
+    },
+    "client.questions.form.cancel": {
+      "nl": "Annuleren",
+      "en": "Cancel"
+    },
+    "client.questions.form.required": {
+      "nl": "Vul een onderwerp en uw vraag in.",
+      "en": "Fill in a subject and your question."
+    },
+    "client.questions.error.resolved": {
+      "note": "409 question_thread_resolved: someone resolved the thread while this person was writing.",
+      "nl": "Deze vraag is net afgerond en neemt geen antwoorden meer aan. Uw tekst staat nog in het vak; stel een nieuwe vraag als er nog iets onduidelijk is.",
+      "en": "This question has just been resolved, so it no longer takes replies. Your text is still in the box; ask a new question if something is still unclear."
+    },
+    "client.questions.error.mismatch": {
+      "note": "409 active_client_mismatch: another client was opened in this session, e.g. in another tab.",
+      "nl": "Er is in deze sessie een andere klant geopend, misschien in een ander tabblad. Open deze klant opnieuw via de klantenlijst en probeer het nog eens.",
+      "en": "Another client is open in this session, perhaps in another tab. Open this client again from the client list, then try once more."
+    },
+    "client.questions.error.not_found": {
+      "nl": "Deze vraag staat niet in de administratie van deze klant. Misschien hoort ze bij een andere klant.",
+      "en": "This question is not in this client's books. It may belong to another client."
+    },
+    "client.receipts.nav": {
+      "note": "Sidebar entry inside a client: bank payments that still need a receipt.",
+      "nl": "Ontbrekende bonnen",
+      "en": "Receipts needed"
+    },
+    "client.receipts.title": {
+      "nl": "Ontbrekende bonnen",
+      "en": "Receipts needed"
+    },
+    "client.receipts.context": {
+      "nl": {
+        "one": "{count} betaling heeft een bon nodig",
+        "other": "{count} betalingen hebben een bon nodig"
+      },
+      "en": { "one": "{count} payment needs a receipt", "other": "{count} payments need a receipt" }
+    },
+    "client.receipts.intro": {
+      "nl": "Deze betalingen staan op uw bankrekening, maar er is nog geen bon of factuur voor. Upload er een per betaling, dan kan uw boekhouder ze boeken.",
+      "en": "These payments are on your bank account, but there is no receipt or invoice for them yet. Upload one per payment so your accountant can book them."
+    },
+    "client.receipts.empty_title": {
+      "nl": "Niets ontbreekt",
+      "en": "Nothing missing"
+    },
+    "client.receipts.empty_body": {
+      "nl": "Elke bankbetaling heeft een bon of factuur. Nieuwe betalingen zonder bon verschijnen hier.",
+      "en": "Every bank payment has a receipt or invoice. New payments without one will appear here."
+    },
+    "client.receipts.col.date": {
+      "nl": "Datum",
+      "en": "Date"
+    },
+    "client.receipts.col.amount": {
+      "nl": "Bedrag",
+      "en": "Amount"
+    },
+    "client.receipts.status": {
+      "note": "The status word on every line of the list.",
+      "nl": "Bon ontbreekt",
+      "en": "Receipt missing"
+    },
+    "client.receipts.unknown_counterparty": {
+      "nl": "Onbekende ontvanger",
+      "en": "Unknown payee"
+    },
+    "client.receipts.upload": {
+      "nl": "Bon uploaden",
+      "en": "Upload receipt"
+    },
+    "client.receipts.upload_for": {
+      "note": "Accessible name of the per-line upload button.",
+      "nl": "Bon uploaden voor {counterparty}, {amount} op {date}",
+      "en": "Upload the receipt for {counterparty}, {amount} on {date}"
+    },
+    "client.receipts.capture_title": {
+      "nl": "Bon voor {counterparty}, {amount} op {date}",
+      "en": "Receipt for {counterparty}, {amount} on {date}"
+    },
+    "client.receipts.capture_hint": {
+      "nl": "Maak een foto of upload het bestand. Zodra de bon is verwerkt, verdwijnt de betaling van deze lijst.",
+      "en": "Take a photo or upload the file. Once the receipt has been processed, the payment leaves this list."
+    },
+    "client.receipts.capture_close": {
+      "nl": "Klaar",
+      "en": "Done"
+    },
     "client.todo.inbox.context": {
       "nl": { "one": "{count} ongelezen", "other": "{count} ongelezen" },
       "en": { "one": "{count} unread", "other": "{count} unread" }
@@ -749,6 +1005,371 @@
     "client.todo.inbox.waiting_empty_body": {
       "nl": "Een vraag die u een klant stelt, staat hier tot de klant antwoordt.",
       "en": "A question you ask a client stays here until they answer."
+    },
+    "client.todo.review.remember": {
+      "note": "Wave 2 (ADR-113): per proposal group. Approving with this ticked makes one rule per client in the group.",
+      "nl": "Dit voortaan altijd doen bij deze klanten",
+      "en": "Always do this for these clients"
+    },
+    "client.todo.review.remember_hint": {
+      "note": "What a rule does (contract-wave2 decision 2), in one breath. {account} is code and name, e.g. '4500 Telefoon'.",
+      "nl": "Maakt per klant één regel. Daarna wordt een zekere match van een bankbetaling met een bestaande bon of factuur van {counterparty} zonder vragen geboekt op {account}. Nooit zonder document; intrekken kan onder Klantregels.",
+      "en": "Makes one rule per client. From then on, a certain match of a bank payment to an existing receipt or invoice from {counterparty} is booked to {account} without asking. Never without a document; retire it any time under Client rules."
+    },
+    "client.todo.review.rules_created": {
+      "nl": { "one": "{count} regel aangemaakt.", "other": "{count} regels aangemaakt." },
+      "en": { "one": "{count} rule created.", "other": "{count} rules created." }
+    },
+    "client.todo.activity.rule_postings": {
+      "note": "'Since you were away' line (ADR-113): bookings an approval rule made on its own.",
+      "nl": { "one": "{count} geboekt via een regel", "other": "{count} geboekt via uw regels" },
+      "en": { "one": "{count} booked by a rule", "other": "{count} booked by your rules" }
+    },
+    "client.todo.bulk.chase": {
+      "note": "Bulk bar (ADR-114). Opens a preview first; nothing is sent by this button.",
+      "nl": "Ontbrekende bonnen opvragen",
+      "en": "Request missing receipts"
+    },
+    "client.todo.chase.title": {
+      "nl": "Ontbrekende bonnen opvragen",
+      "en": "Request missing receipts"
+    },
+    "client.todo.chase.subtitle": {
+      "nl": {
+        "one": "Voor {count} geselecteerde klant",
+        "other": "Voor {count} geselecteerde klanten"
+      },
+      "en": { "one": "For {count} selected client", "other": "For {count} selected clients" }
+    },
+    "client.todo.chase.intro": {
+      "note": "FR-NTF-004 spirit: the mail carries a count and a link, never amounts or counterparties.",
+      "nl": "Elke klant krijgt één e-mail met het aantal bankbetalingen waarvoor nog een bon nodig is, en een link naar de lijst in de app. Bedragen en leveranciers staan er niet in. Wie in de afgelopen 24 uur al een herinnering kreeg, wordt overgeslagen.",
+      "en": "Each client gets one e-mail saying how many bank payments still need a receipt, with a link to their list in the app. It names no amounts or suppliers. A client reminded in the last 24 hours is skipped."
+    },
+    "client.todo.chase.missing": {
+      "nl": { "one": "{count} bon ontbreekt", "other": "{count} bonnen ontbreken" },
+      "en": { "one": "{count} receipt missing", "other": "{count} receipts missing" }
+    },
+    "client.todo.chase.last_chased": {
+      "nl": "laatst herinnerd op {date}",
+      "en": "last reminded on {date}"
+    },
+    "client.todo.chase.never_chased": {
+      "nl": "nog nooit herinnerd",
+      "en": "never reminded"
+    },
+    "client.todo.chase.will_send": {
+      "nl": "Wordt verstuurd",
+      "en": "Will be sent"
+    },
+    "client.todo.chase.will_skip": {
+      "nl": "Overgeslagen: {reason}",
+      "en": "Skipped: {reason}"
+    },
+    "client.todo.chase.reason.nothing_missing": {
+      "nl": "er ontbreekt niets",
+      "en": "nothing is missing"
+    },
+    "client.todo.chase.reason.chased_recently": {
+      "nl": "al herinnerd in de afgelopen 24 uur",
+      "en": "already reminded in the last 24 hours"
+    },
+    "client.todo.chase.reason.no_recipient": {
+      "nl": "geen ontvanger bekend",
+      "en": "no one to send it to"
+    },
+    "client.todo.chase.send": {
+      "nl": { "one": "Versturen naar {count} klant", "other": "Versturen naar {count} klanten" },
+      "en": { "one": "Send to {count} client", "other": "Send to {count} clients" }
+    },
+    "client.todo.chase.sent": {
+      "nl": { "one": "Verstuurd naar {count} klant.", "other": "Verstuurd naar {count} klanten." },
+      "en": { "one": "Sent to {count} client.", "other": "Sent to {count} clients." }
+    },
+    "client.todo.chase.skipped": {
+      "nl": { "one": "{count} overgeslagen:", "other": "{count} overgeslagen:" },
+      "en": { "one": "{count} skipped:", "other": "{count} skipped:" }
+    },
+    "client.todo.row.chased_today": {
+      "nl": "Vandaag herinnerd",
+      "en": "Chased today"
+    },
+    "client.todo.row.chased_days_ago": {
+      "note": "Compact, as the worklist's other row lines ('23 d').",
+      "nl": { "one": "{count} d geleden herinnerd", "other": "{count} d geleden herinnerd" },
+      "en": { "one": "Chased {count} d ago", "other": "Chased {count} d ago" }
+    },
+    "client.todo.filter.more": {
+      "nl": "Meer filters",
+      "en": "More filters"
+    },
+    "client.todo.filter.more_active": {
+      "nl": { "one": "Meer filters ({count})", "other": "Meer filters ({count})" },
+      "en": { "one": "More filters ({count})", "other": "More filters ({count})" }
+    },
+    "client.todo.filter.vat_frequency": {
+      "nl": "BTW-aangifteperiode",
+      "en": "BTW filing frequency"
+    },
+    "client.todo.filter.vat_any": {
+      "nl": "Alle",
+      "en": "Any"
+    },
+    "client.todo.filter.vat.monthly": {
+      "nl": "Per maand",
+      "en": "Monthly"
+    },
+    "client.todo.filter.vat.quarterly": {
+      "nl": "Per kwartaal",
+      "en": "Quarterly"
+    },
+    "client.todo.views.title": {
+      "note": "FR-FRM-000b: the caller's own saved worklist queries, in the rail's Firm area.",
+      "nl": "Opgeslagen weergaven",
+      "en": "Saved views"
+    },
+    "client.todo.views.count_label": {
+      "nl": { "one": "{count} klant", "other": "{count} klanten" },
+      "en": { "one": "{count} client", "other": "{count} clients" }
+    },
+    "client.todo.views.count_unavailable": {
+      "note": "Instead of a count, when the view's stored query no longer validates (ADR-115).",
+      "nl": "bijwerken",
+      "en": "needs updating"
+    },
+    "client.todo.views.save": {
+      "nl": "Weergave opslaan",
+      "en": "Save view"
+    },
+    "client.todo.views.manage": {
+      "nl": "Weergave bewerken: {name}",
+      "en": "Edit view: {name}"
+    },
+    "client.todo.views.save_title": {
+      "nl": "Deze weergave opslaan",
+      "en": "Save this view"
+    },
+    "client.todo.views.manage_title": {
+      "nl": "Weergave hernoemen of archiveren",
+      "en": "Rename or archive view"
+    },
+    "client.todo.views.name": {
+      "nl": "Naam",
+      "en": "Name"
+    },
+    "client.todo.views.save_hint": {
+      "nl": "Bewaart het tabblad, de filters en de sortering die u nu ziet. Alleen u ziet uw weergaven.",
+      "en": "Keeps the tab, filters and sort on screen now. Only you see your views."
+    },
+    "client.todo.views.manage_hint": {
+      "nl": "Archiveren haalt de weergave uit uw lijst; aan uw klanten verandert niets.",
+      "en": "Archiving takes the view off your list; nothing changes for your clients."
+    },
+    "client.todo.views.archive": {
+      "nl": "Archiveren",
+      "en": "Archive"
+    },
+    "client.todo.views.rename": {
+      "nl": "Hernoemen",
+      "en": "Rename"
+    },
+    "client.todo.next.button": {
+      "note": "Client header, inside a client opened from To do: moves to the next client in the same worklist query.",
+      "nl": "Volgende klant met werk →",
+      "en": "Next client with work →"
+    },
+    "client.todo.next.short": {
+      "note": "The same control on a phone, where the header has little room.",
+      "nl": "Volgende →",
+      "en": "Next →"
+    },
+    "client.todo.next.remaining": {
+      "nl": { "one": "nog {count}", "other": "nog {count}" },
+      "en": { "one": "{count} left", "other": "{count} left" }
+    },
+    "client.todo.next.done": {
+      "nl": "Geen klanten met werk meer in deze lijst.",
+      "en": "No more clients with work in this list."
+    },
+    "client.todo.next.back": {
+      "nl": "Terug naar Te doen",
+      "en": "Back to To do"
+    },
+    "client.rules.nav": {
+      "note": "Rail entry (Firm area) while a client is open: that client's approval rules and receipt reminders.",
+      "nl": "Klantregels",
+      "en": "Client rules"
+    },
+    "client.rules.title": {
+      "nl": "Regels en herinneringen",
+      "en": "Rules and reminders"
+    },
+    "client.rules.context": {
+      "nl": "Wat er voor deze klant gebeurt zonder dat iemand klikt",
+      "en": "What happens for this client without anyone clicking"
+    },
+    "client.rules.chase.title": {
+      "nl": "Bonherinneringen",
+      "en": "Receipt reminders"
+    },
+    "client.rules.chase.intro": {
+      "nl": "Staat dit aan, dan krijgt deze klant een e-mail met het aantal bankbetalingen waarvoor nog een bon nodig is, met een link naar de lijst. Nooit vaker dan één keer per periode, en het stopt zodra er niets meer ontbreekt.",
+      "en": "When on, this client gets an e-mail saying how many bank payments still need a receipt, with a link to the list. Never more than once per period, and it stops when nothing is missing."
+    },
+    "client.rules.chase.enabled": {
+      "nl": "Bonherinneringen naar deze klant sturen",
+      "en": "Send receipt reminders to this client"
+    },
+    "client.rules.chase.cadence_label": {
+      "nl": "Hoe vaak",
+      "en": "How often"
+    },
+    "client.rules.chase.cadence.weekly": {
+      "nl": "Wekelijks",
+      "en": "Weekly"
+    },
+    "client.rules.chase.cadence.fortnightly": {
+      "nl": "Om de twee weken",
+      "en": "Every two weeks"
+    },
+    "client.rules.chase.status_on": {
+      "nl": "Aan · {cadence}",
+      "en": "On · {cadence}"
+    },
+    "client.rules.chase.status_off": {
+      "nl": "Uit",
+      "en": "Off"
+    },
+    "client.rules.chase.save": {
+      "nl": "Opslaan",
+      "en": "Save"
+    },
+    "client.rules.chase.saved": {
+      "nl": "Opgeslagen.",
+      "en": "Saved."
+    },
+    "client.rules.list.title": {
+      "nl": "Goedkeuringsregels",
+      "en": "Approval rules"
+    },
+    "client.rules.list.intro": {
+      "note": "Contract-wave2 decision 2: a rule only auto-approves what would already be a certain proposal against a document.",
+      "nl": "Een regel boekt een zekere match van een bankbetaling met een bestaande bon of factuur van één leverancier op één grootboekrekening, zonder te vragen. Zonder document boekt een regel nooit. Boven het maximum wacht een match zoals gewoonlijk op beoordeling.",
+      "en": "A rule books a certain match of a bank payment to an existing receipt or invoice from one supplier to one account, without asking. It never books without a document. Above the maximum, a match waits for review as usual."
+    },
+    "client.rules.list.empty_title": {
+      "nl": "Nog geen regels",
+      "en": "No rules yet"
+    },
+    "client.rules.list.empty_body": {
+      "nl": "Vink „Dit voortaan altijd doen bij deze klanten” aan bij het goedkeuren van boekingsvoorstellen op Te doen om er een te maken.",
+      "en": "To make one, tick “Always do this for these clients” when approving booking proposals on To do."
+    },
+    "client.rules.to_account": {
+      "nl": "op {account}",
+      "en": "to {account}"
+    },
+    "client.rules.status.active": {
+      "nl": "Actief",
+      "en": "Active"
+    },
+    "client.rules.status.suspended": {
+      "note": "The rule's maker no longer holds the right to reconcile here (decision 3); matches wait for review.",
+      "nl": "Gepauzeerd",
+      "en": "Paused"
+    },
+    "client.rules.status.retired": {
+      "nl": "Ingetrokken",
+      "en": "Retired"
+    },
+    "client.rules.max_amount": {
+      "nl": "Tot {amount}",
+      "en": "Up to {amount}"
+    },
+    "client.rules.no_max": {
+      "nl": "Geen maximum",
+      "en": "No maximum"
+    },
+    "client.rules.postings_count": {
+      "nl": { "one": "{count} boeking", "other": "{count} boekingen" },
+      "en": { "one": "{count} booking", "other": "{count} bookings" }
+    },
+    "client.rules.last_posted": {
+      "nl": "laatst op {date}",
+      "en": "last on {date}"
+    },
+    "client.rules.created_by": {
+      "nl": "gemaakt door {name} op {date}",
+      "en": "made by {name} on {date}"
+    },
+    "client.rules.created": {
+      "nl": "gemaakt op {date}",
+      "en": "made on {date}"
+    },
+    "client.rules.max_label": {
+      "nl": "Maximumbedrag",
+      "en": "Maximum amount"
+    },
+    "client.rules.max_hint": {
+      "nl": "Matches boven dit bedrag wachten op beoordeling.",
+      "en": "Matches above this amount wait for review."
+    },
+    "client.rules.max_clear": {
+      "nl": "Maximum verwijderen",
+      "en": "Remove maximum"
+    },
+    "client.rules.max_save": {
+      "nl": "Maximum opslaan",
+      "en": "Save maximum"
+    },
+    "client.rules.max_edit": {
+      "nl": "Maximum instellen",
+      "en": "Set maximum"
+    },
+    "client.rules.retire": {
+      "nl": "Regel intrekken",
+      "en": "Retire rule"
+    },
+    "client.rules.retire_confirm": {
+      "nl": "De regel voor {counterparty} intrekken? Wat de regel al boekte, blijft staan; nieuwe matches wachten weer op beoordeling.",
+      "en": "Retire the rule for {counterparty}? What it already booked stays as it is; new matches wait for review again."
+    },
+    "client.rules.retired_notice": {
+      "nl": "Regel ingetrokken.",
+      "en": "Rule retired."
+    },
+    "client.rules.max_notice": {
+      "nl": "Maximum opgeslagen.",
+      "en": "Maximum saved."
+    },
+    "client.rules.postings.title": {
+      "nl": "Geboekt door regels",
+      "en": "Booked by rules"
+    },
+    "client.rules.postings.intro": {
+      "note": "FR-GL-003: undo reverses through the bank path; a posting is never deleted.",
+      "nl": "Elke boeking die een regel voor deze klant maakte. Ongedaan maken zet de bankbetaling terug om opnieuw te koppelen; niets wat geboekt is, wordt ooit verwijderd.",
+      "en": "Every booking a rule made for this client. Undo puts the bank payment back to be matched again; nothing posted is ever deleted."
+    },
+    "client.rules.postings.empty": {
+      "nl": "Nog niets geboekt door een regel.",
+      "en": "No rule has booked anything yet."
+    },
+    "client.rules.postings.undo": {
+      "nl": "Ongedaan maken",
+      "en": "Undo"
+    },
+    "client.rules.postings.undo_confirm": {
+      "nl": "Deze boeking ongedaan maken? De bankbetaling gaat terug naar de lijst om te koppelen.",
+      "en": "Undo this booking? The bank payment goes back to the list to be matched."
+    },
+    "client.rules.postings.undone_notice": {
+      "nl": "Boeking ongedaan gemaakt.",
+      "en": "Booking undone."
+    },
+    "client.rules.postings.not_undoable": {
+      "nl": "Kan hier niet meer ongedaan worden gemaakt.",
+      "en": "Can no longer be undone here."
     }
   }
 }

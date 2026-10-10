@@ -23,7 +23,7 @@ def test_the_mail_names_the_books_but_never_the_question() -> None:
     )
     assert nl.subject == "Uw boekhouder heeft een vraag over Bakker B.V."
     assert "Bakker B.V." in nl.body
-    assert "/questions" not in nl.body  # no client question screen exists yet: link the start page
+    assert "/questions\n" in nl.body  # the client's question list (contract-wave2.md)
     assert "Met vriendelijke groet," in nl.body
 
     en = build_message(
