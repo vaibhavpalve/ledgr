@@ -5,6 +5,7 @@ import type { ExpenseView, VatTreatment } from "@ledgr/shared-types";
 
 import { toDecimalInput } from "../ui/decimal";
 import type { CaptureApi, ExpenseFormPatch } from "./api";
+import type { AsyncAction } from "./asyncActions";
 
 /** Below this, a reading's own confidence in a field is not enough to trust it
  * unchecked. A number for the review screen to point at, not a rule the server
@@ -110,18 +111,45 @@ export function ExpenseForm({
   expense,
   api,
   onChanged,
+  onDiscard,
 }: {
   administrationId: string;
   expense: ExpenseView;
   api: CaptureApi;
   /** Called with the server's answer after every successful write. */
   onChanged?: (next: ExpenseView) => void;
+  /**
+   * ADR-117: throws this invoice away. Supplied by a screen that knows where to
+   * go afterwards; without it the blocked-duplicate note has no button, so the
+   * form never offers an action it cannot finish. May reject, and the server's
+   * own sentence is shown.
+   */
+  onDiscard?: AsyncAction;
 }) {
   const { t, money, language } = useI18n();
   const [draft, setDraft] = useState<ExpenseFormPatch>({});
   const [saving, setSaving] = useState(false);
   const [reading, setReading] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+
+  const discard = async () => {
+    if (onDiscard === undefined) return;
+    setDiscarding(true);
+    setProblem(null);
+    try {
+      await onDiscard();
+    } catch (error) {
+      setProblem(
+        error instanceof Error && error.message !== ""
+          ? error.message
+          : t("capture.duplicate.discard.failed"),
+      );
+      setConfirmingDiscard(false);
+      setDiscarding(false);
+    }
+  };
 
   // ADR-101: the invoice number also matching is near-certain the same
   // document, and the one case that blocks submission (already reflected in
@@ -376,12 +404,49 @@ export function ExpenseForm({
             one sentence a disabled Submit needs remains.
           */}
           {confirmedDuplicate ? (
-            <p
-              className="expense-form__notice expense-form__notice--attention"
+            <div
+              className="expense-form__notice expense-form__notice--attention expense-form__blocked"
               data-testid="expense-duplicate-blocked"
             >
-              {t("capture.duplicate.blocked")}
-            </p>
+              <p>{t("capture.duplicate.blocked")}</p>
+              {/*
+                ADR-117: the way out. Offered only where the screen can act on it,
+                and asked twice because it removes the invoice from the list (its
+                file is kept).
+              */}
+              {onDiscard !== undefined ? (
+                confirmingDiscard ? (
+                  <span className="expense-form__blocked-actions">
+                    <span>{t("capture.duplicate.discard.confirm")}</span>
+                    <button
+                      type="button"
+                      disabled={discarding}
+                      data-testid="expense-discard-confirm"
+                      onClick={() => void discard()}
+                    >
+                      {t("capture.duplicate.discard.yes")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={discarding}
+                      data-testid="expense-discard-keep"
+                      onClick={() => setConfirmingDiscard(false)}
+                    >
+                      {t("capture.duplicate.discard.keep")}
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="expense-form__discard"
+                    data-testid="expense-discard"
+                    onClick={() => setConfirmingDiscard(true)}
+                  >
+                    {t("capture.duplicate.discard.button")}
+                  </button>
+                )
+              ) : null}
+            </div>
           ) : null}
 
           {problem !== null ? (

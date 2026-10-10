@@ -141,7 +141,18 @@ function PurchasesList() {
       <CaptureScreen sitting={sitting} queue={queue} decode={decode} variant="embedded" />
 
       {/* ADR-116: said at the upload, once, and until dismissed. */}
-      <DuplicateUploadNotices notices={uploadNotices.notices} onDismiss={uploadNotices.dismiss} />
+      <DuplicateUploadNotices
+        notices={uploadNotices.notices}
+        onDismiss={uploadNotices.dismiss}
+        onDiscard={async (notice) => {
+          // ADR-117. A rejection stays on the notice, which shows the server's
+          // sentence; only a success removes it and refreshes what it was about.
+          if (notice.expenseId === null) return;
+          await capture.discardExpense(administration.id, notice.expenseId, "duplicate");
+          uploadNotices.dismiss(notice.receiptRef);
+          load();
+        }}
+      />
 
       {loaded.kind === "loading" ? <LoadingSkeleton rows={4} /> : null}
       {loaded.kind === "error" ? <ErrorState message={loaded.message} onRetry={load} /> : null}

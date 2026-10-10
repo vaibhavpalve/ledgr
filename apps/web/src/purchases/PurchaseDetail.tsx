@@ -157,6 +157,12 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
               // stays here, where the booking step says who does.
               if (mayBook) void book(next);
             }}
+            onDiscard={async () => {
+              // ADR-117: the way out of a confirmed duplicate. The invoice is not
+              // there afterwards, so the list is where this goes.
+              await capture.discardExpense(administration.id, expense.id, "duplicate");
+              navigate("/purchases");
+            }}
           />
           <PurchaseDetails expense={expense} />
         </div>

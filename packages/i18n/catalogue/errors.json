@@ -236,6 +236,11 @@
       "nl": "Deze uitgave is al ingediend en kan niet meer worden gewijzigd.",
       "en": "This expense has already been submitted and can no longer be changed."
     },
+    "errors.expense_not_discardable": {
+      "note": "ADR-117. Only a draft can be thrown away: a ready claim is in front of someone who books it, and a posted one is in the ledger, which is corrected by reversal and never by hiding it (FR-GL-003).",
+      "nl": "Alleen een concept kan worden weggegooid. Deze factuur is al ingediend of geboekt.",
+      "en": "Only a draft can be thrown away. This invoice has already been submitted or booked."
+    },
     "errors.extraction_unavailable": {
       "note": "ADR-095: 'read again' asked of a deployment where automatic reading is switched off (EXTRACTION_PROVIDER=none, or a provider selected without its credential). A 409 about this environment's configuration, not about the invoice — the form still works by hand.",
       "nl": "Automatisch lezen staat in deze omgeving niet aan. Vul de gegevens zelf in.",

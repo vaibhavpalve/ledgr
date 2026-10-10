@@ -70,12 +70,22 @@ class FakeFormRepository:
     originals: dict[uuid.UUID, OriginalSummary] = field(default_factory=dict)
     #: item id -> (the other claim holding the same file, how many) - ADR-116.
     same_file: dict[uuid.UUID, tuple[Expense, int]] = field(default_factory=dict)
+    #: item id -> the reason it was discarded (ADR-117).
+    discarded_items: dict[uuid.UUID, str] = field(default_factory=dict)
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
         if expense is None or expense.administration_id != administration_id:
             return None
+        # As the SQL does (ADR-117): a discarded invoice is not there to be found.
+        if expense.capture_item_id in self.discarded_items:
+            return None
         return expense
+
+    async def discard_item(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID, user_id: uuid.UUID, reason: str
+    ) -> None:
+        self.discarded_items.setdefault(item_id, reason)
 
     async def update(
         self,

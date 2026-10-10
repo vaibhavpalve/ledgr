@@ -132,7 +132,12 @@ async def _waiting_receipts(session: AsyncSession) -> dict[uuid.UUID, tuple[int,
     result = await session.execute(
         text(
             "SELECT administration_id, COUNT(*) AS waiting, MIN(created_at)::date AS oldest "
-            "  FROM expense WHERE status IN ('draft', 'ready') GROUP BY administration_id"
+            "  FROM expense WHERE status IN ('draft', 'ready') "
+            # ADR-117: nobody is waiting on a receipt that was thrown away.
+            "   AND NOT EXISTS (SELECT 1 FROM capture_item ci "
+            "                    WHERE ci.id = expense.capture_item_id "
+            "                      AND ci.discarded_at IS NOT NULL) "
+            " GROUP BY administration_id"
         )
     )
     return {row.administration_id: (int(row.waiting), row.oldest) for row in result}

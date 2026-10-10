@@ -192,6 +192,10 @@ class SqlVatReturnRepository:
                 "SELECT COUNT(*) FROM expense "
                 " WHERE administration_id = :admin AND status IN ('draft', 'ready') "
                 "   AND (expense_date IS NULL OR expense_date BETWEEN :start AND :end)"
+                # ADR-117: a discarded draft is not an unbooked purchase.
+                "   AND NOT EXISTS (SELECT 1 FROM capture_item ci "
+                "                    WHERE ci.id = expense.capture_item_id "
+                "                      AND ci.discarded_at IS NOT NULL)"
             ),
             {"admin": str(administration_id), "start": start, "end": end},
         )

@@ -552,6 +552,41 @@
       "nl": "Deze upload openen",
       "en": "Open this upload"
     },
+    "capture.duplicate.upload.discard": {
+      "note": "ADR-117. Throws the just-uploaded draft away. Its file is kept (FR-DOC-002); only the draft leaves the list.",
+      "nl": "Deze upload weggooien",
+      "en": "Discard this upload"
+    },
+    "capture.duplicate.upload.discard_label": {
+      "nl": "{file} weggooien",
+      "en": "Discard {file}"
+    },
+    "capture.duplicate.upload.discarding": {
+      "nl": "Bezig met weggooien…",
+      "en": "Discarding…"
+    },
+    "capture.duplicate.discard.button": {
+      "note": "ADR-117. Beside the sentence that explains a disabled Submit - the way out of a confirmed duplicate.",
+      "nl": "Deze factuur weggooien",
+      "en": "Discard this invoice"
+    },
+    "capture.duplicate.discard.confirm": {
+      "nl": "Deze factuur weggooien? Het bestand blijft bewaard.",
+      "en": "Discard this invoice? The file is kept."
+    },
+    "capture.duplicate.discard.yes": {
+      "nl": "Ja, weggooien",
+      "en": "Yes, discard"
+    },
+    "capture.duplicate.discard.keep": {
+      "nl": "Bewaren",
+      "en": "Keep it"
+    },
+    "capture.duplicate.discard.failed": {
+      "note": "Fallback when the server gave no sentence of its own.",
+      "nl": "Het weggooien is niet gelukt. Probeer het opnieuw.",
+      "en": "Discarding did not work. Please try again."
+    },
     "capture.duplicate.upload.dismiss": {
       "nl": "Sluiten",
       "en": "Dismiss"

@@ -43,6 +43,16 @@ _EXPENSE_COLUMNS = """
     invoice_number, extraction, created_at
 """
 
+#: "This expense has not been thrown away" (ADR-117), for a statement on the
+#: bare `expense` table. A discarded receipt keeps its row - its originals are
+#: inside their retention period and the item records who discarded it and why -
+#: so every reader that lists or counts drafts says so explicitly, here and in
+#: the few other modules that read `expense`. Named once so they say it alike.
+_LIVE = (
+    "NOT EXISTS (SELECT 1 FROM capture_item ci "
+    "WHERE ci.id = expense.capture_item_id AND ci.discarded_at IS NOT NULL)"
+)
+
 #: The same list, for a statement that joins other tables and so has to say
 #: which `id` it means. Derived from the one above so the two cannot drift.
 _EXPENSE_COLUMNS_QUALIFIED = ", ".join(
@@ -381,10 +391,12 @@ class SqlCaptureRepository:
     # -- FR-EXP-001b / FR-EXP-001e: the form ------------------------------
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
+        # A discarded invoice is not there to be found (ADR-117): every read,
+        # edit, submit and post of one goes through here and is told "not found".
         result = await self._session.execute(
             text(
                 f"SELECT {_EXPENSE_COLUMNS} FROM expense "
-                f"WHERE id = :id AND administration_id = :admin"
+                f"WHERE id = :id AND administration_id = :admin AND {_LIVE}"
             ),
             {"id": str(expense_id), "admin": str(administration_id)},
         )
@@ -600,12 +612,19 @@ class SqlCaptureRepository:
         `api.expenses.duplicates.invoice_number_match` is what decides what a
         match, a mismatch or a missing number means.
         """
+        # A discarded claim is not a duplicate of anything (ADR-117): somebody
+        # already threw it away, and it must not keep blocking the one they
+        # kept. Filtered here rather than inside the SQL function, which has
+        # already been recreated once (0074) and is not worth a third.
         result = await self._session.execute(
             text(
-                "SELECT expense_id, strength, supplier, expense_date, gross_amount, "
-                "       status, same_submitter, similarity, invoice_number "
+                "SELECT d.expense_id, d.strength, d.supplier, d.expense_date, d.gross_amount, "
+                "       d.status, d.same_submitter, d.similarity, d.invoice_number "
                 "FROM expenses.duplicate_candidates("
-                "    :admin, :expense, :supplier, :on, :gross, :invoice_number, :floor)"
+                "    :admin, :expense, :supplier, :on, :gross, :invoice_number, :floor) d "
+                "JOIN expense x ON x.id = d.expense_id "
+                "JOIN capture_item ci ON ci.id = x.capture_item_id "
+                "WHERE ci.discarded_at IS NULL"
             ),
             {
                 "admin": str(administration_id),
@@ -827,7 +846,7 @@ class SqlCaptureRepository:
             result = await self._session.execute(
                 text(
                     f"SELECT {_EXPENSE_COLUMNS} FROM expense "
-                    f"WHERE administration_id = :admin AND status = :status "
+                    f"WHERE administration_id = :admin AND status = :status AND {_LIVE} "
                     f"ORDER BY created_at DESC LIMIT :limit"
                 ),
                 {"admin": str(administration_id), "status": status, "limit": limit},
@@ -836,7 +855,7 @@ class SqlCaptureRepository:
             result = await self._session.execute(
                 text(
                     f"SELECT {_EXPENSE_COLUMNS} FROM expense "
-                    f"WHERE administration_id = :admin "
+                    f"WHERE administration_id = :admin AND {_LIVE} "
                     f"ORDER BY created_at DESC LIMIT :limit"
                 ),
                 {"admin": str(administration_id), "limit": limit},

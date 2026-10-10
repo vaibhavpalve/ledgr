@@ -64,6 +64,7 @@ from api.expenses.model import (
     ConfirmedDuplicateExpense,
     Expense,
     ExpenseAlreadyReady,
+    ExpenseNotDiscardable,
     ExpenseNotFound,
     ExpenseStatus,
     IncompleteExpense,
@@ -208,6 +209,17 @@ class ExpenseFormRepository(Protocol):
         """The oldest other live claim whose first original is byte-identical to
         this receipt's, and how many there are - or None. Within one
         administration."""
+        ...
+
+    async def discard_item(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        item_id: uuid.UUID,
+        user_id: uuid.UUID,
+        reason: str,
+    ) -> None:
+        """Marks the receipt discarded. Its originals are not touched."""
         ...
 
     async def list_by_status(
@@ -426,6 +438,52 @@ class ExpenseFormService:
             },
         )
         return await self._view_of(updated, actor_user_id)
+
+    async def discard(
+        self,
+        *,
+        administration_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        actor_user_id: uuid.UUID,
+        reason: str,
+        correlation_id: str | None = None,
+    ) -> None:
+        """Throws a DRAFT invoice away - a duplicate, or not an invoice at all.
+
+        ADR-117. The receipt is marked discarded (`capture_item.discarded_at`,
+        the one notion of "discarded" the review list, the worklist and receipt
+        chasing already share) and every reader that lists drafts leaves it out.
+        The ORIGINAL is not removed: it is inside its FR-DOC-002 retention
+        period and is not the form's to delete, and a discarded item with its
+        file intact is the record of a decision.
+
+        Only a draft. A ready claim is somebody else's to act on and a posted one
+        is in the ledger, which is corrected by reversal (FR-GL-003, CMP-009),
+        never by hiding it. Discarded twice is "not found": once discarded, the
+        invoice is not there to be found.
+        """
+        await self._require(actor_user_id, administration_id)
+        expense = await self._get(administration_id, expense_id)
+        if expense.status is not ExpenseStatus.DRAFT:
+            raise ExpenseNotDiscardable(
+                f"expense {expense_id} is {expense.status.value}; only a draft can be discarded"
+            )
+        await self._repository.discard_item(
+            administration_id=administration_id,
+            item_id=expense.capture_item_id,
+            user_id=actor_user_id,
+            reason=reason,
+        )
+        await self._record(
+            administration_id=administration_id,
+            user_id=actor_user_id,
+            action="discard_expense",
+            resource_id=expense_id,
+            correlation_id=correlation_id,
+            # Why, and nothing of what it said: the audit log has its own
+            # retention (IAM-093) and is not a second copy of the claim.
+            detail={"reason": reason, "capture_item_id": str(expense.capture_item_id)},
+        )
 
     # -- internals ---------------------------------------------------------
 

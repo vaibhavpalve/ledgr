@@ -1,11 +1,15 @@
-import { act, fireEvent, render as renderBare, screen } from "@testing-library/react";
+import { act, fireEvent, render as renderBare, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { I18nProvider, type Language } from "@ledgr/i18n";
 import type { CaptureDuplicate, CaptureQueue, DeliveredCapture } from "@ledgr/offline-queue";
 
-import { DuplicateUploadNotices, useUploadNotices } from "./DuplicateUploadNotices";
+import {
+  DuplicateUploadNotices,
+  useUploadNotices,
+  type UploadNotice,
+} from "./DuplicateUploadNotices";
 
 /**
  * The part of a queue this feature touches: somebody to tell. The real queue's
@@ -46,16 +50,47 @@ const delivered = (overrides: Partial<DeliveredCapture> = {}): DeliveredCapture 
   ...overrides,
 });
 
-function Harness({ queue, administrationId = "adm-A" }: { queue: CaptureQueue; administrationId?: string }) {
+function Harness({
+  queue,
+  administrationId = "adm-A",
+  onDiscard,
+}: {
+  queue: CaptureQueue;
+  administrationId?: string;
+  onDiscard?: (notice: UploadNotice) => Promise<void>;
+}) {
   const { notices, dismiss } = useUploadNotices(queue, administrationId);
-  return <DuplicateUploadNotices notices={notices} onDismiss={dismiss} />;
+  return (
+    <DuplicateUploadNotices
+      notices={notices}
+      onDismiss={dismiss}
+      {...(onDiscard !== undefined
+        ? {
+            // As the screen does: a success removes the notice, a rejection leaves it.
+            onDiscard: async (notice: UploadNotice) => {
+              await onDiscard(notice);
+              dismiss(notice.receiptRef);
+            },
+          }
+        : {})}
+    />
+  );
 }
 
-function mount(queue: FakeQueue, administrationId = "adm-A", language: Language = "en") {
+function mount(
+  queue: FakeQueue,
+  administrationId = "adm-A",
+  language: Language = "en",
+  onDiscard?: (notice: UploadNotice) => Promise<void>,
+) {
   const ui: ReactElement = (
     <MemoryRouter>
       <I18nProvider initialLanguage={language}>
-        <Harness queue={queue as unknown as CaptureQueue} administrationId={administrationId} />
+        <Harness
+          queue={queue as unknown as CaptureQueue}
+          administrationId={administrationId}
+          {...(onDiscard !== undefined ? { onDiscard } : {})}
+        />
       </I18nProvider>
     </MemoryRouter>
   );
@@ -195,6 +230,53 @@ describe("telling the uploader at the upload — ADR-116", () => {
     act(() => queue.deliver(delivered({ filename: null })));
 
     expect(screen.getByTestId("upload-duplicate-text").textContent).toContain("This upload");
+  });
+
+  it("offers no discard where the screen cannot act on it", () => {
+    const queue = new FakeQueue();
+    mount(queue);
+
+    act(() => queue.deliver(delivered()));
+
+    expect(screen.queryByTestId("upload-duplicate-discard")).toBeNull();
+  });
+
+  it("throws the new upload away and removes the notice once the server has", async () => {
+    const queue = new FakeQueue();
+    const onDiscard = vi.fn(async () => {});
+    mount(queue, "adm-A", "en", onDiscard);
+    act(() => queue.deliver(delivered()));
+
+    fireEvent.click(screen.getByTestId("upload-duplicate-discard"));
+
+    await waitFor(() => expect(screen.queryByTestId("upload-duplicate")).toBeNull());
+    // The draft THIS upload became - never the invoice it repeats.
+    expect(onDiscard).toHaveBeenCalledWith(expect.objectContaining({ expenseId: "exp-new" }));
+  });
+
+  it("keeps the notice and says why when the server refuses", async () => {
+    const queue = new FakeQueue();
+    const onDiscard = vi.fn(async () => {
+      throw new Error("Only a draft can be thrown away.");
+    });
+    mount(queue, "adm-A", "en", onDiscard);
+    act(() => queue.deliver(delivered()));
+
+    fireEvent.click(screen.getByTestId("upload-duplicate-discard"));
+
+    expect((await screen.findByTestId("upload-duplicate-problem")).textContent).toContain(
+      "Only a draft can be thrown away.",
+    );
+    expect(screen.getByTestId("upload-duplicate")).toBeTruthy();
+  });
+
+  it("offers no discard for an upload the server gave no draft for", () => {
+    const queue = new FakeQueue();
+    mount(queue, "adm-A", "en", vi.fn(async () => {}));
+
+    act(() => queue.deliver(delivered({ expenseId: null })));
+
+    expect(screen.queryByTestId("upload-duplicate-discard")).toBeNull();
   });
 
   it("speaks Dutch", () => {

@@ -232,6 +232,15 @@ class ExpenseAlreadyReady(CaptureError):
     """
 
 
+class ExpenseNotDiscardable(CaptureError):
+    """Only a DRAFT can be thrown away (ADR-117).
+
+    A claim marked ready is in front of somebody who books it, and a posted one
+    is in the ledger: the books are append-only (FR-GL-003), so it is corrected
+    by a reversal, never by making it disappear from the list it was booked from.
+    """
+
+
 class UnknownVatTreatment(CaptureError):
     """A treatment code migration 0028's ruleset does not define."""
 

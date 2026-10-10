@@ -404,6 +404,108 @@ describe("a confirmed duplicate blocks submission — ADR-101", () => {
   });
 });
 
+describe("the way out of a confirmed duplicate - ADR-117", () => {
+  const blocked: ExpenseView = {
+    ...complete,
+    can_be_marked_ready: false,
+    duplicate_warnings: [
+      {
+        expense_id: "exp-9",
+        strength: "strong",
+        supplier: "Mistral AI SAS",
+        expense_date: "2026-09-28",
+        gross_amount: "10.00",
+        status: "ready",
+        same_submitter: true,
+        similarity: 1,
+        invoice_number_match: "same",
+      },
+    ],
+  };
+
+  it("offers to discard the invoice beside the sentence that explains the disabled button", () => {
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={blocked}
+        api={api()}
+        onDiscard={vi.fn(async () => {})}
+      />,
+      "en",
+    );
+
+    const note = screen.getByTestId("expense-duplicate-blocked");
+    expect(note.textContent).toContain("can't be submitted");
+    expect(note.contains(screen.getByTestId("expense-discard"))).toBe(true);
+  });
+
+  it("offers nothing the screen cannot finish", () => {
+    render(<ExpenseForm administrationId="adm-A" expense={blocked} api={api()} />, "en");
+
+    expect(screen.queryByTestId("expense-discard")).toBeNull();
+  });
+
+  it("asks before it removes the invoice, and keeps it if the answer is no", async () => {
+    const onDiscard = vi.fn(async () => {});
+    render(
+      <ExpenseForm administrationId="adm-A" expense={blocked} api={api()} onDiscard={onDiscard} />,
+      "en",
+    );
+
+    fireEvent.click(screen.getByTestId("expense-discard"));
+    expect(onDiscard).not.toHaveBeenCalled();
+    expect(screen.getByTestId("expense-duplicate-blocked").textContent).toContain("The file is kept");
+
+    fireEvent.click(screen.getByTestId("expense-discard-keep"));
+    expect(onDiscard).not.toHaveBeenCalled();
+    expect(screen.getByTestId("expense-discard")).toBeTruthy();
+  });
+
+  it("discards once confirmed", async () => {
+    const onDiscard = vi.fn(async () => {});
+    render(
+      <ExpenseForm administrationId="adm-A" expense={blocked} api={api()} onDiscard={onDiscard} />,
+      "en",
+    );
+
+    fireEvent.click(screen.getByTestId("expense-discard"));
+    fireEvent.click(screen.getByTestId("expense-discard-confirm"));
+
+    await waitFor(() => expect(onDiscard).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows the server's own sentence when it refuses, and leaves the invoice there", async () => {
+    const onDiscard = vi.fn(async () => {
+      throw new ApiError(409, "expense_not_discardable", "Only a draft can be thrown away.");
+    });
+    render(
+      <ExpenseForm administrationId="adm-A" expense={blocked} api={api()} onDiscard={onDiscard} />,
+      "en",
+    );
+
+    fireEvent.click(screen.getByTestId("expense-discard"));
+    fireEvent.click(screen.getByTestId("expense-discard-confirm"));
+
+    expect((await screen.findByTestId("expense-problem")).textContent).toContain(
+      "Only a draft can be thrown away.",
+    );
+    expect(screen.getByTestId("expense-discard")).toBeTruthy();
+  });
+
+  it("does not offer it where nothing is blocked", () => {
+    render(
+      <ExpenseForm
+        administrationId="adm-A"
+        expense={complete}
+        api={api()}
+        onDiscard={vi.fn(async () => {})}
+      />,
+    );
+
+    expect(screen.queryByTestId("expense-discard")).toBeNull();
+  });
+});
+
 describe("a duplicate with no invoice number to compare - ADR-101", () => {
   const missingNumber: ExpenseView = {
     ...complete,

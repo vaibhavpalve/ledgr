@@ -162,6 +162,24 @@ export class CaptureApi {
     );
   }
 
+  /**
+   * ADR-117: throw a DRAFT invoice away - the way out of a confirmed duplicate.
+   * The server refuses a claim that is no longer a draft (409
+   * `expense_not_discardable`) and says "not found" to one already discarded; the
+   * file itself is kept. `reason` goes on the audit record.
+   */
+  discardExpense(
+    administrationId: string,
+    expenseId: string,
+    reason: "duplicate" | "not_an_invoice" | "other" = "other",
+  ): Promise<{ id: string; discarded: true; reason: string }> {
+    return this.call<{ id: string; discarded: true; reason: string }>(
+      "POST",
+      `${this.expensePath(administrationId, expenseId)}/discard`,
+      { reason },
+    );
+  }
+
   private expensePath(administrationId: string, expenseId: string): string {
     return (
       `/v1/administrations/${encodeURIComponent(administrationId)}` +

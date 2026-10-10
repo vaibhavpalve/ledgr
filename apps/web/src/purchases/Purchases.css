@@ -263,6 +263,42 @@
   border-left-color: var(--leaf-ink);
   background: var(--leaf-tint);
 }
+/* The blocked-duplicate note carries its own way out (ADR-117): the sentence,
+   then one quiet action - or, once asked, the question and its two answers. */
+.purchase-detail .expense-form__blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.purchase-detail .expense-form__blocked p {
+  margin: 0;
+}
+.purchase-detail .expense-form__blocked-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.purchase-detail .expense-form__blocked button {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--lemon-ink);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--lemon-ink);
+  font: 500 14px/20px var(--font-sans);
+  cursor: pointer;
+}
+.purchase-detail .expense-form__blocked button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.purchase-detail .expense-form__blocked button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 /* The one sentence that explains a disabled Submit (ADR-101, ADR-116) is the
    product's "needs attention", not the green of the notices around it - the
    rule above is more specific than `--attention` alone and used to win. */
@@ -439,6 +475,34 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.upload-duplicate .upload-duplicate__discard {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.upload-duplicate .upload-duplicate__discard:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.upload-duplicate .upload-duplicate__discard:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.upload-duplicate .upload-duplicate__body .upload-duplicate__problem {
+  margin-top: var(--space-2);
+  font-weight: 500;
+}
+
 .upload-duplicate .upload-duplicate__dismiss {
   display: inline-flex;
   align-items: center;

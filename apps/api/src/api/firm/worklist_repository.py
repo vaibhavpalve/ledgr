@@ -174,7 +174,10 @@ _PERIOD_FACTS = """
              WHERE x.administration_id = pp.administration_id
                AND x.status IN ('draft', 'ready')
                AND (x.expense_date IS NULL
-                    OR x.expense_date BETWEEN pp.start_date AND pp.end_date)) AS unposted_in_period
+                    OR x.expense_date BETWEEN pp.start_date AND pp.end_date)
+               AND NOT EXISTS (SELECT 1 FROM capture_item xci
+                                WHERE xci.id = x.capture_item_id
+                                  AND xci.discarded_at IS NOT NULL)) AS unposted_in_period
 """
 
 _PERIODS = """
@@ -251,6 +254,8 @@ _ACTIVITY = """
     SELECT 'receipts_uploaded' AS kind, e.administration_id, count(*) AS n
       FROM expense e
      WHERE e.administration_id = ANY(CAST(:ids AS uuid[])) AND e.created_at > :since
+       AND NOT EXISTS (SELECT 1 FROM capture_item eci
+                        WHERE eci.id = e.capture_item_id AND eci.discarded_at IS NOT NULL)
      GROUP BY e.administration_id
     UNION ALL
     SELECT 'auto_bookings_ready', p.administration_id, count(*)
@@ -279,9 +284,13 @@ _ACTIVITY = """
      WHERE e.administration_id = ANY(CAST(:ids AS uuid[])) AND e.created_at > :since
        AND e.supplier IS NOT NULL AND e.expense_date IS NOT NULL AND e.gross_amount IS NOT NULL
        AND expenses.normalise_supplier(e.supplier) <> ''
+       AND NOT EXISTS (SELECT 1 FROM capture_item eci
+                        WHERE eci.id = e.capture_item_id AND eci.discarded_at IS NOT NULL)
        AND EXISTS (
            SELECT 1 FROM expense o
             WHERE o.administration_id = e.administration_id AND o.id <> e.id
+              AND NOT EXISTS (SELECT 1 FROM capture_item oci
+                               WHERE oci.id = o.capture_item_id AND oci.discarded_at IS NOT NULL)
               AND o.supplier IS NOT NULL AND o.expense_date IS NOT NULL
               AND o.gross_amount IS NOT NULL
               AND expenses.normalise_supplier(o.supplier) = expenses.normalise_supplier(e.supplier)

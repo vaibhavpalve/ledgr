@@ -543,6 +543,39 @@ describe("one invoice, opened for review", () => {
     assertNoAxeViolations(await axeViolations(document.body));
   });
 
+  it("discards a blocked duplicate and goes back to the list - ADR-117", async () => {
+    const confirmed = detail({
+      missing_fields: [],
+      can_be_marked_ready: false,
+      duplicate_warnings: [
+        {
+          expense_id: "exp-0",
+          strength: "exact",
+          supplier: "Meelfabriek Zeeland",
+          expense_date: "2026-09-18",
+          gross_amount: "1240.00",
+          status: "ready",
+          same_submitter: true,
+          similarity: 1,
+          invoice_number_match: "same",
+        },
+      ],
+    });
+    const calls = stubApi({
+      [EXPENSE]: () => jsonResponse(confirmed),
+      [LIST]: () => jsonResponse([]),
+      "POST /v1/administrations/adm-A/expenses/exp-1/discard": () =>
+        jsonResponse({ id: "exp-1", discarded: true, reason: "duplicate" }),
+    });
+    renderApp({ authenticated: true, language: "en" }, { route: "/purchases/exp-1" });
+
+    fireEvent.click(await screen.findByTestId("expense-discard"));
+    fireEvent.click(await screen.findByTestId("expense-discard-confirm"));
+
+    await waitFor(() => expect(screen.getByTestId("purchases")).toBeTruthy());
+    expect(calls).toContain("POST /v1/administrations/adm-A/expenses/exp-1/discard");
+  });
+
   it("gives the original an accessible name", async () => {
     const page = await openInvoice(detail());
 

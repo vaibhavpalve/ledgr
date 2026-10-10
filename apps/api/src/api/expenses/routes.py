@@ -37,7 +37,7 @@ import logging
 import uuid
 from datetime import date
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, Query, Request
 from pydantic import BaseModel
@@ -81,6 +81,7 @@ from api.expenses.model import (
     EmptySession,
     Expense,
     ExpenseAlreadyReady,
+    ExpenseNotDiscardable,
     ExpenseNotFound,
     ExpenseStatus,
     IncompleteExpense,
@@ -171,6 +172,13 @@ def register(app: FastAPI) -> None:
         read_expense_again,
         methods=["POST"],
         name="read_expense_again",
+    )
+    # ADR-117: throwing a draft away.
+    app.add_api_route(
+        "/v1/administrations/{administration_id}/expenses/{expense_id}/discard",
+        discard_expense,
+        methods=["POST"],
+        name="discard_expense",
     )
     # FR-EXP-001d: confirmation into the ledger.
     app.add_api_route(
@@ -976,6 +984,58 @@ async def read_expense_again(
         actor_user_id=tenant.user_id,
     )
     return _expense_json(refreshed)
+
+
+class DiscardBody(BaseModel):
+    """Why a draft is being thrown away. A short list rather than free text: it
+    goes on the audit record and says what the decision was (ADR-117)."""
+
+    reason: Literal["duplicate", "not_an_invoice", "other"] = "other"
+
+
+async def discard_expense(
+    administration_id: uuid.UUID,
+    expense_id: uuid.UUID,
+    request: Request,
+    body: DiscardBody | None = None,
+    tenant: TenantContext = Depends(get_tenant_context),
+    service: ExpenseFormService = Depends(get_expense_form_service),
+    _: AuthorizationDecision = Depends(
+        require_permission(
+            "submit",
+            "expense",
+            scope=administration_from_path("administration_id"),
+            # IAM-090: removing a claim from everybody's list is a decision
+            # somebody later asks who made.
+            audit=AuditCategory.CONFIGURATION,
+        )
+    ),
+) -> dict[str, object]:
+    """ADR-117: throw a DRAFT invoice away - the way out of a confirmed
+    duplicate (ADR-101), and of an upload that was never an invoice.
+
+    Same permission as filling in the form: discarding a draft is deciding what
+    happens to a claim you may already edit. Only a draft - a ready claim is in
+    front of someone and a posted one is in the books, where the correction is a
+    reversal (FR-GL-003). The original file is kept (FR-DOC-002).
+    """
+    if tenant.user_id is None:
+        raise problem(request, 403, "errors.not_authenticated", reason="no_authenticated_user")
+    reason = body.reason if body is not None else "other"
+    try:
+        await service.discard(
+            administration_id=administration_id,
+            expense_id=expense_id,
+            actor_user_id=tenant.user_id,
+            reason=reason,
+        )
+    except ExpenseNotFound as exc:
+        raise problem(request, 404, "errors.expense_not_found", reason="expense_not_found") from exc
+    except ExpenseNotDiscardable as exc:
+        raise problem(
+            request, 409, "errors.expense_not_discardable", reason="expense_not_discardable"
+        ) from exc
+    return {"id": str(expense_id), "discarded": True, "reason": reason}
 
 
 # ===========================================================================

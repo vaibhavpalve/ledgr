@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { Link } from "react-router-dom";
 import { CircleAlert, X } from "lucide-react";
 import { useI18n } from "@ledgr/i18n";
 import type { CaptureDuplicate, CaptureQueue } from "@ledgr/offline-queue";
+
+import type { AsyncActionOn } from "./asyncActions";
 
 /**
  * ADR-116: "this looks like an invoice you already have", said at the upload.
@@ -114,9 +116,16 @@ export function useUploadNotices(
 export function DuplicateUploadNotices({
   notices,
   onDismiss,
+  onDiscard,
 }: {
   notices: readonly UploadNotice[];
   onDismiss: (receiptRef: string) => void;
+  /**
+   * Throws the uploaded draft away (ADR-117). Rejects with the server's own
+   * sentence when it refuses. Optional: without it a notice offers no button, so
+   * a screen that cannot act on the answer does not pretend to.
+   */
+  onDiscard?: AsyncActionOn<UploadNotice>;
 }) {
   const { t } = useI18n();
   if (notices.length === 0) return null;
@@ -128,7 +137,12 @@ export function DuplicateUploadNotices({
       data-testid="upload-duplicates"
     >
       {notices.map((notice) => (
-        <UploadNoticeCard key={notice.receiptRef} notice={notice} onDismiss={onDismiss} />
+        <UploadNoticeCard
+          key={notice.receiptRef}
+          notice={notice}
+          onDismiss={onDismiss}
+          {...(onDiscard !== undefined ? { onDiscard } : {})}
+        />
       ))}
     </section>
   );
@@ -137,13 +151,34 @@ export function DuplicateUploadNotices({
 function UploadNoticeCard({
   notice,
   onDismiss,
+  onDiscard,
 }: {
   notice: UploadNotice;
   onDismiss: (receiptRef: string) => void;
+  onDiscard?: AsyncActionOn<UploadNotice>;
 }) {
   const { t, money, date } = useI18n();
   const { duplicate } = notice;
   const file = notice.filename ?? t("capture.duplicate.upload.unnamed_file");
+  const [discarding, setDiscarding] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const discard = async () => {
+    if (onDiscard === undefined) return;
+    setDiscarding(true);
+    setProblem(null);
+    try {
+      // On success the owner removes this notice: the draft it was about is gone.
+      await onDiscard(notice);
+    } catch (error) {
+      setProblem(
+        error instanceof Error && error.message !== ""
+          ? error.message
+          : t("capture.duplicate.discard.failed"),
+      );
+      setDiscarding(false);
+    }
+  };
 
   const existing = t("capture.duplicate.entry", {
     supplier: duplicate.supplier ?? t("capture.details.none"),
@@ -207,7 +242,26 @@ function UploadNoticeCard({
               {t("capture.duplicate.upload.open_new")}
             </Link>
           ) : null}
+          {onDiscard !== undefined && notice.expenseId !== null ? (
+            <button
+              type="button"
+              className="upload-duplicate__discard"
+              disabled={discarding}
+              aria-label={t("capture.duplicate.upload.discard_label", { file })}
+              data-testid="upload-duplicate-discard"
+              onClick={() => void discard()}
+            >
+              {discarding
+                ? t("capture.duplicate.upload.discarding")
+                : t("capture.duplicate.upload.discard")}
+            </button>
+          ) : null}
         </p>
+        {problem !== null ? (
+          <p className="upload-duplicate__problem" role="alert" data-testid="upload-duplicate-problem">
+            {problem}
+          </p>
+        ) : null}
       </div>
 
       <button
