@@ -117,22 +117,20 @@ export function ExpenseForm({
   /** Called with the server's answer after every successful write. */
   onChanged?: (next: ExpenseView) => void;
 }) {
-  const { t, money, date, language } = useI18n();
+  const { t, money, language } = useI18n();
   const [draft, setDraft] = useState<ExpenseFormPatch>({});
   const [saving, setSaving] = useState(false);
   const [reading, setReading] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
   // ADR-101: the invoice number also matching is near-certain the same
-  // document (blocks submission - already reflected in can_be_marked_ready
-  // above); missing on either side rules nothing out. Either is worth the
-  // loud styling immediately, not only once somebody reads the list below.
+  // document, and the one case that blocks submission (already reflected in
+  // can_be_marked_ready). ADR-116 moved every duplicate WARNING to the upload;
+  // what stays here is the reason for a disabled Submit, so it is never a
+  // button that refuses without saying why.
   const confirmedDuplicate = expense.duplicate_warnings.some(
     (warning) => warning.invoice_number_match === "same",
   );
-  const loudDuplicate =
-    confirmedDuplicate ||
-    expense.duplicate_warnings.some((warning) => warning.invoice_number_match === "missing");
 
   const readAgain = useCallback(async () => {
     setReading(true);
@@ -198,7 +196,9 @@ export function ExpenseForm({
         void submit();
       }}
     >
-      <h2>{t("capture.form.title")}</h2>
+      {/* A submitted invoice is not something to "complete": its facts are in the
+          detail cards beside it, so the heading would only be wrong. */}
+      {expense.status === "draft" ? <h2>{t("capture.form.title")}</h2> : null}
 
       {/*
         FR-AP-002: what automatic reading did, said once at the top. A reading is
@@ -370,48 +370,18 @@ export function ExpenseForm({
             </p>
           ) : null}
 
-          {expense.duplicate_warnings.length > 0 ? (
-            <section
-              aria-label={t("capture.duplicate.title")}
-              data-testid="expense-duplicates"
-              className={
-                loudDuplicate ? "expense-form__notice expense-form__notice--attention" : undefined
-              }
+          {/*
+            ADR-116: the duplicate WARNING is not here any more - it is said once,
+            at the upload, where the person is still looking at the file. Only the
+            one sentence a disabled Submit needs remains.
+          */}
+          {confirmedDuplicate ? (
+            <p
+              className="expense-form__notice expense-form__notice--attention"
+              data-testid="expense-duplicate-blocked"
             >
-              <h3>{t("capture.duplicate.title")}</h3>
-              {confirmedDuplicate ? (
-                <p data-testid="expense-duplicate-confirmed">
-                  {t("capture.duplicate.confirmed")}
-                </p>
-              ) : null}
-              <ul>
-                {expense.duplicate_warnings.map((warning) => (
-                  <li key={warning.expense_id} data-testid="expense-duplicate">
-                    <span>
-                      {t("capture.duplicate.entry", {
-                        supplier: warning.supplier,
-                        date: date(warning.expense_date),
-                        amount: money(warning.gross_amount),
-                      })}
-                    </span>
-                    <span>
-                      {warning.same_submitter
-                        ? t("capture.duplicate.same_submitter")
-                        : t("capture.duplicate.other_submitter")}
-                    </span>
-                    {warning.invoice_number_match !== "different" ? (
-                      <span data-testid="expense-duplicate-invoice-number-match">
-                        {t(
-                          warning.invoice_number_match === "same"
-                            ? "capture.duplicate.invoice_number_same"
-                            : "capture.duplicate.invoice_number_missing",
-                        )}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+              {t("capture.duplicate.blocked")}
+            </p>
           ) : null}
 
           {problem !== null ? (

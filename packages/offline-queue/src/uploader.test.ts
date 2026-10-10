@@ -119,6 +119,107 @@ describe("draining when connectivity returns — FR-EXP-001f, MOB-003", () => {
   });
 });
 
+describe("telling the screen what the server made of a receipt — ADR-116", () => {
+  const duplicate = {
+    match: "same_file",
+    expenseId: "expense-0",
+    supplier: "Mistral AI SAS",
+    expenseDate: "2026-09-28",
+    grossAmount: "10.00",
+    invoiceNumber: null,
+    status: "ready",
+    sameSubmitter: true,
+    count: 1,
+    invoiceNumberMatch: null,
+  } as const;
+
+  it("hands a first page's duplicate notice to whoever subscribed", async () => {
+    const { queue, uploader } = build([
+      { kind: "response", status: 201, reason: null, itemId: "item-1", expenseId: "e-1", duplicate },
+    ]);
+    const heard: unknown[] = [];
+    queue.onDelivered((event) => heard.push(event));
+    await queue.enqueue({ ...capture, filename: "mistral.pdf" });
+
+    await uploader.drain();
+
+    // Where it went and what it was called come from the sealed payload: the
+    // record is gone by the time anybody is told.
+    expect(heard).toEqual([
+      {
+        receiptRef: "receipt-1",
+        administrationId: "adm-A",
+        filename: "mistral.pdf",
+        expenseId: "e-1",
+        duplicate,
+      },
+    ]);
+  });
+
+  it("says nothing about a receipt that is not a duplicate beyond its draft's id", async () => {
+    const { queue, uploader } = build([
+      { kind: "response", status: 201, reason: null, itemId: "item-1", expenseId: "e-2" },
+    ]);
+    const heard: unknown[] = [];
+    queue.onDelivered((event) => heard.push(event));
+    await queue.enqueue(capture);
+
+    await uploader.drain();
+
+    expect(heard).toEqual([
+      {
+        receiptRef: "receipt-1",
+        administrationId: "adm-A",
+        filename: null,
+        expenseId: "e-2",
+        duplicate: null,
+      },
+    ]);
+  });
+
+  it("speaks once per receipt, for its first page only", async () => {
+    // A further page joins an expense that already exists; it has no draft to
+    // announce and no duplicate to be.
+    const { queue, uploader } = build([
+      { kind: "response", status: 201, reason: null, itemId: "item-1", expenseId: "e-1" },
+      { kind: "response", status: 201, reason: null, itemId: "item-1" },
+    ]);
+    const heard: unknown[] = [];
+    queue.onDelivered((event) => heard.push(event));
+    await queue.enqueue(capture);
+    await queue.enqueue({ ...capture, pageIndex: 1 });
+
+    await uploader.drain();
+
+    expect(heard).toHaveLength(1);
+  });
+
+  it("is silent for a page the server refused", async () => {
+    const { queue, uploader } = build([
+      { kind: "response", status: 415, reason: "unsupported_document_type", itemId: null },
+    ]);
+    const heard: unknown[] = [];
+    queue.onDelivered((event) => heard.push(event));
+    await queue.enqueue(capture);
+
+    await uploader.drain();
+
+    expect(heard).toEqual([]);
+  });
+
+  it("stops telling a subscriber that has left", async () => {
+    const { queue, uploader } = build([ok]);
+    const heard: unknown[] = [];
+    const leave = queue.onDelivered((event) => heard.push(event));
+    leave();
+    await queue.enqueue(capture);
+
+    await uploader.drain();
+
+    expect(heard).toEqual([]);
+  });
+});
+
 describe("uploads that used to stall", () => {
   it("uploads a capture made while the app is already running, with no other wake-up", async () => {
     // Nothing else fires here: not the online event, not a timer, not a call to

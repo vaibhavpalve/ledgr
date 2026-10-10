@@ -6,6 +6,7 @@ import type { ExpenseSummaryView } from "@ledgr/shared-types";
 import "./Purchases.css";
 import { CaptureScreen } from "../capture/CaptureScreen";
 import { useQueueSnapshot } from "../capture/CaptureQueueStatus";
+import { DuplicateUploadNotices, useUploadNotices } from "../capture/DuplicateUploadNotices";
 import { useSitting } from "../capture/useSitting";
 import { useServices } from "../session/ServicesProvider";
 import { useAdministration } from "../session/SessionProvider";
@@ -39,6 +40,7 @@ function PurchasesList() {
   const { administration, sittingContext } = useAdministration();
   const { capture, queue, decode } = useServices();
   const sitting = useSitting({ context: sittingContext, queue, api: capture });
+  const uploadNotices = useUploadNotices(queue, administration.id);
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
 
   const load = useCallback(() => {
@@ -137,6 +139,9 @@ function PurchasesList() {
       ) : null}
 
       <CaptureScreen sitting={sitting} queue={queue} decode={decode} variant="embedded" />
+
+      {/* ADR-116: said at the upload, once, and until dismissed. */}
+      <DuplicateUploadNotices notices={uploadNotices.notices} onDismiss={uploadNotices.dismiss} />
 
       {loaded.kind === "loading" ? <LoadingSkeleton rows={4} /> : null}
       {loaded.kind === "error" ? <ErrorState message={loaded.message} onRetry={load} /> : null}

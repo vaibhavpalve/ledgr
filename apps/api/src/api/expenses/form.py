@@ -68,7 +68,9 @@ from api.expenses.model import (
     ExpenseStatus,
     IncompleteExpense,
     NotAuthorizedToCapture,
+    OriginalSummary,
     PaymentMethod,
+    UploadDuplicateNotice,
     VatRateUnavailable,
     VatTreatment,
 )
@@ -118,6 +120,9 @@ class ExpenseView:
     #: what the fields were read from beside the fields. None for an expense with
     #: no page yet, which is not a state capture produces.
     document_id: uuid.UUID | None = None
+    #: Facts about that original (name, type, size, pages, how it arrived), for
+    #: the invoice's detail panel. `document_id` above is the same document.
+    original: OriginalSummary | None = None
 
     @property
     def has_confirmed_duplicate(self) -> bool:
@@ -190,10 +195,19 @@ class ExpenseFormRepository(Protocol):
 
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None: ...
 
-    async def first_document_id(
+    async def original_summary(
         self, *, administration_id: uuid.UUID, item_id: uuid.UUID
-    ) -> uuid.UUID | None:
-        """The receipt's first stored original (page 1), or None."""
+    ) -> OriginalSummary | None:
+        """The receipt's first stored original (page 1) and its page count, or
+        None."""
+        ...
+
+    async def same_file_expense(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> tuple[Expense, int] | None:
+        """The oldest other live claim whose first original is byte-identical to
+        this receipt's, and how many there are - or None. Within one
+        administration."""
         ...
 
     async def list_by_status(
@@ -467,6 +481,9 @@ class ExpenseFormService:
                 invoice_number=expense.invoice_number,
             )
 
+        original = await self._repository.original_summary(
+            administration_id=expense.administration_id, item_id=expense.capture_item_id
+        )
         return ExpenseView(
             expense=expense,
             # Never overrides what is already there: FR-EXP-001b defaults a
@@ -475,9 +492,80 @@ class ExpenseFormService:
             missing_fields=expense.missing_fields,
             split=split,
             duplicate_warnings=tuple(warnings),
-            document_id=await self._repository.first_document_id(
-                administration_id=expense.administration_id, item_id=expense.capture_item_id
-            ),
+            document_id=original.document_id if original is not None else None,
+            original=original,
+        )
+
+    async def duplicate_notice(self, *, expense: Expense) -> UploadDuplicateNotice | None:
+        """What to tell the uploader about this just-captured invoice, or None.
+
+        ADR-116. Called by the capture route after the invoice has been stored
+        and read, so the answer reflects the fields the reading filled. Two
+        questions, asked in order of how sure the answer is:
+
+          1. Is this exactly the file already stored for this client? Needs no
+             reading at all, so it works when reading is unavailable or failed.
+          2. Do supplier, date and amount (FR-EXP-001g) match an existing
+             claim, and does the invoice number agree (ADR-101)?
+
+        The caller has already been authorized to capture into this
+        administration; nothing here widens what they could read, since it names
+        a claim in the same administration and carries no colleague's identity
+        (`same_submitter` is a boolean, as in `DuplicateWarning`).
+
+        Never raises for "nothing found", and never blocks anything: this is
+        information shown once, at the moment it is most useful.
+        """
+        same_file = await self._repository.same_file_expense(
+            administration_id=expense.administration_id, item_id=expense.capture_item_id
+        )
+        if same_file is not None:
+            existing, count = same_file
+            return UploadDuplicateNotice(
+                match="same_file",
+                expense_id=existing.id,
+                supplier=existing.supplier,
+                expense_date=existing.expense_date,
+                gross_amount=existing.gross_amount,
+                invoice_number=existing.invoice_number,
+                status=existing.status.value,
+                same_submitter=existing.submitted_by_user_id == expense.submitted_by_user_id,
+                count=count,
+            )
+
+        triple = ExpenseTriple(
+            supplier=expense.supplier, on=expense.expense_date, gross_amount=expense.gross_amount
+        )
+        if not triple.is_complete:
+            return None
+        warnings = await self._repository.duplicate_candidates(
+            administration_id=expense.administration_id,
+            expense_id=expense.id,
+            triple=triple,
+            invoice_number=expense.invoice_number,
+        )
+        if not warnings:
+            return None
+
+        same_number = [w for w in warnings if w.invoice_number_match == "same"]
+        pool = same_number or list(warnings)
+        # The strongest first: an exact supplier beats a similar one, then the
+        # more alike supplier name, then the oldest (the original).
+        best = min(
+            pool,
+            key=lambda w: (w.strength.value != "exact", -(w.similarity or 0.0), str(w.expense_id)),
+        )
+        return UploadDuplicateNotice(
+            match="same_invoice" if same_number else "same_details",
+            expense_id=best.expense_id,
+            supplier=best.supplier,
+            expense_date=best.on,
+            gross_amount=best.gross_amount,
+            invoice_number=expense.invoice_number if same_number else None,
+            status=best.status,
+            same_submitter=best.same_submitter,
+            count=len(pool),
+            invoice_number_match=best.invoice_number_match,
         )
 
     async def _get(self, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense:

@@ -27,8 +27,10 @@ from api.expenses.duplicates import (
 )
 from api.expenses.model import (
     CaptureSession,
+    CaptureSource,
     Expense,
     ExpenseStatus,
+    OriginalSummary,
     PaymentMethod,
     ReviewEntry,
     VatTreatment,
@@ -38,8 +40,14 @@ _EXPENSE_COLUMNS = """
     id, administration_id, capture_item_id, status, submitted_by_user_id,
     expense_date, supplier, gross_amount, vat_treatment, vat_rate, vat_amount,
     net_amount, category, payment_method, journal_entry_id, posted_at,
-    invoice_number, extraction
+    invoice_number, extraction, created_at
 """
+
+#: The same list, for a statement that joins other tables and so has to say
+#: which `id` it means. Derived from the one above so the two cannot drift.
+_EXPENSE_COLUMNS_QUALIFIED = ", ".join(
+    f"e.{name.strip()}" for name in _EXPENSE_COLUMNS.split(",") if name.strip()
+)
 
 #: Columns the form may write. Named as a frozenset rather than interpolating
 #: whatever a caller passes, so a `changes` dict that picked up a key from a
@@ -83,6 +91,7 @@ def _to_expense(row: object) -> Expense:
         posted_at=row.posted_at,  # type: ignore[attr-defined]
         invoice_number=row.invoice_number,  # type: ignore[attr-defined]
         extraction=_json_object(row.extraction),  # type: ignore[attr-defined]
+        created_at=row.created_at,  # type: ignore[attr-defined]
     )
 
 
@@ -409,6 +418,82 @@ class SqlCaptureRepository:
         )
         found = result.scalar_one_or_none()
         return None if found is None else uuid.UUID(str(found))
+
+    async def original_summary(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> OriginalSummary | None:
+        """The receipt's first stored original and its page count, for the
+        invoice's detail panel. One statement, so opening an invoice does not
+        grow a query per fact about its file."""
+        result = await self._session.execute(
+            text(
+                """
+                SELECT p.document_id, d.original_filename, d.content_type, d.byte_size,
+                       p.source, p.created_at,
+                       (SELECT count(*) FROM capture_page
+                         WHERE item_id = :item AND administration_id = :admin) AS page_count
+                  FROM capture_page p
+                  JOIN document d ON d.id = p.document_id
+                 WHERE p.item_id = :item AND p.administration_id = :admin
+                 ORDER BY p.page_number
+                 LIMIT 1
+                """
+            ),
+            {"item": str(item_id), "admin": str(administration_id)},
+        )
+        row = result.first()
+        if row is None:
+            return None
+        return OriginalSummary(
+            document_id=row.document_id,
+            filename=row.original_filename,
+            content_type=row.content_type,
+            byte_size=int(row.byte_size),
+            page_count=int(row.page_count),
+            source=CaptureSource(row.source),
+            captured_at=row.created_at,
+        )
+
+    async def same_file_expense(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> tuple[Expense, int] | None:
+        """The oldest OTHER live claim whose first original is byte-identical to
+        this receipt's, and how many there are.
+
+        Matched on `document.content_hash` (SHA-256 of the original bytes, so
+        "the same file", not "a similar one"), within the one administration -
+        a file another client uploaded is none of this client's business, and
+        RLS would hide it anyway. A discarded item is not a duplicate of
+        anything: a person already threw it away.
+        """
+        result = await self._session.execute(
+            text(
+                f"""
+                SELECT {_EXPENSE_COLUMNS_QUALIFIED},
+                       count(*) OVER () AS match_count
+                  FROM capture_page mine
+                  JOIN document md ON md.id = mine.document_id
+                  JOIN document od
+                    ON od.administration_id = md.administration_id
+                   AND od.content_hash = md.content_hash
+                   AND od.id <> md.id
+                  JOIN capture_page op ON op.document_id = od.id AND op.page_number = 1
+                  JOIN capture_item oi
+                    ON oi.id = op.item_id AND oi.id <> mine.item_id AND oi.discarded_at IS NULL
+                  JOIN expense e ON e.capture_item_id = oi.id
+                 WHERE mine.item_id = :item
+                   AND mine.administration_id = :admin
+                   AND mine.page_number = 1
+                 ORDER BY e.created_at, e.id
+                 LIMIT 1
+                """
+            ),
+            {"item": str(item_id), "admin": str(administration_id)},
+        )
+        row = result.first()
+        if row is None:
+            return None
+        return _to_expense(row), int(row.match_count)
 
     async def record_extraction(
         self,

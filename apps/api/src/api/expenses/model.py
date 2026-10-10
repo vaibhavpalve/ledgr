@@ -315,6 +315,9 @@ class Expense:
     #: FR-AP-002. How automatic reading filled the fields (status, provider,
     #: model, a confidence per field) - never the values. None: not read.
     extraction: dict[str, Any] | None = None
+    #: When the receipt was captured. Read for the invoice's own detail panel;
+    #: nothing is decided on it.
+    created_at: datetime | None = None
 
     #: FR-EXP-001b's "minimum", plus FR-EXP-001e's payment method. Named once,
     #: here, because three places need to agree on it: this type's
@@ -361,6 +364,56 @@ class Expense:
         if self.gross_amount is None or self.vat_amount is None or self.net_amount is None:
             return True
         return self.net_amount + self.vat_amount == self.gross_amount
+
+
+@dataclass(frozen=True, slots=True)
+class OriginalSummary:
+    """What the invoice's own detail panel says about the file it came from.
+
+    The first stored original of a receipt, and how many there are. Facts about
+    the FILE - never what was read from it, which is the expense's own fields.
+    """
+
+    document_id: uuid.UUID
+    #: As uploaded. Display only: what the file IS was decided by its bytes
+    #: (SEC-005), and `content_type` below is that.
+    filename: str | None
+    content_type: str
+    byte_size: int
+    page_count: int
+    source: CaptureSource
+    captured_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class UploadDuplicateNotice:
+    """What a person is told at the moment an invoice is uploaded, when it looks
+    like one that is already on the list.
+
+    FR-EXP-001g's warning, moved to where it is useful: the upload, rather than
+    the form somebody opens afterwards (ADR-116). It warns and never refuses -
+    the file is stored and the draft exists either way, because two identical
+    invoices can be legitimate and a refused upload is a lost document.
+    """
+
+    #: `same_file`    byte-identical to a file already stored for this client.
+    #: `same_invoice` supplier, date, amount AND invoice number match (ADR-101's
+    #:                near-certain duplicate, the one case that blocks submitting).
+    #: `same_details` supplier, date and amount match; the number differs or is
+    #:                missing, so it may well be a second real invoice.
+    match: str
+    #: The existing claim it looks like.
+    expense_id: uuid.UUID
+    supplier: str | None
+    expense_date: date | None
+    gross_amount: Decimal | None
+    invoice_number: str | None
+    status: str
+    same_submitter: bool
+    #: How many existing claims match, so "and 3 more" can be said.
+    count: int
+    #: ADR-101's verdict on the numbers, for `same_details`; None for a file match.
+    invoice_number_match: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

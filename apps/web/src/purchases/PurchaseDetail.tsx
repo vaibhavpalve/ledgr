@@ -10,6 +10,7 @@ import { useAdministration } from "../session/SessionProvider";
 import { ErrorState, LoadingSkeleton, PageHeader } from "../shell/ScreenState";
 import { canBook } from "./booking";
 import { OriginalDocument } from "./OriginalDocument";
+import { PurchaseDetails } from "./PurchaseDetails";
 
 /**
  * One purchase invoice: the review, inside the invoice, and the booking.
@@ -139,18 +140,26 @@ export function PurchaseDetail({ expenseId }: { expenseId: string }) {
             : "purchase-detail__body"
         }
       >
-        <ExpenseForm
-          administrationId={administration.id}
-          expense={expense}
-          api={capture}
-          onChanged={(next) => {
-            setExpense(next);
-            if (next.status !== "ready") return;
-            // Submitted. Whoever may post books it in the same click; anyone else
-            // stays here, where the booking step says who does.
-            if (mayBook) void book(next);
-          }}
-        />
+        {/*
+          The form and what is known about the invoice, in one column: the
+          editable fields (or, once submitted, the note that nothing is left),
+          then the read-only cards. The original sits beside them.
+        */}
+        <div className="purchase-detail__main">
+          <ExpenseForm
+            administrationId={administration.id}
+            expense={expense}
+            api={capture}
+            onChanged={(next) => {
+              setExpense(next);
+              if (next.status !== "ready") return;
+              // Submitted. Whoever may post books it in the same click; anyone else
+              // stays here, where the booking step says who does.
+              if (mayBook) void book(next);
+            }}
+          />
+          <PurchaseDetails expense={expense} />
+        </div>
         {expense.document_id ? (
           <OriginalDocument
             administrationId={administration.id}

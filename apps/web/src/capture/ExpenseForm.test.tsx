@@ -342,14 +342,6 @@ describe("duplicate warnings warn and never block — FR-EXP-001g", () => {
     ],
   });
 
-  it("shows the matching expense", async () => {
-    render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(true)} api={api()} />);
-
-    const entry = screen.getByTestId("expense-duplicate").textContent ?? "";
-    expect(entry).toContain("Café Central");
-    expect(entry).toContain("121,00");
-  });
-
   it("leaves the submit button enabled", async () => {
     // Two identical receipts can be legitimate. The API sends these alongside
     // `can_be_marked_ready: true` on purpose, and a client that gated on them
@@ -359,18 +351,17 @@ describe("duplicate warnings warn and never block — FR-EXP-001g", () => {
     expect(screen.getByTestId("expense-submit").hasAttribute("disabled")).toBe(false);
   });
 
-  it("says whether it was their own entry without naming a colleague", async () => {
-    render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(false)} api={api()} />);
+  it("does not repeat the warning here - it was said at the upload (ADR-116)", async () => {
+    // The list of look-alikes used to live in this form, once per matching
+    // invoice. An invoice uploaded four times showed the same line four times,
+    // to whoever opened it afterwards. It is announced once, when the file
+    // lands (DuplicateUploadNotices), and not again on the invoice.
+    render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(true)} api={api()} />);
 
-    expect(screen.getByTestId("expense-duplicate").textContent).toContain("Iemand anders");
-  });
-
-  it("shows no loud styling and no invoice-number line for the ordinary case", async () => {
-    render(<ExpenseForm administrationId="adm-A" expense={withDuplicate(false)} api={api()} />, "en");
-
-    expect(screen.getByTestId("expense-duplicates").className).not.toContain("--attention");
-    expect(screen.queryByTestId("expense-duplicate-invoice-number-match")).toBeNull();
-    expect(screen.queryByTestId("expense-duplicate-confirmed")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicates")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicate")).toBeNull();
+    expect(screen.queryByText(/Café Central/)).toBeNull();
+    expect(screen.queryByTestId("expense-duplicate-blocked")).toBeNull();
   });
 });
 
@@ -393,16 +384,17 @@ describe("a confirmed duplicate blocks submission — ADR-101", () => {
     ],
   };
 
-  it("shows the loud styling and the confirmed message", async () => {
+  it("says why Submit is disabled, in one sentence, and lists nothing", async () => {
+    // ADR-116 moved every duplicate warning to the upload. What stays is the one
+    // line a disabled button needs: a button that refuses without saying why is
+    // worse than any banner.
     render(<ExpenseForm administrationId="adm-A" expense={confirmed} api={api()} />, "en");
 
-    expect(screen.getByTestId("expense-duplicates").className).toContain("--attention");
-    expect(screen.getByTestId("expense-duplicate-confirmed").textContent).toContain(
-      "cannot be submitted",
+    expect(screen.getByTestId("expense-duplicate-blocked").textContent).toContain(
+      "same invoice number is already on your list",
     );
-    expect(screen.getByTestId("expense-duplicate-invoice-number-match").textContent).toContain(
-      "same invoice number",
-    );
+    expect(screen.queryByTestId("expense-duplicates")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicate")).toBeNull();
   });
 
   it("disables the submit button, unlike an ordinary duplicate", async () => {
@@ -412,7 +404,7 @@ describe("a confirmed duplicate blocks submission — ADR-101", () => {
   });
 });
 
-describe("a duplicate with no invoice number to compare warns loudly — ADR-101", () => {
+describe("a duplicate with no invoice number to compare - ADR-101", () => {
   const missingNumber: ExpenseView = {
     ...complete,
     duplicate_warnings: [
@@ -430,14 +422,13 @@ describe("a duplicate with no invoice number to compare warns loudly — ADR-101
     ],
   };
 
-  it("shows the loud styling but leaves submitting possible", async () => {
+  it("leaves submitting possible and adds nothing to the form", async () => {
+    // Nothing rules a duplicate out, which the upload notice says; the form has
+    // no reason to refuse and so no sentence to give.
     render(<ExpenseForm administrationId="adm-A" expense={missingNumber} api={api()} />, "en");
 
-    expect(screen.getByTestId("expense-duplicates").className).toContain("--attention");
-    expect(screen.getByTestId("expense-duplicate-invoice-number-match").textContent).toContain(
-      "no invoice number",
-    );
-    expect(screen.queryByTestId("expense-duplicate-confirmed")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicates")).toBeNull();
+    expect(screen.queryByTestId("expense-duplicate-blocked")).toBeNull();
     expect(screen.getByTestId("expense-submit").hasAttribute("disabled")).toBe(false);
   });
 });

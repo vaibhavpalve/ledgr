@@ -430,6 +430,119 @@ describe("one invoice, opened for review", () => {
     assertNoAxeViolations(await axeViolations(document.body));
   });
 
+  it("fills the space beside a submitted invoice with what was read from it", async () => {
+    // The screen this was written for: an invoice the reading submitted on its
+    // own used to show one sentence and a blank page. Everything the server
+    // knows is now beside the original - and the form's own heading, "Complete
+    // this expense", is gone, because there is nothing left to complete.
+    const page = await openInvoice(
+      detail({
+        status: "ready",
+        missing_fields: [],
+        can_be_marked_ready: true,
+        payment_method: "business_account",
+        created_at: "2026-05-12T08:31:00+00:00",
+        original: {
+          filename: "kpn-mei.pdf",
+          content_type: "application/pdf",
+          byte_size: 183_500,
+          page_count: 4,
+          source: "upload",
+          captured_at: "2026-05-12T08:31:00+00:00",
+        },
+        extraction: {
+          status: "done",
+          reason: null,
+          fields: { supplier: 0.99 },
+          read_at: "2026-05-12T08:31:04+00:00",
+          submitted: true,
+        },
+      }),
+    );
+
+    expect(await within(page).findByTestId("expense-read-submitted")).toBeTruthy();
+    expect(within(page).queryByRole("heading", { name: "Complete this expense" })).toBeNull();
+
+    const data = within(page).getByTestId("purchase-invoice-data");
+    expect(within(data).getByTestId("detail-supplier").textContent).toBe("Meelfabriek Zeeland");
+    expect(within(data).getByTestId("detail-invoice-number").textContent).toBe("MFZ-9921");
+    expect(within(data).getByTestId("detail-total").textContent).toContain("1.240,00");
+    expect(within(page).getByTestId("detail-file-name").textContent).toBe("kpn-mei.pdf");
+    expect(within(page).getByTestId("history-submitted").textContent).toContain(
+      "Submitted automatically",
+    );
+    // Beside the original, in the same body.
+    expect(within(page).getByTestId("purchase-original-frame")).toBeTruthy();
+  });
+
+  it("keeps the editable form for a draft and adds only the file and history", async () => {
+    const page = await openInvoice(
+      detail({
+        original: {
+          filename: "kpn-mei.pdf",
+          content_type: "application/pdf",
+          byte_size: 2048,
+          page_count: 1,
+          source: "camera",
+          captured_at: null,
+        },
+      }),
+    );
+
+    expect(await within(page).findByTestId("expense-supplier")).toBeTruthy();
+    expect(within(page).queryByTestId("purchase-invoice-data")).toBeNull();
+    expect(within(page).getByTestId("detail-source").textContent).toBe("Camera");
+  });
+
+  it("repeats no duplicate warning on the invoice (ADR-116)", async () => {
+    const page = await openInvoice(
+      detail({
+        duplicate_warnings: [
+          {
+            expense_id: "exp-0",
+            strength: "exact",
+            supplier: "Meelfabriek Zeeland",
+            expense_date: "2026-09-18",
+            gross_amount: "1240.00",
+            status: "ready",
+            same_submitter: true,
+            similarity: 1,
+            invoice_number_match: "different",
+          },
+        ],
+      }),
+    );
+
+    await within(page).findByTestId("expense-supplier");
+    expect(within(page).queryByTestId("expense-duplicates")).toBeNull();
+    expect(within(page).queryByTestId("expense-duplicate")).toBeNull();
+  });
+
+  it("has no automated WCAG 2.2 AA violations once it is submitted, with its cards", async () => {
+    const page = await openInvoice(
+      detail({
+        document_id: null,
+        status: "ready",
+        missing_fields: [],
+        can_be_marked_ready: true,
+        payment_method: "business_account",
+        created_at: "2026-05-12T08:31:00+00:00",
+        original: {
+          filename: "kpn-mei.pdf",
+          content_type: "application/pdf",
+          byte_size: 183_500,
+          page_count: 2,
+          source: "upload",
+          captured_at: null,
+        },
+        extraction: { status: "done", reason: null, fields: {}, submitted: true },
+      }),
+    );
+    await within(page).findByTestId("purchase-invoice-data");
+
+    assertNoAxeViolations(await axeViolations(document.body));
+  });
+
   it("gives the original an accessible name", async () => {
     const page = await openInvoice(detail());
 

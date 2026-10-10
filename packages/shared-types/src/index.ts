@@ -100,6 +100,14 @@ export interface ExpenseView {
   readonly extraction?: ExtractionView | null;
   /** The receipt's first stored original, for showing beside the form. */
   readonly document_id?: string | null;
+  /** The file it came from: name, type, size, pages, and how it arrived. Null with no original. */
+  readonly original?: ExpenseOriginal | null;
+  /** When the receipt was captured (ISO instant). */
+  readonly created_at?: string | null;
+  /** When it was booked into the ledger (ISO instant); null until it is. */
+  readonly posted_at?: string | null;
+  /** The ledger entry it became, once booked. */
+  readonly journal_entry_id?: string | null;
   readonly payment_method: PaymentMethod | null;
   /** FR-EXP-001b's "defaulting from the user's history". Null once a category has been chosen. */
   readonly suggested_category: string | null;
@@ -115,6 +123,22 @@ export interface ExpenseView {
 }
 
 export type ExpenseStatus = "draft" | "ready" | "posted";
+
+/**
+ * Facts about the file an invoice was read from (`api.expenses.routes.
+ * _original_json`) - the invoice's detail panel, never what was read from it.
+ * `filename` is as uploaded and is display only: what the file IS was decided
+ * by its bytes (SEC-005), and `content_type` is that.
+ */
+export interface ExpenseOriginal {
+  readonly filename: string | null;
+  readonly content_type: string;
+  readonly byte_size: number;
+  readonly page_count: number;
+  readonly source: "camera" | "upload";
+  /** ISO instant the original was stored. */
+  readonly captured_at: string | null;
+}
 
 /**
  * How an invoice was read (`api.expenses.routes._extraction_json`) - never the
@@ -134,6 +158,10 @@ export interface ExtractionView {
    */
   readonly reason: string | null;
   readonly fields: Readonly<Record<string, number>>;
+  /** ISO instant the reading ran. Absent on a record written before it was kept. */
+  readonly read_at?: string | null;
+  /** True when the reading was certain enough that the invoice was submitted without a person. */
+  readonly submitted?: boolean;
 }
 
 /**

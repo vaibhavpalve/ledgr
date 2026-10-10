@@ -86,10 +86,12 @@ from api.expenses.model import (
     IncompleteExpense,
     ItemNotFound,
     ItemWithoutPages,
+    OriginalSummary,
     PaymentMethod,
     ReviewEntry,
     SessionAlreadyFinalised,
     SessionNotFound,
+    UploadDuplicateNotice,
     VatRateUnavailable,
     VatTreatment,
 )
@@ -388,6 +390,8 @@ async def capture_page(
     # expense. Never for a further page: those join an expense the person may
     # already have corrected. `read_into_expense` cannot raise for a failed
     # reading - the invoice is stored either way (FR-EXP-001c).
+    expense_id: uuid.UUID | None = None
+    notice: UploadDuplicateNotice | None = None
     if item is None and page_number == 1:
         await extraction.read_into_expense(
             administration_id=administration_id,
@@ -396,6 +400,14 @@ async def capture_page(
             data=data,
             content_type=document.content_type.value,
         )
+        # ADR-116: tell the uploader NOW that this looks like one already on the
+        # list, rather than leaving it to be found when the form is opened.
+        # Asked after the reading, so the fields it filled are what is compared.
+        found = await extraction.duplicate_notice(
+            administration_id=administration_id, item_id=item_id
+        )
+        if found is not None:
+            expense_id, notice = found
 
     return {
         "item_id": str(item_id),
@@ -405,6 +417,10 @@ async def capture_page(
         # True when this started a new receipt, so a batch client can show the
         # item it just opened rather than guessing from the page number.
         "started_new_receipt": page_number == 1,
+        # The draft expense this first page became; null for a further page.
+        "expense_id": str(expense_id) if expense_id is not None else None,
+        # ADR-116: null unless this looks like an invoice already on the list.
+        "duplicate": _duplicate_notice_json(notice),
     }
 
 
@@ -548,6 +564,45 @@ def _extraction_json(extraction: dict[str, Any] | None) -> dict[str, object] | N
         "status": extraction.get("status"),
         "reason": extraction.get("reason"),
         "fields": fields if isinstance(fields, dict) else {},
+        # For the invoice's history: when it was read, and whether the reading
+        # was certain enough to submit it without a person.
+        "read_at": extraction.get("read_at"),
+        "submitted": bool(extraction.get("submitted")),
+    }
+
+
+def _duplicate_notice_json(notice: UploadDuplicateNotice | None) -> dict[str, object] | None:
+    """An upload's "this looks like one you already have", for the screen that
+    just sent the file. Amounts are strings (NFR-031). Names the existing claim
+    by id and its own supplier/date/amount, and says only WHETHER the same person
+    filed it - never who, as `_expense_json`'s warnings do not."""
+    if notice is None:
+        return None
+    return {
+        "match": notice.match,
+        "expense_id": str(notice.expense_id),
+        "supplier": notice.supplier,
+        "expense_date": notice.expense_date.isoformat() if notice.expense_date else None,
+        "gross_amount": str(notice.gross_amount) if notice.gross_amount is not None else None,
+        "invoice_number": notice.invoice_number,
+        "status": notice.status,
+        "same_submitter": notice.same_submitter,
+        "count": notice.count,
+        "invoice_number_match": notice.invoice_number_match,
+    }
+
+
+def _original_json(original: OriginalSummary | None) -> dict[str, object] | None:
+    """The file an invoice came from, for its detail panel."""
+    if original is None:
+        return None
+    return {
+        "filename": original.filename,
+        "content_type": original.content_type,
+        "byte_size": original.byte_size,
+        "page_count": original.page_count,
+        "source": original.source.value,
+        "captured_at": original.captured_at.isoformat() if original.captured_at else None,
     }
 
 
@@ -593,6 +648,14 @@ def _expense_json(view: ExpenseView) -> dict[str, object]:
         # What they were read from, for the review screen to show beside them.
         "document_id": str(view.document_id) if view.document_id else None,
         "payment_method": expense.payment_method.value if expense.payment_method else None,
+        # The invoice's own detail panel: when it arrived, what file it was, and
+        # - once booked - when and as which ledger entry. Facts, never decisions.
+        "created_at": expense.created_at.isoformat() if expense.created_at else None,
+        "posted_at": expense.posted_at.isoformat() if expense.posted_at else None,
+        "journal_entry_id": (
+            str(expense.journal_entry_id) if expense.journal_entry_id is not None else None
+        ),
+        "original": _original_json(view.original),
         # FR-EXP-001b's "defaulting from the user's history". Null once the
         # person has chosen a category - a default does not correct a choice.
         "suggested_category": view.suggested_category,

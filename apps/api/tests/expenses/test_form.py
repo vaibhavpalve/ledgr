@@ -22,12 +22,14 @@ from api.authz.service import AuthorizationService
 from api.expenses.duplicates import DuplicateWarning, ExpenseTriple
 from api.expenses.form import UNSET, ExpenseFormService
 from api.expenses.model import (
+    CaptureSource,
     Expense,
     ExpenseAlreadyReady,
     ExpenseNotFound,
     ExpenseStatus,
     IncompleteExpense,
     NotAuthorizedToCapture,
+    OriginalSummary,
     PaymentMethod,
     VatRateUnavailable,
     VatTreatment,
@@ -64,6 +66,10 @@ class FakeFormRepository:
     duplicate_lookups: int = 0
     #: item id -> its first stored original, for the review screen's preview.
     documents: dict[uuid.UUID, uuid.UUID] = field(default_factory=dict)
+    #: item id -> the full summary of that original, where a test needs the file's facts.
+    originals: dict[uuid.UUID, OriginalSummary] = field(default_factory=dict)
+    #: item id -> (the other claim holding the same file, how many) - ADR-116.
+    same_file: dict[uuid.UUID, tuple[Expense, int]] = field(default_factory=dict)
 
     async def get(self, *, administration_id: uuid.UUID, expense_id: uuid.UUID) -> Expense | None:
         expense = self.expenses.get(expense_id)
@@ -141,10 +147,27 @@ class FakeFormRepository:
     async def organization_of(self, *, administration_id: uuid.UUID) -> uuid.UUID | None:
         return self.organization_id if administration_id == self.administration_id else None
 
-    async def first_document_id(
+    async def original_summary(
         self, *, administration_id: uuid.UUID, item_id: uuid.UUID
-    ) -> uuid.UUID | None:
-        return self.documents.get(item_id)
+    ) -> OriginalSummary | None:
+        if item_id in self.originals:
+            return self.originals[item_id]
+        document_id = self.documents.get(item_id)
+        if document_id is None:
+            return None
+        return OriginalSummary(
+            document_id=document_id,
+            filename=None,
+            content_type="application/pdf",
+            byte_size=1,
+            page_count=1,
+            source=CaptureSource.UPLOAD,
+        )
+
+    async def same_file_expense(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> tuple[Expense, int] | None:
+        return self.same_file.get(item_id)
 
     async def list_by_status(
         self, *, administration_id: uuid.UUID, status: str | None, limit: int

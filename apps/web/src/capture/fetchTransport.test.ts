@@ -71,6 +71,65 @@ describe("FetchTransport", () => {
     expect(response).toEqual({ kind: "response", status: 201, reason: null, itemId: "item-9" });
   });
 
+  it("carries back the draft's id and a duplicate notice, camel-cased (ADR-116)", async () => {
+    const body = {
+      item_id: "item-9",
+      expense_id: "expense-9",
+      duplicate: {
+        match: "same_invoice",
+        expense_id: "expense-1",
+        supplier: "Mistral AI SAS",
+        expense_date: "2026-09-28",
+        gross_amount: "10.00",
+        invoice_number: "MSTRL-1",
+        status: "ready",
+        same_submitter: true,
+        count: 2,
+        invoice_number_match: null,
+      },
+    };
+
+    const response = await new FetchTransport(respond(200, body)).send(request);
+
+    expect(response).toEqual({
+      kind: "response",
+      status: 200,
+      reason: null,
+      itemId: "item-9",
+      expenseId: "expense-9",
+      duplicate: {
+        match: "same_invoice",
+        expenseId: "expense-1",
+        supplier: "Mistral AI SAS",
+        expenseDate: "2026-09-28",
+        grossAmount: "10.00",
+        invoiceNumber: "MSTRL-1",
+        status: "ready",
+        sameSubmitter: true,
+        count: 2,
+        invoiceNumberMatch: null,
+      },
+    });
+  });
+
+  it("treats a duplicate it does not recognise as no notice, never an error", async () => {
+    // A server newer than this client may add a match kind. Saying nothing is
+    // right; a throw inside the uploader would stall every receipt behind it.
+    const body = { item_id: "i", duplicate: { match: "something_new", expense_id: "e" } };
+
+    const response = await new FetchTransport(respond(200, body)).send(request);
+
+    expect(response.kind === "response" && response.duplicate).toBeUndefined();
+  });
+
+  it("ignores a duplicate that rides on a refusal", async () => {
+    const body = { detail: { reason: "document_too_large" }, duplicate: { match: "same_file" } };
+
+    const response = await new FetchTransport(respond(413, body)).send(request);
+
+    expect(response.kind === "response" && response.duplicate).toBeUndefined();
+  });
+
   it("reports no item id on a refusal", async () => {
     const response = await new FetchTransport(
       respond(415, { detail: { reason: "unsupported_document_type" } }),

@@ -8,7 +8,7 @@
  * rules and the request shape are all on this side of the line.
  */
 
-import type { Bytes, PurgeReason, SealedBlob, StoredCapture } from "./model";
+import type { Bytes, CaptureDuplicate, PurgeReason, SealedBlob, StoredCapture } from "./model";
 
 /**
  * Persistence for queued captures.
@@ -125,6 +125,15 @@ export type TransportResponse =
        * rather than papering over.
        */
       readonly itemId: string | null;
+      /**
+       * The draft expense the first page became (`expense_id`), and whether it
+       * looks like one already on the list (`duplicate`) - ADR-116. Optional:
+       * absent on a refusal, on a further page, and from a transport that
+       * predates it. The queue does not interpret either; it hands them to
+       * whoever subscribed with `CaptureQueue.onDelivered`.
+       */
+      readonly expenseId?: string | null;
+      readonly duplicate?: CaptureDuplicate | null;
     }
   | { readonly kind: "network_error" };
 

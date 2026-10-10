@@ -497,6 +497,198 @@
       "nl": "Iemand anders heeft een vrijwel gelijke uitgave ingediend.",
       "en": "Someone else submitted an almost identical expense."
     },
+    "capture.duplicate.blocked": {
+      "note": "ADR-116. The ONLY duplicate sentence left on the invoice itself: a confirmed duplicate (ADR-101, the invoice number also matches) disables Submit, and a disabled button with no reason is the one thing worse than a loud banner. Everything else is said once, at the upload.",
+      "nl": "Hetzelfde factuurnummer staat al in uw lijst, dus deze factuur kan niet worden ingediend.",
+      "en": "The same invoice number is already on your list, so this invoice can't be submitted."
+    },
+    "capture.duplicate.upload.list_label": {
+      "note": "ADR-116. Region label for the notices shown after an upload that looks like an invoice already on the list.",
+      "nl": "Mogelijk dubbele facturen",
+      "en": "Possible duplicate invoices"
+    },
+    "capture.duplicate.upload.title.same_file": {
+      "note": "ADR-116. The exact same file (identical bytes) as one already stored for this client. Needs no reading, so it is also said when reading failed.",
+      "nl": "Dit bestand staat al in uw lijst",
+      "en": "This file is already on your list"
+    },
+    "capture.duplicate.upload.title.same_invoice": {
+      "note": "ADR-116. Supplier, date, amount AND invoice number match: ADR-101's near-certain duplicate, the one case that blocks submitting.",
+      "nl": "Deze factuur lijkt op een factuur die u al hebt",
+      "en": "This invoice looks like one you already have"
+    },
+    "capture.duplicate.upload.title.same_details": {
+      "note": "ADR-116. Supplier, date and amount match but the invoice number differs or is missing - possibly a second real invoice, so said quietly.",
+      "nl": "Lijkt op een factuur die u al hebt",
+      "en": "Similar to an invoice you already have"
+    },
+    "capture.duplicate.upload.body.same_file": {
+      "note": "ADR-116. {file} is the uploaded file's name; {existing} is the existing invoice as supplier · date · amount (capture.duplicate.entry). The upload is kept either way: a refused upload is a lost document.",
+      "nl": "{file} is precies hetzelfde bestand als {existing}. Het is toch bewaard.",
+      "en": "{file} is exactly the same file as {existing}. It was kept anyway."
+    },
+    "capture.duplicate.upload.body.same_invoice": {
+      "nl": "{file} heeft dezelfde leverancier, datum, bedrag en factuurnummer als {existing}. Het kan niet worden ingediend zolang dit niet is opgelost.",
+      "en": "{file} has the same supplier, date, amount and invoice number as {existing}. It can't be submitted until this is resolved."
+    },
+    "capture.duplicate.upload.body.same_details_different": {
+      "nl": "{file} heeft dezelfde leverancier, datum en bedrag als {existing}, maar een ander factuurnummer. Mogelijk is het een tweede factuur.",
+      "en": "{file} has the same supplier, date and amount as {existing}, but a different invoice number. It may be a second invoice."
+    },
+    "capture.duplicate.upload.body.same_details_missing": {
+      "nl": "{file} heeft dezelfde leverancier, datum en bedrag als {existing}, maar er is geen factuurnummer om te vergelijken, dus een dubbele factuur is niet uit te sluiten.",
+      "en": "{file} has the same supplier, date and amount as {existing}, but there is no invoice number to compare, so a duplicate can't be ruled out."
+    },
+    "capture.duplicate.upload.more": {
+      "note": "ADR-116. When more than one existing invoice matches: the one named is the closest, this counts the rest.",
+      "nl": { "one": "En nog {count} andere factuur lijkt hierop.", "other": "En nog {count} andere facturen lijken hierop." },
+      "en": { "one": "{count} other invoice looks like it too.", "other": "{count} other invoices look like it too." }
+    },
+    "capture.duplicate.upload.open_existing": {
+      "nl": "Bestaande factuur openen",
+      "en": "Open the existing invoice"
+    },
+    "capture.duplicate.upload.open_new": {
+      "nl": "Deze upload openen",
+      "en": "Open this upload"
+    },
+    "capture.duplicate.upload.dismiss": {
+      "nl": "Sluiten",
+      "en": "Dismiss"
+    },
+    "capture.duplicate.upload.dismiss_label": {
+      "note": "Accessible name for the dismiss button; {file} says which notice it closes when there are several.",
+      "nl": "Melding sluiten voor {file}",
+      "en": "Dismiss the notice for {file}"
+    },
+    "capture.duplicate.upload.unnamed_file": {
+      "note": "ADR-116. What an upload is called in the notice when its file had no name (a camera photograph).",
+      "nl": "Deze upload",
+      "en": "This upload"
+    },
+    "capture.details.invoice_title": {
+      "note": "Heading of the read-only card of everything read from the invoice, shown once it is submitted (a draft shows the editable form instead).",
+      "nl": "Factuurgegevens",
+      "en": "Invoice data"
+    },
+    "capture.details.file_title": {
+      "nl": "Bestand",
+      "en": "File"
+    },
+    "capture.details.history_title": {
+      "nl": "Geschiedenis",
+      "en": "History"
+    },
+    "capture.details.none": {
+      "note": "Placeholder for a fact that is not known - an em dash, so a gap reads as a gap and not as a blank.",
+      "identical": true,
+      "nl": "—",
+      "en": "—"
+    },
+    "capture.details.total": {
+      "nl": "Totaal incl. BTW",
+      "en": "Total incl. BTW"
+    },
+    "capture.details.vat": {
+      "note": "BTW is a statutory term and keeps its Dutch form in the English UI (FR-LOC-001c).",
+      "identical": true,
+      "nl": "BTW",
+      "en": "BTW"
+    },
+    "capture.details.net": {
+      "identical": true,
+      "nl": "Excl. BTW",
+      "en": "Excl. BTW"
+    },
+    "capture.details.payment": {
+      "nl": "Betaald met",
+      "en": "Paid with"
+    },
+    "capture.details.file_name": {
+      "nl": "Bestandsnaam",
+      "en": "File name"
+    },
+    "capture.details.file_type": {
+      "identical": true,
+      "nl": "Type",
+      "en": "Type"
+    },
+    "capture.details.size": {
+      "nl": "Grootte",
+      "en": "Size"
+    },
+    "capture.details.pages": {
+      "nl": { "one": "{count} pagina", "other": "{count} pagina's" },
+      "en": { "one": "{count} page", "other": "{count} pages" }
+    },
+    "capture.details.source": {
+      "nl": "Bron",
+      "en": "Source"
+    },
+    "capture.details.source.upload": {
+      "identical": true,
+      "nl": "Upload",
+      "en": "Upload"
+    },
+    "capture.details.source.camera": {
+      "identical": true,
+      "nl": "Camera",
+      "en": "Camera"
+    },
+    "capture.details.uploaded": {
+      "nl": "Toegevoegd op",
+      "en": "Added on"
+    },
+    "capture.details.reading": {
+      "nl": "Uitlezen",
+      "en": "Reading"
+    },
+    "capture.details.reading.done": {
+      "nl": "Automatisch uitgelezen",
+      "en": "Read automatically"
+    },
+    "capture.details.reading.failed": {
+      "nl": "Kon niet worden uitgelezen",
+      "en": "Could not be read"
+    },
+    "capture.details.reading.skipped": {
+      "nl": "Niet uitgelezen (bestandstype wordt niet ondersteund)",
+      "en": "Not read (file type not supported)"
+    },
+    "capture.details.reading.none": {
+      "nl": "Niet uitgelezen",
+      "en": "Not read"
+    },
+    "capture.details.history.captured.upload": {
+      "nl": "Geüpload",
+      "en": "Uploaded"
+    },
+    "capture.details.history.captured.camera": {
+      "nl": "Gefotografeerd",
+      "en": "Photographed"
+    },
+    "capture.details.history.read": {
+      "nl": "Automatisch uitgelezen",
+      "en": "Read automatically"
+    },
+    "capture.details.history.read_failed": {
+      "nl": "Uitlezen mislukt",
+      "en": "Reading failed"
+    },
+    "capture.details.history.submitted_auto": {
+      "note": "The reading was certain of the VAT rate, so the invoice went to ready without a person (FR-AP-002).",
+      "nl": "Automatisch ingediend",
+      "en": "Submitted automatically"
+    },
+    "capture.details.history.submitted": {
+      "note": "No time is kept for a manual submission, so this entry has no date.",
+      "nl": "Ingediend",
+      "en": "Submitted"
+    },
+    "capture.details.history.posted": {
+      "nl": "Geboekt",
+      "en": "Booked"
+    },
     "capture.queue.title": {
       "note": "Heading of the offline capture queue panel (FR-EXP-001f, MOB-003).",
       "nl": "Bonnen in de wachtrij",

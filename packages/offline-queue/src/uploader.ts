@@ -147,8 +147,14 @@ export class QueueUploader {
     for (const record of due(await this.options.queue.records(), this.options.clock.now())) {
       const attempted = await this.options.queue.markUploading(record);
       let response: TransportResponse;
+      // What the sealed payload says about where this went and what it was
+      // called, kept for the delivered event: the record is gone by then.
+      let administrationId = "";
+      let filename: string | null = null;
       try {
         const { payload, image } = await this.options.queue.open(attempted);
+        administrationId = payload.administrationId;
+        filename = payload.filename;
         response = await this.options.transport.send(
           buildRequest(payload, image, {
             resolvedItemId: attempted.resolvedItemId,
@@ -184,7 +190,17 @@ export class QueueUploader {
           // one expense and two.
           this.askedAgain = true;
         }
-        await this.options.queue.markDelivered(attempted);
+        await this.options.queue.markDelivered(
+          attempted,
+          response.kind === "response"
+            ? {
+                administrationId,
+                filename,
+                expenseId: response.expenseId ?? null,
+                duplicate: response.duplicate ?? null,
+              }
+            : undefined,
+        );
         continue;
       }
       if (outcome.kind === "blocked") {

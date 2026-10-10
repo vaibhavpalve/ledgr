@@ -37,7 +37,7 @@ from api.audit.log import ActorType, AuditCategory, AuditEvent, AuditLog, AuditO
 from api.expenses.extraction.model import ExtractedInvoice, ExtractionError
 from api.expenses.extraction.ports import READABLE_CONTENT_TYPES, InvoiceExtractor
 from api.expenses.form import ExpenseFormService
-from api.expenses.model import Expense, VatRateUnavailable, VatTreatment
+from api.expenses.model import Expense, UploadDuplicateNotice, VatRateUnavailable, VatTreatment
 
 #: Only the two treatments a single printed percentage identifies. 0% is not
 #: here: it is `btw_0`, `btw_vrijgesteld`, `btw_verlegd` or an export, and the
@@ -149,6 +149,23 @@ class InvoiceExtractionService:
             expense, administration_id, actor_user_id, correlation_id,
             status="done", reading=reading, applied=applied, submitted=submitted,
         )  # fmt: skip
+
+    async def duplicate_notice(
+        self, *, administration_id: uuid.UUID, item_id: uuid.UUID
+    ) -> tuple[uuid.UUID, UploadDuplicateNotice | None] | None:
+        """The new draft's id, and whether it looks like one already on the list.
+
+        Asked AFTER `read_into_expense`, so the fields it filled are what is
+        compared. Works without a reading at all: a byte-identical file is
+        caught from the stored original alone (ADR-116). None only when the item
+        has no expense, which capture does not produce.
+        """
+        expense = await self._repository.expense_for_item(
+            administration_id=administration_id, item_id=item_id
+        )
+        if expense is None:
+            return None
+        return expense.id, await self._form.duplicate_notice(expense=expense)
 
     # -- internals ---------------------------------------------------------
 

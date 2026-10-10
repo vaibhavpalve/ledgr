@@ -284,6 +284,61 @@ export interface QueueItemView {
 }
 
 /**
+ * "This looks like an invoice you already have" - ADR-116.
+ *
+ * What the server's answer to a delivered first page carries when the receipt it
+ * just created resembles one already on the list. Information for the person
+ * who uploaded it, shown once; nothing in the queue branches on it.
+ *
+ *   same_file     byte-identical to a file already stored for this client
+ *   same_invoice  supplier, date, amount AND invoice number match
+ *   same_details  supplier, date and amount match; the number differs or is
+ *                 missing, so it may be a second real invoice
+ *
+ * `grossAmount` is a decimal STRING (NFR-031). It names the existing claim by
+ * its supplier, date and amount and says only whether the same person filed it:
+ * not who, which is nobody's business in a duplicate check.
+ */
+export interface CaptureDuplicate {
+  readonly match: "same_file" | "same_invoice" | "same_details";
+  /** The existing claim it resembles. */
+  readonly expenseId: string;
+  readonly supplier: string | null;
+  readonly expenseDate: string | null;
+  readonly grossAmount: string | null;
+  readonly invoiceNumber: string | null;
+  readonly status: string;
+  readonly sameSubmitter: boolean;
+  /** How many existing claims resemble it. */
+  readonly count: number;
+  /** For `same_details`: whether the numbers differ or one is missing. */
+  readonly invoiceNumberMatch: "same" | "missing" | "different" | null;
+}
+
+/**
+ * A receipt whose first page has just reached the server.
+ *
+ * Emitted once per receipt (its page 0), after the page is removed from the
+ * queue. The queue is what holds the answer, because it is the only thing that
+ * saw the response - the screen that captured the receipt may have navigated
+ * away or been reloaded by the time the upload finished.
+ */
+export interface DeliveredCapture {
+  /** The client-local reference the pages were grouped under. */
+  readonly receiptRef: string;
+  /**
+   * The administration it was captured into, from the sealed payload. A screen
+   * showing another client must not announce this one's duplicate.
+   */
+  readonly administrationId: string;
+  /** The file's name as uploaded, from the sealed payload; null for a photograph. */
+  readonly filename: string | null;
+  /** The draft expense the server made of it, when it said so. */
+  readonly expenseId: string | null;
+  readonly duplicate: CaptureDuplicate | null;
+}
+
+/**
  * MOB-009's cap, as a byte budget over UNDELIVERED work.
  *
  * 200 MiB is roughly a fortnight of a heavy expense week at the archive's

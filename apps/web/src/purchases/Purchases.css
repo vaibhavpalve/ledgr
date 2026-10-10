@@ -193,6 +193,22 @@
   align-items: start;
 }
 
+/* The invoice is the one screen where a narrow column costs something: the
+   original is a document to read, and what was read from it has several cards.
+   The shell holds every screen to 76rem, which left the right of this one blank
+   on a wide monitor; this screen takes more, and stops short of stretching a
+   PDF across a 4K display. (Higher specificity than `.shell__main > *`.) */
+.shell__main > .purchase-detail {
+  max-width: 100rem;
+}
+
+.purchase-detail__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+  min-width: 0;
+}
+
 /* The fields and what they were read from, side by side once there is room. */
 @media (min-width: 64rem) {
   .purchase-detail__body--with-original {
@@ -247,15 +263,204 @@
   border-left-color: var(--leaf-ink);
   background: var(--leaf-tint);
 }
+/* The one sentence that explains a disabled Submit (ADR-101, ADR-116) is the
+   product's "needs attention", not the green of the notices around it - the
+   rule above is more specific than `--attention` alone and used to win. */
+.purchase-detail .expense-form__notice--attention {
+  border-left-color: var(--lemon-ink);
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
+}
 .purchase-detail .expense-form__check {
   background: var(--lemon-tint);
   color: var(--lemon-ink);
 }
 
+/* The original gets the larger share: it is the thing being read. The cards
+   beside it are short lines and need less. */
 @media (min-width: 64rem) {
   .purchase-detail__body--with-original {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   }
+}
+
+/* ---- What the invoice says about itself ------------------------------------ */
+
+.purchase-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-4);
+}
+
+.purchase-card {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Two classes, not one: the app resets `.bk h1, .bk h2, .bk h3, .bk p` to no
+   margin, and that selector outranks a lone class. */
+.purchase-card .purchase-card__title {
+  margin: 0 0 var(--space-3);
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink-muted);
+}
+
+.purchase-card__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+/* A label and its value on one line, hairline between: the shape of the data
+   panel in a bookkeeping package, which is what the eye here is trained on. */
+.purchase-card__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font: 400 14px/20px var(--font-sans);
+}
+.purchase-card__row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.purchase-card__row:last-child {
+  padding-bottom: 0;
+}
+.purchase-card__row dt {
+  color: var(--ink-muted);
+}
+.purchase-card__row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* A long file name may break anywhere rather than push the card wider. */
+.purchase-card__wrap {
+  overflow-wrap: anywhere;
+}
+
+.purchase-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.purchase-history li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px var(--space-3);
+  padding: 10px 0 10px var(--space-4);
+  border-left: 2px solid var(--line);
+  font: 400 14px/20px var(--font-sans);
+  position: relative;
+}
+.purchase-history li::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+}
+.purchase-history__when {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- "This looks like one you already have", at the upload (ADR-116) ------- */
+
+.upload-duplicates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ledgr-space-3);
+}
+
+.upload-duplicate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ink-muted);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+}
+/* The near-certain ones - the same file, or the same invoice number - are the
+   lemon of the product's "needs attention", not a quiet note. */
+.upload-duplicate--strong {
+  border-left-color: var(--lemon-ink);
+  background: var(--lemon-tint);
+  color: var(--lemon-ink);
+}
+.upload-duplicate__icon {
+  margin-top: 2px;
+}
+/* Written with two classes where they set a margin: `.bk h3, .bk p` resets
+   margins to zero and outranks one. */
+.upload-duplicate .upload-duplicate__body h3 {
+  margin: 0 0 4px;
+  font: 600 15px/22px var(--font-sans);
+}
+.upload-duplicate__body p {
+  font: 400 14px/20px var(--font-sans);
+}
+.upload-duplicate__body .upload-duplicate__who {
+  margin-top: 4px;
+  opacity: 0.85;
+}
+.upload-duplicate__body .upload-duplicate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+}
+/* The app's own button and link rules set a padding, a minimum height and no
+   underline; these say what a notice needs, at a specificity that wins. A
+   standalone link is at least 24px tall (WCAG 2.5.8). */
+.upload-duplicate .upload-duplicate__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.upload-duplicate .upload-duplicate__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.upload-duplicate .upload-duplicate__dismiss:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.upload-duplicate .upload-duplicate__dismiss:focus-visible,
+.upload-duplicate .upload-duplicate__link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 /* ---- Booking a ready purchase (FR-EXP-001e) --------------------------------- */
 

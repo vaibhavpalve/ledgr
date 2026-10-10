@@ -22,6 +22,8 @@ import {
   DEFAULT_CAP_BYTES,
   type BlockedReason,
   type Bytes,
+  type CaptureDuplicate,
+  type DeliveredCapture,
   type EnqueueResult,
   type NewCapture,
   type PurgeReason,
@@ -49,6 +51,7 @@ export class CaptureQueue {
     Pick<CaptureQueueOptions, "onPurge">;
   private readonly listeners = new Set<(snapshot: QueueSnapshot) => void>();
   private readonly enqueueListeners = new Set<() => void>();
+  private readonly deliveredListeners = new Set<(event: DeliveredCapture) => void>();
   private delivered = 0;
   private offline = false;
 
@@ -283,10 +286,40 @@ export class CaptureQueue {
     return updated;
   }
 
-  async markDelivered(record: StoredCapture): Promise<void> {
+  async markDelivered(
+    record: StoredCapture,
+    answer?: {
+      readonly administrationId: string;
+      readonly filename: string | null;
+      readonly expenseId: string | null;
+      readonly duplicate: CaptureDuplicate | null;
+    },
+  ): Promise<void> {
     await this.options.store.remove(record.id);
     this.delivered += 1;
     await this.notify();
+    // After the record is gone and the snapshot has been published, so a
+    // listener that reads the queue sees this receipt as delivered. Only a
+    // receipt's first page creates an expense, so only it has anything to say.
+    if (record.pageIndex === 0 && answer !== undefined) {
+      const event: DeliveredCapture = { receiptRef: record.receiptRef, ...answer };
+      for (const listener of this.deliveredListeners) listener(event);
+    }
+  }
+
+  /**
+   * Told when a receipt's first page lands, with what the server made of it
+   * (ADR-116). Returns an unsubscribe.
+   *
+   * A separate hook from `subscribe` because a snapshot is a count and a state,
+   * and this is an event: "this one was a duplicate" has to be said exactly once
+   * to whoever is looking, not re-derived from a number going up.
+   */
+  onDelivered(listener: (event: DeliveredCapture) => void): () => void {
+    this.deliveredListeners.add(listener);
+    return () => {
+      this.deliveredListeners.delete(listener);
+    };
   }
 
   /** A retryable failure: still queued, not before `nextAttemptAt`. */
